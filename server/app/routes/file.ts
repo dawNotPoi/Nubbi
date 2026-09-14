@@ -18,6 +18,7 @@ const upload = multer({ dest: "storage/temp_multer/" });
 const UPLOAD_TEMP_DIR = path.join(process.cwd(), "storage/temp");
 const UPLOAD_FINAL_DIR = path.join(process.cwd(), "storage/uploads");
 const PREVIEW_STREAM_TTL_MS = 60 * 60 * 1000;
+const FILE_SHARE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 type PreviewStreamFile = {
   fileId: string;
@@ -101,6 +102,16 @@ const createPreviewSignature = (
     .update(`${fileId}:${userId}:${expiresAt}`)
     .digest("hex");
 
+const createShareDownloadSignature = (
+  fileId: string,
+  userId: string,
+  expiresAt: number,
+) =>
+  crypto
+    .createHmac("sha256", env.BETTER_AUTH_SECRET)
+    .update(`share-download:${fileId}:${userId}:${expiresAt}`)
+    .digest("hex");
+
 const isSafeEqual = (left: string, right: string) => {
   const leftBuffer = Buffer.from(left);
   const rightBuffer = Buffer.from(right);
@@ -125,6 +136,21 @@ const buildPreviewStreamPath = (
   });
 
   return `/file/stream/${encodeURIComponent(fileId)}?${searchParams.toString()}`;
+};
+
+const buildPublicDownloadPath = (
+  fileId: string,
+  userId: string,
+  expiresAt: number,
+) => {
+  const token = createShareDownloadSignature(fileId, userId, expiresAt);
+  const searchParams = new URLSearchParams({
+    uid: userId,
+    expires: String(expiresAt),
+    token,
+  });
+
+  return `/file/public-download/${encodeURIComponent(fileId)}?${searchParams.toString()}`;
 };
 
 const prunePreviewStreamCache = (now = Date.now()) => {
@@ -153,6 +179,28 @@ const resolveSignedPreviewUserId = (
   }
 
   const expectedToken = createPreviewSignature(fileId, userId, expiresAt);
+
+  return isSafeEqual(token, expectedToken) ? userId : null;
+};
+
+const resolveSignedShareDownloadUserId = (
+  fileId: string,
+  query: Record<string, unknown>,
+) => {
+  const userId = normalizeQueryValue(query.uid);
+  const expires = normalizeQueryValue(query.expires);
+  const token = normalizeQueryValue(query.token);
+  const expiresAt = Number(expires);
+
+  if (!userId || !expires || !token || !Number.isFinite(expiresAt)) {
+    return null;
+  }
+
+  if (expiresAt < Date.now()) {
+    return null;
+  }
+
+  const expectedToken = createShareDownloadSignature(fileId, userId, expiresAt);
 
   return isSafeEqual(token, expectedToken) ? userId : null;
 };
@@ -867,6 +915,30 @@ router.get(
   }),
 );
 
+router.get(
+  "/share-url/:fileId",
+  requireAuth,
+  asyncHandler(async (req: AuthRequest, res) => {
+    const { fileId } = req.params;
+    const userId = req.user?.id;
+
+    const file = await getOwnedActiveFile(fileId, userId);
+
+    if (!file) {
+      return res.status(404).json({ message: "文件不存在或无权访问" });
+    }
+
+    if (!(await ensureFileResourceExists(file.storagePath))) {
+      return res.status(404).json({ message: "文件资源不存在" });
+    }
+
+    const expiresAt = Date.now() + FILE_SHARE_TTL_MS;
+    const url = buildPublicDownloadPath(fileId, userId!, expiresAt);
+
+    successResponse(res, { url, expiresAt });
+  }),
+);
+
 const handleSignedStreamPreview = async (
   req: AuthRequest,
   res: express.Response,
@@ -935,6 +1007,33 @@ router.get(
   "/stream/:fileId",
   asyncHandler(async (req: AuthRequest, res) => {
     await handleSignedStreamPreview(req, res);
+  }),
+);
+
+router.get(
+  "/public-download/:fileId",
+  asyncHandler(async (req: AuthRequest, res) => {
+    const { fileId } = req.params;
+    const userId = resolveSignedShareDownloadUserId(
+      fileId,
+      req.query as Record<string, unknown>,
+    );
+
+    if (!userId) {
+      return res.status(403).json({ message: "分享链接无效或已过期" });
+    }
+
+    const file = await getOwnedActiveFile(fileId, userId);
+
+    if (!file) {
+      return res.status(404).json({ message: "文件不存在或分享已失效" });
+    }
+
+    if (!(await ensureFileResourceExists(file.storagePath))) {
+      return res.status(404).json({ message: "文件资源不存在" });
+    }
+
+    return res.download(file.storagePath, file.name);
   }),
 );
 

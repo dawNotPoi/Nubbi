@@ -3,6 +3,11 @@ import request, { authorizedFetch, requestWithNoJson } from "./request";
 
 const baseUrl = getApiBaseUrl();
 
+const resolveApiUrl = (url: string) =>
+  url.startsWith("http")
+    ? url
+    : `${baseUrl}${url.startsWith("/") ? "" : "/"}${url}`;
+
 export interface FolderRecord {
   _id: string;
   name: string;
@@ -181,12 +186,37 @@ export const fetchFilePreviewStreamUrl = async (fileId: string) => {
     throw new Error(result.message || "文件流式预览地址获取失败");
   }
 
-  const url = result.data.url.startsWith("http")
-    ? result.data.url
-    : `${baseUrl}${result.data.url.startsWith("/") ? "" : "/"}${result.data.url}`;
+  return {
+    url: resolveApiUrl(result.data.url),
+    expiresAt: result.data.expiresAt,
+  };
+};
+
+export const fetchFileShareDownloadUrl = async (fileId: string) => {
+  const response = await authorizedFetch(
+    `/file/share-url/${encodeURIComponent(fileId)}`,
+    { method: "GET" },
+  );
+
+  if (!response.ok) {
+    throw new Error(`文件分享链接获取失败: ${response.status}`);
+  }
+
+  const result = (await response.json()) as {
+    code: 0 | 1;
+    data?: {
+      url?: string;
+      expiresAt?: number;
+    };
+    message?: string;
+  };
+
+  if (result.code !== 1 || !result.data?.url || !result.data.expiresAt) {
+    throw new Error(result.message || "文件分享链接获取失败");
+  }
 
   return {
-    url,
+    url: resolveApiUrl(result.data.url),
     expiresAt: result.data.expiresAt,
   };
 };
