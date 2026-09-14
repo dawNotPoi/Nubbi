@@ -2,12 +2,22 @@
 
 ## 服务端
 
-**路由** — 只做参数校验 + 转发，不写业务逻辑
+**路由** — 普通 JSON API 使用类型化路由注册器，只声明权限、Schema、成功消息和 Controller 调用
 ```ts
-router.post('/note', validate(schema), noteController.create);
+noteRoutes.post('/create', {
+  action: 'create',
+  body: createNoteBodySchema,
+  message: 'create success',
+  handler: ({ actor, body }) => createUserNote({ userId: actor.id, input: body }),
+});
 ```
 
-**校验** — 用 `validate` / `validateQuery` / `validateParams` + Zod
+- 注册器固定执行“权限校验 → 获取认证用户 → Zod 解析 → Handler → 统一响应”。
+- `body`、`query`、`params` 的类型必须由对应 Zod Schema 自动推导，禁止在业务路由中使用类型断言绕过校验。
+- 每个请求部分只解析一次，禁止组合验证中间件后再次调用同一个 Schema 的 `parse()`。
+- 文件下载、流式响应、Webhook 等非普通 JSON 接口可以使用原生 Express，但应说明原因。
+
+**校验** — 请求契约使用 Zod，Schema 放在对应路由或模块目录附近
 ```ts
 const schema = z.object({ title: z.string().min(1), content: z.string() });
 ```
