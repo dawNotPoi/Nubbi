@@ -1,14 +1,17 @@
 import { useAuth } from "@/hooks/useAuth";
+import AccountDeletionModal from "./AccountDeletionModal";
 import {
+  DeleteOutlined,
   LogoutOutlined,
   SettingOutlined,
   UserOutlined,
 } from "@ant-design/icons";
 import { Avatar, Button, Dropdown, Menu } from "antd";
-import React from "react";
+import React, { useState } from "react";
 
 const UserProfile: React.FC = () => {
   const { user, logout, loading } = useAuth();
+  const [deletionModalOpen, setDeletionModalOpen] = useState(false);
 
   const handleLogout = async () => {
     const result = await logout();
@@ -27,6 +30,14 @@ const UserProfile: React.FC = () => {
         设置
       </Menu.Item>
       <Menu.Divider />
+      <Menu.Item
+        key="delete-account"
+        danger
+        icon={<DeleteOutlined />}
+        onClick={() => setDeletionModalOpen(true)}
+      >
+        注销账号
+      </Menu.Item>
       <Menu.Item
         key="logout"
         icon={<LogoutOutlined />}
@@ -47,12 +58,19 @@ const UserProfile: React.FC = () => {
   }
 
   return (
-    <Dropdown overlay={menu} placement="bottomRight">
-      <div className="flex items-center cursor-pointer">
-        <Avatar src={user.image} alt={user.name} size="small" />
-        <span className="ml-2 text-sm">{user.name}</span>
-      </div>
-    </Dropdown>
+    <>
+      <Dropdown overlay={menu} placement="bottomRight">
+        <div className="flex items-center cursor-pointer">
+          <Avatar src={user.image} alt={user.name} size="small" />
+          <span className="ml-2 text-sm">{user.name}</span>
+        </div>
+      </Dropdown>
+      <AccountDeletionModal
+        open={deletionModalOpen}
+        userEmail={user.email}
+        onClose={() => setDeletionModalOpen(false)}
+      />
+    </>
   );
 };
 

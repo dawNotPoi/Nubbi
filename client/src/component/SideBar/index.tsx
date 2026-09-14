@@ -2,9 +2,16 @@ import { useAuth } from "@/hooks/useAuth";
 import { routes } from "@/utils/routes";
 import clsx from "clsx";
 import { useSetAtom } from "jotai";
-import { ChevronsLeft, FolderTree, House, Presentation } from "lucide-react";
-import React from "react";
+import {
+  ChevronsLeft,
+  FolderTree,
+  House,
+  Presentation,
+  Trash2,
+} from "lucide-react";
+import React, { useState } from "react";
 import { sideBarOpenedAtom } from "../../store/atom/common";
+import AccountDeletionModal from "../AccountDeletionModal";
 import Image from "../UI/Image";
 import Popover from "../UI/Popover";
 import { IconButton, MenuItemContainer } from "./components";
@@ -14,6 +21,7 @@ import ResizeTab from "./ResizeTab";
 const SideBar: React.FC = () => {
   const setSideBarOpened = useSetAtom(sideBarOpenedAtom);
   const { user, logout } = useAuth();
+  const [deletionModalOpen, setDeletionModalOpen] = useState(false);
   return (
     <ResizeTab
       className={clsx("group/sidebar px-3 bg-sidebar py-2 font-medium ")}
@@ -34,9 +42,16 @@ const SideBar: React.FC = () => {
             }
           >
             {
-              <div className="py-2 w-[120px]">
+              <div className="py-2 w-[136px]">
                 <button
-                  className="px-2 py-2 w-full hover:bg-normal/60 text-slate-700  text-center"
+                  className="px-2 py-2 w-full hover:bg-red-50 text-red-600 text-left flex items-center gap-2"
+                  onClick={() => setDeletionModalOpen(true)}
+                >
+                  <Trash2 size={15} />
+                  <span>注销账号</span>
+                </button>
+                <button
+                  className="px-2 py-2 w-full hover:bg-normal/60 text-slate-700 text-left"
                   onClick={logout}
                 >
                   退出登录
@@ -76,6 +91,11 @@ const SideBar: React.FC = () => {
           <NoteMenu />
         </div>
       </div>
+      <AccountDeletionModal
+        open={deletionModalOpen}
+        userEmail={user?.email}
+        onClose={() => setDeletionModalOpen(false)}
+      />
     </ResizeTab>
   );
 };

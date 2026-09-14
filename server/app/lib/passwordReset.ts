@@ -13,6 +13,8 @@ type PasswordResetCodeDocument = {
 
 const PASSWORD_RESET_COLLECTION = "password_reset_codes";
 const PASSWORD_RESET_CODE_LENGTH = 6;
+export const PASSWORD_RESET_COOLDOWN_SECONDS = 60;
+export const PASSWORD_RESET_EXPIRES_IN_SECONDS = 60 * 60;
 
 let indexesEnsured = false;
 
@@ -55,7 +57,7 @@ const generateResetCode = () =>
 export const createPasswordResetCode = async (
   email: string,
   token: string,
-  expiresInSeconds = 60 * 60,
+  expiresInSeconds = PASSWORD_RESET_EXPIRES_IN_SECONDS,
 ) => {
   const passwordResetCollection = await getPasswordResetCollection();
   const normalizedEmail = normalizeEmail(email);
@@ -74,6 +76,29 @@ export const createPasswordResetCode = async (
   });
 
   return code;
+};
+
+export const getPasswordResetRemainingSeconds = async (email: string) => {
+  const passwordResetCollection = await getPasswordResetCollection();
+  const normalizedEmail = normalizeEmail(email);
+  const now = new Date();
+
+  const latestCode = await passwordResetCollection.findOne(
+    { email: normalizedEmail, usedAt: null },
+    { sort: { createdAt: -1 } },
+  );
+
+  if (!latestCode) {
+    return 0;
+  }
+
+  const secondsSinceLastSend = Math.floor(
+    (now.getTime() - latestCode.createdAt.getTime()) / 1000,
+  );
+
+  return secondsSinceLastSend < PASSWORD_RESET_COOLDOWN_SECONDS
+    ? PASSWORD_RESET_COOLDOWN_SECONDS - secondsSinceLastSend
+    : 0;
 };
 
 export const consumePasswordResetCode = async (email: string, code: string) => {

@@ -73,19 +73,26 @@ const env = {
     "main",
 };
 
+const maskValue = (value?: string) => (value ? "***" : "");
+
+const envForLog = {
+  ...env,
+  MONGO_URI: maskValue(env.MONGO_URI),
+  BETTER_AUTH_SECRET: maskValue(env.BETTER_AUTH_SECRET),
+  AUTH_GITHUB_SECRET: maskValue(env.AUTH_GITHUB_SECRET),
+  AUTH_GOOGLE_SECRET: maskValue(env.AUTH_GOOGLE_SECRET),
+  AUTH_GOOLE_SECRET: maskValue(env.AUTH_GOOLE_SECRET),
+  EMAIL_PASS: maskValue(env.EMAIL_PASS),
+  GH_IMAGE_TOKEN: maskValue(env.GH_IMAGE_TOKEN),
+  GITHUB_IMAGE_TOKEN: maskValue(env.GITHUB_IMAGE_TOKEN),
+};
+
 if (!env.AUTH_GOOGLE_ID || !env.AUTH_GOOGLE_SECRET) {
   throw new Error(
     "Missing Google OAuth env vars. Please set AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET."
   );
 }
 
-log.success("环境变量加载成功", {
-  ...env,
-  EMAIL_PASS: env.EMAIL_PASS ? "***" : "",
-  BETTER_AUTH_SECRET: env.BETTER_AUTH_SECRET ? "***" : "",
-  AUTH_GITHUB_SECRET: env.AUTH_GITHUB_SECRET ? "***" : "",
-  AUTH_GOOGLE_SECRET: env.AUTH_GOOGLE_SECRET ? "***" : "",
-  GH_IMAGE_TOKEN: env.GH_IMAGE_TOKEN ? "***" : "",
-});
+log.success("环境变量加载成功", envForLog);
 
 export default env;
