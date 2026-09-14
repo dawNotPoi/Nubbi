@@ -6,8 +6,14 @@
 
 <!-- 
   每条记录格式：
-  ## [HH:mm] commit: `hash` - message
+  ## [HH:mm] commit: `未提交` - message
   **提交者**: author
-  **变更文件**: file1, file2
+  **变更文件**:
+  - path/to/file.ts（新建/修改）
   **Review 结果**: ✅ 通过 / ⚠️ 警告 / ❌ 未通过
+
+  ### 变更摘要
+  - 简述改动内容和原因
+
+  commit 后回填记录时，可将 `未提交` 替换为真实 hash。
 -->

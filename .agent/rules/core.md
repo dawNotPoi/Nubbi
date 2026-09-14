@@ -12,6 +12,13 @@
 - 禁止跨层调用：Route → Controller → Model，不跳层
 - 禁止在组件中直接读写 Cookie / LocalStorage
 
+## 变更记录
+- 每次完成代码、文档、配置或脚本变更后，必须更新 `docs/changes/YYYY-MM-DD.md`
+- 记录内容按 `docs/changes/_TEMPLATE.md` 格式追加，说明变更文件、原因和 review 结果
+- changes 文件自身的变更不需要再记录到 changes
+- 用户要求 commit 时，先更新 changes，再自动暂存 `docs/changes/YYYY-MM-DD.md`
+- changes 必须和本次代码、文档、配置或脚本变更放进同一个 commit
+
 ## 提交规范
 
 ### Commit 格式
@@ -30,7 +37,8 @@ chore(config): 升级 vite 至 5.4
 ```
 
 ### Commit 前必做
-- 先更新 `docs/changes/YYYY-MM-DD.md`（按 `docs/changes/_TEMPLATE.md` 格式）
+- 确认 `docs/changes/YYYY-MM-DD.md` 已覆盖本次变更
+- 自动暂存当天 changes 文件
 - changes 文件自身的 commit 不需要记录
 
 ## 禁止

@@ -15,10 +15,7 @@
     "prepare": "husky",
     "commit": "git-cz",
     "preflight": "node scripts/preflight.mjs",
-    "preflight:no-docker": "node scripts/preflight.mjs --no-docker",
-    "agent": "node scripts/agent-review.mjs",
-    "agent:review": "node scripts/agent-review.mjs",
-    "agent:review:today": "node scripts/agent-review.mjs --today"
+    "preflight:no-docker": "node scripts/preflight.mjs --no-docker"
   },
   "keywords": [],
   "author": "",

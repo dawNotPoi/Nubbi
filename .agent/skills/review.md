@@ -1,13 +1,5 @@
 # 代码审查
 
-## 命令
-
-```bash
-pnpm agent review              # Review 最近一次提交
-pnpm agent review <hash>       # Review 指定提交
-pnpm agent review --today      # Review 今天所有提交
-```
-
 ## 审查流程
 
 1. 对照下方检查清单逐项审查代码

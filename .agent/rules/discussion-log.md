@@ -61,7 +61,7 @@ docs/<module>/discussion.md
 1. Agent 讨论过程中，每当累积 3 个以上决策时，主动更新 `discussion.md`
 2. 下一个 Agent 接手时，先读 `docs/<module>/discussion.md` 再读 PRD
 3. 决策落地后（已编码），在对应条目后标注 `✅ done`
-4. 讨论记录不做 commit 要求——它属于临时上下文，随模块 PRD 更新时一起处理即可
+4. 讨论记录不要求单独 commit；一旦随代码或文档提交，仍必须记录到 `docs/changes/YYYY-MM-DD.md`
 
 ## 禁止
 
