@@ -1,7 +1,7 @@
 import { newNote } from "@/api/note";
 import { mobileSideBarOpenedAtom } from "@/store/atom/common";
 import { activeUploadCountAtom } from "@/store/atom/FileAtom";
-import { createNoteAtom } from "@/store/atom/noteAtom";
+import { createNoteAtom } from "@/store/atom/note/noteMutationAtom";
 import { useSession } from "@/utils/auth";
 import { routes } from "@/utils/routes";
 import { useAtom, useAtomValue } from "jotai";

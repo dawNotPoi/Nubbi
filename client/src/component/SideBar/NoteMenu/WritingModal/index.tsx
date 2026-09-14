@@ -5,7 +5,7 @@ import TiptapEditor from "@/component/editor/Tiptap";
 import { NoteTargetPickerPanel } from "@/features/note/components/NoteTargetPicker";
 import { useCreateNoteDraft } from "@/features/note/hooks/useCreateNoteDraft";
 import { getRecentTargetNotes } from "@/features/note/model/library";
-import { allNotesAtom, recentNoteAtom } from "@/store/atom/noteAtom";
+import { allNotesAtom, recentNoteAtom } from "@/store/atom/note/noteAtom";
 import clsx from "clsx";
 import { useAtomValue } from "jotai";
 import { Expand, FileText, Plus } from "lucide-react";

@@ -4,7 +4,7 @@ import {
   createNoteAtom,
   deleteSingleNoteAtom,
   updateNotePropertiesAtom,
-} from "@/store/atom/noteAtom";
+} from "@/store/atom/note/noteMutationAtom";
 import { routes } from "@/utils/routes";
 import { Modal, message } from "antd";
 import { useAtomValue } from "jotai";

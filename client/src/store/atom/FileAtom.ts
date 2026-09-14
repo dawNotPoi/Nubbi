@@ -1,11 +1,12 @@
 import { atom } from "jotai";
-import { atomFamily } from "jotai/utils";
+import { atomFamily } from "jotai-family";
 import {
   Uploader,
   UploadStatus,
   isActiveUploadStatus,
 } from "../../utils/file";
 
+/** 文件上传任务状态描述 */
 export interface UploadTask {
   id: string;
   name: string;
@@ -19,13 +20,16 @@ export interface UploadTask {
   instance: Uploader | null;
 }
 
+/** 所有上传任务的 ID 列表，任务详情按 ID 存储在 atomFamily 中 */
 export const uploadTasksAtom = atom<string[]>([]);
 
+/** 按任务 ID 存取单个上传任务详情 */
 export const uploadTaskAtomFamily = atomFamily((id: string) => {
   void id;
   return atom<UploadTask | null>(null);
 });
 
+/** 是否存在进行中的上传任务 */
 export const hasActiveUploadAtom = atom((get) =>
   get(uploadTasksAtom).some((id) => {
     const task = get(uploadTaskAtomFamily(id));
@@ -33,6 +37,7 @@ export const hasActiveUploadAtom = atom((get) =>
   }),
 );
 
+/** 进行中的上传任务数量 */
 export const activeUploadCountAtom = atom((get) =>
   get(uploadTasksAtom).reduce((count, id) => {
     const task = get(uploadTaskAtomFamily(id));
@@ -40,6 +45,7 @@ export const activeUploadCountAtom = atom((get) =>
   }, 0),
 );
 
+/** 已完成（成功或取消）的上传任务数量 */
 export const finishedUploadCountAtom = atom((get) =>
   get(uploadTasksAtom).reduce((count, id) => {
     const task = get(uploadTaskAtomFamily(id));

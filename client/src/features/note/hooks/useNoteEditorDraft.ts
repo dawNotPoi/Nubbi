@@ -1,8 +1,6 @@
 import type { NoteWithContent } from "@/api/note";
-import {
-  patchNotePropertiesCacheAtom,
-  updateNotePropertiesAtom,
-} from "@/store/atom/noteAtom";
+import { patchNotePropertiesCacheAtom } from "@/store/atom/note/noteAtom";
+import { updateNotePropertiesAtom } from "@/store/atom/note/noteMutationAtom";
 import { debounceWithControls } from "@/utils/common";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";

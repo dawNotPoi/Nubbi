@@ -1,35 +1,25 @@
 import { atom } from "jotai";
 import { atomWithQuery } from "jotai-tanstack-query";
-import { atomFamily, atomWithStorage } from "jotai/utils";
+import { atomWithStorage } from "jotai/utils";
 import { patchNoteAcrossCaches } from "@/features/note/model/cache";
 import { noteKeys } from "@/features/note/model/keys";
 import type { PatchNoteCacheVariables } from "@/features/note/model/types";
-import {
-  getAllNotes,
-  getNoteAncestors,
-  getNoteDetail,
-  getRecentNotes,
-} from "../../api/note";
-import { queryClient } from "../../utils/queryClient";
+import { getAllNotes, getRecentNotes } from "../../../api/note";
+import { queryClient } from "../../../utils/queryClient";
 
-export {
-  createNoteAtom,
-  deleteSingleNoteAtom,
-  publishNoteAtom,
-  updateNoteContentAtom,
-  updateNotePropertiesAtom,
-} from "./noteMutationAtom";
-
+/** 侧边栏树展开节点 ID 列表，持久化 */
 export const expandedNodesAtom = atomWithStorage<string[]>(
   "expanded-nodes",
   [],
 );
 
+/** 笔记库视图展开节点 ID 列表，持久化 */
 export const libraryExpandedNodesAtom = atomWithStorage<string[]>(
   "note-library-expanded-nodes",
   [],
 );
 
+/** 全部笔记列表查询 atom，缓存 2 分钟 */
 export const allNotesAtom = atomWithQuery(
   () => ({
     queryKey: noteKeys.allLists,
@@ -43,6 +33,7 @@ export const allNotesAtom = atomWithQuery(
   () => queryClient,
 );
 
+/** 最近编辑笔记列表查询 atom */
 export const recentNoteAtom = atomWithQuery(() => ({
   queryKey: noteKeys.recent(),
   queryFn: async () => {
@@ -51,31 +42,7 @@ export const recentNoteAtom = atomWithQuery(() => ({
   },
 }));
 
-export const noteDetailAtom = atomFamily((noteId: string) =>
-  atomWithQuery(() => ({
-    queryKey: noteKeys.detail(noteId),
-    queryFn: async () => {
-      const response = await getNoteDetail(noteId);
-      return response.data;
-    },
-    staleTime: 2 * 60 * 1000,
-    gcTime: 5 * 60 * 1000,
-  })),
-);
-
-export const noteAncestorsAtom = atomFamily((noteId: string) =>
-  atomWithQuery(() => ({
-    queryKey: noteKeys.ancestors(noteId),
-    queryFn: async () => {
-      const response = await getNoteAncestors(noteId);
-      return response.data || [];
-    },
-    enabled: Boolean(noteId),
-    staleTime: 2 * 60 * 1000,
-    gcTime: 5 * 60 * 1000,
-  })),
-);
-
+/** 写入 atom：同时 patch 树缓存和详情缓存 */
 export const patchNotePropertiesCacheAtom = atom(
   null,
   (_get, _set, { noteId, parentId, properties }: PatchNoteCacheVariables) => {

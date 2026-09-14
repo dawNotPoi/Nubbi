@@ -5,9 +5,10 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import type { Editor } from "@tiptap/react";
 import { useNoteEditorDraft } from "@/features/note/hooks/useNoteEditorDraft";
 import type { NoteSaveStatus } from "@/features/note/model/types";
-import { noteAncestorsAtom, noteDetailAtom } from "@/store/atom/noteAtom";
+import { noteKeys } from "@/features/note/model/keys";
+import { getNoteAncestors, getNoteDetail } from "@/api/note";
+import { useQuery } from "@tanstack/react-query";
 import { Switch } from "antd";
-import { useAtomValue } from "jotai";
 import {
   AlertCircle,
   CheckCircle2,
@@ -147,8 +148,25 @@ function SaveIndicator({ status }: { status: NoteSaveStatus }) {
 
 export default function Note() {
   const { Id } = useParams();
-  const { data, isLoading } = useAtomValue(noteDetailAtom(Id!));
-  const { data: ancestors = [] } = useAtomValue(noteAncestorsAtom(Id!));
+  const { data, isLoading } = useQuery({
+    queryKey: noteKeys.detail(Id!),
+    queryFn: async () => {
+      const response = await getNoteDetail(Id!);
+      return response.data;
+    },
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+  const { data: ancestors = [] } = useQuery({
+    queryKey: noteKeys.ancestors(Id!),
+    queryFn: async () => {
+      const response = await getNoteAncestors(Id!);
+      return response.data || [];
+    },
+    enabled: Boolean(Id),
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
   const {
     canApplyExternalContent,
     content,

@@ -4,7 +4,7 @@ import {
   SidebarTreeState,
 } from "@/component/SideBar/components";
 import { useNoteTreeQuery } from "@/features/note/hooks/useNoteTreeQuery";
-import { createNoteAtom } from "@/store/atom/noteAtom";
+import { createNoteAtom } from "@/store/atom/note/noteMutationAtom";
 import { useSession } from "@/utils/auth";
 import { routes } from "@/utils/routes";
 import { useAtomValue } from "jotai";

@@ -8,6 +8,10 @@ import { queryClient } from "@/utils/queryClient";
 
 import { atomWithMutation, atomWithQuery } from "jotai-tanstack-query";
 
+/**
+ * 分页拉取全部会议，返回按 _id 去重后的完整列表。
+ * 用于会议管理页面，需要一次拿到所有会议数据。
+ */
 const getAllMeetingPages = async () => {
   const meetingsById = new Map<string, MeetingType>();
   const limit = 50;
@@ -29,6 +33,7 @@ const getAllMeetingPages = async () => {
   }
 };
 
+/** 近期会议列表查询 atom */
 export const MeetingAtom = atomWithQuery(
   () => ({
     queryKey: ["meeting"],
@@ -40,6 +45,7 @@ export const MeetingAtom = atomWithQuery(
   () => queryClient
 );
 
+/** 全部会议列表查询 atom，分页聚合 */
 export const AllMeetingAtom = atomWithQuery(
   () => ({
     queryKey: ["allMeeting"],
@@ -48,6 +54,7 @@ export const AllMeetingAtom = atomWithQuery(
   () => queryClient
 );
 
+/** 创建会议 mutation，成功后刷新近期和全部会议列表 */
 export const createMeetingAtom = atomWithMutation(() => ({
   mutationFn: (
     meeting: Pick<MeetingType, "title" | "startTime" | "duration">
