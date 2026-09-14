@@ -13,7 +13,12 @@ import {
   Trash2,
 } from "lucide-react";
 import React, { useState } from "react";
-import { sideBarOpenedAtom } from "../../store/atom/common";
+import { useLocation } from "react-router-dom";
+import { useIsMobile } from "../../hooks/useIsMobile";
+import {
+  mobileSideBarOpenedAtom,
+  sideBarOpenedAtom,
+} from "../../store/atom/common";
 import { Modal } from "antd";
 import AccountDeletionModal from "../AccountDeletionModal";
 import ApiTokenModal from "../ApiTokenModal";
@@ -27,10 +32,26 @@ import ResizeTab from "./ResizeTab";
 
 const SideBar: React.FC = () => {
   const setSideBarOpened = useSetAtom(sideBarOpenedAtom);
+  const setMobileSideBarOpened = useSetAtom(mobileSideBarOpenedAtom);
+  const isMobile = useIsMobile();
+  const location = useLocation();
   const { user, logout, updateAvatar } = useAuth();
   const [deletionModalOpen, setDeletionModalOpen] = useState(false);
   const [avatarModalOpen, setAvatarModalOpen] = useState(false);
   const [apiTokenModalOpen, setApiTokenModalOpen] = useState(false);
+
+  React.useEffect(() => {
+    setMobileSideBarOpened(false);
+  }, [location.pathname, setMobileSideBarOpened]);
+
+  React.useEffect(() => {
+    if (!isMobile) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileSideBarOpened(false);
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [isMobile, setMobileSideBarOpened]);
 
   const handleRequestAccountDeletion = () => {
     Modal.confirm({
@@ -108,6 +129,10 @@ const SideBar: React.FC = () => {
           >
             <IconButton
               onClick={() => {
+                if (isMobile) {
+                  setMobileSideBarOpened(false);
+                  return;
+                }
                 setSideBarOpened(false);
               }}
             >

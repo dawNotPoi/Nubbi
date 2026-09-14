@@ -64,7 +64,7 @@ const AddMeetingModal = ({
       }}
       okText="确定"
       showClose
-      className="mt-[50vh] translate-y-[-50%]"
+      className="md:mt-[50vh] md:translate-y-[-50%]"
       trigger={
         <button
           onClick={openModal}
@@ -254,17 +254,17 @@ const RecentMeetings = ({ className }: { className?: string }) => {
           </div>
         }
       >
-        <div className="max-h-[400px] border overflow-y-auto rounded-md ">
+        <div className="max-h-[400px] overflow-y-auto rounded-md border">
           {upcomingWeekMeetings.length > 0 ? (
             upcomingWeekMeetings.map((item) => (
-              <div key={item._id} className="p-2 flex gap-1">
-                <div className="p-2 w-[200px]">
+              <div key={item._id} className="flex flex-col gap-1 p-2 sm:flex-row">
+                <div className="w-full px-2 py-1 text-sm text-text-muted sm:w-[200px] sm:p-2">
                   {turnIntoWeek(dayjs(item.startTime).day())}
                   <span className="ml-2">
                     {dayjs(item.startTime).format("MM-DD")}
                   </span>
                 </div>
-                <div className="bg-sky-500 w-1 rounded-xl mx-1"></div>
+                <div className="mx-1 hidden w-1 rounded-xl bg-sky-500 sm:block" />
                 <div className="flex-1 flex cursor-pointer group hover:bg-zinc-50 rounded-md py-2 px-2">
                   <div className="flex-1">
                     <p>{item.title}</p>
@@ -275,7 +275,7 @@ const RecentMeetings = ({ className }: { className?: string }) => {
                         .format("hh:ss")}
                     </span>
                   </div>
-                  <div className=" items-center hidden group-[:hover]:flex">
+                  <div className="flex items-center sm:hidden sm:group-hover:flex">
                     <Button
                       onClick={() => {
                         navigateToMeeting(item._id);

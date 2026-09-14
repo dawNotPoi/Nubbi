@@ -7,6 +7,7 @@ import {
   Mic,
   MicOff,
   Monitor,
+  Users,
 } from "lucide-react";
 import { useState } from "react";
 import type {
@@ -23,6 +24,8 @@ type VideoControlsProps = {
   audioStatus: DeviceStatus;
   isScreenSharing: boolean;
   isCommentOpen: boolean;
+  isParticipantOpen: boolean;
+  participantCount: number;
   commentCount: number;
   endActionLabel: string;
   ending?: boolean;
@@ -31,6 +34,7 @@ type VideoControlsProps = {
   onToggleScreenShare: () => void;
   onSendComment: (content: string) => Promise<boolean>;
   onToggleComment: () => void;
+  onToggleParticipants: () => void;
   onEndMeeting: () => void;
 };
 
@@ -97,12 +101,12 @@ function ActionItem({
   children,
 }: ActionItemProps) {
   return (
-    <div className="flex items-stretch rounded-md border shadow-sm">
+    <div className="flex shrink-0 items-stretch rounded-md border shadow-sm">
       <button
         type="button"
         onClick={onClick}
         className={clsx(
-          "relative flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-l-xl px-3 py-1 text-center transition-all",
+          "relative flex min-w-[54px] flex-1 flex-col items-center justify-center gap-0.5 rounded-l-xl px-2 py-1 text-center transition-all md:min-w-0 md:px-3",
           active
             ? "bg-white text-slate-700 hover:bg-slate-50"
             : "bg-slate-50 text-slate-400 hover:bg-slate-100",
@@ -136,6 +140,8 @@ export default function VideoControls({
   audioStatus,
   isScreenSharing,
   isCommentOpen,
+  isParticipantOpen,
+  participantCount,
   commentCount,
   endActionLabel,
   ending = false,
@@ -144,6 +150,7 @@ export default function VideoControls({
   onToggleScreenShare,
   onSendComment,
   onToggleComment,
+  onToggleParticipants,
   onEndMeeting,
 }: VideoControlsProps) {
   const [draft, setDraft] = useState("");
@@ -163,9 +170,9 @@ export default function VideoControls({
   };
 
   return (
-    <footer className="w-full border-t border-slate-200 bg-white/95 px-3 py-1 backdrop-blur-sm">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex w-[210px] items-center gap-2">
+    <footer className="w-full border-t border-slate-200 bg-white/95 px-1 pb-[calc(0.25rem+env(safe-area-inset-bottom))] pt-1 backdrop-blur-sm md:px-3 md:pb-1">
+      <div className="flex min-w-0 items-center justify-between gap-1 md:gap-4">
+        <div className="hidden w-[210px] items-center gap-2 md:flex">
           <div className="w-full rounded-xl bg-slate-100 px-1 py-0.5">
             <Input
               value={draft}
@@ -180,7 +187,7 @@ export default function VideoControls({
           </div>
         </div>
 
-        <div className="flex flex-1 items-start justify-center gap-5">
+        <div className="flex min-w-0 flex-1 items-start justify-start gap-1 overflow-x-auto scrollbar-none md:justify-center md:gap-5">
           <ActionItem
             active={audioStatus.open}
             label="选择音频"
@@ -221,6 +228,14 @@ export default function VideoControls({
           />
 
           <ActionItem
+            active={isParticipantOpen}
+            label="成员"
+            icon={<Users />}
+            badgeCount={participantCount}
+            onClick={onToggleParticipants}
+          />
+
+          <ActionItem
             active={isCommentOpen}
             label={isCommentOpen ? "关闭评论" : "打开评论"}
             icon={<MessageSquareText />}
@@ -229,12 +244,12 @@ export default function VideoControls({
           />
         </div>
 
-        <div className="flex w-[210px] justify-end">
+        <div className="flex shrink-0 justify-end md:w-[210px]">
           <button
             type="button"
             disabled={ending}
             onClick={onEndMeeting}
-            className="rounded-xl px-4 py-1 text-sm font-medium text-rose-500 transition-colors hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="min-h-11 rounded-xl px-2 py-1 text-xs font-medium text-rose-500 transition-colors hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60 sm:px-3 md:min-h-0 md:px-4 md:text-sm"
           >
             {ending ? "处理中..." : endActionLabel}
           </button>

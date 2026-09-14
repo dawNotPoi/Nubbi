@@ -120,7 +120,7 @@ export const WrittingModal = ({
                 allNotes={allNotes}
                 autoFocus
                 blockedIds={blockedTargetIds}
-                className="h-[360px] w-[360px]"
+                className="h-[min(360px,55dvh)] w-[min(360px,calc(100vw-32px))]"
                 emptyMessage="暂无可添加的位置"
                 onCancel={() => draft.setTargetPickerOpen(false)}
                 onSelect={draft.selectParent}
@@ -132,7 +132,7 @@ export const WrittingModal = ({
           </div>
         }
       >
-        <main className="h-full max-h-[70vh] cursor-text overflow-y-auto px-8 py-8 md:px-10">
+        <main className="h-full max-h-[70vh] cursor-text overflow-y-auto px-4 py-5 sm:px-8 sm:py-8 md:px-10">
           <header className="mb-3">
             <input
               className={clsx(

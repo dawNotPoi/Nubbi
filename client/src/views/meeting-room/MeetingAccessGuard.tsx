@@ -140,12 +140,12 @@ const MeetingAccessGuard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+    <div className="flex min-h-[100dvh] items-center justify-center bg-slate-50 p-4 sm:p-6">
       <Modal
         open={showLoginModal}
         onCancel={() => setShowLoginModal(false)}
         showClose
-        className="mt-[20vh] w-[min(90vw,420px)]"
+        className="w-full md:mt-[20vh] md:w-[min(90vw,420px)]"
       >
         <div className="py-4 space-y-4">
           <div>
@@ -187,7 +187,7 @@ const MeetingAccessGuard = () => {
         </div>
       </Modal>
 
-      <div className="w-full max-w-md rounded-2xl bg-white shadow-sm border border-slate-200 p-6 space-y-5">
+      <div className="w-full max-w-md space-y-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-sky-50 text-sky-600">
             <Video className="size-6" />

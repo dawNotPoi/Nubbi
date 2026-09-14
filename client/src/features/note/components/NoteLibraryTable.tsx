@@ -64,7 +64,18 @@ export function NoteLibraryTable({
 }: NoteLibraryTableProps) {
   return (
     <section>
-      <div className="grid h-11 grid-cols-[40px_minmax(260px,1fr)_minmax(220px,26vw)_minmax(160px,18vw)_132px] items-center border-b border-[#ededeb] text-[14px] text-[#787774]">
+      {selectedNotes.length > 0 ? (
+        <div className="mb-2 md:hidden">
+          <NoteLibraryBatchActionBar
+            moving={moving}
+            selectedCount={selectedNotes.length}
+            onClear={onClearSelection}
+            onDelete={() => onDelete(selectedNotes)}
+            onMove={() => onMove(selectedNotes)}
+          />
+        </div>
+      ) : null}
+      <div className="hidden h-11 grid-cols-[40px_minmax(260px,1fr)_minmax(220px,26vw)_minmax(160px,18vw)_132px] items-center border-b border-border-row text-[14px] text-text-muted md:grid">
         <div className="flex items-center justify-center">
           <Checkbox
             checked={allVisibleSelected}

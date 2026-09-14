@@ -15,6 +15,7 @@ export default function UploadListWrapper({
   const tasks = useAtomValue(uploadTasksAtom);
   const wrapperRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    if (!open) return;
     const handleClickOutside = (event: MouseEvent) => {
       if (
         wrapperRef.current &&
@@ -27,12 +28,12 @@ export default function UploadListWrapper({
     return () => {
       document.removeEventListener("mousedown", handleClickOutside, true);
     };
-  }, [open]);
+  }, [onClose, open]);
   return (
     <div
       ref={wrapperRef}
       className={clsx(
-        "fixed z-50 rounded-xl flex flex-col top-4 right-[10%] w-[700px] bg-white shadow-md h-[400px] p-4",
+        "fixed inset-x-0 bottom-0 z-50 flex h-[min(70dvh,520px)] w-full flex-col rounded-t-2xl bg-white p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-2xl md:inset-x-auto md:bottom-auto md:right-[10%] md:top-4 md:h-[400px] md:w-[700px] md:rounded-xl md:pb-4 md:shadow-md",
         open ? "block" : "hidden"
       )}
     >

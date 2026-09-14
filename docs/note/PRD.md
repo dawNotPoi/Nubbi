@@ -557,6 +557,13 @@ await Note.updateMany({}, { $set: { date: null } });
 - 被 **knowledge-base Phase 3**（embedding 依赖 Markdown 内容 + status 过滤）
 - 被 **博客系统**（published + slug + excerpt）
 
+## 移动端行为
+
+- 笔记库在 `768px` 以下由多列表格切换为单列记录；点击记录打开笔记，选择由显式复选框完成。
+- 筛选、排序和批量操作折叠为适合触控的紧凑工具栏，所有关键操作均不依赖 hover。
+- 笔记详情取消固定最小宽度，标题、封面、标签和正文按单列排版；Markdown 分屏模式在移动端改为源码/预览单面板切换。
+- 移动端隐藏悬浮目录，编辑器浮层和工具条必须限制在可视区域内。
+
 ---
 
 ## MCP 与回收站补充

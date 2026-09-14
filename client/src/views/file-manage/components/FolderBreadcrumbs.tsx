@@ -40,7 +40,7 @@ const FolderBreadcrumbs = () => {
   };
 
   return (
-    <nav className="flex items-center p-4 text-gray-600">
+    <nav className="flex min-w-0 items-center overflow-x-auto whitespace-nowrap p-3 text-sm text-text-muted scrollbar-none sm:p-4">
       <button
         type="button"
         onClick={handleNavigateRoot}
@@ -53,7 +53,7 @@ const FolderBreadcrumbs = () => {
         const isCurrent = index === items.length - 1;
 
         return (
-          <div key={item.id} className="flex items-center">
+          <div key={item.id} className="flex shrink-0 items-center">
             <ChevronRightIcon className="h-5 w-5 text-gray-400" />
             <button
               type="button"

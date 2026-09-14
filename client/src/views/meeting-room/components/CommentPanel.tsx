@@ -3,6 +3,7 @@ import {
   MessageSquareText,
   SendHorizontal,
   Sparkles,
+  X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { MeetingComment, VideoRoomUser } from "../types";
@@ -13,6 +14,7 @@ type CommentPanelProps = {
   currentUserAvatar?: string;
   roomUsers: VideoRoomUser[];
   comments: MeetingComment[];
+  onClose?: () => void;
   onSendComment: (content: string) => Promise<boolean>;
 };
 
@@ -56,6 +58,7 @@ export default function CommentPanel({
   currentUserAvatar,
   roomUsers,
   comments,
+  onClose,
   onSendComment,
 }: CommentPanelProps) {
   const [draft, setDraft] = useState("");
@@ -170,8 +173,8 @@ export default function CommentPanel({
   }, [mentionMatch?.keyword]);
 
   return (
-    <aside className="flex h-full w-[360px] shrink-0 flex-col overflow-hidden rounded-l-3xl border-l border-[#e9e9e7] bg-[#fbfbfa]">
-      <header className="flex items-center justify-between border-b border-[#ecebe8] px-5 py-4">
+    <aside className="fixed inset-x-0 bottom-[calc(68px+env(safe-area-inset-bottom))] z-30 flex max-h-[76dvh] shrink-0 flex-col overflow-hidden rounded-t-3xl border border-border-row bg-bg-panel shadow-2xl md:static md:h-full md:max-h-none md:w-[360px] md:rounded-l-3xl md:rounded-tr-none md:border-y-0 md:border-r-0 md:shadow-none">
+      <header className="flex items-center justify-between border-b border-[#ecebe8] px-4 py-3 sm:px-5 sm:py-4">
         <div className="flex items-center gap-3">
           <div className="flex size-9 items-center justify-center rounded-xl bg-white text-[#6b6b6a] shadow-sm">
             <MessageSquareText className="text-lg" />
@@ -183,12 +186,22 @@ export default function CommentPanel({
             </div>
           </div>
         </div>
-        <div className="rounded-full bg-white px-3 py-1 text-xs text-[#787774] shadow-sm">
-          {comments.length} 条
+        <div className="flex items-center gap-1">
+          <div className="rounded-full bg-white px-3 py-1 text-xs text-[#787774] shadow-sm">
+            {comments.length} 条
+          </div>
+          <button
+            aria-label="关闭评论"
+            className="grid size-9 place-items-center rounded-lg text-text-muted hover:bg-bg-hover"
+            onClick={onClose}
+            type="button"
+          >
+            <X className="size-5" />
+          </button>
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto px-5 py-5">
+      <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
         <div className="mb-5 flex items-center gap-2 rounded-2xl border border-[#ecebe8] bg-white/90 px-4 py-3 text-sm text-[#5f5e5b] shadow-sm">
           <Sparkles className="shrink-0 text-[#7c7c78]" />
           <span>建议把结论、待办和问题都留在这里，方便会后回看。</span>
@@ -248,7 +261,7 @@ export default function CommentPanel({
         </div>
       </div>
 
-      <footer className="border-t border-[#ecebe8] bg-[#fbfbfa] px-5 py-4">
+      <footer className="border-t border-[#ecebe8] bg-[#fbfbfa] px-4 py-3 sm:px-5 sm:py-4">
         <div className="mb-3 text-xs font-medium text-[#787774]">
           {audienceLabel}
         </div>

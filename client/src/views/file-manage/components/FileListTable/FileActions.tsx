@@ -42,6 +42,28 @@ const FileActions = ({
   };
 
   const moreItems: MenuProps["items"] = [
+    ...(record.kind === "file"
+      ? [
+          {
+            key: "download",
+            icon: <Download className="size-4" />,
+            label: "下载",
+            onClick: () => onDownload?.(record),
+          },
+          {
+            key: "share",
+            icon: <Share2 className="size-4" />,
+            label: "分享",
+            onClick: () => onShare?.(record),
+          },
+        ]
+      : []),
+    {
+      key: "move",
+      icon: <FolderInput className="size-4" />,
+      label: "移动",
+      onClick: () => onMove?.(record),
+    },
     {
       key: "rename",
       icon: <Pencil className="size-4" />,
@@ -58,16 +80,18 @@ const FileActions = ({
   ];
 
   return (
-    <div className="ml-auto flex items-center gap-4 text-gray-400 opacity-0 transition-opacity group-hover:opacity-100">
+    <div className="ml-auto flex items-center gap-1 text-gray-400 opacity-100 transition-opacity md:gap-4 md:opacity-0 md:group-hover:opacity-100">
       {record.kind === "file" ? (
         <>
           <ControlButton
+            className="hidden md:inline-flex"
             title="下载"
             onClick={(event) => handleClick(event, onDownload)}
           >
             <Download className="size-5" />
           </ControlButton>
           <ControlButton
+            className="hidden md:inline-flex"
             title="分享"
             onClick={(event) => handleClick(event, onShare)}
           >
@@ -76,6 +100,7 @@ const FileActions = ({
         </>
       ) : null}
       <ControlButton
+        className="hidden md:inline-flex"
         title="移动"
         onClick={(event) => handleClick(event, onMove)}
       >
@@ -107,6 +132,7 @@ const ControlButton = forwardRef<HTMLButtonElement, ControlButtonProps>(
     <button
       ref={ref}
       className={`rounded-md p-1 hover:bg-gray-200 ${className}`}
+      type="button"
       title={title}
       {...props}
     >

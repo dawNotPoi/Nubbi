@@ -6,7 +6,7 @@ export default function Meetings() {
   return (
     <>
       <Header />
-      <div className="p-4 px-10">
+      <div className="px-4 py-5 sm:px-6 md:px-10">
         <section className="mx-auto max-w-screen-xl space-y-6">
           <RecentMeetings />
           <Meetingmanage variant="page" />

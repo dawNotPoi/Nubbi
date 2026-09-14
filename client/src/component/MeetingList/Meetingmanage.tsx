@@ -234,7 +234,7 @@ const Meetingmanage = ({
   const content = (
     <div
       className={clsx(
-        isPage && "rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm",
+        isPage && "rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:rounded-3xl sm:p-6",
         className,
       )}
     >
@@ -289,7 +289,7 @@ const Meetingmanage = ({
           {data.map((item) => (
             <div
               key={item._id}
-              className="rounded-2xl border border-zinc-200 bg-white p-5 transition-colors hover:border-sky-200 hover:bg-sky-50/30"
+              className="rounded-2xl border border-zinc-200 bg-white p-4 transition-colors hover:border-sky-200 hover:bg-sky-50/30 sm:p-5"
             >
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">

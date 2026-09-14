@@ -467,7 +467,7 @@ const FileManager = () => {
   }, [crumbs, setCrumbs]);
 
   return (
-    <div className="p-2">
+    <div className="min-w-0 p-2">
       <Header />
       {contextHolder}
       <Modal
@@ -597,7 +597,7 @@ const FileManager = () => {
         onDownload={handleDownload}
       />
 
-      <header className="flex gap-2 pb-4">
+      <header className="flex flex-wrap gap-2 px-2 pb-4">
         <Button onClick={() => setOpen(true)}>传输</Button>
         <Button loading={creatingFolder} onClick={handleCreateFolder}>
           新建文件夹
@@ -611,10 +611,11 @@ const FileManager = () => {
       </header>
 
       <div>
-        <nav className="flex border-t">
-          <FolderBreadcrumbs />
-          <div className="flex-1" />
-          <div className="mr-10 flex items-center gap-3 py-4">
+        <nav className="flex min-w-0 items-center border-t">
+          <div className="min-w-0 flex-1 overflow-hidden">
+            <FolderBreadcrumbs />
+          </div>
+          <div className="flex shrink-0 items-center gap-2 py-2 sm:mr-4 sm:gap-3 sm:py-4 md:mr-10">
             <BatchActionBar
               selectedCount={selectedRows.length}
               onDelete={handleBulkDelete}

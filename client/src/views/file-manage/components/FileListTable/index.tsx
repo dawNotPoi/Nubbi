@@ -4,7 +4,8 @@ import type { InputRef } from "antd";
 import { Button, Checkbox, Empty, Input, Table } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import FileActions from "./FileActions";
 import { getFileTypeIcon, type FileTableRow } from "./fileIcons";
 
@@ -40,6 +41,7 @@ const FileListTable = ({
   const [editingValue, setEditingValue] = useState("");
   const [savingRename, setSavingRename] = useState(false);
   const inputRef = useRef<InputRef>(null);
+  const isMobile = useIsMobile();
 
   const dataSource = useMemo<FileTableRow[]>(
     () => [
@@ -59,15 +61,18 @@ const FileListTable = ({
   );
   const resolvedSelectedRowKeys = selectedRowKeys ?? internalSelectedRowKeys;
 
-  const updateSelectedRowKeys = (keys: string[]) => {
-    if (selectedRowKeys === undefined) {
-      setInternalSelectedRowKeys(keys);
-    }
+  const updateSelectedRowKeys = useCallback(
+    (keys: string[]) => {
+      if (selectedRowKeys === undefined) {
+        setInternalSelectedRowKeys(keys);
+      }
 
-    const keySet = new Set(keys);
-    const selectedRows = dataSource.filter((record) => keySet.has(record._id));
-    onSelectedRowKeysChange?.(keys, selectedRows);
-  };
+      const keySet = new Set(keys);
+      const selectedRows = dataSource.filter((record) => keySet.has(record._id));
+      onSelectedRowKeysChange?.(keys, selectedRows);
+    },
+    [dataSource, onSelectedRowKeysChange, selectedRowKeys],
+  );
 
   useEffect(() => {
     const next = resolvedSelectedRowKeys.filter((key) =>
@@ -81,7 +86,7 @@ const FileListTable = ({
     }
 
     updateSelectedRowKeys(next);
-  }, [allRowKeys, resolvedSelectedRowKeys]);
+  }, [allRowKeys, resolvedSelectedRowKeys, updateSelectedRowKeys]);
 
   useEffect(() => {
     if (!editingRecordId) return;
@@ -161,7 +166,7 @@ const FileListTable = ({
         />
       ),
       dataIndex: "selector",
-      width: 56,
+      width: 48,
       render: (_value, record) => (
         <Checkbox
           checked={resolvedSelectedRowKeys.includes(record._id)}
@@ -205,6 +210,10 @@ const FileListTable = ({
                 title={record.name}
                 onClick={(event) => {
                   event.stopPropagation();
+                  if (isMobile) {
+                    handleOpenRecord(record);
+                    return;
+                  }
                   handleSelectRow(record._id);
                 }}
                 onDoubleClick={(event) => {
@@ -261,7 +270,13 @@ const FileListTable = ({
             ? "[&>td]:!bg-[#f5f5f5]"
             : "",
         ].join(" "),
-        onClick: () => handleSelectRow(record._id),
+        onClick: () => {
+          if (isMobile) {
+            handleOpenRecord(record);
+            return;
+          }
+          handleSelectRow(record._id);
+        },
         onDoubleClick: () => {
           handleOpenRecord(record);
         },

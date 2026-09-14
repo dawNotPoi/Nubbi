@@ -1,4 +1,5 @@
 import { useAuth } from "@/hooks/useAuth";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { recentNoteAtom } from "@/store/atom/noteAtom";
 import { useAtomValue } from "jotai";
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
@@ -18,6 +19,7 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
     isFetching,
   } = useAtomValue(recentNoteAtom);
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [offset, setOffset] = useState(0);
   const [maxOffset, setMaxOffset] = useState(0);
   const [cachedAvatar, setCachedAvatar] = useState("");
@@ -131,18 +133,21 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
         </>
       }
     >
-      <div ref={wrapperRef} className="group relative -mx-2 overflow-hidden px-2 py-1">
+      <div
+        ref={wrapperRef}
+        className="group relative -mx-4 overflow-x-auto px-4 py-1 scrollbar-none md:-mx-2 md:overflow-hidden md:px-2"
+      >
         <ul
           ref={listRef}
           style={
-            isPending
+            isPending || isMobile
               ? undefined
               : {
                   transform: `translateX(-${offset}px)`,
                   transition: "all 0.3s",
                 }
           }
-          className="left-0 flex gap-4"
+          className="left-0 flex w-max snap-x snap-mandatory gap-4"
         >
           {isPending ? (
             Array.from({ length: 4 }).map((_, index) => (
@@ -162,7 +167,7 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
         </ul>
 
         {!isPending && canScrollLeft && (
-          <div className="pointer-events-none absolute left-0 top-0 z-20 flex h-full w-16 flex-col items-start justify-center bg-gradient-to-r from-white to-white/5">
+          <div className="pointer-events-none absolute left-0 top-0 z-20 hidden h-full w-16 flex-col items-start justify-center bg-gradient-to-r from-white to-white/5 md:flex">
             <button
               onClick={() => {
                 scrollNotes(-1);
@@ -176,7 +181,7 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
         )}
         {!isPending && hasHorizontalOverflow && (
           <div
-            className="pointer-events-none absolute right-0 top-0 z-20 flex h-full flex-col items-end justify-center bg-gradient-to-l from-white to-white/5"
+            className="pointer-events-none absolute right-0 top-0 z-20 hidden h-full flex-col items-end justify-center bg-gradient-to-l from-white to-white/5 md:flex"
             style={{ width: rightFadeWidth }}
           >
             {canScrollRight ? (

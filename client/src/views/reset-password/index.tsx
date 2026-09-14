@@ -48,7 +48,7 @@ export const ResetPasswordPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="flex min-h-[100dvh] items-center justify-center bg-gray-50 px-4 py-6">
       <div className="w-full max-w-md rounded-lg bg-white p-8 shadow">
         <div className="mb-6 text-center">
           <h1 className="text-2xl font-bold text-gray-900">

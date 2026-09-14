@@ -347,7 +347,7 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#fbfbfa] px-5 py-10">
+    <div className="flex min-h-[100dvh] items-center justify-center bg-[#fbfbfa] px-4 py-6 sm:px-5 sm:py-10">
       <Card className="w-full max-w-[420px]">
         <CardHeader className="mb-6">
           <img className="size-12 rounded-xl border border-[#ededeb] bg-white" src={faviconSvg} alt="Nubbi" />

@@ -188,7 +188,7 @@ export const Modal = ({
                   tabIndex={-1}
                   ref={contentRef}
                   className={clsx(
-                    "relative mx-auto mt-[10vh] w-[min(90vw,320px)] rounded-md bg-white shadow-lg outline-none",
+                    "absolute bottom-0 left-0 right-0 max-h-[90dvh] w-full overflow-y-auto rounded-t-2xl bg-white pb-[env(safe-area-inset-bottom)] shadow-lg outline-none md:relative md:mx-auto md:mt-[10vh] md:w-[min(90vw,320px)] md:rounded-md md:pb-0",
                     className
                   )}
                   style={{ zIndex: z + 1 }}
@@ -198,7 +198,7 @@ export const Modal = ({
                     {showClose && (
                       <button
                         aria-label="Close"
-                        className="rounded p-1 text-gray-500 hover:bg-gray-100 "
+                        className="grid size-10 place-items-center rounded text-gray-500 hover:bg-gray-100 md:size-8"
                         onClick={() => {
                           if (isTop) {
                             setOpen(false);

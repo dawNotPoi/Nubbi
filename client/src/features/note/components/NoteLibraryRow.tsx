@@ -17,6 +17,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 type NoteLibraryRowProps = {
   row: NoteLibraryRowModel;
@@ -44,6 +45,7 @@ export function NoteLibraryRow({
   viewMode,
 }: NoteLibraryRowProps) {
   const { note } = row;
+  const isMobile = useIsMobile();
   const noteTitle = normalizeNoteTitle(note.title);
   const [editing, setEditing] = useState(false);
   const [draftTitle, setDraftTitle] = useState(noteTitle);
@@ -102,12 +104,18 @@ export function NoteLibraryRow({
   return (
     <li
       className={clsx(
-        "group/note-row grid cursor-pointer grid-cols-[40px_minmax(260px,1fr)_minmax(220px,26vw)_minmax(160px,18vw)_132px] items-center border-b border-border-row text-[14px] transition-colors",
+        "group/note-row grid min-h-16 cursor-pointer grid-cols-[36px_minmax(0,1fr)_36px] items-center border-b border-border-row text-[14px] transition-colors md:grid-cols-[40px_minmax(260px,1fr)_minmax(220px,26vw)_minmax(160px,18vw)_132px]",
         "hover:bg-bg-hover focus-within:bg-bg-hover",
-        viewMode === "search" ? "min-h-[54px] py-1" : "h-11",
+        viewMode === "search" ? "py-1" : "md:h-11 md:min-h-0",
         selected && "bg-bg-selected",
       )}
-      onClick={() => onToggle(!selected, note._id)}
+      onClick={() => {
+        if (isMobile) {
+          onOpen(note);
+          return;
+        }
+        onToggle(!selected, note._id);
+      }}
     >
       <div
         className="flex h-full items-center justify-center"
@@ -116,8 +124,8 @@ export function NoteLibraryRow({
         <Checkbox
           checked={selected}
           className={clsx(
-            "opacity-0 transition-opacity",
-            "group-hover/note-row:opacity-100 group-focus-within/note-row:opacity-100",
+            "opacity-100 transition-opacity md:opacity-0",
+            "md:group-hover/note-row:opacity-100 md:group-focus-within/note-row:opacity-100",
             selected && "opacity-100",
           )}
           onChange={(event) => onToggle(event.target.checked, note._id)}
@@ -180,7 +188,14 @@ export function NoteLibraryRow({
             ) : (
               <button
                 className="min-w-0 truncate rounded px-1 py-1 text-left font-medium outline-none hover:bg-bg-hover focus-visible:ring-2 focus-visible:ring-focus-ring"
-                onClick={startRename}
+                onClick={(event) => {
+                  if (isMobile) {
+                    event.stopPropagation();
+                    onOpen(note);
+                    return;
+                  }
+                  startRename(event);
+                }}
                 title="重命名"
                 type="button"
               >
@@ -192,13 +207,23 @@ export function NoteLibraryRow({
                 {row.pathLabel}
               </span>
             ) : null}
+            <div className="mt-1 flex min-w-0 items-center gap-1.5 overflow-hidden text-xs text-text-muted md:hidden">
+              <span className="shrink-0">{formatNoteEditedTime(note)}</span>
+              <span aria-hidden="true">·</span>
+              <span className="shrink-0">{note.status}</span>
+              {note.tags[0] ? (
+                <span className="truncate rounded bg-bg-selected px-1.5 py-0.5">
+                  {note.tags[0]}
+                </span>
+              ) : null}
+            </div>
           </div>
         </div>
       </div>
-      <span className="truncate text-[#4b5563]">
+      <span className="hidden truncate text-text-muted md:block">
         {formatNoteEditedTime(note)}
       </span>
-      <div className="flex min-w-0 flex-wrap items-center gap-1 pr-2">
+      <div className="hidden min-w-0 flex-wrap items-center gap-1 pr-2 md:flex">
         <span
           className={clsx(
             "rounded px-1.5 py-0.5 text-xs font-medium",
@@ -224,7 +249,7 @@ export function NoteLibraryRow({
           </span>
         ))}
       </div>
-      <div className="flex items-center justify-end gap-1 pr-2 opacity-0 transition-opacity group-hover/note-row:opacity-100 group-focus-within/note-row:opacity-100">
+      <div className="flex items-center justify-end gap-1 pr-1 opacity-100 transition-opacity md:pr-2 md:opacity-0 md:group-hover/note-row:opacity-100 md:group-focus-within/note-row:opacity-100">
         {viewMode === "search" ? (
           <button
             className="flex size-7 items-center justify-center rounded text-text-subtle hover:bg-bg-icon-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
@@ -239,7 +264,7 @@ export function NoteLibraryRow({
           </button>
         ) : null}
         <button
-          className="h-7 rounded-md border border-border-button bg-white px-3 text-sm font-medium text-text-primary shadow-sm transition-colors hover:border-border-button-hover hover:bg-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          className="hidden h-7 rounded-md border border-border-button bg-white px-3 text-sm font-medium text-text-primary shadow-sm transition-colors hover:border-border-button-hover hover:bg-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring md:inline-flex md:items-center"
           onClick={(event) => {
             event.stopPropagation();
             onOpen(note);

@@ -1,6 +1,7 @@
 import { useAuth } from "@/hooks/useAuth";
 import useMediaStream from "@/hooks/useMedia";
 import useP2PConnection from "@/hooks/useP2PConnection";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { message } from "antd";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -28,6 +29,8 @@ export default function Video({
   const { roomId = "room1" } = useParams();
   const navigate = useNavigate();
   const [isCommentOpen, setIsCommentOpen] = useState(false);
+  const [isParticipantOpen, setIsParticipantOpen] = useState(false);
+  const isMobile = useIsMobile();
   const [unreadCommentCount, setUnreadCommentCount] = useState(0);
   const [activeParticipantId, setActiveParticipantId] = useState<string>();
   const [endingMeeting, setEndingMeeting] = useState(false);
@@ -254,6 +257,7 @@ export default function Video({
     }
 
     setActiveParticipantId(participantId);
+    if (isMobile) setIsParticipantOpen(false);
   };
 
   const handleToggleScreenShare = async () => {
@@ -317,8 +321,8 @@ export default function Video({
   };
 
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-[#fbfbfa]">
-      <main className="flex h-[calc(100vh-40px)] min-w-[1180px] gap-0 overflow-hidden">
+    <div className="flex h-[100dvh] w-full flex-col overflow-hidden bg-bg-panel">
+      <main className="relative flex min-h-0 min-w-0 flex-1 gap-0 overflow-hidden">
         <MainVideoStage
           videoRef={localVideoRef}
           participants={participants}
@@ -328,6 +332,8 @@ export default function Video({
         <ParticipantSidebar
           participants={participants}
           activeParticipantId={activeParticipantId}
+          open={isParticipantOpen}
+          onClose={() => setIsParticipantOpen(false)}
           onSelectParticipant={handleSelectParticipant}
         />
         {isCommentOpen && (
@@ -337,6 +343,7 @@ export default function Video({
             currentUserAvatar={user?.image || ""}
             roomUsers={remoteUsers}
             comments={meetingComments}
+            onClose={() => setIsCommentOpen(false)}
             onSendComment={handleSendComment}
           />
         )}
@@ -347,6 +354,8 @@ export default function Video({
         audioStatus={audioStatu}
         isScreenSharing={isScreenSharing}
         isCommentOpen={isCommentOpen}
+        isParticipantOpen={isParticipantOpen}
+        participantCount={participants.length}
         commentCount={unreadCommentCount}
         endActionLabel={isHost ? "结束会议" : "离开会议"}
         ending={endingMeeting}
@@ -354,7 +363,18 @@ export default function Video({
         onSwitchDevice={handleSwitchDevice}
         onToggleScreenShare={handleToggleScreenShare}
         onSendComment={handleSendComment}
-        onToggleComment={() => setIsCommentOpen((prev) => !prev)}
+        onToggleComment={() => {
+          setIsCommentOpen((prev) => {
+            if (!prev) setIsParticipantOpen(false);
+            return !prev;
+          });
+        }}
+        onToggleParticipants={() => {
+          setIsParticipantOpen((prev) => {
+            if (!prev) setIsCommentOpen(false);
+            return !prev;
+          });
+        }}
         onEndMeeting={() => void handleEndMeeting()}
       />
     </div>
