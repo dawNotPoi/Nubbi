@@ -7,7 +7,10 @@
     "client": "pnpm --dir client dev",
     "server": "pnpm --dir server dev",
     "preflight": "node scripts/preflight.mjs",
-    "preflight:no-docker": "node scripts/preflight.mjs --no-docker"
+    "preflight:no-docker": "node scripts/preflight.mjs --no-docker",
+    "agent": "node scripts/agent-review.mjs",
+    "agent:review": "node scripts/agent-review.mjs",
+    "agent:review:today": "node scripts/agent-review.mjs --today"
   },
   "keywords": [],
   "author": "",

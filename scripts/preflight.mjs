@@ -20,11 +20,11 @@ if (!skipDocker) {
         "-f",
         "client/Dockerfile.runtime",
         "-t",
-        "d-note-client:preflight",
+        "nubbi-client:preflight",
         "./client",
       ],
     ],
-    ["docker", ["build", "-t", "d-note-server:preflight", "./server"]]
+    ["docker", ["build", "-t", "nubbi-server:preflight", "./server"]]
   );
 }
 

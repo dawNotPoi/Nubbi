@@ -31,6 +31,7 @@ const optionalBooleanString = () =>
 
 const envSchema = z.object({
   MONGO_URI: requiredString("MONGO_URI"),
+  MONGO_DB_NAME: optionalString().default("Nubbi"),
   SERVER_PORT: requiredString("SERVER_PORT"),
   SOCKET_PORT: requiredString("SOCKET_PORT"),
   BETTER_AUTH_SECRET: requiredString("BETTER_AUTH_SECRET"),

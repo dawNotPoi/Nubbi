@@ -1,48 +1,97 @@
 # Agent 规范
 
-## 文档要求
+## 工作流
 
-每次实现新功能后，必须同步在本地仓库中新增或更新对应文档。
+```
+git commit → pnpm agent review → 审查 + 记录 + 更新 PRD
+```
 
-### 必须遵守的规则
+**审查时做的事**：
+1. 对照下方检查清单逐项审查代码
+2. 按模块索引匹配变更涉及哪些模块
+3. 结果写入 `docs/changes/YYYY-MM-DD.md`
+4. 如 API/组件/数据模型有变，更新对应 `docs/<module>/PRD.md`
 
-1. 每完成一个新功能，结束任务前必须补充文档。
-2. 如果仓库里已经有相关文档，优先更新原文档，而不是重复创建内容相近的新文件。
-3. 文档优先放在 `docs/` 目录下，并根据内容按主题进行分层管理；必要时可以使用多层嵌套目录。
-4. 文档默认使用中文编写，除非用户明确要求使用其他语言。
-5. 文档至少应包含以下内容：
-   - 功能目的
-   - 用户可见行为
-   - 关键技术设计或数据流
-   - 重要限制、边界或注意事项
-   - 新增命令、配置项或使用方式
-6. 如果功能涉及接口、编辑器行为、集成能力、页面交互或业务流程，应根据情况补充示例、流程说明或配图。
-7. 在对应文档完成之前，不应视为功能交付完成。
+**开发时做的事**：
+1. 读 `docs/<module>/PRD.md` 理解模块架构和可复用组件
+2. 遵循下方约束编写代码
+3. 完成后 `pnpm agent review`
 
-## 推荐的文档结构
+## 命令
 
-- `docs/<主题>/index.md`：主题总览
-- `docs/<主题>/<功能>.md`：功能细节
-- 如果内容较多，可继续拆分为更深层目录
+```bash
+pnpm agent review              # Review 最近一次提交
+pnpm agent review <hash>       # Review 指定提交
+pnpm agent review --today      # Review 今天所有提交
+```
 
-## 默认原则
+---
 
-功能交付不完整，等于文档没有完成。
+## 审查检查清单
 
-## 编码格式
+### 架构（最高优先级）
+- [ ] 文件放在正确目录层级（controller/models/routes/middleware/lib 各司其职）
+- [ ] 无跨层调用（Route 不直接操作 DB，Controller 不直接写 SQL）
+- [ ] 无循环依赖
+- [ ] 配置未硬编码（用 env 或 config）
 
-文件文字使用UTF-8作为编码格式，不要让文件中出现编码格式错误的乱码
+### 代码质量
+- [ ] 单文件 ≤ 200 行
+- [ ] UTF-8 编码
+- [ ] 命名规范：变量/函数 camelCase，类/组件 PascalCase，文件 kebab-case
+- [ ] 无 `any` 类型滥用
+- [ ] 公共方法有 JSDoc
+- [ ] 错误处理完善（自定义错误类，有日志，避免回调嵌套）
 
-## 代码文件大小
+### Git 提交
+- [ ] 格式：`<type>(<scope>): <subject>`
+- [ ] type 正确：feat/fix/refactor/docs/style/test/chore
+- [ ] scope 正确：server/client/shared/config/agent
+- [ ] subject 祈使句现在时，≤50 字符
 
-单个代码文件最大行数不能超过200行，尽量使用层层封装的方式编写代码，保证代码的整洁，优雅
+### 技术栈约束
+- [ ] 服务端：Express 4.x + Mongoose 8.x + Zod 3.x + Better-Auth 1.x
+- [ ] 客户端：React 18.x + Ant Design 5.x + Tailwind 3.x + Vite 5.x
+- [ ] 新增依赖不超出以上范围
 
-## 界面样式与对齐规范
+---
 
-1. 图标按钮必须使用固定尺寸容器承载，例如 `size-12`、`size-10` 或明确的 `width/height`，避免内容变化导致按钮尺寸跳动。
-2. 圆形图标按钮优先使用原生 `button` 配合 `grid place-items-center` 或 `flex items-center justify-center` 实现，不要为了圆形样式强行套用组件库的圆形按钮，避免图标被内部 `span`、`line-height` 或 loading 结构挤偏。
-3. 圆形按钮中的图标必须在视觉和几何上居中。实现后应检查按钮中心点与 SVG 图标中心点是否一致，尤其是第三方登录、工具按钮、头像扩展菜单入口等高频交互。
-4. 第三方登录入口应保持轻量层级：单个第三方入口可使用“圆形图标按钮 + 短标签”的组合；多个入口才考虑横向或纵向按钮组。暂时禁用的第三方入口只隐藏 UI，不要删除已配置的登录能力代码。
-5. 表单页风格应统一：输入框、主按钮、验证码按钮使用稳定高度；验证码按钮放在验证码输入框同一行时必须固定宽度并 `shrink-0`，输入框使用 `min-w-0 flex-1`，防止移动端挤压或溢出。
-6. 页面视觉应符合当前产品的安静工作流风格：暖白或中性背景、细边框、低阴影、克制色彩；不要引入突兀的强装饰、过重阴影或与现有产品风格割裂的控件。
-7. 样式调整完成后必须做真实页面检查，至少确认无横向溢出、图标居中、按钮文本不被截断、表单行对齐稳定。
+## 模块索引
+
+Agent 按以下规则匹配变更文件所属模块：
+
+| 代码路径 | 模块 | PRD |
+|---------|------|-----|
+| `server/app/routes/note.ts`, `controller/note/**`, `models/note.ts` | note | docs/note/PRD.md |
+| `client/src/views/note/**`, `views/NoteLibrary.tsx`, `features/note/**`, `api/note.ts`, `store/.../noteAtom.ts`, `component/editor/Tiptap/**`, `component/SideBar/NoteMenu/**` | note | docs/note/PRD.md |
+| `server/app/routes/auth.ts`, `lib/auth.ts`, `lib/email*.ts`, `lib/*Verification.ts`, `middleware/session.ts` | auth | docs/auth/PRD.md |
+| `client/src/views/login/**`, `views/reset-password/**`, `hooks/useAuth.ts`, `component/auth/**`, `component/AccountDeletionModal.tsx` | auth | docs/auth/PRD.md |
+| `server/app/routes/meeting.ts`, `models/meeting*.ts`, `socket/P2PHandler.ts` | meeting | docs/meeting/PRD.md |
+| `client/src/views/meetings/**`, `views/meeting-room/**`, `component/MeetingList/**`, `api/meeting.ts` | meeting | docs/meeting/PRD.md |
+| `server/app/routes/file.ts`, `models/file/**` | file | docs/file/PRD.md |
+| `client/src/views/file-manage/**`, `component/upload/**`, `store/.../FileAtom.ts`, `api/file.ts` | file | docs/file/PRD.md |
+| `server/app/routes/image.ts`, `models/image.ts` | image | docs/image/PRD.md |
+| `server/app/routes/summary.ts`, `controller/summary.ts`, `models/summary.ts` | summary | docs/summary/PRD.md |
+| `client/src/views/home/**` | home | docs/home/PRD.md |
+| 其余所有（middleware、lib、common、shared components、store、utils、scripts、config、.agent、docs） | infrastructure | docs/infrastructure/PRD.md |
+
+---
+
+## 代码约束
+
+### 文件
+- 单文件 ≤ 200 行，层层封装
+- UTF-8 编码
+
+### 界面样式
+1. 图标按钮用固定尺寸容器（`size-12`、`size-10`），避免内容变化导致跳动
+2. 圆形按钮用原生 `button` + `grid place-items-center`，图标几何居中
+3. 第三方登录：单个用"圆形按钮+短标签"，多个才用按钮组；禁用只隐藏不删代码
+4. 表单统一高度；验证码按钮固定宽度 `shrink-0`，输入框 `min-w-0 flex-1`
+5. 暖白/中性背景、细边框、低阴影、克制色彩，不引入强装饰和重阴影
+6. 样式完成后检查无横向溢出、图标居中、文本不截断、表单对齐稳定
+
+### 禁止
+- ❌ 在 Component 中直接操作 Cookie/LocalStorage
+- ❌ 硬编码配置值
+- ❌ 跨层调用

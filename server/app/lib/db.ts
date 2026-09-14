@@ -4,7 +4,7 @@ import env from "./env";
 
 const db = mongoose
   .connect(env.MONGO_URI, {
-    dbName: "D-Note",
+    dbName: env.MONGO_DB_NAME,
   })
   .then((res) => {
     log.success("MonggoDB 连接成功");

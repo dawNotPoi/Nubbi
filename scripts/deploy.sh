@@ -3,7 +3,7 @@ set -Eeuo pipefail
 
 BRANCH="${1:-${DEPLOY_BRANCH:-master}}"
 APP_DIR="${APP_DIR:-$(pwd)}"
-PM2_SERVICE_NAME="${PM2_SERVICE_NAME:-d-note-api}"
+PM2_SERVICE_NAME="${PM2_SERVICE_NAME:-nubbi-api}"
 HEALTHCHECK_URL="${HEALTHCHECK_URL:-http://127.0.0.1:4000/}"
 RELOAD_NGINX="${RELOAD_NGINX:-0}"
 

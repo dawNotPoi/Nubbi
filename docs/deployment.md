@@ -16,8 +16,8 @@ Clone the repository on the server:
 ```bash
 mkdir -p /var/www
 cd /var/www
-git clone https://github.com/weixiaoing/D-NOTE.git
-cd D-NOTE
+git clone https://github.com/weixiaoing/Nubbi.git
+cd Nubbi
 ```
 
 Create `server/.env` on the server. This file must not be committed.
@@ -25,7 +25,8 @@ Create `server/.env` on the server. This file must not be committed.
 For the MongoDB container included in `docker-compose.yml`, use this Mongo URI:
 
 ```env
-MONGO_URI=mongodb://mongo:27017/d-note
+MONGO_URI=mongodb://mongo:27017/nubbi
+MONGO_DB_NAME=Nubbi
 SERVER_PORT=4000
 SOCKET_PORT=4040
 BETTER_AUTH_SECRET=
@@ -86,7 +87,7 @@ Set these in GitHub repository settings:
 - `DEPLOY_HOST`: server IP or domain
 - `DEPLOY_USER`: SSH user
 - `DEPLOY_SSH_KEY`: private key that can SSH into the server
-- `DEPLOY_PATH`: repository path on the server, for example `/var/www/D-NOTE`
+- `DEPLOY_PATH`: repository path on the server, for example `/var/www/Nubbi`
 - `DEPLOY_PORT`: optional SSH port, defaults to `22`
 
 ## Deploy flow
@@ -120,7 +121,7 @@ pnpm --dir client install --frozen-lockfile
 pnpm --dir client build
 
 # Upload this repository, including client/dist, to the server first.
-cd /var/www/D-NOTE
+cd /var/www/Nubbi
 bash scripts/deploy-docker.sh master
 ```
 

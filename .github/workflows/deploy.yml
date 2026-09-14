@@ -65,8 +65,8 @@ jobs:
 
       - name: Build Docker images
         run: |
-          docker build -f client/Dockerfile.runtime -t d-note-client:verify ./client
-          docker build -t d-note-server:verify ./server
+          docker build -f client/Dockerfile.runtime -t nubbi-client:verify ./client
+          docker build -t nubbi-server:verify ./server
 
   deploy:
     name: Deploy
@@ -250,8 +250,8 @@ jobs:
               .map(([key, value]) => `${key}=${serialize(value)}`)
               .join('\n') + '\n';
 
-          const rootEnvPath = path.join(process.env.RUNNER_TEMP, 'd-note.root.env');
-          const serverEnvPath = path.join(process.env.RUNNER_TEMP, 'd-note.server.env');
+          const rootEnvPath = path.join(process.env.RUNNER_TEMP, 'nubbi.root.env');
+          const serverEnvPath = path.join(process.env.RUNNER_TEMP, 'nubbi.server.env');
 
           const content = render(rootEnv);
           fs.writeFileSync(rootEnvPath, content);
@@ -267,53 +267,53 @@ jobs:
             --exclude='server/node_modules' \
             --exclude='server/storage' \
             --exclude='.pnpm-store' \
-            -czf "$RUNNER_TEMP/d-note-release.tgz" .
+            -czf "$RUNNER_TEMP/nubbi-release.tgz" .
 
           "$RUNNER_TEMP/ssh-run" \
-            "rm -rf ~/d-note-deploy.next && mkdir -p ~/d-note-deploy.next ~/d-note-deploy/server"
+            "rm -rf ~/nubbi-deploy.next && mkdir -p ~/nubbi-deploy.next ~/nubbi-deploy/server"
 
           "$RUNNER_TEMP/scp-run" \
-            "$RUNNER_TEMP/d-note-release.tgz" \
-            "~/d-note-release.tgz"
+            "$RUNNER_TEMP/nubbi-release.tgz" \
+            "~/nubbi-release.tgz"
 
           "$RUNNER_TEMP/ssh-run" \
             "bash -s" <<'REMOTE'
           set -Eeuo pipefail
 
-          tar -xzf ~/d-note-release.tgz -C ~/d-note-deploy.next
-          rm -f ~/d-note-release.tgz
+          tar -xzf ~/nubbi-release.tgz -C ~/nubbi-deploy.next
+          rm -f ~/nubbi-release.tgz
 
-          if [ -f ~/d-note-deploy/.env ]; then
-            cp -f ~/d-note-deploy/.env ~/d-note-deploy.next/.env
+          if [ -f ~/nubbi-deploy/.env ]; then
+            cp -f ~/nubbi-deploy/.env ~/nubbi-deploy.next/.env
           fi
 
-          mkdir -p ~/d-note-deploy.next/server
-          if [ -f ~/d-note-deploy/server/.env ]; then
-            cp -f ~/d-note-deploy/server/.env ~/d-note-deploy.next/server/.env
+          mkdir -p ~/nubbi-deploy.next/server
+          if [ -f ~/nubbi-deploy/server/.env ]; then
+            cp -f ~/nubbi-deploy/server/.env ~/nubbi-deploy.next/server/.env
           fi
 
-          rm -rf ~/d-note-deploy.prev
-          if [ -d ~/d-note-deploy ]; then
-            mv ~/d-note-deploy ~/d-note-deploy.prev
+          rm -rf ~/nubbi-deploy.prev
+          if [ -d ~/nubbi-deploy ]; then
+            mv ~/nubbi-deploy ~/nubbi-deploy.prev
           fi
-          mv ~/d-note-deploy.next ~/d-note-deploy
+          mv ~/nubbi-deploy.next ~/nubbi-deploy
           REMOTE
 
       - name: Upload environment files
         shell: bash
         run: |
           "$RUNNER_TEMP/ssh-run" \
-            "mkdir -p ~/d-note-deploy/server"
+            "mkdir -p ~/nubbi-deploy/server"
 
           "$RUNNER_TEMP/scp-run" \
-            "$RUNNER_TEMP/d-note.root.env" \
-            "~/d-note-deploy/.env.generated"
+            "$RUNNER_TEMP/nubbi.root.env" \
+            "~/nubbi-deploy/.env.generated"
 
           "$RUNNER_TEMP/ssh-run" \
             "bash -s" <<'REMOTE'
           set -Eeuo pipefail
 
-          cd ~/d-note-deploy
+          cd ~/nubbi-deploy
 
           preserve_env_value() {
             key="$1"
@@ -337,10 +337,10 @@ jobs:
           REMOTE
 
           "$RUNNER_TEMP/scp-run" \
-            "$RUNNER_TEMP/d-note.server.env" \
-            "~/d-note-deploy/server/.env"
+            "$RUNNER_TEMP/nubbi.server.env" \
+            "~/nubbi-deploy/server/.env"
 
       - name: Run deploy script
         run: |
           "$RUNNER_TEMP/ssh-run" \
-            "cd ~/d-note-deploy && SKIP_GIT_UPDATE=1 DEPLOY_BRANCH='$DEPLOY_BRANCH' bash scripts/deploy-docker.sh '$DEPLOY_BRANCH'"
+            "cd ~/nubbi-deploy && SKIP_GIT_UPDATE=1 DEPLOY_BRANCH='$DEPLOY_BRANCH' bash scripts/deploy-docker.sh '$DEPLOY_BRANCH'"
