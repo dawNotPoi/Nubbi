@@ -153,15 +153,16 @@ if [ ! -f ".env" ]; then
   exit 1
 fi
 
-if [ ! -f "client/Dockerfile" ]; then
-  printf '[docker-deploy] missing client/Dockerfile\n' >&2
+if [ ! -f "client/dist/index.html" ]; then
+  printf '[docker-deploy] missing client/dist/index.html\n' >&2
+  printf '[docker-deploy] build the client before deploying\n' >&2
   exit 1
 fi
 
 preserve_ports
 
-log "building and starting client and server containers"
-docker compose up -d --build --remove-orphans client server
+log "building and starting server and mcp containers"
+docker compose up -d --build --remove-orphans server mcp
 
 if command -v curl >/dev/null 2>&1; then
   HEALTHCHECK_URL="$(resolve_healthcheck_url)"
