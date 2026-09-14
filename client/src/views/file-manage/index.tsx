@@ -16,11 +16,11 @@ export default function FileManager(): ReactElement {
   const data = manager.data;
 
   return (
-    <div className="min-w-0 bg-white text-text-primary">
+    <div className="flex min-h-screen flex-col bg-white text-text-primary">
       {manager.contextHolders}
       <Header className="bg-white/95" />
-      <main className="px-4 pb-16 pt-3 sm:px-6 md:px-12 lg:px-[68px]">
-        <section className="mb-5">
+      <main className="flex flex-1 flex-col min-h-0 px-4 pt-3 sm:px-6 md:px-12 lg:px-[68px]">
+        <section className="mb-5 shrink-0">
           <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
             <h1 className="text-[32px] font-bold leading-none tracking-normal text-text-primary md:text-[40px]">
               Files
@@ -55,8 +55,9 @@ export default function FileManager(): ReactElement {
           />
         </section>
 
-        <FileList
-          editingId={manager.editingId}
+        <div className="flex-1 min-h-0 overflow-auto">
+          <FileList
+            editingId={manager.editingId}
           emptyDescription={manager.search || manager.category !== "all" ? "没有匹配的文件" : "当前目录暂无文件"}
           error={manager.query.isError}
           items={manager.items}
@@ -78,16 +79,19 @@ export default function FileManager(): ReactElement {
           onShare={(item) => void manager.share(item)}
           onToggle={manager.toggle}
           onToggleAll={manager.toggleAll}
-        />
-        <FilePagination
-          count={data?.count ?? manager.items.length}
+          />
+        </div>
+        <div className="shrink-0 pb-20">
+          <FilePagination
+            count={data?.count ?? manager.items.length}
           hasMore={data?.hasMore ?? false}
           limit={data?.limit ?? 20}
           offset={manager.offset}
           pending={manager.query.isPlaceholderData}
           total={data?.total ?? 0}
           onChange={manager.setOffset}
-        />
+          />
+        </div>
       </main>
 
       <FileMoveDialog
