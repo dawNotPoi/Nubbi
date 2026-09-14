@@ -347,7 +347,7 @@ z.object({
 ### 侧边栏
 | 文件 | 变更 |
 |------|------|
-| `client/src/component/SideBar/NoteMenu/NoteTree.tsx` | 使用 `hasChildren` 判断展开箭头；不再读取 `children[]` |
+| `client/src/component/SideBar/NoteMenu/NoteTree.tsx` | 使用 `hasChildren` 判断展开箭头；不再读取 `children[]`；删除当前笔记或其祖先成功后返回主页 |
 | `client/src/component/SideBar/NoteMenu/index.tsx` | 适配新接口 |
 
 ### 状态管理
@@ -357,6 +357,7 @@ z.object({
 | `client/src/features/note/model/cache.ts` | 适配新字段名；列表缓存作用域仅由父节点区分 |
 | `client/src/features/note/model/keys.ts` | Note Query Key 不包含用户 ID，退出登录或账号注销后统一清空 Query Cache |
 | `client/src/features/note/model/hierarchy.ts` | 适配 hasChildren |
+| `client/src/features/note/hooks/useDeleteNote.ts` | 统一侧边栏菜单与拖入回收站的删除后导航 |
 
 ---
 
@@ -542,6 +543,7 @@ await Note.updateMany({}, { $set: { date: null } });
 - [ ] 移动笔记到新父节点，旧父节点和新父节点的 hasChildren 正确更新
 - [ ] 删除最后一个子笔记，父节点 hasChildren 变为 false
 - [ ] 删除有子笔记的节点，递归删除全部后代
+- [ ] 当前笔记或其祖先删除成功后返回主页，删除失败时保留当前页面
 - [ ] 编辑器保存后，content 字段存储的是 Markdown 格式文本
 - [ ] 编辑器加载 Markdown 内容，正确渲染为富文本
 - [ ] NoteMeta 面板显示所有有值的标准字段 + 自定义字段

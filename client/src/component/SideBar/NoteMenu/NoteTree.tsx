@@ -4,9 +4,9 @@ import {
   SidebarTreeItem,
   SidebarTreeState,
 } from "@/component/SideBar/components";
+import { useDeleteNote } from "@/features/note/hooks/useDeleteNote";
 import { normalizeNoteTitle } from "@/features/note/model/hierarchy";
 import {
-  deleteSingleNoteAtom,
   expandedNodesAtom,
   noteChildrenAtom,
 } from "@/store/atom/noteAtom";
@@ -15,7 +15,7 @@ import clsx from "clsx";
 import { useAtom, useAtomValue } from "jotai";
 import { Plus, Trash2 } from "lucide-react";
 import { useParams } from "react-router-dom";
-import { NoteDragData, noteDragId } from "../NoteDnd/NoteDndProvider";
+import { type NoteDragData, noteDragId } from "../NoteDnd/model";
 import { useNoteDropTarget } from "../NoteDnd/useNoteDropTarget";
 import { WrittingModal } from "./WritingModal";
 
@@ -76,7 +76,7 @@ function NoteChildren({ noteId, depth }: NoteChildrenProps) {
 function NoteTreeNode({ note, depth }: NoteTreeNodeProps) {
   const { Id } = useParams();
   const [expandedNodes, setExpandedNodes] = useAtom(expandedNodesAtom);
-  const { mutate: deleteNote } = useAtomValue(deleteSingleNoteAtom);
+  const deleteNote = useDeleteNote();
   const open = expandedNodes.includes(note._id);
 
   const {

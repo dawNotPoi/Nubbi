@@ -27,7 +27,8 @@ import ChangeAvatarModal from "../ChangeAvatarModal";
 import Image from "../UI/Image";
 import Popover from "../UI/Popover";
 import { IconButton, MenuItemContainer } from "./components";
-import { NoteDndProvider, TrashDropTarget } from "./NoteDnd/NoteDndProvider";
+import { TrashDropTarget } from "./NoteDnd/DropZones";
+import { NoteDndProvider } from "./NoteDnd/NoteDndProvider";
 import NoteMenu from "./NoteMenu";
 import ResizeTab from "./ResizeTab";
 

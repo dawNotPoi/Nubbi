@@ -6,7 +6,7 @@ import {
   NoteDropData,
   noteDropId,
   useNoteDndState,
-} from "./NoteDndProvider";
+} from "./model";
 
 const AUTO_EXPAND_DELAY = 700;
 

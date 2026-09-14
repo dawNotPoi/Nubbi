@@ -13,7 +13,7 @@ import { useNavigate } from "react-router-dom";
 import {
   RootDropIndicator,
   RootHeaderDropZone,
-} from "../NoteDnd/NoteDndProvider";
+} from "../NoteDnd/DropZones";
 import NoteTree from "./NoteTree";
 
 function NoteTitleIcon({ className }: { className?: string }) {
