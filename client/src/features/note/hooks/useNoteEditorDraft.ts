@@ -29,6 +29,7 @@ export const useNoteEditorDraft = ({
   const updatePropertiesRef = useRef(propertiesMutation.mutate);
   const {
     canApplyExternalContent,
+    content,
     contentConflict,
     contentDebouncing,
     contentError,
@@ -155,6 +156,7 @@ export const useNoteEditorDraft = ({
   return {
     headerTitle,
     canApplyExternalContent,
+    content,
     saveStatus,
     setContent,
     setTitle,

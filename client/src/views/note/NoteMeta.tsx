@@ -5,8 +5,6 @@ import {
   type UpdateNotePropertiesInput,
 } from "@/api/note";
 import { deleteTagAtom, tagListAtom } from "@/store/atom/tagAtom";
-import { DatePicker } from "antd";
-import dayjs from "dayjs";
 import { useAtomValue } from "jotai";
 import { useCallback, useEffect, useState } from "react";
 import { Select } from "./Select";
@@ -14,15 +12,14 @@ import { Select } from "./Select";
 const statusOptions: NoteStatus[] = ["inbox", "active", "done", "archived"];
 
 type Property = {
-  id: "status" | "date" | "tags";
+  id: "status" | "tags";
   name: string;
-  type: "select" | "date" | "multi-select";
+  type: "select" | "multi-select";
   options?: string[];
 };
 
 const getMetaRecord = (note: Note) => ({
   ...metaEntriesToRecord(note.meta),
-  date: note.date,
   status: note.status,
   tags: note.tags,
 });
@@ -49,7 +46,6 @@ export default function NoteMeta({
       type: "select",
       options: statusOptions,
     },
-    { id: "date", name: "日期", type: "date" },
     {
       id: "tags",
       name: "标签",
@@ -60,7 +56,7 @@ export default function NoteMeta({
 
   useEffect(() => {
     setMeta(getMetaRecord(data));
-  }, [data]);
+  }, [data.meta, data.status, data.tags]);
 
   const handlerFormChange = useCallback(
     (newValue: string | any[], property?: Property) => {
@@ -136,18 +132,6 @@ const InputRender = ({
           options={property.options}
         />
       );
-    case "date":
-      return (
-        <DatePicker
-          variant="borderless"
-          placeholder={placeholder}
-          value={value ? dayjs(value) : null}
-          onChange={(nextValue) => {
-            onChange?.(nextValue ? nextValue.toISOString() : undefined, property);
-          }}
-          className="w-full"
-        />
-      );
     case "select":
       return (
         <Select
@@ -162,6 +146,6 @@ const InputRender = ({
         />
       );
     default:
-      return <></>;
+      return null;
   }
 };

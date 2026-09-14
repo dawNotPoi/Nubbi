@@ -10,6 +10,13 @@ import { useContentSync } from "./hooks/useContentSync";
 import "./index.css";
 import type { TiptapEditorProps } from "./types";
 
+const dragHandleComputePositionConfig = {
+  placement: "left-start" as const,
+  strategy: "absolute" as const,
+};
+
+const noopNodeChange = () => {};
+
 const TiptapEditor = ({
   defaultValue,
   serverValue,
@@ -84,11 +91,8 @@ const TiptapEditor = ({
     >
       {editable && (
         <DragHandle
-          computePositionConfig={{
-            placement: "left-start",
-            strategy: "absolute",
-          }}
-          onNodeChange={() => {}}
+          computePositionConfig={dragHandleComputePositionConfig}
+          onNodeChange={noopNodeChange}
           editor={editor}
         >
           <div className="dn-editor__drag-handle flex size-8 items-center justify-center">

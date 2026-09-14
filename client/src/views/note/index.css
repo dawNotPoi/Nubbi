@@ -36,3 +36,84 @@
     }
   }
 }
+
+.note-editor-shell {
+  width: 50%;
+  min-width: 600px;
+}
+
+.note-editor-shell--wide {
+  width: min(1200px, calc(100vw - 96px));
+}
+
+.note-display-mode-button {
+  display: inline-flex;
+  min-width: 28px;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: rgb(115, 115, 115);
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.note-display-mode-button:hover {
+  background: rgb(245, 245, 245);
+  color: rgb(38, 38, 38);
+}
+
+.note-display-mode-button:focus-visible {
+  outline: 2px solid rgb(59, 130, 246);
+  outline-offset: 2px;
+}
+
+.note-markdown-editor {
+  margin-top: 32px;
+  min-height: 520px;
+  width: 100%;
+  resize: vertical;
+  border: 1px solid rgb(229, 229, 229);
+  border-radius: 8px;
+  background: rgb(255, 255, 255);
+  color: rgb(38, 38, 38);
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+  font-size: 14px;
+  line-height: 1.7;
+  padding: 16px;
+  outline: none;
+}
+
+.note-markdown-editor:focus {
+  border-color: rgb(163, 163, 163);
+  box-shadow: 0 0 0 3px rgba(212, 212, 212, 0.45);
+}
+
+.note-split-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  margin-top: 32px;
+}
+
+.note-split-editor .note-markdown-editor {
+  margin-top: 0;
+  min-height: 640px;
+}
+
+.note-split-editor__pane {
+  min-width: 0;
+}
+
+.note-split-editor__preview {
+  min-height: 640px;
+  overflow: auto;
+  border-left: 1px solid rgb(229, 229, 229);
+  padding-left: 24px;
+}

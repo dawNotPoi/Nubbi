@@ -7,8 +7,8 @@ import {
   List,
   ListOrdered,
   Minus,
-  Pilcrow,
   PictureInPictureIcon,
+  Pilcrow,
   Quote,
   Table,
 } from "lucide-react";
@@ -147,9 +147,8 @@ const allItems: {
   },
 ];
 
-export const getSuggestions = ({ query }: { query: string }) => {
-  const normalizedQuery = query.toLowerCase().trim();
-
+export const getSuggestions = ({ query }: { query?: string | null }) => {
+  const normalizedQuery = (query ?? "").replace(/^\//, "").toLowerCase().trim();
   return allItems.filter((item) =>
     normalizedQuery.length === 0
       ? true

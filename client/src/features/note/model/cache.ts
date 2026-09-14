@@ -180,21 +180,33 @@ const prependUniqueNote = (notes: Note[], note: Note) => [
 
 const normalizeNotePatch = (
   patch: NoteCachePatch,
-): Partial<NoteWithContent> => ({
-  ...patch,
-  date:
-    typeof patch.date === "object" && patch.date instanceof Date
-      ? patch.date.toISOString()
-      : patch.date,
-  expiresAt:
-    typeof patch.expiresAt === "object" && patch.expiresAt instanceof Date
-      ? patch.expiresAt.toISOString()
-      : patch.expiresAt,
-  meta:
-    patch.meta && !Array.isArray(patch.meta)
-      ? recordToMetaEntries(patch.meta)
-      : patch.meta,
-});
+): Partial<NoteWithContent> => {
+  const { date, expiresAt, meta, ...restPatch } = patch;
+  const normalizedPatch: Partial<NoteWithContent> = { ...restPatch };
+
+  if (Object.prototype.hasOwnProperty.call(patch, "date")) {
+    normalizedPatch.date =
+      typeof date === "object" && date instanceof Date
+        ? date.toISOString()
+        : date;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(patch, "expiresAt")) {
+    normalizedPatch.expiresAt =
+      typeof expiresAt === "object" && expiresAt instanceof Date
+        ? expiresAt.toISOString()
+        : expiresAt;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(patch, "meta")) {
+    normalizedPatch.meta =
+      meta && !Array.isArray(meta)
+        ? recordToMetaEntries(meta)
+        : meta;
+  }
+
+  return normalizedPatch;
+};
 
 const collectNoteAndDescendantIds = (
   queryClient: QueryClient,

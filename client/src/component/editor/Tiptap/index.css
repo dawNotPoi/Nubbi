@@ -338,26 +338,25 @@
   box-shadow: 0 18px 44px rgba(15, 23, 42, 0.1);
 }
 
-.tippy-box[data-theme~="slash-command"] {
-  border: 1px solid rgba(55, 53, 47, 0.12);
-  border-radius: 1rem;
-  background: #fffdf9;
-  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.1);
-}
-
 .tippy-box[data-theme~="light"] .tippy-content {
   padding: 0.4rem;
 }
 
-.tippy-box[data-theme~="slash-command"] .tippy-content {
-  border-radius: inherit;
+.dn-editor__slash-command-popover {
+  position: fixed;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(55, 53, 47, 0.12);
+  border-radius: 1rem;
   background: #fffdf9;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.1);
   padding: 0.25rem;
 }
 
 .dn-editor__slash-command-menu {
   width: min(340px, calc(100vw - 32px));
-  max-height: min(408px, calc(100vh - 96px));
+  min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: none;

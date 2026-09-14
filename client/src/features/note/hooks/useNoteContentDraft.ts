@@ -35,6 +35,7 @@ export const useNoteContentDraft = ({
   const [contentError, setContentError] = useState(false);
   const [contentConflict, setContentConflict] = useState(false);
   const [hasContentActivity, setHasContentActivity] = useState(false);
+  const [, setActiveContent] = useState("");
 
   useEffect(() => {
     updateContentRef.current = contentMutation.mutate;
@@ -212,29 +213,36 @@ export const useNoteContentDraft = ({
     const switchedNote = activeNoteIdRef.current !== noteId;
 
     if (switchedNote) {
-      activeNoteIdRef.current = noteId;
       setContentDebouncing(false);
       setContentError(false);
       setContentConflict(Boolean(noteId && conflictBlockedNoteIdsRef.current.has(noteId)));
 
-      if (noteId) {
-        const serverContent = getContent(data);
-        draftContentByNoteRef.current.set(noteId, serverContent);
-        lastSavedContentByNoteRef.current.set(noteId, serverContent);
-        baseRevisionByNoteRef.current.set(noteId, getRevision(data));
+      if (!noteId || !data) {
+        activeNoteIdRef.current = undefined;
+        setActiveContent("");
+        setHasContentActivity(false);
+        refreshActiveState(undefined);
+        return;
       }
 
+      activeNoteIdRef.current = noteId;
+      const serverContent = getContent(data);
+      draftContentByNoteRef.current.set(noteId, serverContent);
+      lastSavedContentByNoteRef.current.set(noteId, serverContent);
+      baseRevisionByNoteRef.current.set(noteId, getRevision(data));
+      setActiveContent(serverContent);
       setHasContentActivity(false);
       refreshActiveState(noteId);
       return;
     }
 
-    if (!noteId || contentDirty || contentSaving || contentDebouncing) return;
+    if (!noteId || !data || contentDirty || contentSaving || contentDebouncing) return;
 
     const serverContent = getContent(data);
     draftContentByNoteRef.current.set(noteId, serverContent);
     lastSavedContentByNoteRef.current.set(noteId, serverContent);
     baseRevisionByNoteRef.current.set(noteId, getRevision(data));
+    setActiveContent(serverContent);
     refreshActiveState(noteId);
   }, [
     contentDebouncing,
@@ -251,6 +259,7 @@ export const useNoteContentDraft = ({
       if (!noteId) return;
 
       draftContentByNoteRef.current.set(noteId, nextContent);
+      setActiveContent(nextContent);
       setContentDirty(
         nextContent !== (lastSavedContentByNoteRef.current.get(noteId) ?? ""),
       );
@@ -285,6 +294,7 @@ export const useNoteContentDraft = ({
     draftContentByNoteRef.current.set(noteId, serverContent);
     lastSavedContentByNoteRef.current.set(noteId, serverContent);
     baseRevisionByNoteRef.current.set(noteId, getRevision(data));
+    setActiveContent(serverContent);
     conflictBlockedNoteIdsRef.current.delete(noteId);
     queuedContentByNoteRef.current.delete(noteId);
     saveOrderRef.current = saveOrderRef.current.filter(
@@ -299,10 +309,14 @@ export const useNoteContentDraft = ({
   const acceptServerContent = discardLocalDraft;
   const canApplyExternalContent =
     !contentDirty && !contentSaving && !contentDebouncing;
+  const activeContent = noteId
+    ? draftContentByNoteRef.current.get(noteId)
+    : undefined;
 
   return {
     acceptServerContent,
     canApplyExternalContent,
+    content: activeContent ?? getContent(data),
     contentConflict,
     contentDebouncing,
     contentDirty,
