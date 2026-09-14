@@ -7,6 +7,7 @@ import {
   ChevronsLeft,
   FolderTree,
   House,
+  KeyRound,
   LogOut,
   Presentation,
   Trash2,
@@ -15,6 +16,7 @@ import React, { useState } from "react";
 import { sideBarOpenedAtom } from "../../store/atom/common";
 import { Modal } from "antd";
 import AccountDeletionModal from "../AccountDeletionModal";
+import ApiTokenModal from "../ApiTokenModal";
 import ChangeAvatarModal from "../ChangeAvatarModal";
 import Image from "../UI/Image";
 import Popover from "../UI/Popover";
@@ -27,6 +29,7 @@ const SideBar: React.FC = () => {
   const { user, logout, updateAvatar } = useAuth();
   const [deletionModalOpen, setDeletionModalOpen] = useState(false);
   const [avatarModalOpen, setAvatarModalOpen] = useState(false);
+  const [apiTokenModalOpen, setApiTokenModalOpen] = useState(false);
 
   const handleRequestAccountDeletion = () => {
     Modal.confirm({
@@ -80,6 +83,13 @@ const SideBar: React.FC = () => {
                 </button>
                 <button
                   className="flex h-9 w-full items-center gap-2 rounded-md px-2 text-left text-sm text-slate-700 transition-colors hover:bg-gray-200/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300"
+                  onClick={() => setApiTokenModalOpen(true)}
+                >
+                  <KeyRound size={15} />
+                  <span>鉴权管理</span>
+                </button>
+                <button
+                  className="flex h-9 w-full items-center gap-2 rounded-md px-2 text-left text-sm text-slate-700 transition-colors hover:bg-gray-200/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300"
                   onClick={logout}
                 >
                   <LogOut size={15} />
@@ -130,6 +140,10 @@ const SideBar: React.FC = () => {
         currentImage={user?.image || undefined}
         onClose={() => setAvatarModalOpen(false)}
         onConfirm={updateAvatar}
+      />
+      <ApiTokenModal
+        open={apiTokenModalOpen}
+        onClose={() => setApiTokenModalOpen(false)}
       />
     </ResizeTab>
   );

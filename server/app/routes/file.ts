@@ -1,4 +1,5 @@
-﻿import requireAuth from "@/middleware/session";
+﻿// 业务路由同时接受 session/JWT 与长期 API token
+import { requireAuthWithApiKey as requireAuth } from "@/middleware/session";
 import { File } from "@/models/file/file";
 import { Folder } from "@/models/file/folder";
 import { UploadTask } from "@/models/file/uploadTask";

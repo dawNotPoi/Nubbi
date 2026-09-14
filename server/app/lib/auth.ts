@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
-import { bearer, jwt } from "better-auth/plugins";
+import { apiKey, bearer, jwt } from "better-auth/plugins";
 import { AsyncLocalStorage } from "async_hooks";
 import logger from "@/common/logger";
 import { db } from "./db";
@@ -147,6 +147,22 @@ export const auth = betterAuth({
     jwt({
       jwt: {
         expirationTime: "15m",
+      },
+    }),
+    apiKey({
+      defaultPrefix: "nb_",
+      // 必须关闭：默认行为会让带 x-api-key 的请求在所有 better-auth 端点伪造 session
+      //（包括用 key 创建新 key、getSession 等），token 校验统一走 requireAuthWithApiKey
+      disableSessionForAPIKeys: true,
+      keyExpiration: {
+        // 不传 expiresIn 时永不过期（"长期 token"语义）
+        defaultExpiresIn: null,
+      },
+      rateLimit: {
+        enabled: true,
+        // 插件默认 10 次/天，对博客/MCP 场景远远不够，放宽为 300 次/分钟
+        timeWindow: 60 * 1000,
+        maxRequests: 300,
       },
     }),
   ],

@@ -1,4 +1,5 @@
 import { createAuthClient } from "better-auth/react";
+import { apiKeyClient } from "better-auth/client/plugins";
 import { useSyncExternalStore } from "react";
 import { getApiBaseUrl, getAuthBaseUrl } from "./env";
 import { isSafeInternalPath, routes } from "./routes";
@@ -188,6 +189,7 @@ const toAuthResult = <T extends { error?: unknown }>(
 
 export const authClient = createAuthClient({
   baseURL: authBaseUrl,
+  plugins: [apiKeyClient()],
   fetchOptions: {
     credentials: "include",
     auth: {
