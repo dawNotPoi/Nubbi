@@ -4,6 +4,13 @@ import { Button, Form, Input, Modal, Tabs } from "antd";
 import clsx from "clsx";
 import { useEffect, useMemo, useState } from "react";
 
+const STATUS_STYLES: Record<string, string> = {
+  inbox: "bg-amber-50 text-amber-700",
+  active: "bg-blue-50 text-blue-700",
+  done: "bg-emerald-50 text-emerald-700",
+  archived: "bg-neutral-100 text-neutral-600",
+};
+
 const imgs = [
   "https://www.notion.so/images/page-cover/webb1.jpg",
   "https://www.notion.so/images/page-cover/webb2.jpg",
@@ -179,6 +186,35 @@ export default function NoteCard({
         ) : (
           <div className="w-full min-h-[200px]"></div>
         )}
+        <div className="flex flex-wrap items-center gap-1.5 px-4 py-2.5">
+          <span
+            className={clsx(
+              "rounded-full px-2 py-0.5 text-xs font-medium",
+              STATUS_STYLES[data.status] ?? "bg-neutral-100 text-neutral-600",
+            )}
+          >
+            {data.status}
+          </span>
+          {data.published ? (
+            <span className="rounded-full bg-purple-50 px-2 py-0.5 text-xs font-medium text-purple-700">
+              published
+            </span>
+          ) : null}
+          {data.tags.slice(0, 3).map((tag) => (
+            <span
+              className="max-w-[100px] truncate rounded-full bg-bg-selected px-2 py-0.5 text-xs text-text-muted"
+              key={tag}
+              title={tag}
+            >
+              {tag}
+            </span>
+          ))}
+          {data.tags.length > 3 ? (
+            <span className="text-xs text-text-subtle">
+              +{data.tags.length - 3}
+            </span>
+          ) : null}
+        </div>
       </div>
     </>
   );

@@ -4,3 +4,5 @@ packages:
 
 overrides:
   mongodb: 6.21.0
+
+storeDir: E:/learning/Nubbi/.pnpm-store/v10

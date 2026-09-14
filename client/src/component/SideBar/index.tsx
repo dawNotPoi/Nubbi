@@ -65,7 +65,7 @@ const SideBar: React.FC = () => {
                   <span>注销账号</span>
                 </button>
                 <button
-                  className="flex h-9 w-full items-center gap-2 rounded-md px-2 text-left text-sm text-slate-700 transition-colors hover:bg-normal/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300"
+                  className="flex h-9 w-full items-center gap-2 rounded-md px-2 text-left text-sm text-slate-700 transition-colors hover:bg-gray-200/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300"
                   onClick={logout}
                 >
                   <LogOut size={15} />

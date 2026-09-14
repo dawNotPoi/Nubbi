@@ -15,7 +15,7 @@ export const MenuItemContainer: FC<NavLinkProps> = ({
       to={to}
       className={({ isActive }) => {
         return clsx(
-          "hover:bg-normal/40  rounded-md px-2 py-1 cursor-pointer flex items-center gap-2",
+          "hover:bg-gray-200/40  rounded-md px-2 py-1 cursor-pointer flex items-center gap-2",
           className,
           isActive && "bg-neutral-400/10",
         );

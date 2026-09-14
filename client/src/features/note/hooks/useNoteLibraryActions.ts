@@ -68,8 +68,8 @@ export const useNoteLibraryActions = ({
       cancelText: "取消",
       content:
         notes.length === 1
-          ? "该 note 及其子 note 会被递归删除，删除后不可恢复。"
-          : `选中的 ${notes.length} 个 note 及其子 note 会被递归删除，删除后不可恢复。`,
+          ? "该笔记及其子笔记将移至回收站，可在回收站中恢复或彻底删除。"
+          : `选中的 ${notes.length} 个笔记及其子笔记将移至回收站，可在回收站中恢复或彻底删除。`,
       okButtonProps: { danger: true },
       okText: "删除",
       title: notes.length === 1 ? "删除 note" : `删除 ${notes.length} 个 note`,

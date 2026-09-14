@@ -5,6 +5,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "dev": "pnpm --recursive --parallel dev",
     "client": "pnpm dev:client",
     "server": "pnpm dev:server",
     "dev:client": "pnpm --filter nubbi-client dev",

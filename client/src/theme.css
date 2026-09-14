@@ -1,26 +1,26 @@
 :root {
-  /* Layout */
   --sidebar: rgb(249, 248, 247);
-  --background: white;
-  --surface: #fbf8f3;
-  --panel: #fffdf9;
 
-  /* Structure */
-  --border: #ddd3c6;
-  --divider: #e7ded2;
+  --text-primary: #37352f;
+  --text-muted: #787774;
+  --text-subtle: #9b9a97;
+  --text-placeholder: #b4b4b1;
 
-  /* Text */
-  --foreground: #2f2a24;
-  --muted: #6a6056;
-  --subtle: #95897c;
-  --inverse: #fffdf9;
+  --bg-hover: #f7f7f5;
+  --bg-selected: #f1f1ef;
+  --bg-icon-hover: #e9e9e7;
+  --bg-panel: #fbfbfa;
 
-  /* Brand */
-  --primary: #2f7c85;
-  --primary-soft: #dcecef;
+  --border-row: #efefed;
+  --border-button: #d9d7d2;
+  --border-button-hover: #bdbab4;
+  --border-toolbar: #e3e2df;
 
-  /* State */
-  --danger: #b76565;
-  --warning: #b98a3a;
-  --success: #5e8667;
+  --focus-ring: #d3d1cb;
+
+  --accent-border: #2383e2;
+  --accent-bg: #eef6ff;
+  --accent-text: #1f5f99;
+
+  --skeleton: #e6e4e1;
 }

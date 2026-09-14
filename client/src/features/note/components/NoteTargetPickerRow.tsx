@@ -31,8 +31,8 @@ export function NoteTargetPickerRow({
     <div
       className={clsx(
         "group flex min-h-9 w-full items-center gap-1 rounded-md pr-2 text-left transition-colors",
-        "hover:bg-[#f1f1ef] focus-within:bg-[#f1f1ef]",
-        active && "bg-[#f1f1ef]",
+        "hover:bg-bg-hover focus-within:bg-bg-hover",
+        active && "bg-bg-hover",
         disabled && "cursor-wait opacity-70",
       )}
       style={{ paddingLeft: 8 + depth * 16 }}
@@ -41,7 +41,7 @@ export function NoteTargetPickerRow({
         <button
           aria-expanded={expanded}
           aria-label={expanded ? "收起子 note" : "展开子 note"}
-          className="flex size-5 shrink-0 items-center justify-center rounded text-[#9b9a97] hover:bg-[#e9e9e7] hover:text-[#37352f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d3d1cb]"
+          className="flex size-5 shrink-0 items-center justify-center rounded text-text-subtle hover:bg-bg-icon-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           disabled={disabled}
           onClick={(event) => {
             event.stopPropagation();
@@ -57,18 +57,18 @@ export function NoteTargetPickerRow({
         <span className="size-5 shrink-0" />
       )}
       <button
-        className="flex min-w-0 flex-1 items-center gap-2 rounded py-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-[#d3d1cb]"
+        className="flex min-w-0 flex-1 items-center gap-2 rounded py-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         disabled={disabled}
         onClick={() => onSelect(note)}
         type="button"
       >
-        <FileText className="size-4 shrink-0 text-[#8f8d89]" />
+        <FileText className="size-4 shrink-0 text-text-subtle" />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[15px] leading-5">
             {normalizeNoteTitle(note.title)}
           </span>
           {pathLabel ? (
-            <span className="block truncate text-xs leading-4 text-[#9b9a97]">
+            <span className="block truncate text-xs leading-4 text-text-subtle">
               {pathLabel}
             </span>
           ) : null}

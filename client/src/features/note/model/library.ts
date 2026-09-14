@@ -31,6 +31,7 @@ type NoteLibraryRowsOptions = {
   publishedFilter: "all" | "published" | "unpublished";
   sortMode: NoteLibrarySortMode;
   statusFilter: "all" | NoteStatus;
+  tagsFilter: string[];
 };
 
 type NoteLibraryIndex = {
@@ -240,12 +241,14 @@ export const getNoteLibraryRows = ({
   publishedFilter,
   sortMode,
   statusFilter,
+  tagsFilter,
 }: NoteLibraryRowsOptions) => {
   const keyword = filterText.trim().toLowerCase();
   const filteredNotes = notes.filter((note) => {
     if (statusFilter !== "all" && note.status !== statusFilter) return false;
     if (publishedFilter === "published" && !note.published) return false;
     if (publishedFilter === "unpublished" && note.published) return false;
+    if (tagsFilter.length > 0 && !tagsFilter.some((tag) => note.tags.includes(tag))) return false;
     return true;
   });
   const index = buildNoteLibraryIndex(filteredNotes, sortMode);
@@ -257,6 +260,18 @@ export const getNoteLibraryRows = ({
       : getTreeRows(index, expandedIds),
     viewMode,
   };
+};
+
+export const getAvailableLibraryTags = (notes: Note[]) => {
+  const counts = new Map<string, number>();
+  notes.forEach((note) => {
+    note.tags.forEach((tag) => {
+      counts.set(tag, (counts.get(tag) ?? 0) + 1);
+    });
+  });
+  return Array.from(counts.entries())
+    .map(([tag, count]) => ({ tag, count }))
+    .sort((a, b) => a.tag.localeCompare(b.tag));
 };
 
 export const getRecentTargetNotes = (recentNotes: Note[], allNotes: Note[]) => {

@@ -37,16 +37,19 @@ export default function NoteLibrary() {
           </div>
 
           <NoteLibraryToolbar
+            availableTags={library.availableTags}
             filterText={library.filterText}
             publishedFilter={library.publishedFilter}
             searchOpen={library.searchOpen}
             sortMode={library.sortMode}
             statusFilter={library.statusFilter}
+            tagsFilter={library.tagsFilter}
             onFilterTextChange={library.setFilterText}
             onPublishedFilterChange={library.setPublishedFilter}
             onSearchOpenChange={library.setSearchOpen}
             onSortModeChange={library.setSortMode}
             onStatusFilterChange={library.setStatusFilter}
+            onTagsFilterChange={library.setTagsFilter}
           />
         </section>
 

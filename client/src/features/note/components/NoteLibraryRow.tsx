@@ -102,10 +102,10 @@ export function NoteLibraryRow({
   return (
     <li
       className={clsx(
-        "group/note-row grid cursor-pointer grid-cols-[40px_minmax(260px,1fr)_minmax(220px,26vw)_minmax(160px,18vw)_132px] items-center border-b border-[#efefed] text-[14px] transition-colors",
-        "hover:bg-[#f7f7f5] focus-within:bg-[#f7f7f5]",
+        "group/note-row grid cursor-pointer grid-cols-[40px_minmax(260px,1fr)_minmax(220px,26vw)_minmax(160px,18vw)_132px] items-center border-b border-border-row text-[14px] transition-colors",
+        "hover:bg-bg-hover focus-within:bg-bg-hover",
         viewMode === "search" ? "min-h-[54px] py-1" : "h-11",
-        selected && "bg-[#f1f1ef]",
+        selected && "bg-bg-selected",
       )}
       onClick={() => onToggle(!selected, note._id)}
     >
@@ -123,7 +123,7 @@ export function NoteLibraryRow({
           onChange={(event) => onToggle(event.target.checked, note._id)}
         />
       </div>
-      <div className="flex min-w-0 items-center pr-4 text-[#37352f]">
+      <div className="flex min-w-0 items-center pr-4 text-text-primary">
         <div
           className="flex min-w-0 flex-1 items-center gap-2"
           style={{ paddingLeft: viewMode === "tree" ? row.depth * 22 : 0 }}
@@ -131,7 +131,7 @@ export function NoteLibraryRow({
           {viewMode === "tree" ? (
             <button
               className={clsx(
-                "flex size-5 shrink-0 items-center justify-center rounded text-[#9b9a97] transition-colors hover:bg-[#e9e9e7] hover:text-[#37352f]",
+                "flex size-5 shrink-0 items-center justify-center rounded text-text-subtle transition-colors hover:bg-bg-icon-hover hover:text-text-primary",
                 !canExpand && "invisible",
               )}
               onClick={(event) => {
@@ -150,12 +150,12 @@ export function NoteLibraryRow({
               />
             </button>
           ) : null}
-          <FileText className="size-5 shrink-0 text-[#9b9a97]" />
+          <FileText className="size-5 shrink-0 text-text-subtle" />
           <div className="flex min-w-0 flex-1 flex-col justify-center">
             {editing ? (
               <input
                 ref={inputRef}
-                className="h-8 min-w-0 rounded-md border border-[#d9d7d2] bg-white px-2 font-medium outline-none shadow-[0_0_0_2px_rgba(35,131,226,0.12)]"
+                className="h-8 min-w-0 rounded-md border border-border-button bg-white px-2 font-medium outline-none shadow-focus-input"
                 onBlur={() => {
                   if (skipBlurCommitRef.current) {
                     skipBlurCommitRef.current = false;
@@ -179,7 +179,7 @@ export function NoteLibraryRow({
               />
             ) : (
               <button
-                className="min-w-0 truncate rounded px-1 py-1 text-left font-medium outline-none hover:bg-[#ededeb] focus-visible:ring-2 focus-visible:ring-[#d3d1cb]"
+                className="min-w-0 truncate rounded px-1 py-1 text-left font-medium outline-none hover:bg-bg-hover focus-visible:ring-2 focus-visible:ring-focus-ring"
                 onClick={startRename}
                 title="重命名"
                 type="button"
@@ -188,7 +188,7 @@ export function NoteLibraryRow({
               </button>
             )}
             {viewMode === "search" && row.pathLabel ? (
-              <span className="truncate px-1 text-xs text-[#9b9a97]">
+              <span className="truncate px-1 text-xs text-text-subtle">
                 {row.pathLabel}
               </span>
             ) : null}
@@ -217,7 +217,7 @@ export function NoteLibraryRow({
         ) : null}
         {note.tags.slice(0, 2).map((tag) => (
           <span
-            className="max-w-[86px] truncate rounded bg-[#f1f1ef] px-1.5 py-0.5 text-xs text-[#787774]"
+            className="max-w-[86px] truncate rounded bg-bg-selected px-1.5 py-0.5 text-xs text-text-muted"
             key={tag}
             title={tag}
           >
@@ -228,7 +228,7 @@ export function NoteLibraryRow({
       <div className="flex items-center justify-end gap-1 pr-2 opacity-0 transition-opacity group-hover/note-row:opacity-100 group-focus-within/note-row:opacity-100">
         {viewMode === "search" ? (
           <button
-            className="flex size-7 items-center justify-center rounded text-[#9b9a97] hover:bg-[#e9e9e7] hover:text-[#37352f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d3d1cb]"
+            className="flex size-7 items-center justify-center rounded text-text-subtle hover:bg-bg-icon-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             onClick={(event) => {
               event.stopPropagation();
               onRevealInTree(note._id);
@@ -240,7 +240,7 @@ export function NoteLibraryRow({
           </button>
         ) : null}
         <button
-          className="h-7 rounded-md border border-[#d9d7d2] bg-white px-3 text-sm font-medium text-[#37352f] shadow-sm transition-colors hover:border-[#bdbab4] hover:bg-[#f7f7f5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d3d1cb]"
+          className="h-7 rounded-md border border-border-button bg-white px-3 text-sm font-medium text-text-primary shadow-sm transition-colors hover:border-border-button-hover hover:bg-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           onClick={(event) => {
             event.stopPropagation();
             onOpen(note);
@@ -251,7 +251,7 @@ export function NoteLibraryRow({
         </button>
         <Dropdown menu={{ items: menuItems }} placement="bottomRight" trigger={["click"]}>
           <button
-            className="flex size-7 items-center justify-center rounded text-[#9b9a97] hover:bg-[#e9e9e7] hover:text-[#37352f]"
+            className="flex size-7 items-center justify-center rounded text-text-subtle hover:bg-bg-icon-hover hover:text-text-primary"
             onClick={(event) => event.stopPropagation()}
             title="更多"
             type="button"

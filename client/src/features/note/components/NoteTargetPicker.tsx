@@ -137,21 +137,21 @@ export function NoteTargetPickerPanel({
 
   return (
     <div
-      className={clsx("flex flex-col overflow-hidden bg-white text-[#37352f]", className)}
+      className={clsx("flex flex-col overflow-hidden bg-white text-text-primary", className)}
       onMouseDown={onMouseDown}
       role="dialog"
     >
       <div className="px-3 pb-2 pt-3">
         <div
           className={clsx(
-            "flex h-9 items-center gap-2 rounded-lg border border-[#2383e2] bg-white px-2.5",
-            "shadow-[0_0_0_2px_rgba(35,131,226,0.16)]",
+            "flex h-9 items-center gap-2 rounded-lg border border-accent-border bg-white px-2.5",
+            "shadow-focus-input",
           )}
         >
-          <Search className="size-4 shrink-0 text-[#9b9a97]" />
+          <Search className="size-4 shrink-0 text-text-subtle" />
           <input
             autoFocus={autoFocus}
-            className="h-full min-w-0 flex-1 bg-transparent text-[15px] text-[#37352f] outline-none placeholder:text-[#b4b4b1]"
+            className="h-full min-w-0 flex-1 bg-transparent text-[15px] text-text-primary outline-none placeholder:text-text-placeholder"
             onChange={(event) => setSearchValue(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === "Enter") {
@@ -167,13 +167,13 @@ export function NoteTargetPickerPanel({
             value={searchValue}
           />
           {isSearching || disabled ? (
-            <LoaderCircle className="size-4 shrink-0 animate-spin text-[#9b9a97]" />
+            <LoaderCircle className="size-4 shrink-0 animate-spin text-text-subtle" />
           ) : null}
         </div>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
-        <div className="px-1 pb-1.5 pt-3 text-xs text-[#787774]">
+        <div className="px-1 pb-1.5 pt-3 text-xs text-text-muted">
           {sectionLabel}
         </div>
         {isSearching ? (
@@ -189,7 +189,7 @@ export function NoteTargetPickerPanel({
             onToggle={toggleExpanded}
           />
         ) : (
-          <div className="flex h-32 items-center justify-center text-sm text-[#9b9a97]">
+          <div className="flex h-32 items-center justify-center text-sm text-text-subtle">
             {visibleEmptyMessage}
           </div>
         )}

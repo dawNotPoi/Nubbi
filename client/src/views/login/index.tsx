@@ -1,4 +1,3 @@
-import { AuthCodeForm } from "@/component/auth/AuthCodeForm";
 import { useAuth } from "@/hooks/useAuth";
 import {
   getAuthCallbackErrorMessage,
@@ -9,38 +8,24 @@ import {
   verifyEmailWithCode,
 } from "@/utils/auth";
 import { resolveReturnTo, routes } from "@/utils/routes";
-import { Alert, Button, Divider, Form, Input, Spin, message } from "antd";
+import { message } from "antd";
 import { useEffect, useMemo, useState } from "react";
-import {
-  ArrowLeft,
-  Github,
-  KeyRound,
-  Mail,
-  ShieldCheck,
-  UserRound,
-} from "lucide-react";
+import { Github, Loader2 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
-
-interface LoginFormData {
-  email: string;
-  password: string;
-}
-
-interface RegisterFormData extends LoginFormData {
-  username: string;
-  confirmPassword: string;
-  verificationCode?: string;
-}
+import faviconSvg from "/favicon.svg";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 
 type AuthView = "login" | "register" | "verifyEmail" | "forgotPassword";
+
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const emailDomainCorrections: Record<string, string> = {
-  "foxmai.com": "foxmail.com",
-  "gamil.com": "gmail.com",
-  "gmail.con": "gmail.com",
-  "hotmial.com": "hotmail.com",
-  "outlok.com": "outlook.com",
-  "qq.con": "qq.com",
+  "foxmai.com": "foxmail.com", "gamil.com": "gmail.com",
+  "gmail.con": "gmail.com", "hotmial.com": "hotmail.com",
+  "outlok.com": "outlook.com", "qq.con": "qq.com",
 };
 
 const getEmailDomainCorrection = (email: string) => {
@@ -48,28 +33,35 @@ const getEmailDomainCorrection = (email: string) => {
   return domain ? emailDomainCorrections[domain] : undefined;
 };
 
-const authInputClassName = "h-11 rounded-md";
-const authButtonClassName = "h-11 rounded-md font-medium";
-const authLabelClassName = "mb-2 text-sm font-medium text-[#37352f]";
-const authIconClassName = "text-[#9b9a97]";
-
 export const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, register, loginWithGitHub, loading } = useAuth();
-  const [registerForm] = Form.useForm<RegisterFormData>();
 
   const [view, setView] = useState<AuthView>("login");
   const [socialLoginError, setSocialLoginError] = useState<string | null>(null);
+
+  /* login */
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+
+  /* register */
+  const [regUsername, setRegUsername] = useState("");
+  const [regEmail, setRegEmail] = useState("");
+  const [regCode, setRegCode] = useState("");
+  const [regPassword, setRegPassword] = useState("");
+  const [regConfirmPassword, setRegConfirmPassword] = useState("");
+  const [sendingRegisterCode, setSendingRegisterCode] = useState(false);
+  const [registerCodeCooldown, setRegisterCodeCooldown] = useState(0);
+  const [registerEmailError, setRegisterEmailError] = useState("");
+
+  /* verifyEmail */
   const [verificationEmail, setVerificationEmail] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
   const [verifyingEmail, setVerifyingEmail] = useState(false);
   const [resendingVerification, setResendingVerification] = useState(false);
-  const [sendingRegisterCode, setSendingRegisterCode] = useState(false);
-  const [registerCodeCooldown, setRegisterCodeCooldown] = useState(0);
-  const [registerEmailValue, setRegisterEmailValue] = useState("");
-  const [registerEmailError, setRegisterEmailError] = useState("");
 
+  /* forgotPassword */
   const [resetEmail, setResetEmail] = useState("");
   const [resetCode, setResetCode] = useState("");
   const [resetPassword, setResetPassword] = useState("");
@@ -80,830 +72,361 @@ export const LoginPage = () => {
   const [resetCodeCooldown, setResetCodeCooldown] = useState(0);
   const [resetEmailError, setResetEmailError] = useState("");
 
-  const stateFrom = (
-    location.state as
-      | {
-          from?: {
-            pathname?: string;
-            search?: string;
-            hash?: string;
-          };
-        }
-      | undefined
-  )?.from;
-
+  /* ── routing ── */
+  const stateFrom = (location.state as { from?: { pathname?: string; search?: string; hash?: string } } | undefined)?.from;
   const queryReturnTo = new URLSearchParams(location.search).get("returnTo");
-  const stateReturnTo = stateFrom
-    ? `${stateFrom.pathname || ""}${stateFrom.search || ""}${stateFrom.hash || ""}`
-    : "";
+  const stateReturnTo = stateFrom ? `${stateFrom.pathname || ""}${stateFrom.search || ""}${stateFrom.hash || ""}` : "";
   const returnTo = resolveReturnTo([queryReturnTo, stateReturnTo], routes.home);
   const callbackURL = `${window.location.origin}${returnTo}`;
-
-  const callbackError = useMemo(
-    () => getAuthCallbackErrorMessage(location.search),
-    [location.search],
-  );
+  const callbackError = useMemo(() => getAuthCallbackErrorMessage(location.search), [location.search]);
 
   useEffect(() => {
     if (!callbackError) return;
-
     setSocialLoginError(callbackError);
     message.error(callbackError);
-
     const params = new URLSearchParams(location.search);
-    ["error", "error_description", "error_message", "message"].forEach((key) =>
-      params.delete(key),
-    );
+    ["error", "error_description", "error_message", "message"].forEach(k => params.delete(k));
+    navigate({ pathname: location.pathname, search: params.toString() ? `?${params.toString()}` : "" }, { replace: true, state: location.state });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    navigate(
-      {
-        pathname: location.pathname,
-        search: params.toString() ? `?${params.toString()}` : "",
-      },
-      { replace: true, state: location.state },
-    );
-  }, [callbackError, location.pathname, location.search, location.state, navigate]);
-
+  /* ── cooldown timers ── */
   useEffect(() => {
     if (registerCodeCooldown <= 0) return;
-
-    const timer = window.setTimeout(() => {
-      setRegisterCodeCooldown((currentValue) =>
-        currentValue > 0 ? currentValue - 1 : 0,
-      );
-    }, 1000);
-
-    return () => window.clearTimeout(timer);
+    const t = window.setTimeout(() => setRegisterCodeCooldown(c => c > 0 ? c - 1 : 0), 1000);
+    return () => window.clearTimeout(t);
   }, [registerCodeCooldown]);
 
   useEffect(() => {
     if (resetCodeCooldown <= 0) return;
-
-    const timer = window.setTimeout(() => {
-      setResetCodeCooldown((currentValue) =>
-        currentValue > 0 ? currentValue - 1 : 0,
-      );
-    }, 1000);
-
-    return () => window.clearTimeout(timer);
+    const t = window.setTimeout(() => setResetCodeCooldown(c => c > 0 ? c - 1 : 0), 1000);
+    return () => window.clearTimeout(t);
   }, [resetCodeCooldown]);
 
-  const resetForgotPasswordState = () => {
-    setResetEmail("");
-    setResetCode("");
-    setResetPassword("");
-    setResetConfirmPassword("");
-    setResetCodeSent(false);
-    setResetCodeCooldown(0);
-    setResetEmailError("");
-  };
-
-  const resetRegisterVerificationState = () => {
-    setRegisterCodeCooldown(0);
-    setRegisterEmailValue("");
-    setRegisterEmailError("");
-    registerForm.setFieldValue("verificationCode", "");
-  };
-
+  /* ── validators ── */
   const validateRegisterEmail = () => {
-    const email = registerEmailValue.trim();
-
-    if (!email) {
-      setRegisterEmailError("请输入邮箱");
-      return "";
-    }
-
-    if (!emailPattern.test(email)) {
-      setRegisterEmailError("请输入有效的邮箱地址");
-      return "";
-    }
-
-    const correctedDomain = getEmailDomainCorrection(email);
-    if (correctedDomain) {
-      setRegisterEmailError(`邮箱域名是否应为 ${correctedDomain}？`);
-      return "";
-    }
-
-    setRegisterEmailError("");
-    return email;
+    const email = regEmail.trim();
+    if (!email) { setRegisterEmailError("请输入邮箱"); return ""; }
+    if (!emailPattern.test(email)) { setRegisterEmailError("请输入有效的邮箱地址"); return ""; }
+    const d = getEmailDomainCorrection(email);
+    if (d) { setRegisterEmailError(`邮箱域名是否应为 ${d}？`); return ""; }
+    setRegisterEmailError(""); return email;
   };
 
   const validateResetEmail = () => {
     const email = resetEmail.trim();
-
-    if (!email) {
-      setResetEmailError("请输入邮箱");
-      return "";
-    }
-
-    if (!emailPattern.test(email)) {
-      setResetEmailError("请输入有效的邮箱地址");
-      return "";
-    }
-
-    const correctedDomain = getEmailDomainCorrection(email);
-    if (correctedDomain) {
-      setResetEmailError(`邮箱域名是否应为 ${correctedDomain}？`);
-      return "";
-    }
-
-    setResetEmailError("");
-    return email;
+    if (!email) { setResetEmailError("请输入邮箱"); return ""; }
+    if (!emailPattern.test(email)) { setResetEmailError("请输入有效的邮箱地址"); return ""; }
+    const d = getEmailDomainCorrection(email);
+    if (d) { setResetEmailError(`邮箱域名是否应为 ${d}？`); return ""; }
+    setResetEmailError(""); return email;
   };
 
-  const onLoginFinish = async (values: LoginFormData) => {
-    const result = await login(values.email.trim(), values.password);
+  const resetRegisterFields = () => {
+    setRegUsername(""); setRegEmail(""); setRegCode("");
+    setRegPassword(""); setRegConfirmPassword("");
+    setRegisterEmailError(""); setRegisterCodeCooldown(0);
+  };
+
+  const resetForgotFields = () => {
+    setResetEmail(""); setResetCode(""); setResetPassword("");
+    setResetConfirmPassword(""); setResetCodeSent(false);
+    setResetCodeCooldown(0); setResetEmailError("");
+  };
+
+  /* ── login ── */
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const result = await login(loginEmail.trim(), loginPassword);
     if (!result.success) {
       if (result.error?.code === "EMAIL_NOT_VERIFIED") {
-        setVerificationEmail(values.email.trim());
-        setVerificationCode("");
-        setView("verifyEmail");
-        return;
+        setVerificationEmail(loginEmail.trim()); setVerificationCode(""); setView("verifyEmail"); return;
       }
-      message.error(result.error?.message || "登录失败");
-      return;
+      message.error(result.error?.message || "登录失败"); return;
     }
-
-    message.success("登录成功");
-    navigate(returnTo, { replace: true });
+    message.success("登录成功"); navigate(returnTo, { replace: true });
   };
 
-  const onRegisterFinish = async (values: RegisterFormData) => {
-    if (values.password !== values.confirmPassword) {
-      message.error("两次输入的密码不一致");
-      return;
-    }
-
+  /* ── register ── */
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (regPassword !== regConfirmPassword) { message.error("两次输入的密码不一致"); return; }
     const email = validateRegisterEmail();
-    if (!email) {
-      message.error(registerEmailValue.trim() ? "请输入有效的邮箱地址" : "请输入邮箱");
-      return;
-    }
-
-    const code = values.verificationCode?.trim() || "";
-    if (!/^\d{6}$/.test(code)) {
-      message.error("请输入 6 位数字验证码");
-      return;
-    }
-
-    const result = await register(
-      email,
-      values.password,
-      values.username.trim(),
-      code,
-    );
-
-    if (!result.success) {
-      message.error(result.error?.message || "注册失败");
-      return;
-    }
-
-    registerForm.resetFields();
-    resetRegisterVerificationState();
-    message.success("注册成功，请登录。");
-    setView("login");
+    if (!email) { message.error(regEmail.trim() ? "请输入有效的邮箱地址" : "请输入邮箱"); return; }
+    if (!/^\d{6}$/.test(regCode.trim())) { message.error("请输入 6 位数字验证码"); return; }
+    const result = await register(email, regPassword, regUsername.trim(), regCode.trim());
+    if (!result.success) { message.error(result.error?.message || "注册失败"); return; }
+    resetRegisterFields();
+    message.success("注册成功，请登录。"); setView("login");
   };
 
   const handleSendRegisterCode = async () => {
-    if (sendingRegisterCode || loading) {
-      return;
-    }
-
-    if (registerCodeCooldown > 0) {
-      message.info(`请 ${registerCodeCooldown} 秒后再获取验证码`);
-      return;
-    }
-
+    if (sendingRegisterCode || loading) return;
+    if (registerCodeCooldown > 0) { message.info(`请 ${registerCodeCooldown} 秒后再获取验证码`); return; }
     const email = validateRegisterEmail();
-    if (!email) {
-      message.error(registerEmailValue.trim() ? "请输入有效的邮箱地址" : "请输入邮箱");
-      return;
-    }
-
+    if (!email) { message.error(regEmail.trim() ? "请输入有效的邮箱地址" : "请输入邮箱"); return; }
     setSendingRegisterCode(true);
     const result = await sendRegisterCode(email);
     setSendingRegisterCode(false);
-
     if (!result.success) {
-      if (
-        result.data?.emailRegistered &&
-        result.data.emailVerified === false
-      ) {
-        setVerificationEmail(email);
-        setVerificationCode("");
-        setView("verifyEmail");
+      if (result.data?.emailRegistered && result.data.emailVerified === false) {
+        setVerificationEmail(email); setVerificationCode(""); setView("verifyEmail");
         setResendingVerification(true);
-        const resendResult = await resendVerificationCode(email);
+        const r = await resendVerificationCode(email);
         setResendingVerification(false);
-
-        if (!resendResult.success) {
-          message.error(
-            resendResult.error?.message ||
-              "邮箱已注册但验证码重新发送失败，请稍后重试",
-          );
-          return;
-        }
-
-        message.success("邮箱已注册但尚未验证，验证码已重新发送。");
-        return;
+        if (!r.success) { message.error(r.error?.message || "验证码重新发送失败"); return; }
+        message.success("邮箱已注册但尚未验证，验证码已重新发送。"); return;
       }
-
       message.error(result.error?.message || "验证码发送失败");
-      const remainingSeconds = result.data?.remainingSeconds;
-      if (remainingSeconds) {
-        setRegisterCodeCooldown(remainingSeconds);
-      }
+      if (result.data?.remainingSeconds) setRegisterCodeCooldown(result.data.remainingSeconds);
       return;
     }
-
     setRegisterCodeCooldown(result.data?.cooldownSeconds || 60);
     message.success("验证码已发送，请检查邮箱。");
   };
 
+  /* ── verifyEmail ── */
   const handleVerifyEmail = async () => {
-    if (!verificationEmail.trim()) {
-      message.error("请输入邮箱");
-      return;
-    }
-
-    if (!/^\d{6}$/.test(verificationCode.trim())) {
-      message.error("请输入 6 位数字验证码");
-      return;
-    }
-
+    if (!/^\d{6}$/.test(verificationCode.trim())) { message.error("请输入 6 位数字验证码"); return; }
     setVerifyingEmail(true);
-    const result = await verifyEmailWithCode(
-      verificationEmail.trim(),
-      verificationCode.trim(),
-    );
+    const result = await verifyEmailWithCode(verificationEmail.trim(), verificationCode.trim());
     setVerifyingEmail(false);
-
-    if (!result.success) {
-      message.error(result.error?.message || "邮箱验证失败");
-      return;
-    }
-
-    message.success("邮箱验证成功，请登录。");
-    setView("login");
-    setVerificationCode("");
+    if (!result.success) { message.error(result.error?.message || "邮箱验证失败"); return; }
+    message.success("邮箱验证成功，请登录。"); setView("login"); setVerificationCode("");
   };
 
   const handleResendVerification = async () => {
-    if (!verificationEmail.trim()) {
-      message.error("请输入邮箱");
-      return;
-    }
-
     setResendingVerification(true);
     const result = await resendVerificationCode(verificationEmail.trim());
     setResendingVerification(false);
-
-    if (!result.success) {
-      message.error(result.error?.message || "验证码发送失败");
-      return;
-    }
-
+    if (!result.success) { message.error(result.error?.message || "验证码发送失败"); return; }
     message.success("验证码已重新发送，请检查邮箱。");
   };
 
+  /* ── forgotPassword ── */
   const handleSendResetCode = async () => {
-    if (requestingResetCode || loading) {
-      return;
-    }
-
-    if (resetCodeCooldown > 0) {
-      message.info(`请 ${resetCodeCooldown} 秒后再获取验证码`);
-      return;
-    }
-
+    if (requestingResetCode || loading) return;
+    if (resetCodeCooldown > 0) { message.info(`请 ${resetCodeCooldown} 秒后再获取验证码`); return; }
     const email = validateResetEmail();
-    if (!email) {
-      message.error(resetEmail.trim() ? "请输入有效的邮箱地址" : "请输入邮箱");
-      return;
-    }
-
+    if (!email) { message.error(resetEmail.trim() ? "请输入有效的邮箱地址" : "请输入邮箱"); return; }
     setRequestingResetCode(true);
     const result = await requestPasswordReset(email);
     setRequestingResetCode(false);
-
     if (!result.success) {
       message.error(result.error?.message || "验证码发送失败");
-      if (result.data?.remainingSeconds) {
-        setResetCodeCooldown(result.data.remainingSeconds);
-      }
+      if (result.data?.remainingSeconds) setResetCodeCooldown(result.data.remainingSeconds);
       return;
     }
-
-    setResetCodeSent(true);
-    setResetCodeCooldown(result.data?.cooldownSeconds || 60);
+    setResetCodeSent(true); setResetCodeCooldown(result.data?.cooldownSeconds || 60);
     message.success("如果邮箱存在，对应验证码已发送。");
   };
 
   const handleResetPassword = async () => {
     const email = validateResetEmail();
-    if (!email) {
-      message.error(resetEmail.trim() ? "请输入有效的邮箱地址" : "请输入邮箱");
-      return;
-    }
-
-    if (!/^\d{6}$/.test(resetCode.trim())) {
-      message.error("请输入 6 位数字验证码");
-      return;
-    }
-
-    if (resetPassword.length < 6) {
-      message.error("新密码至少 6 位");
-      return;
-    }
-
-    if (resetPassword !== resetConfirmPassword) {
-      message.error("两次输入的密码不一致");
-      return;
-    }
-
+    if (!email) { message.error(resetEmail.trim() ? "请输入有效的邮箱地址" : "请输入邮箱"); return; }
+    if (!/^\d{6}$/.test(resetCode.trim())) { message.error("请输入 6 位数字验证码"); return; }
+    if (resetPassword.length < 6) { message.error("新密码至少 6 位"); return; }
+    if (resetPassword !== resetConfirmPassword) { message.error("两次输入的密码不一致"); return; }
     setSubmittingReset(true);
-    const result = await resetPasswordWithCode(
-      email,
-      resetCode.trim(),
-      resetPassword,
-    );
+    const result = await resetPasswordWithCode(email, resetCode.trim(), resetPassword);
     setSubmittingReset(false);
-
-    if (!result.success) {
-      message.error(result.error?.message || "重置密码失败");
-      return;
-    }
-
+    if (!result.success) { message.error(result.error?.message || "重置密码失败"); return; }
     message.success("密码重置成功，请使用新密码登录。");
-    resetForgotPasswordState();
-    setView("login");
+    resetForgotFields(); setView("login");
+  };
+
+  const goView = (v: AuthView) => {
+    if (v === "register") resetRegisterFields();
+    if (v === "forgotPassword") resetForgotFields();
+    setView(v);
+  };
+
+  const header = {
+    title: view === "register" ? "创建账号" : view === "verifyEmail" ? "验证邮箱" : view === "forgotPassword" ? "重置密码" : "登录 Nubbi",
+    desc: view === "register" ? "加入 Nubbi，开启结构化学习之旅" : view === "verifyEmail" ? `验证码已发送至 ${verificationEmail}` : view === "forgotPassword" ? "通过邮箱验证设置新密码" : "欢迎回来，继续你的知识旅程",
   };
 
   const handleGitHubLogin = async () => {
     const result = await loginWithGitHub(callbackURL);
-    if (!result.success) {
-      message.error(result.error?.message || "GitHub 登录失败");
-    }
+    if (!result.success) message.error(result.error?.message || "GitHub 登录失败");
   };
-
-  const renderAuthContent = () => {
-    if (view === "verifyEmail") {
-      return (
-        <AuthCodeForm
-          title="输入邮箱验证码"
-          description="注册成功后无需跳页，直接在这里输入邮箱里的 6 位数字验证码即可完成验证。"
-          email={verificationEmail}
-          code={verificationCode}
-          emailReadOnly
-          onEmailChange={setVerificationEmail}
-          onCodeChange={setVerificationCode}
-          onSubmit={handleVerifyEmail}
-          submitText="完成验证"
-          submitting={verifyingEmail}
-          onResend={handleResendVerification}
-          resendText="重新获取验证码"
-          resendLoading={resendingVerification}
-          onBack={() => setView("login")}
-          hint={
-            <Alert
-              type="info"
-              showIcon
-              message="验证码已发送"
-              description={`验证码已发送至 ${verificationEmail}，如果暂时没收到，可以直接点右下角重新发送。`}
-            />
-          }
-        />
-      );
-    }
-
-    if (view === "forgotPassword") {
-      return (
-        <div className="space-y-5">
-          <div className="space-y-4">
-            <div>
-              <div className={authLabelClassName}>邮箱</div>
-              <Input
-                size="large"
-                className={authInputClassName}
-                value={resetEmail}
-                placeholder="请输入邮箱"
-                prefix={<Mail size={16} className={authIconClassName} />}
-                status={resetEmailError ? "error" : undefined}
-                onChange={(event) => {
-                  setResetEmail(event.target.value);
-                  if (resetEmailError) {
-                    setResetEmailError("");
-                  }
-                }}
-              />
-              {resetEmailError ? (
-                <div className="mt-1 text-sm text-red-500">
-                  {resetEmailError}
-                </div>
-              ) : null}
-            </div>
-
-            <div>
-              <div className={authLabelClassName}>验证码</div>
-              <div className="flex gap-2">
-                <Input
-                  className={`${authInputClassName} min-w-0 flex-1`}
-                  size="large"
-                  value={resetCode}
-                  maxLength={6}
-                  inputMode="numeric"
-                  placeholder="请输入 6 位数字验证码"
-                  prefix={
-                    <ShieldCheck size={16} className={authIconClassName} />
-                  }
-                  onChange={(event) =>
-                    setResetCode(
-                      event.target.value.replace(/\D/g, "").slice(0, 6),
-                    )
-                  }
-                />
-                <Button
-                  htmlType="button"
-                  size="large"
-                  className={`${authButtonClassName} w-[112px] shrink-0`}
-                  loading={requestingResetCode}
-                  disabled={loading || resetCodeCooldown > 0}
-                  onClick={handleSendResetCode}
-                >
-                  {resetCodeCooldown > 0
-                    ? `${resetCodeCooldown}s`
-                    : "获取验证码"}
-                </Button>
-              </div>
-            </div>
-
-            <div>
-              <div className={authLabelClassName}>新密码</div>
-              <Input.Password
-                size="large"
-                className={authInputClassName}
-                value={resetPassword}
-                onChange={(event) => setResetPassword(event.target.value)}
-                placeholder="请输入新密码"
-                prefix={<KeyRound size={16} className={authIconClassName} />}
-              />
-            </div>
-
-            <div>
-              <div className={authLabelClassName}>确认新密码</div>
-              <Input.Password
-                size="large"
-                className={authInputClassName}
-                value={resetConfirmPassword}
-                onChange={(event) => setResetConfirmPassword(event.target.value)}
-                placeholder="请再次输入新密码"
-                prefix={<KeyRound size={16} className={authIconClassName} />}
-              />
-            </div>
-
-            {resetCodeSent ? (
-              <Alert
-                type="success"
-                showIcon
-                message="验证码已发送"
-                description="请输入邮箱收到的 6 位数字验证码，然后设置新密码。"
-              />
-            ) : (
-              <Alert
-                type="info"
-                showIcon
-                message="先获取验证码"
-                description="输入账号邮箱后点击验证码行的获取验证码，收到邮件后直接在这里完成重置。"
-              />
-            )}
-
-            <Button
-              type="primary"
-              size="large"
-              block
-              className={authButtonClassName}
-              loading={submittingReset}
-              onClick={handleResetPassword}
-            >
-              重置密码
-            </Button>
-
-            <Button
-              className="h-10 rounded-md px-0 text-[#6b7280]"
-              type="link"
-              icon={<ArrowLeft size={16} />}
-              onClick={() => {
-                resetForgotPasswordState();
-                setView("login");
-              }}
-              disabled={submittingReset || requestingResetCode}
-            >
-              返回
-            </Button>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <>
-        {view === "login" && (
-          <>
-            <div className="mb-6 flex flex-col items-center gap-2.5">
-              <button
-                type="button"
-                className="grid size-12 place-items-center rounded-full border border-[#deddda] bg-white text-[#37352f] shadow-sm transition-colors hover:border-[#bdbab4] hover:bg-[#f7f7f5] hover:text-[#1f2326] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d3d1cb] disabled:cursor-not-allowed disabled:opacity-60"
-                onClick={handleGitHubLogin}
-                disabled={loading}
-                aria-label="使用 GitHub 登录"
-              >
-                {loading ? (
-                  <Spin size="small" />
-                ) : (
-                  <Github size={22} strokeWidth={2} aria-hidden="true" />
-                )}
-              </button>
-              <span className="text-[13px] font-medium text-[#6f6e69]">
-                使用 GitHub 登录
-              </span>
-            </div>
-
-            <Divider>或</Divider>
-          </>
-        )}
-
-        {view === "register" ? (
-          <Form
-            form={registerForm}
-            name="register"
-            onFinish={onRegisterFinish}
-            layout="vertical"
-            size="large"
-          >
-            <Form.Item
-              name="username"
-              label="用户名"
-              rules={[
-                { required: true, message: "请输入用户名" },
-                { min: 3, message: "用户名至少 3 位" },
-                { max: 20, message: "用户名最多 20 位" },
-                {
-                  pattern: /^[a-zA-Z0-9_]+$/,
-                  message: "用户名只能包含字母、数字和下划线",
-                },
-              ]}
-            >
-              <Input
-                className={authInputClassName}
-                placeholder="请输入用户名"
-                prefix={<UserRound size={16} className={authIconClassName} />}
-              />
-            </Form.Item>
-
-            <Form.Item
-              label="邮箱"
-              required
-              validateStatus={registerEmailError ? "error" : undefined}
-              help={registerEmailError || undefined}
-            >
-              <Input
-                className={authInputClassName}
-                value={registerEmailValue}
-                placeholder="请输入邮箱"
-                prefix={<Mail size={16} className={authIconClassName} />}
-                onChange={(event) => {
-                  setRegisterEmailValue(event.target.value);
-                  if (registerEmailError) {
-                    setRegisterEmailError("");
-                  }
-                }}
-              />
-            </Form.Item>
-
-            <Form.Item label="验证码" required className="mb-6">
-              <div className="flex gap-2">
-                <Form.Item
-                  name="verificationCode"
-                  noStyle
-                  normalize={(value: string) =>
-                    value?.replace(/\D/g, "").slice(0, 6)
-                  }
-                  rules={[
-                    { required: true, message: "请输入验证码" },
-                    {
-                      pattern: /^\d{6}$/,
-                      message: "请输入 6 位数字验证码",
-                    },
-                  ]}
-                >
-                  <Input
-                    className={`${authInputClassName} min-w-0 flex-1`}
-                    maxLength={6}
-                    inputMode="numeric"
-                    placeholder="请输入 6 位数字验证码"
-                    prefix={
-                      <ShieldCheck size={16} className={authIconClassName} />
-                    }
-                  />
-                </Form.Item>
-
-                <Button
-                  htmlType="button"
-                  className={`${authButtonClassName} w-[112px] shrink-0`}
-                  onClick={handleSendRegisterCode}
-                  loading={sendingRegisterCode}
-                  disabled={loading || registerCodeCooldown > 0}
-                >
-                  {registerCodeCooldown > 0
-                    ? `${registerCodeCooldown}s`
-                    : "获取验证码"}
-                </Button>
-              </div>
-
-              <Form.Item noStyle shouldUpdate>
-                {() => {
-                  const errors = registerForm.getFieldError("verificationCode");
-                  return errors.length ? (
-                    <div className="mt-1 text-sm text-red-500">{errors[0]}</div>
-                  ) : null;
-                }}
-              </Form.Item>
-            </Form.Item>
-
-            <Form.Item
-              name="password"
-              label="密码"
-              rules={[
-                { required: true, message: "请输入密码" },
-                { min: 6, message: "密码至少 6 位" },
-              ]}
-            >
-              <Input.Password
-                className={authInputClassName}
-                placeholder="请输入密码"
-                prefix={<KeyRound size={16} className={authIconClassName} />}
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="confirmPassword"
-              label="确认密码"
-              rules={[
-                { required: true, message: "请再次输入密码" },
-                { min: 6, message: "密码至少 6 位" },
-              ]}
-            >
-              <Input.Password
-                className={authInputClassName}
-                placeholder="请再次输入密码"
-                prefix={<KeyRound size={16} className={authIconClassName} />}
-              />
-            </Form.Item>
-
-            <Form.Item>
-              <Button
-                type="primary"
-                htmlType="submit"
-                block
-                className={authButtonClassName}
-                loading={loading}
-                disabled={sendingRegisterCode}
-              >
-                注册
-              </Button>
-            </Form.Item>
-          </Form>
-        ) : (
-          <Form
-            name="login"
-            onFinish={onLoginFinish}
-            layout="vertical"
-            size="large"
-          >
-            <Form.Item
-              name="email"
-              label="邮箱"
-              rules={[
-                { required: true, message: "请输入邮箱" },
-                { type: "email", message: "请输入有效的邮箱地址" },
-              ]}
-            >
-              <Input
-                className={authInputClassName}
-                placeholder="请输入邮箱"
-                prefix={<Mail size={16} className={authIconClassName} />}
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="password"
-              label="密码"
-              rules={[{ required: true, message: "请输入密码" }]}
-            >
-              <Input.Password
-                className={authInputClassName}
-                placeholder="请输入密码"
-                prefix={<KeyRound size={16} className={authIconClassName} />}
-              />
-            </Form.Item>
-
-            <div className="mb-4 flex justify-end">
-              <Button
-                type="link"
-                className="px-0"
-                onClick={() => {
-                  resetForgotPasswordState();
-                  setView("forgotPassword");
-                }}
-              >
-                忘记密码？
-              </Button>
-            </div>
-
-            <Form.Item>
-              <Button
-                type="primary"
-                htmlType="submit"
-                block
-                className={authButtonClassName}
-                loading={loading}
-              >
-                登录
-              </Button>
-            </Form.Item>
-          </Form>
-        )}
-
-        <div className="text-center mt-4">
-          <Button
-            type="link"
-            onClick={() => {
-              if (view === "register") {
-                resetRegisterVerificationState();
-                registerForm.resetFields();
-                setView("login");
-                return;
-              }
-
-              setView("register");
-            }}
-          >
-            {view === "register"
-              ? "已有账号？点击登录"
-              : "没有账号？点击注册"}
-          </Button>
-        </div>
-      </>
-    );
-  };
-
-  const pageTitle =
-    view === "register"
-      ? "注册账号"
-      : view === "verifyEmail"
-        ? "邮箱验证"
-        : view === "forgotPassword"
-          ? "找回密码"
-          : "登录账号";
-
-  const pageSubtitle =
-    view === "register"
-      ? "填写邮箱验证码完成注册"
-      : view === "verifyEmail"
-        ? "邮箱验证完成后即可返回登录"
-        : view === "forgotPassword"
-          ? "输入邮箱验证码后设置新密码"
-          : "欢迎回来";
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f7f7f5] px-4 py-8 text-[#37352f]">
-      <div className="w-full max-w-[430px] space-y-6">
-        <div className="text-center">
-          <div className="mx-auto mb-4 flex size-11 items-center justify-center rounded-md border border-[#deddda] bg-white text-[#37352f] shadow-sm">
-            <KeyRound size={20} />
-          </div>
-          <h2 className="text-[28px] font-semibold leading-tight tracking-normal text-[#37352f]">
-            {pageTitle}
-          </h2>
-          <p className="mt-2 text-sm text-[#6f6e69]">{pageSubtitle}</p>
-        </div>
+    <div className="flex min-h-screen items-center justify-center bg-[#fbfbfa] px-5 py-10">
+      <Card className="w-full max-w-[420px]">
+        <CardHeader className="mb-6">
+          <img className="size-12 rounded-xl border border-[#ededeb] bg-white" src={faviconSvg} alt="Nubbi" />
+          <CardTitle>{header.title}</CardTitle>
+          <CardDescription>{header.desc}</CardDescription>
+        </CardHeader>
 
-        <div className="rounded-lg border border-[#e5e2da] bg-[#fffdf9] px-5 py-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)] sm:px-6">
-          {socialLoginError && (
-            <Alert
-              message="第三方登录失败"
-              description={socialLoginError}
-              type="error"
-              showIcon
-              closable
-              onClose={() => setSocialLoginError(null)}
-              style={{ marginBottom: 16 }}
-            />
+        <CardContent>
+          {/* ═══ verifyEmail ═══ */}
+          {view === "verifyEmail" ? (
+            <>
+              <div className="flex items-start gap-2.5 rounded-[10px] bg-accent p-3.5 text-[13px] leading-relaxed text-accent-foreground">
+                <span className="text-[17px] shrink-0">💡</span>
+                <span>如果没有收到邮件，请检查垃圾箱，或点击下方按钮重新发送。</span>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>6 位验证码</Label>
+                <Input
+                  className="text-center text-xl tracking-[8px] px-4"
+                  maxLength={6}
+                  inputMode="numeric"
+                  value={verificationCode}
+                  onChange={e => setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  placeholder="请输入 6 位数字"
+                />
+              </div>
+              <Button variant="primary" className="w-full" size="lg" onClick={handleVerifyEmail} disabled={verifyingEmail}>
+                {verifyingEmail && <Loader2 className="animate-spin" />}
+                {verifyingEmail ? "验证中..." : "验证并完成注册"}
+              </Button>
+              <Button variant="ghost" className="w-full" onClick={handleResendVerification} disabled={resendingVerification}>
+                {resendingVerification ? "发送中..." : "重新发送验证码"}
+              </Button>
+              <Button variant="link" className="w-full" onClick={() => goView("login")}>返回登录</Button>
+            </>
+          ) : view === "forgotPassword" ? (
+            /* ═══ forgotPassword ═══ */
+            <>
+              <div className="flex flex-col gap-1.5">
+                <Label>账号邮箱</Label>
+                <Input type="email" value={resetEmail} placeholder="请输入注册邮箱" className={resetEmailError ? "!border-red-500" : ""}
+                  onChange={e => { setResetEmail(e.target.value); if (resetEmailError) setResetEmailError(""); }} />
+                {resetEmailError ? <p className="text-xs text-red-500">{resetEmailError}</p> : null}
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>验证码</Label>
+                <div className="flex gap-2.5">
+                  <Input className="flex-1 min-w-0" maxLength={6} inputMode="numeric" value={resetCode} placeholder="6 位数字"
+                    onChange={e => setResetCode(e.target.value.replace(/\D/g, "").slice(0, 6))} />
+                  <Button className="shrink-0 w-[110px]" variant="outline" size="sm"
+                    onClick={handleSendResetCode}
+                    disabled={loading || resetCodeCooldown > 0 || requestingResetCode}>
+                    {requestingResetCode ? "发送中" : resetCodeCooldown > 0 ? `${resetCodeCooldown}s` : "获取验证码"}
+                  </Button>
+                </div>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>新密码</Label>
+                <Input type="password" value={resetPassword} placeholder="至少 6 位" onChange={e => setResetPassword(e.target.value)} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>确认新密码</Label>
+                <Input type="password" value={resetConfirmPassword} placeholder="请再次输入新密码" onChange={e => setResetConfirmPassword(e.target.value)} />
+              </div>
+              {resetCodeSent ? (
+                <div className="rounded-[10px] bg-[#ecfdf5] p-3.5 text-[13px] leading-relaxed text-[#059669]">
+                  ✅ 验证码已发送，请输入邮箱收到的 6 位数字验证码并设置新密码。
+                </div>
+              ) : (
+                <div className="rounded-[10px] bg-accent p-3.5 text-[13px] leading-relaxed text-accent-foreground">
+                  💡 先输入邮箱获取验证码，收到邮件后在此处完成密码重置。
+                </div>
+              )}
+              <Button variant="primary" className="w-full !bg-[linear-gradient(135deg,#f59e0b,#f97316)]" size="lg" onClick={handleResetPassword} disabled={submittingReset}>
+                {submittingReset ? "重置中..." : "重置密码"}
+              </Button>
+              <Button variant="link" className="w-full" onClick={() => goView("login")}>返回登录</Button>
+            </>
+          ) : view === "register" ? (
+            /* ═══ register ═══ */
+            <form onSubmit={handleRegister}>
+              <div className="flex items-center gap-3.5 mb-6">
+                <Separator className="flex-1" />
+                <span className="text-[13px] text-text-subtle">邮箱注册</span>
+                <Separator className="flex-1" />
+              </div>
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <Label>用户名</Label>
+                  <Input value={regUsername} placeholder="3-20 位字母、数字或下划线" onChange={e => setRegUsername(e.target.value)} />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label>邮箱</Label>
+                  <Input value={regEmail} placeholder="请输入邮箱" className={registerEmailError ? "!border-red-500" : ""}
+                    onChange={e => { setRegEmail(e.target.value); if (registerEmailError) setRegisterEmailError(""); }} />
+                  {registerEmailError ? <p className="text-xs text-red-500">{registerEmailError}</p> : null}
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label>验证码</Label>
+                  <div className="flex gap-2.5">
+                    <Input className="flex-1 min-w-0" maxLength={6} inputMode="numeric" value={regCode} placeholder="6 位数字"
+                      onChange={e => setRegCode(e.target.value.replace(/\D/g, "").slice(0, 6))} />
+                    <Button className="shrink-0 w-[110px]" variant="outline" size="sm"
+                      onClick={handleSendRegisterCode}
+                      disabled={loading || registerCodeCooldown > 0 || sendingRegisterCode}>
+                      {sendingRegisterCode ? "发送中" : registerCodeCooldown > 0 ? `${registerCodeCooldown}s` : "获取验证码"}
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label>密码</Label>
+                  <Input type="password" value={regPassword} placeholder="至少 6 位" onChange={e => setRegPassword(e.target.value)} />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label>确认密码</Label>
+                  <Input type="password" value={regConfirmPassword} placeholder="请再次输入密码" onChange={e => setRegConfirmPassword(e.target.value)} />
+                </div>
+                <Button variant="primary" size="lg" type="submit" disabled={loading || sendingRegisterCode}>
+                  {loading && <Loader2 className="animate-spin" />}
+                  注册
+                </Button>
+              </div>
+            </form>
+          ) : (
+            /* ═══ login ═══ */
+            <form onSubmit={handleLogin}>
+              <Button variant="outline" className="w-full" type="button" onClick={handleGitHubLogin} disabled={loading}>
+                <Github size={20} /> 使用 GitHub 登录
+              </Button>
+              <div className="flex items-center gap-3.5 my-6">
+                <Separator className="flex-1" />
+                <span className="text-[13px] text-text-subtle">或使用邮箱</span>
+                <Separator className="flex-1" />
+              </div>
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <Label>邮箱</Label>
+                  <Input type="email" value={loginEmail} placeholder="请输入邮箱" onChange={e => setLoginEmail(e.target.value)} />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label>密码</Label>
+                  <Input type="password" value={loginPassword} placeholder="请输入密码" onChange={e => setLoginPassword(e.target.value)} />
+                </div>
+                <div className="flex justify-end -mt-2">
+                  <Button variant="link" type="button" onClick={() => goView("forgotPassword")}>忘记密码？</Button>
+                </div>
+                <Button variant="primary" size="lg" type="submit" disabled={loading}>
+                  {loading && <Loader2 className="animate-spin" />}
+                  登录
+                </Button>
+              </div>
+            </form>
           )}
 
-          {renderAuthContent()}
-        </div>
-      </div>
+          {socialLoginError ? (
+            <div className="flex items-start gap-2.5 rounded-[10px] bg-destructive p-3 text-[13px] leading-relaxed text-destructive-foreground">
+              <span>第三方登录失败：{socialLoginError}</span>
+              <button className="ml-auto shrink-0 text-destructive-foreground text-base" onClick={() => setSocialLoginError(null)}>&times;</button>
+            </div>
+          ) : null}
+
+          {view === "login" || view === "register" ? (
+            <div className="flex items-center justify-center gap-1 text-sm text-text-muted">
+              {view === "register" ? "已有账号？" : "还没有账号？"}
+              <Button variant="link" className="p-0 h-auto font-bold" onClick={() => goView(view === "register" ? "login" : "register")}>
+                {view === "register" ? "返回登录" : "立即注册"}
+              </Button>
+            </div>
+          ) : null}
+        </CardContent>
+
+        <CardFooter>
+          <span className="auth-footer-dot size-1.5 rounded-full" /> Nubbi
+        </CardFooter>
+      </Card>
     </div>
   );
 };
