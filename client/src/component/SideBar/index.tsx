@@ -38,10 +38,6 @@ const SideBar: React.FC = () => {
     return () => document.removeEventListener("keydown", closeOnEscape);
   }, [isMobile, setMobileSideBarOpened]);
 
-  const handleChangeAvatar = () => {
-    setAvatarModalOpen(true);
-  };
-
   return (
     <ResizeTab
       className={clsx("group/sidebar px-3 bg-sidebar py-2 font-medium ")}

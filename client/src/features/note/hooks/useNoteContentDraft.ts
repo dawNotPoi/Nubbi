@@ -255,8 +255,7 @@ export const useNoteContentDraft = ({
     contentDebouncing,
     contentDirty,
     contentSaving,
-    data?.content,
-    data?.contentRevision,
+    data,
     noteId,
     refreshActiveState,
   ]);

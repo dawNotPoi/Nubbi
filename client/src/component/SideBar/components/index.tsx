@@ -2,6 +2,7 @@ import clsx from "clsx";
 import { FC, PropsWithChildren } from "react";
 import { NavLink, NavLinkProps } from "react-router-dom";
 
+// eslint-disable-next-line react-refresh/only-export-components
 export * from "./Tree";
 
 export const MenuItemContainer: FC<NavLinkProps> = ({

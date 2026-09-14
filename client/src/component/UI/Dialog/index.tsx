@@ -171,6 +171,7 @@ export const Modal = ({
       document.removeEventListener("keydown", onKey);
       prev?.focus?.();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
   //弹窗开启时,关闭body滚动
   useBodyLock(open);

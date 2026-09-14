@@ -57,6 +57,16 @@ chore(config): 升级 vite 至 5.4
 3. 询问用户是否将相关改动加入暂存区（`git add`）
 4. 暂存完成后，让用户确认是否提交（展示完整 commit message 供用户最终确认）
 
+### 合并到 deploy 前必做
+
+1. 本地构建验证：`cd client && npx vite build`，确认无编译错误
+2. 本地类型检查：`cd server && npx tsc --noEmit`，确认无类型错误
+3. 合并采用策略：`git checkout deploy && git merge dev/out -X theirs`，接受 dev/out 的改动
+4. 解决 modify/delete 冲突：dev/out 删除的文件直接 `git rm`
+5. 检查合并差异：`git diff dev/out..deploy --stat`，确认 deploy 特有文件未被误删
+6. 本地再次 build + typecheck 确认合并代码无问题
+7. 推送 `git push origin deploy`
+
 ## 上下文效率
 
 - **并行优先**：修改不同文件时，在同一条消息中并行发出 Edit，不逐个串行

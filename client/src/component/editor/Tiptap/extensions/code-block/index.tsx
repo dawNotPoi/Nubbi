@@ -35,6 +35,7 @@ export const CODE_BLOCK_LANGUAGES = [
   { label: "Mermaid", value: "mermaid" },
 ] as const;
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const normalizeCodeBlockLanguage = (language?: string | null) => {
   if (!language || language === "auto") {
     return "plaintext";

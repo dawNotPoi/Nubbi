@@ -117,6 +117,7 @@ const SuggestionPopover = forwardRef<SuggestionListRef, SuggestionPopoverProps>(
       return () => {
         document.removeEventListener("mousedown", handleMouseDown);
       };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [onClickOutside]);
 
     if (!hasContent) return null;
