@@ -5,7 +5,7 @@
 ## 生成 Token
 
 1. 登录 Nubbi，点击左上角**个人头像 → 鉴权管理**；
-2. 输入 Token 名称（如「博客」），选择有效期（30 天 / 90 天 / 1 年 / 永久），点击**生成 Token**；
+2. 选择用途「通用 API」或「MCP Agent」，输入名称并选择有效期，点击**生成 Token**；
 3. **立即复制保存明文 Token**（`nb_` 开头）——服务端只存哈希，关闭弹窗后无法再次查看；
 4. 泄露或不再使用时，在同一界面删除该 Token，删除**立即生效**。
 
@@ -23,7 +23,16 @@ curl https://<服务端地址>/note/all -H "x-api-key: nb_xxxxxxxx..."
 
 ## 可用接口范围
 
-Token 可访问全部业务接口（与登录用户权限一致），数据自动按 Token 所属用户隔离：
+数据始终按 Token 所属用户隔离。通用 API Token 保持现有业务访问能力；MCP Agent Token 固定为：
+
+- 可读取全部本人笔记；
+- 只可创建或修改 `source=agent` 的笔记；
+- 可移动、归档、移入回收站和恢复 Agent 笔记；
+- 不可发布、永久删除，也不可访问文件或会议接口。
+
+历史无 permissions 的 Token 按通用 API Token 兼容处理。
+
+MCP Agent Token 对旧 `/note/*` 仅保留读取能力；创建、编辑、移动、归档、回收和恢复必须经 `/mcp-api/*`，旧写路由统一返回 403。
 
 | 前缀 | 说明 |
 |---|---|
@@ -60,7 +69,9 @@ if (code === 0) throw new Error(message);
 
 ### MCP server 对接注意
 
-- Token 通过 MCP server 的配置/环境变量注入，做 note CRUD 时使用 `/note` 下的 create / update / delete 接口；
+- stdio 通过环境变量 `NUBBI_API_KEY` 注入 Token；远程 HTTP 在每次请求使用 `Authorization: Bearer <token>`；
+- MCP Server 将 Token 转发给主服务 `/mcp-api/*`，不要把 Token 放入提示词或 Tool 参数；
+- 同一 MCP Token 可用于 stdio 和 HTTP，但建议每个部署单独创建，以便独立撤销和审计；
 - 收到 401 时向用户提示「请在 Nubbi 的鉴权管理中重新生成 Token」，不要静默重试；
 - 注意 300 次/分钟的限流，批量操作时控制并发。
 
@@ -69,3 +80,4 @@ if (code === 0) throw new Error(message);
 - 基于 better-auth 的 `apiKey` 插件（`server/app/lib/auth.ts`），key 以 SHA-256 哈希存储在 `apikey` 集合；
 - 校验入口为 `requireAuthWithApiKey` 中间件（`server/app/middleware/session.ts`）：请求带 `x-api-key` 时走 `auth.api.verifyApiKey`，否则回落到原有 session/JWT 逻辑；
 - 已显式关闭插件的 `sessions from api keys` 行为（`disableSessionForAPIKeys: true`），Token 无法触达 better-auth 自身端点。
+- 认证前置守卫拒绝外部 `/api-key/create`、`/api-key/update` 请求中的 `userId` 服务端字段，避免客户端伪造 Token 所属用户或注入 server-only permissions。

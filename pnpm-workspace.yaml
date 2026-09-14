@@ -1,6 +1,7 @@
 packages:
   - client
   - server
+  - mcp
 
 overrides:
   mongodb: 6.21.0

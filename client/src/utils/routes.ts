@@ -4,6 +4,7 @@ export const routes = {
   meetings: "/meetings",
   file: "/file",
   noteLib: "/note-lib",
+  noteTrash: "/note-trash",
   note: (id: string) => `/note/${id}`,
 };
 

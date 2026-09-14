@@ -1,123 +1,138 @@
-import { auth } from "@/lib/auth";
-import { importJWK, jwtVerify } from "jose";
+import {
+  hasMcpPermissionFingerprint,
+  MCP_NOTE_ACTIONS,
+  MCP_POLICY_VERSION,
+} from "@/lib/mcpPolicy";
 import type { NextFunction, Request, Response } from "express";
+import {
+  attachAuthContext,
+  authenticateBySession,
+  authenticateWithApiKey,
+  getApiKeyContext,
+  sendAuthenticationError,
+  unauthorized,
+} from "./authentication";
+import type { RequestAuthContext } from "./common";
 
-type JwkKey = Record<string, unknown> & { alg?: string };
+const forbidden = (res: Response, message = "Permission denied") =>
+  res.status(403).json({ code: 0, message, data: null });
 
-// 缓存 JWKS 公钥，避免每次请求都查 DB
-let jwksCache: { keys: JwkKey[]; cachedAt: number } | null = null;
-const JWKS_TTL = 60 * 60 * 1000; // 1 小时
+const isMcpPolicyContext = (context: RequestAuthContext): boolean =>
+  context.method === "apiKey" &&
+  (context.apiKey?.metadata?.kind === "mcp" ||
+    hasMcpPermissionFingerprint(context.apiKey?.permissions));
 
-const getPublicKeys = async (): Promise<JwkKey[]> => {
-  const now = Date.now();
-  if (jwksCache && now - jwksCache.cachedAt < JWKS_TTL) {
-    return jwksCache.keys;
+const hasScope = (
+  context: RequestAuthContext,
+  resource: string,
+  action: string,
+): boolean => {
+  if (context.method !== "apiKey") return true;
+  const permissions = context.apiKey?.permissions;
+  const isMcp = isMcpPolicyContext(context);
+  if (
+    isMcp &&
+    (resource !== "note" ||
+      !MCP_NOTE_ACTIONS.includes(action as (typeof MCP_NOTE_ACTIONS)[number]))
+  ) {
+    return false;
   }
-  const result = await auth.api.getJwks({});
-  const keys = (result?.keys ?? []) as JwkKey[];
-  jwksCache = { keys, cachedAt: now };
-  return keys;
+  if (permissions === null) return !isMcp;
+  return Boolean(permissions?.[resource]?.includes(action));
 };
 
-const verifyJwt = async (token: string): Promise<Record<string, unknown> | null> => {
-  try {
-    const keys = await getPublicKeys();
-    for (const keyData of keys) {
-      try {
-        const publicKey = await importJWK(keyData as any, (keyData.alg as string) ?? "EdDSA");
-        const { payload } = await jwtVerify(token, publicKey);
-        return payload as Record<string, unknown>;
-      } catch {
-        continue;
-      }
-    }
-    return null;
-  } catch {
-    return null;
-  }
+type AuthorizationOptions = {
+  mcpOnly?: boolean;
+  rejectMcp?: boolean;
 };
 
-// JWT 格式：三段 base64url 以 . 分隔
-const looksLikeJwt = (token: string) => token.split(".").length === 3;
+const authorize =
+  (
+    resource?: string,
+    action?: string,
+    options: AuthorizationOptions = {},
+  ) =>
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const context = await authenticateWithApiKey(req);
+      if (!context) return void unauthorized(res);
 
-const unauthorized = (res: Response) =>
-  res.status(401).json({ code: 0, message: "Unauthorized" });
-
-async function authenticateBySession(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) {
-  try {
-    const authHeader = req.headers.authorization;
-
-    if (authHeader?.startsWith("Bearer ")) {
-      const token = authHeader.slice(7);
-
-      if (looksLikeJwt(token)) {
-        const payload = await verifyJwt(token);
-        if (payload?.sub) {
-          (req as any).user = {
-            id: payload.sub as string,
-            email: payload.email as string | undefined,
-            name: payload.name as string | undefined,
-            image: payload.image as string | undefined,
-          };
-          next();
-          return;
+      if (options.mcpOnly) {
+        if (context.method !== "apiKey") return void unauthorized(res);
+        if (
+          context.apiKey?.metadata?.kind !== "mcp" ||
+          context.apiKey.metadata.policyVersion !== MCP_POLICY_VERSION
+        ) {
+          return void forbidden(res, "An MCP Agent API key is required");
         }
-        // JWT 格式正确但验证失败（过期或伪造），直接拒绝
-        unauthorized(res);
-        return;
       }
-    }
 
-    // 非 JWT bearer 或无 bearer，降级到 session 查询（支持 cookie + session token）
-    const session = await auth.api.getSession({ headers: req.headers as any });
-    if (!session?.user) {
-      unauthorized(res);
-      return;
-    }
-    (req as any).user = session.user;
-    next();
-  } catch {
-    unauthorized(res);
-  }
-}
+      if (options.rejectMcp && isMcpPolicyContext(context)) {
+        return void forbidden(
+          res,
+          "MCP Agent keys must use /mcp-api for write operations",
+        );
+      }
 
-// 仅接受 session/JWT，敏感路由（注销账号等）使用，API token 不可访问
+      const isScopedKey =
+        context.method === "apiKey" &&
+        (context.apiKey?.permissions !== null ||
+          context.apiKey?.metadata?.kind === "mcp");
+      if (
+        isScopedKey &&
+        (!resource || !action || !hasScope(context, resource, action))
+      ) {
+        return void forbidden(res);
+      }
+
+      attachAuthContext(req, context);
+      next();
+    } catch (error) {
+      sendAuthenticationError(res, error);
+    }
+  };
+
 async function requireAuth(req: Request, res: Response, next: NextFunction) {
   await authenticateBySession(req, res, next);
 }
 
-// 在 session/JWT 基础上额外接受长期 API token（x-api-key 头），普通业务路由使用
 export async function requireAuthWithApiKey(
   req: Request,
   res: Response,
   next: NextFunction,
 ) {
+  await authorize()(req, res, next);
+}
+
+export async function rejectScopedApiKeys(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   const headerValue = req.headers["x-api-key"];
   const key = Array.isArray(headerValue) ? headerValue[0] : headerValue;
-
-  if (!key) {
-    await authenticateBySession(req, res, next);
-    return;
-  }
+  if (!key) return void next();
 
   try {
-    // verifyApiKey 会校验 enabled/过期/限流，并更新 lastRequest 等字段；
-    // 部分错误路径可能 throw，统一按 401 处理
-    const result = await auth.api.verifyApiKey({ body: { key } });
-    if (!result?.valid || !result.key?.userId) {
-      unauthorized(res);
-      return;
+    const context = await getApiKeyContext(key);
+    if (!context) return void unauthorized(res);
+    if (
+      context.apiKey?.permissions !== null ||
+      context.apiKey?.metadata?.kind === "mcp"
+    ) {
+      return void forbidden(res);
     }
-    (req as any).user = { id: result.key.userId };
-    (req as any).authType = "apiKey";
+    attachAuthContext(req, context);
     next();
-  } catch {
-    unauthorized(res);
+  } catch (error) {
+    sendAuthenticationError(res, error);
   }
 }
+
+export const requireNotePermission = (action: string) =>
+  authorize("note", action, { rejectMcp: action !== "read" });
+
+export const requireMcpNotePermission = (action: string) =>
+  authorize("note", action, { mcpOnly: true });
 
 export default requireAuth;

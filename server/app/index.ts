@@ -9,12 +9,14 @@ import { auth } from "./lib/auth";
 import env from "./lib/env";
 import { errorHandler } from "./middleware/common";
 import { requestLogger } from "./middleware/requestLogger";
+import { rejectScopedApiKeys } from "./middleware/session";
 
 import authRouter from "./routes/auth";
 import fileRouter from "./routes/file";
 import imageRouter from "./routes/image";
 import meetingRouter from "./routes/meeting";
 import noteRouter from "./routes/note";
+import mcpApiRouter from "./routes/mcpApi";
 import summryRouter from "./routes/summary";
 import tagRouter from "./routes/tag";
 
@@ -37,7 +39,7 @@ const corsOptions = {
   },
   credentials: true, // 允许携带凭证（如 cookies）
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "Range"], // 允许的请求头
+  allowedHeaders: ["Content-Type", "Authorization", "X-API-Key", "Range"], // 允许的请求头
   exposedHeaders: [
     "set-auth-token",
     "set-auth-jwt",
@@ -79,6 +81,11 @@ app.get("/", (req, res) => {
 //接口路由处理
 app.use("/auth", authRouter);
 app.use("/note", noteRouter);
+app.use("/mcp-api", mcpApiRouter);
+app.use(
+  ["/tag", "/file", "/summary", "/meeting", "/image"],
+  rejectScopedApiKeys,
+);
 app.use("/tag", tagRouter);
 app.use("/download", express.static("static"));
 app.use("/file", fileRouter);

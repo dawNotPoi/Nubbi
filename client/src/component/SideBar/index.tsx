@@ -128,6 +128,10 @@ const SideBar: React.FC = () => {
             <span>会议</span>
           </MenuItemContainer>
           <NoteMenu />
+          <MenuItemContainer to={routes.noteTrash}>
+            <Trash2 size={16} />
+            <span>回收站</span>
+          </MenuItemContainer>
         </div>
       </div>
       <AccountDeletionModal

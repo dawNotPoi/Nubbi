@@ -8,9 +8,9 @@ import { createEmailVerificationCode } from "./emailVerification";
 import { sendPasswordResetEmail, sendVerificationEmail } from "./email";
 import { createPasswordResetCode } from "./passwordReset";
 import env from "./env";
+import { guardExternalApiKeyServerFields } from "./apiKeyRequestGuard";
 
 const authDb = await db;
-
 if (!authDb) {
   throw new Error("Database connection is not ready");
 }
@@ -64,6 +64,9 @@ export const auth = betterAuth({
   },
   onAPIError: {
     errorURL: `${env.CLIENT_URL}/login`,
+  },
+  hooks: {
+    before: guardExternalApiKeyServerFields,
   },
   emailAndPassword: {
     enabled: true,
@@ -151,6 +154,8 @@ export const auth = betterAuth({
     }),
     apiKey({
       defaultPrefix: "nb_",
+      enableMetadata: true,
+      maximumNameLength: 100,
       // 必须关闭：默认行为会让带 x-api-key 的请求在所有 better-auth 端点伪造 session
       //（包括用 key 创建新 key、getSession 等），token 校验统一走 requireAuthWithApiKey
       disableSessionForAPIKeys: true,
@@ -192,15 +197,3 @@ export const signUpVerifiedEmailWithPassword = async ({
         headers,
       }),
   );
-
-export async function getUser(
-  req: any,
-): Promise<{ id: string; email?: string; name?: string }> {
-  if (req.user) return req.user;
-  const session = await auth.api.getSession({ headers: req.headers as any });
-  if (!session?.user) {
-    throw Object.assign(new Error("Unauthorized"), { status: 401 });
-  }
-  req.user = session.user;
-  return req.user;
-}

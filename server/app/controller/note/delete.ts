@@ -1,7 +1,8 @@
 import note from "@/models/note";
 import { recalculateHasChildren } from "./update";
+import { withNoteStructureLock } from "./structureLock";
 
-const collectDescendantNoteIds = async (
+export const collectDescendantNoteIds = async (
   noteId: string,
   userId: string,
   includeDeleted = false,
@@ -33,7 +34,7 @@ const collectDescendantNoteIds = async (
   return descendantIds;
 };
 
-export const deleteNote = async (noteId: string, userId: string) => {
+const deleteNoteUnlocked = async (noteId: string, userId: string) => {
   const targetNote = await note
     .findOne({ _id: noteId, userId, deletedAt: null })
     .select("parentId")
@@ -55,7 +56,10 @@ export const deleteNote = async (noteId: string, userId: string) => {
   return await note.findById(noteId);
 };
 
-export const restoreNote = async (noteId: string, userId: string) => {
+export const deleteNote = async (noteId: string, userId: string) =>
+  withNoteStructureLock(userId, () => deleteNoteUnlocked(noteId, userId));
+
+const restoreNoteUnlocked = async (noteId: string, userId: string) => {
   const targetNote = await note
     .findOne({ _id: noteId, userId })
     .select("parentId deletedAt")
@@ -96,7 +100,10 @@ export const restoreNote = async (noteId: string, userId: string) => {
   return await note.findById(noteId);
 };
 
-export const purgeNote = async (noteId: string, userId: string) => {
+export const restoreNote = async (noteId: string, userId: string) =>
+  withNoteStructureLock(userId, () => restoreNoteUnlocked(noteId, userId));
+
+const purgeNoteUnlocked = async (noteId: string, userId: string) => {
   const targetNote = await note
     .findOne({ _id: noteId, userId })
     .select("parentId deletedAt")
@@ -118,3 +125,6 @@ export const purgeNote = async (noteId: string, userId: string) => {
 
   return { deletedCount: targetIds.length };
 };
+
+export const purgeNote = async (noteId: string, userId: string) =>
+  withNoteStructureLock(userId, () => purgeNoteUnlocked(noteId, userId));

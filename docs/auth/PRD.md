@@ -17,6 +17,18 @@
 | 邮箱 + 验证码 | ✅ 已实现 | Nodemailer 发送 6 位验证码 |
 | GitHub OAuth | ✅ 已实现 | Better-Auth GitHub provider |
 | Google OAuth | ✅ 已实现 | Better-Auth Google provider |
+| 长期 API Token | ✅ 已实现 | Better-Auth apiKey plugin |
+
+### API Token 用途预设
+
+- **通用 API**：兼容现有外部程序集成；历史无 permissions 的 Token 继续保留完整业务访问能力。
+- **MCP Agent**：固定授予 Note 的 read/create/update/move/archive/trash/restore，不授予 publish、purge、file、meeting。
+- 两类 Token 共用 `nb_` 前缀、哈希存储、过期、限流、列表和撤销机制；明文仅在创建时返回一次。
+- MCP Agent Token 由 `POST /auth/api-key/mcp` 创建，该接口只接受真实 Session/JWT，不接受 API Token。
+- Better Auth 的外部 API Key create/update 请求禁止携带服务端专用 `userId`，防止绕过 Session 代其他用户创建或修改 Token。
+- 账号注销会先撤销该用户全部 API Key；API Key 鉴权同时验证所属用户仍存在，避免已注销账号产生孤儿数据。
+- JWT 鉴权同样确认用户仍存在；MCP Token 创建端点仅接受受信浏览器 Origin 或无 Origin 的服务端调用。
+- MCP 身份同时由不可变的权限指纹兜底识别，即使历史 Token 的 metadata 曾被降级，也不能转而调用旧写路由。
 
 ---
 
@@ -50,6 +62,7 @@
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | ALL | `/api/auth/*` | Better-Auth 自动处理（登录、session、OAuth 回调等） |
+| POST | `/auth/api-key/mcp` | 创建固定权限的 MCP Agent Token |
 
 ---
 
@@ -109,7 +122,8 @@
 
 | 文件 | 导出 | 用途 |
 |------|------|------|
-| `server/app/middleware/session.ts` | `requireAuth` | 解析 Bearer Token，注入用户信息 |
+| `server/app/middleware/authentication.ts` | credential helpers | 解析并验证 Session、JWT、API Key 与所属用户 |
+| `server/app/middleware/session.ts` | `requireAuth`、scope guards | 执行路由权限决策并注入类型化 auth context |
 
 所有 `/note`、`/file`、`/meeting` 等业务路由均使用 `requireAuth` 中间件。
 

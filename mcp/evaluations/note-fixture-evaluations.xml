@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Stable fixture: fixture-notes.json. Every question is independent and read-only. -->
+<evaluation>
+  <qa_pair>
+    <question>Among archived 2025 launch programs, find the one launched in the first quarter, then inspect its storage decision. What database product and major version was selected? Answer exactly as written.</question>
+    <answer>PostgreSQL 16</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Find the first-quarter public launch whose retrospective mentions a rollback, then inspect the linked closed incident. What severity was assigned? Answer with the severity label only.</question>
+    <answer>P1</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Compare the approved budgets in all four archived program roots, then verify the lead in the highest-budget program's procurement decision. What is that lead's name?</question>
+    <answer>Dae Kim</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Locate the supplier-onboarding program that launched without customer-visible downtime. Read its closeout metrics. To one decimal place, how many days was median onboarding time after launch?</question>
+    <answer>4.1</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Find the archived accessibility program, inspect both its conformance report and remediation register, and identify the minimum measured text contrast. Return only the ratio.</question>
+    <answer>7.2:1</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Within the accessibility program whose audit had no critical defects, inspect the participant study. How many participants completed every priority journey?</question>
+    <answer>12</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Find the infrastructure-efficiency program, verify that its legacy cluster retirement completed before savings verification, and report the independently measured annualized cost reduction. Return only the percentage.</question>
+    <answer>31%</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Locate the migration runbook under the program whose security audit passed every required control. Who owned that runbook?</question>
+    <answer>Leila Ortiz</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Across the archived program roots, which project had the earliest explicitly documented public launch date in its retrospective? Return the project title.</question>
+    <answer>Project Atlas</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Find the closed security audit associated with a completed legacy-cluster retirement. How many required controls passed with no remaining exceptions?</question>
+    <answer>18</answer>
+  </qa_pair>
+</evaluation>

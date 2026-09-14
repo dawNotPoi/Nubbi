@@ -1,8 +1,8 @@
 import {
   auth,
-  getUser,
   signUpVerifiedEmailWithPassword,
 } from "@/lib/auth";
+import { getUser } from "@/lib/authUser";
 import {
   sendAccountDeletionVerificationEmail,
   sendRegisterVerificationEmail,
@@ -46,6 +46,14 @@ import fse from "fs-extra";
 import { ObjectId } from "mongodb";
 import { asyncHandler } from "../middleware/common";
 import { successResponse } from "./utils";
+import { validate } from "@/middleware/validator";
+import { z } from "zod";
+import {
+  createMcpPermissions,
+  MCP_TOKEN_METADATA,
+} from "@/lib/mcpPolicy";
+import { toWebHeaders } from "@/lib/requestHeaders";
+import { requireTrustedOrigin } from "@/middleware/trustedOrigin";
 
 const router = express.Router();
 
@@ -129,6 +137,8 @@ const deleteUserAccountData = async ({
     .select("storagePath")
     .lean();
   const storagePaths = userFiles.map((file) => file.storagePath);
+
+  await mongoDb.collection("apikey").deleteMany({ userId });
 
   await Promise.all([
     Note.deleteMany({ userId }),
@@ -581,6 +591,40 @@ router.post(
     });
 
     successResponse(res, null, "密码重置成功");
+  }),
+);
+
+router.post(
+  "/api-key/mcp",
+  requireTrustedOrigin,
+  requireAuth,
+  validate(
+    z
+      .object({
+        name: z.string().trim().min(1).max(100),
+        expiresIn: z
+          .number()
+          .int()
+          .min(60 * 60 * 24)
+          .max(60 * 60 * 24 * 365)
+          .optional(),
+      })
+      .strict(),
+  ),
+  asyncHandler(async (req, res) => {
+    const user = await getUser(req);
+    const result = await auth.api.createApiKey({
+      body: {
+        name: req.body.name,
+        expiresIn: req.body.expiresIn,
+        userId: user.id,
+        metadata: MCP_TOKEN_METADATA,
+        permissions: createMcpPermissions(),
+      },
+      headers: toWebHeaders(req.headers),
+    });
+
+    successResponse(res, result, "MCP Agent API key created");
   }),
 );
 

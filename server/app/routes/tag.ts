@@ -1,4 +1,4 @@
-import { getUser } from "@/lib/auth";
+import { getUser } from "@/lib/authUser";
 // 业务路由同时接受 session/JWT 与长期 API token
 import { requireAuthWithApiKey as requireAuth } from "@/middleware/session";
 import express from "express";

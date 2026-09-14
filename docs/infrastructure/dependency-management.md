@@ -2,10 +2,11 @@
 
 ## 现状架构
 
-本仓库是 **pnpm workspace monorepo**，由 `pnpm-workspace.yaml` 收录两个子项目：
+本仓库是 **pnpm workspace monorepo**，由 `pnpm-workspace.yaml` 收录三个子项目：
 
 - `client/`（nubbi-client，React + Vite）
 - `server/`（nubbi-server，Express + tsx）
+- `mcp/`（nubbi-mcp-server，MCP TypeScript SDK）
 
 锁文件只有根目录一份 `pnpm-lock.yaml`；根 `package.json`（nubbi）不含业务依赖，只承担开发期编排：workspace 聚合安装、`pnpm --filter` 脚本、husky / commitlint。
 
@@ -19,9 +20,10 @@ pnpm install   # 在仓库根目录执行，一次装完 client + server 所有�
 
 | 命令 | 作用 |
 | --- | --- |
-| `pnpm dev` | 并行启动 client 和 server |
+| `pnpm dev` | 并行启动 client 和 server（MCP transport 按需单独启动） |
 | `pnpm dev:client` / `pnpm dev:server` | 单独启动某一端 |
 | `pnpm build:client` | 构建前端 |
+| `pnpm build:mcp` | 构建 MCP Server |
 | `pnpm lint:client` / `pnpm typecheck:server` | 代码检查 |
 
 ### 构建脚本白名单
@@ -30,9 +32,9 @@ pnpm 10 默认禁止依赖运行安装期构建脚本。`pnpm-workspace.yaml` �
 
 ## 设计纪律：为拆库留后路
 
-client 与 server 未来可能拆成两个独立开源仓库，因此约定：
+client、server 与 mcp 未来可能拆成独立开源仓库，因此约定：
 
-1. **不在 client / server 之间写跨目录 import**（包括 tsconfig path 指向对方目录）。
+1. **不在 client / server / mcp 之间写跨目录 import**（包括 tsconfig path 指向其他子项目）。
 2. **不添加 `workspace:*` 内部包依赖**，两个 package.json 保持完全自洽。
 3. 需要共享的逻辑（如 API 类型），在各自项目内维护副本，或届时再评估发布独立 npm 包。
 

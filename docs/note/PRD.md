@@ -556,3 +556,25 @@ await Note.updateMany({}, { $set: { date: null } });
 - 被 **knowledge-base Phase 2**（MCP Server 依赖规范化 Note 接口）
 - 被 **knowledge-base Phase 3**（embedding 依赖 Markdown 内容 + status 过滤）
 - 被 **博客系统**（published + slug + excerpt）
+
+---
+
+## MCP 与回收站补充
+
+### MCP 写入边界
+
+- MCP Agent Token 可读取当前用户全部未删除及回收站笔记。
+- MCP 创建的笔记强制 `source=agent`、`status=inbox`、`published=false`。
+- MCP 只可修改、移动、归档、软删除和恢复 `source=agent` 的笔记；普通用户笔记只读。
+- MCP 不可修改 `source`、发布笔记或永久删除笔记。
+- Agent 子树含普通用户后代时，移动、删除和恢复整棵子树均拒绝，避免越权级联。
+- MCP 正文写入使用 `contentRevision`；属性和结构写入使用 `updatedAt` 做冲突检测。
+- 树结构变更按用户获取 Mongo 租约锁；并发结构写在 2 秒内无法取得锁时返回 409，客户端应刷新后重试。
+- 人工回收站通过 `limit/offset` 分页读取，客户端合并完整结果后再判断父子层级，避免截断导致错误启用子节点恢复。
+
+### 回收站页面
+
+- 路由 `/note-trash`，从侧边栏 Note 区域进入。
+- 树形展示被删除的笔记，支持标题搜索与来源筛选。
+- 支持单项/批量恢复；父节点仍在回收站时不能单独恢复子节点。
+- 支持人类永久删除，必须二次确认；MCP 不暴露 purge 能力。

@@ -22,11 +22,16 @@ export const getNoteById = async (id: string, userId: string) => {
   return await note.findOne({ _id: id, userId, ...ACTIVE_NOTE_FILTER });
 };
 
-export const getNoteAncestors = async (noteId: string, userId: string) => {
+export const getNoteAncestors = async (
+  noteId: string,
+  userId: string,
+  options: { includeDeleted?: boolean } = {},
+) => {
   const ancestors: NotePathItem[] = [];
   const visitedNoteIds = new Set<string>();
+  const visibilityFilter = options.includeDeleted ? {} : ACTIVE_NOTE_FILTER;
   let currentNote = await note
-    .findOne({ _id: noteId, ...ACTIVE_NOTE_FILTER })
+    .findOne({ _id: noteId, ...visibilityFilter })
     .select("parentId userId")
     .lean();
 
@@ -40,7 +45,7 @@ export const getNoteAncestors = async (noteId: string, userId: string) => {
     visitedNoteIds.add(currentParentId);
 
     const parentNote = await note
-      .findOne({ _id: currentParentId, ...ACTIVE_NOTE_FILTER })
+      .findOne({ _id: currentParentId, ...visibilityFilter })
       .select("title parentId userId")
       .lean();
 
@@ -216,14 +221,18 @@ export const getRecentNotes = async (userId: string) => {
     .limit(QUERY_LIMIT);
 };
 
-export const getTrashNotes = async (userId: string) => {
+export const getTrashNotes = async (
+  userId: string,
+  options: { limit?: number; offset?: number } = {},
+) => {
   return await note
     .find({
       userId,
       deletedAt: { $ne: null },
     })
-    .sort({ deletedAt: -1 })
-    .limit(QUERY_LIMIT)
+    .sort({ deletedAt: -1, _id: -1 })
+    .skip(options.offset ?? 0)
+    .limit(options.limit ?? QUERY_LIMIT)
     .select("-content");
 };
 

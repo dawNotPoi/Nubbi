@@ -30,10 +30,7 @@ import {
   getNoteAncestors,
   getNoteDetail,
   getRecentNotes,
-  getTrashNotes,
   publishNote,
-  purgeNote,
-  restoreNote,
   getRootNotes,
   updateNoteContent,
   updateNoteProperties,
@@ -99,14 +96,6 @@ export const recentNoteAtom = atomWithQuery(() => ({
   queryKey: noteKeys.recent(),
   queryFn: async () => {
     const response = await getRecentNotes();
-    return response.data || [];
-  },
-}));
-
-export const trashNoteAtom = atomWithQuery(() => ({
-  queryKey: [...noteKeys.lists, "trash"],
-  queryFn: async () => {
-    const response = await getTrashNotes();
     return response.data || [];
   },
 }));
@@ -203,24 +192,6 @@ export const deleteSingleNoteAtom = atomWithMutation(() => ({
       queryKey: [...noteKeys.lists, "trash"],
       refetchType: "none",
     });
-  },
-}));
-
-export const restoreNoteAtom = atomWithMutation(() => ({
-  mutationFn: ({ noteId }: { noteId: string }) => restoreNote(noteId),
-  onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: noteKeys.lists });
-    queryClient.invalidateQueries({ queryKey: noteKeys.recent() });
-    queryClient.invalidateQueries({ queryKey: [...noteKeys.lists, "trash"] });
-  },
-}));
-
-export const purgeNoteAtom = atomWithMutation(() => ({
-  mutationFn: ({ noteId }: { noteId: string }) => purgeNote(noteId),
-  onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: noteKeys.lists });
-    queryClient.invalidateQueries({ queryKey: noteKeys.recent() });
-    queryClient.invalidateQueries({ queryKey: [...noteKeys.lists, "trash"] });
   },
 }));
 

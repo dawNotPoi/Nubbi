@@ -1,5 +1,6 @@
 import note from "@/models/note";
 import mongoose from "mongoose";
+import { withNoteStructureLock } from "./structureLock";
 
 export type MetaEntry = {
   key: string;
@@ -56,7 +57,7 @@ export const normalizeMetaEntries = (meta: unknown): MetaEntry[] => {
 const resolveInitialStatus = (source: unknown) =>
   source === "agent" ? "inbox" : "active";
 
-export const createNote = async (req) => {
+const createNoteUnlocked = async (req) => {
   const noteData: CreateNoteData = {
     userId: req.userId,
     title: req.title,
@@ -81,6 +82,20 @@ export const createNote = async (req) => {
     }
   }
 
+  if (noteData.parentId) {
+    const parent = await note
+      .findOne({
+        _id: noteData.parentId,
+        userId: noteData.userId,
+        deletedAt: null,
+      })
+      .select("_id")
+      .lean();
+    if (!parent) {
+      throw Object.assign(new Error("Parent note not found"), { status: 404 });
+    }
+  }
+
   const createdNote = await note.create(noteData);
 
   if (createdNote.parentId) {
@@ -92,7 +107,10 @@ export const createNote = async (req) => {
   return createdNote;
 };
 
-export const duplicateNote = async (
+export const createNote = async (req) =>
+  withNoteStructureLock(String(req.userId), () => createNoteUnlocked(req));
+
+const duplicateNoteUnlocked = async (
   noteId: string,
   userId: string,
   newParentId: string | null = null,
@@ -138,3 +156,12 @@ export const duplicateNote = async (
 
   return createdNote;
 };
+
+export const duplicateNote = async (
+  noteId: string,
+  userId: string,
+  newParentId: string | null = null,
+) =>
+  withNoteStructureLock(userId, () =>
+    duplicateNoteUnlocked(noteId, userId, newParentId),
+  );

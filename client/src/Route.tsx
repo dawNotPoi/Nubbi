@@ -17,14 +17,15 @@ import { LoginPage } from "./views/login";
 import MeetingAccessGuard from "./views/meeting-room/MeetingAccessGuard";
 import Meetings from "./views/meetings";
 import NoteLibrary from "./views/NoteLibrary";
+import NoteTrash from "./views/note-trash";
 import { ResetPasswordPage } from "./views/reset-password";
 
 const UserLayout = () => {
   return (
     <div className="flex h-screen overflow-hidden">
       <SideBar />
-      <div className="flex-1 h-screen overflow-hidden">
-        <main className="h-screen overflow-y-auto pb-10 bg-white">
+      <div className="h-screen min-w-0 flex-1 overflow-hidden">
+        <main className="h-screen min-w-0 overflow-y-auto bg-white pb-10">
           <Outlet />
         </main>
       </div>
@@ -145,6 +146,7 @@ export const RouteWrapper = () => {
             <Route path="home" element={<Home />} />
             <Route path="meetings" element={<Meetings />} />
             <Route path="note-lib" element={<NoteLibrary />} />
+            <Route path="note-trash" element={<NoteTrash />} />
             <Route path="file/*" element={<FileManager />} />
             <Route path="note/:Id" element={<Note />} />
           </Route>

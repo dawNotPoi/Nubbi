@@ -125,3 +125,13 @@
 | 编辑器 | Tiptap (ProseMirror) | - |
 | 路由 | react-router-dom | 6.x |
 | 邮件 | Nodemailer | - |
+
+---
+
+## MCP 服务
+
+- `mcp/` 是第三个 pnpm workspace，使用 TypeScript 和官方 MCP SDK。
+- stdio 用于本地 Host；无状态 Streamable HTTP 用于云端 Host。
+- MCP 不直连 MongoDB，只通过主服务 `/mcp-api/*` 调用业务逻辑。
+- Docker Compose 中 MCP 服务监听 3100，主服务地址通过 `NUBBI_API_URL` 注入；宿主端口默认仅绑定 `127.0.0.1`，改绑其他网卡必须显式配置 `MCP_BIND_ADDRESS`。
+- HTTP 对外必须经 HTTPS 反向代理，并配置允许的 Host 与 Origin。

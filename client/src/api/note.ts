@@ -139,8 +139,9 @@ export const getRecentNotes = async () => {
   return Get<Note[]>("note/recent");
 };
 
-export const getTrashNotes = async () => {
-  return Get<Note[]>("note/trash");
+export const getTrashNotes = async (limit = 500, offset = 0) => {
+  const response = await Get<Note[]>("note/trash", { limit, offset });
+  return assertSuccess(response, "Failed to load trash notes");
 };
 
 export const getDirectChildren = async (parentId: string) => {

@@ -1,6 +1,5 @@
-import { getUser } from "@/lib/auth";
-// 业务路由同时接受 session/JWT 与长期 API token
-import { requireAuthWithApiKey as requireAuth } from "@/middleware/session";
+import { getUser } from "@/lib/authUser";
+import { requireNotePermission } from "@/middleware/session";
 import express from "express";
 import { z } from "zod";
 import { createNote } from "../controller/note/create";
@@ -27,6 +26,7 @@ import { syncUserTags } from "../controller/tag";
 import { asyncHandler } from "../middleware/common";
 import { validate, validateQuery } from "../middleware/validator";
 import { successResponse } from "./utils";
+import { withNoteStructureLock } from "@/controller/note/structureLock";
 
 const router = express.Router();
 
@@ -34,6 +34,10 @@ const objectIdSchema = z
   .string()
   .regex(/^[a-fA-F0-9]{24}$/, "Invalid ObjectId");
 const noteStatusSchema = z.enum(["inbox", "active", "archived"]);
+const trashQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(500).default(500),
+  offset: z.coerce.number().int().nonnegative().default(0),
+});
 const metaEntrySchema = z.object({
   key: z.string().min(1),
   value: z.any(),
@@ -50,13 +54,13 @@ const assertCanAccessNote = async (
   options: { includeDeleted?: boolean } = {},
 ) => {
   if (!(await validateNoteUser(userId, noteId, options))) {
-    throw Object.assign(new Error("Unauthorized"), { status: 401 });
+    throw Object.assign(new Error("Note not found"), { status: 404 });
   }
 };
 
 router.post(
   "/create",
-  requireAuth,
+  requireNotePermission("create"),
   validate(
     z.object({
       _id: objectIdSchema.optional(),
@@ -87,7 +91,7 @@ router.post(
 
 router.put(
   "/content",
-  requireAuth,
+  requireNotePermission("update"),
   validate(
     z.object({
       noteId: objectIdSchema,
@@ -111,7 +115,7 @@ router.put(
 
 router.put(
   "/properties",
-  requireAuth,
+  requireNotePermission("update"),
   validate(
     z.object({
       noteId: objectIdSchema,
@@ -134,21 +138,32 @@ router.put(
     const user = await getUser(req);
     await assertCanAccessNote(user.id, noteId);
 
-    if (
-      Object.prototype.hasOwnProperty.call(properties, "parentId") &&
-      !(await validateNoteMoveTarget({
-        noteId,
-        parentId: properties.parentId,
-        userId: user.id,
-      }))
-    ) {
-      throw Object.assign(
-        new Error("Cannot move note to itself or its descendant"),
-        { status: 400 },
-      );
-    }
-
-    const result = await updateNoteMeta(noteId, properties);
+    const hasParentChange = Object.prototype.hasOwnProperty.call(
+      properties,
+      "parentId",
+    );
+    const hasStructureChange =
+      hasParentChange ||
+      Object.prototype.hasOwnProperty.call(properties, "source");
+    const applyUpdate = async () => {
+      if (hasParentChange) {
+        await assertCanAccessNote(user.id, noteId);
+        if (!(await validateNoteMoveTarget({
+          noteId,
+          parentId: properties.parentId,
+          userId: user.id,
+        }))) {
+          throw Object.assign(
+            new Error("Cannot move note to itself or its descendant"),
+            { status: 400 },
+          );
+        }
+      }
+      return updateNoteMeta(noteId, properties);
+    };
+    const result = hasStructureChange
+      ? await withNoteStructureLock(user.id, applyUpdate)
+      : await applyUpdate();
     await syncUserTags(user.id, properties.tags);
     successResponse(res, result, "properties updated");
   }),
@@ -156,7 +171,7 @@ router.put(
 
 router.put(
   "/publish",
-  requireAuth,
+  requireNotePermission("publish"),
   validate(
     z.object({
       noteId: objectIdSchema,
@@ -175,7 +190,7 @@ router.put(
 
 router.put(
   "/restore",
-  requireAuth,
+  requireNotePermission("restore"),
   validate(
     z.object({
       noteId: objectIdSchema,
@@ -193,7 +208,7 @@ router.put(
 
 router.get(
   "/all",
-  requireAuth,
+  requireNotePermission("read"),
   asyncHandler(async (req, res) => {
     const owner = await getUser(req);
     const result = await getAllNotes(owner.id);
@@ -203,7 +218,7 @@ router.get(
 
 router.get(
   "/roots",
-  requireAuth,
+  requireNotePermission("read"),
   asyncHandler(async (req, res) => {
     const owner = await getUser(req);
     const result = await getRootNotes(owner.id);
@@ -213,7 +228,7 @@ router.get(
 
 router.get(
   "/children",
-  requireAuth,
+  requireNotePermission("read"),
   validateQuery(
     z.object({
       parentId: objectIdSchema,
@@ -234,7 +249,7 @@ router.get(
 
 router.get(
   "/ancestors",
-  requireAuth,
+  requireNotePermission("read"),
   validateQuery(
     z.object({
       noteId: objectIdSchema,
@@ -254,7 +269,7 @@ router.get(
 
 router.get(
   "/detail",
-  requireAuth,
+  requireNotePermission("read"),
   validateQuery(
     z.object({
       noteId: objectIdSchema,
@@ -273,7 +288,7 @@ router.get(
 
 router.get(
   "/recent",
-  requireAuth,
+  requireNotePermission("read"),
   asyncHandler(async (req, res) => {
     const owner = await getUser(req);
     const result = await getRecentNotes(owner.id);
@@ -283,17 +298,19 @@ router.get(
 
 router.get(
   "/trash",
-  requireAuth,
+  requireNotePermission("read"),
+  validateQuery(trashQuerySchema),
   asyncHandler(async (req, res) => {
     const owner = await getUser(req);
-    const result = await getTrashNotes(owner.id);
+    const input = trashQuerySchema.parse(req.query);
+    const result = await getTrashNotes(owner.id, input);
     successResponse(res, result, "query success");
   }),
 );
 
 router.get(
   "/getNote",
-  requireAuth,
+  requireNotePermission("read"),
   asyncHandler(async (req, res) => {
     const user = await getUser(req);
     const result = await getNotes(user.id);
@@ -303,7 +320,7 @@ router.get(
 
 router.post(
   "/search",
-  requireAuth,
+  requireNotePermission("read"),
   validate(
     z.object({
       title: z.string().trim().min(1).max(100),
@@ -319,7 +336,7 @@ router.post(
 
 router.delete(
   "/delete",
-  requireAuth,
+  requireNotePermission("trash"),
   validate(
     z.object({
       noteId: objectIdSchema,
@@ -337,7 +354,7 @@ router.delete(
 
 router.delete(
   "/purge",
-  requireAuth,
+  requireNotePermission("purge"),
   validate(
     z.object({
       noteId: objectIdSchema,

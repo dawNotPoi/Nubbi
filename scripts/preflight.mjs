@@ -7,7 +7,10 @@ const commands = [
   ["pnpm", ["install", "--frozen-lockfile"]],
   ["pnpm", ["--filter", "nubbi-client", "lint"]],
   ["pnpm", ["--filter", "nubbi-client", "build"]],
+  ["pnpm", ["--filter", "nubbi-server", "test"]],
   ["pnpm", ["--filter", "nubbi-server", "typecheck"]],
+  ["pnpm", ["--filter", "nubbi-mcp-server", "test"]],
+  ["pnpm", ["--filter", "nubbi-mcp-server", "build"]],
 ];
 
 if (!skipDocker) {
@@ -33,7 +36,18 @@ if (!skipDocker) {
         "nubbi-server:preflight",
         ".",
       ],
-    ]
+    ],
+    [
+      "docker",
+      [
+        "build",
+        "-f",
+        "mcp/Dockerfile",
+        "-t",
+        "nubbi-mcp:preflight",
+        ".",
+      ],
+    ],
   );
 }
 
