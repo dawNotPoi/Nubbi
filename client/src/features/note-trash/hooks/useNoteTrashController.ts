@@ -10,7 +10,7 @@ import {
   purgeNoteAtom,
   restoreNoteAtom,
   trashNoteAtom,
-} from "@/store/atom/noteTrashAtom";
+} from "@/store/atom/note/noteTrashAtom";
 import { Modal, message } from "antd";
 import { useAtomValue } from "jotai";
 import { useMemo, useState } from "react";

@@ -1,4 +1,4 @@
-import { isRecord, readBoolean, readNumber, readString } from "./records.js";
+import { isRecord, readBoolean, readNumber, readString } from "../utils/records.js";
 
 const noteLabel = (data: unknown): string => {
   const title = readString(data, "title") ?? "Untitled note";
@@ -28,6 +28,19 @@ export const summarizeNote = (data: unknown): string => {
   const more = readBoolean(data, "hasMoreContent") ?? false;
   return `Read ${noteLabel(data)}: Markdown characters ${offset}-${offset + length} of ${total}.` +
     (more ? ` Continue with content_offset=${next ?? offset + length}.` : "");
+};
+
+/** 批量读取结果摘要：报告成功数量和缺失 ID */
+export const summarizeBatchNotes = (data: unknown): string => {
+  if (!isRecord(data)) return "Read 0 notes.";
+  const items = Array.isArray(data.items) ? data.items : [];
+  const missingIds = Array.isArray(data.missingIds) ? data.missingIds : [];
+  const readCount = items.length;
+  const summary = `Read ${readCount} notes in one batch.`;
+  if (missingIds.length > 0) {
+    return `${summary} Missing or inaccessible IDs: ${missingIds.join(", ")}.`;
+  }
+  return summary;
 };
 
 export const summarizeMutation = (verb: string, data: unknown): string => {

@@ -1,7 +1,8 @@
 import { newNote } from "@/api/note";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { createNoteAtom, recentNoteAtom } from "@/store/atom/noteAtom";
+import { recentNoteAtom } from "@/store/atom/note/noteAtom";
+import { createNoteAtom } from "@/store/atom/note/noteMutationAtom";
 import { routes } from "@/utils/routes";
 import { useAtomValue } from "jotai";
 import { ChevronLeft, ChevronRight, Clock, Plus } from "lucide-react";

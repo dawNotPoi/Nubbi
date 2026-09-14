@@ -1,6 +1,7 @@
 import { getMcpContext } from "@/controller/mcp/context";
 import {
   getMcpNote,
+  getMcpNotes,
   listMcpNotes,
   listMcpTrash,
   searchMcpNotes,
@@ -14,6 +15,7 @@ import { requireMcpNotePermission } from "@/middleware/session";
 import { createJsonRouteRegistrar } from "@/routes/infrastructure/json-route-registrar";
 import express from "express";
 import {
+  batchNotesSchema,
   listNotesQuerySchema,
   noteDetailQuerySchema,
   noteParamsSchema,
@@ -66,6 +68,13 @@ mcpReadRoutes.get("/notes/:noteId", {
   query: noteDetailQuerySchema,
   handler: ({ actor, params, query }) =>
     getMcpNote(actor.id, params.noteId, query),
+});
+
+/** 批量查询笔记详情，减少 Agent 逐篇读取的请求次数 */
+mcpReadRoutes.post("/notes/batch", {
+  action: "read",
+  body: batchNotesSchema,
+  handler: ({ actor, body }) => getMcpNotes(actor.id, body),
 });
 
 export default router;

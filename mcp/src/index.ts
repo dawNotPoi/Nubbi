@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { reportFatalError } from "./main-utils.js";
+import { reportFatalError } from "./utils.js";
 
 const printHelp = (): void => {
   process.stdout.write(
@@ -19,12 +19,12 @@ const main = async (): Promise<void> => {
   }
   const transport = (process.env.MCP_TRANSPORT ?? "stdio").toLowerCase();
   if (transport === "stdio") {
-    const { runStdio } = await import("./stdio.js");
+    const { runStdio } = await import("./transport/stdio.js");
     await runStdio();
     return;
   }
   if (transport === "http") {
-    const { runHttp } = await import("./http.js");
+    const { runHttp } = await import("./transport/http.js");
     await runHttp();
     return;
   }

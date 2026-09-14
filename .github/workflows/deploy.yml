@@ -55,12 +55,18 @@ jobs:
       - name: Build client
         run: pnpm --filter nubbi-client build
 
+      - name: Upload client dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-dist
+          path: client/dist
+          retention-days: 1
+
       - name: Typecheck server
         run: pnpm --filter nubbi-server typecheck
 
       - name: Build Docker images
         run: |
-          docker build -f client/Dockerfile -t nubbi-client:verify .
           docker build -f server/Dockerfile -t nubbi-server:verify .
 
   deploy:
@@ -111,22 +117,11 @@ jobs:
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch || github.ref }}
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
+      - name: Download client dist
+        uses: actions/download-artifact@v4
         with:
-          version: 10.12.4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 20
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-
-      - name: Build client assets
-        run: |
-          pnpm install --frozen-lockfile
-          pnpm --filter nubbi-client build
+          name: client-dist
+          path: client/dist
 
       - name: Configure SSH
         run: |
@@ -151,9 +146,9 @@ jobs:
           #!/usr/bin/env bash
           set -Eeuo pipefail
           if [ -f "$HOME/.ssh/deploy_key" ]; then
-            exec ssh -i "$HOME/.ssh/deploy_key" -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" "$@"
+            exec ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=3 -i "$HOME/.ssh/deploy_key" -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" "$@"
           fi
-          exec sshpass -p "$DEPLOY_PASSWORD" ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" "$@"
+          exec sshpass -p "$DEPLOY_PASSWORD" ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=3 -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" "$@"
           SH
 
           cat > "$RUNNER_TEMP/scp-run" <<'SH'
@@ -162,9 +157,9 @@ jobs:
           source_path="$1"
           target_path="$2"
           if [ -f "$HOME/.ssh/deploy_key" ]; then
-            exec scp -i "$HOME/.ssh/deploy_key" -P "$DEPLOY_PORT" "$source_path" "$DEPLOY_USER@$DEPLOY_HOST:$target_path"
+            exec scp -o ServerAliveInterval=60 -o ServerAliveCountMax=3 -i "$HOME/.ssh/deploy_key" -P "$DEPLOY_PORT" "$source_path" "$DEPLOY_USER@$DEPLOY_HOST:$target_path"
           fi
-          exec sshpass -p "$DEPLOY_PASSWORD" scp -P "$DEPLOY_PORT" "$source_path" "$DEPLOY_USER@$DEPLOY_HOST:$target_path"
+          exec sshpass -p "$DEPLOY_PASSWORD" scp -o ServerAliveInterval=60 -o ServerAliveCountMax=3 -P "$DEPLOY_PORT" "$source_path" "$DEPLOY_USER@$DEPLOY_HOST:$target_path"
           SH
 
           chmod +x "$RUNNER_TEMP/ssh-run" "$RUNNER_TEMP/scp-run"
@@ -258,10 +253,14 @@ jobs:
         run: |
           tar \
             --exclude='.git' \
+            --exclude='.tmp' \
             --exclude='client/node_modules' \
             --exclude='server/node_modules' \
+            --exclude='mcp/node_modules' \
+            --exclude='mcp/dist' \
             --exclude='server/storage' \
             --exclude='.pnpm-store' \
+            --exclude='*.log' \
             -czf "$RUNNER_TEMP/nubbi-release.tgz" .
 
           "$RUNNER_TEMP/ssh-run" \

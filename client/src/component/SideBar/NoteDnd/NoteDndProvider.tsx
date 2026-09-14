@@ -2,10 +2,8 @@ import { type Note } from "@/api/note";
 import { collectBlockedMoveTargetIds } from "@/features/note/model/hierarchy";
 import { useDeleteNote } from "@/features/note/hooks/useDeleteNote";
 import { noteKeys } from "@/features/note/model/keys";
-import {
-  expandedNodesAtom,
-  updateNotePropertiesAtom,
-} from "@/store/atom/noteAtom";
+import { expandedNodesAtom } from "@/store/atom/note/noteAtom";
+import { updateNotePropertiesAtom } from "@/store/atom/note/noteMutationAtom";
 import {
   DndContext,
   DragEndEvent,

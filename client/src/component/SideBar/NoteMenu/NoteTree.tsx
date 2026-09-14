@@ -7,7 +7,7 @@ import {
 import { useDeleteNote } from "@/features/note/hooks/useDeleteNote";
 import { useNoteTreeQuery } from "@/features/note/hooks/useNoteTreeQuery";
 import { normalizeNoteTitle } from "@/features/note/model/hierarchy";
-import { expandedNodesAtom } from "@/store/atom/noteAtom";
+import { expandedNodesAtom } from "@/store/atom/note/noteAtom";
 import { useDraggable } from "@dnd-kit/core";
 import clsx from "clsx";
 import { useAtom } from "jotai";

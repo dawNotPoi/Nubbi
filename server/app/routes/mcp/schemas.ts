@@ -53,6 +53,22 @@ export const noteDetailQuerySchema = z
   })
   .strict();
 
+/** 批量读取笔记详情的请求体 schema */
+export const batchNotesSchema = z
+  .object({
+    noteIds: z
+      .array(objectIdSchema)
+      .min(1)
+      .max(MCP_LIMITS.maxBatchSize),
+    contentLimit: z
+      .number()
+      .int()
+      .min(1)
+      .max(MCP_LIMITS.contentChunkSize)
+      .default(MCP_LIMITS.contentChunkSize),
+  })
+  .strict();
+
 export const trashQuerySchema = z
   .object({
     limit: pageFields.limit,

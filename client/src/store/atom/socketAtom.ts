@@ -5,17 +5,22 @@ import { Socket, io } from "socket.io-client";
 const url = getSocketBaseUrl();
 // socket 实例的 atom
 
+/** Socket 连接状态快照 */
 interface SocketState {
   instance: Socket | null;
   connected: boolean;
 }
-// 连接状态的 atom
+
+/** 当前 Socket 实例及连接状态 */
 export const socketAtom = atom<SocketState>({
   instance: null,
   connected: false,
 });
 
-// 初始化 socket 的派生 atom
+/**
+ * 初始化 Socket 连接的写入 atom。
+ * 连接成功后建立 connect/disconnect 监听，返回清理函数用于断开。
+ */
 export const initSocketAtom = atom(null, (_, set) => {
   const socket = io(url, {
     autoConnect: false,

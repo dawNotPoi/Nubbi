@@ -26,15 +26,20 @@ import {
   publishNote,
   updateNoteContent,
   updateNoteProperties,
-} from "../../api/note";
-import { queryClient } from "../../utils/queryClient";
+} from "../../../api/note";
+import { queryClient } from "../../../utils/queryClient";
 
+/** 统一失效树列表、全部列表和最近编辑三处缓存 */
 const invalidateTreeLists = () => {
   queryClient.invalidateQueries({ queryKey: noteKeys.treeRoot });
   queryClient.invalidateQueries({ queryKey: noteKeys.allLists });
   queryClient.invalidateQueries({ queryKey: noteKeys.recent() });
 };
 
+/**
+ * 创建笔记 mutation。
+ * onMutate 乐观插入树列表，成功后替换占位笔记并刷新列表，失败回滚快照。
+ */
 export const createNoteAtom = atomWithMutation(() => ({
   mutationFn: ({ note }: CreateNoteVariables) => createNote(note),
   onMutate: ({ note }) => optimisticPrependNoteToList(queryClient, note),
@@ -66,6 +71,10 @@ export const createNoteAtom = atomWithMutation(() => ({
   },
 }));
 
+/**
+ * 删除单篇笔记 mutation。
+ * onMutate 乐观从树列表移除，成功后清理 detail/ancestors/tree 缓存。
+ */
 export const deleteSingleNoteAtom = atomWithMutation(() => ({
   mutationFn: ({ noteId }: DeleteNoteVariables) => deleteNote(noteId),
   onMutate: ({ noteId, parentId }) =>
@@ -96,6 +105,7 @@ export const deleteSingleNoteAtom = atomWithMutation(() => ({
   },
 }));
 
+/** 发布/取消发布笔记 mutation，成功后 patch 详情缓存 */
 export const publishNoteAtom = atomWithMutation(() => ({
   mutationFn: ({ noteId, published }: { noteId: string; published: boolean }) =>
     publishNote(noteId, published),
@@ -108,6 +118,10 @@ export const publishNoteAtom = atomWithMutation(() => ({
   },
 }));
 
+/**
+ * 更新笔记正文 mutation。
+ * onMutate 乐观更新 updatedAt，成功后用服务端返回结果修正详情。
+ */
 export const updateNoteContentAtom = atomWithMutation(() => ({
   mutationFn: ({
     baseContentRevision,
@@ -138,6 +152,10 @@ export const updateNoteContentAtom = atomWithMutation(() => ({
   },
 }));
 
+/**
+ * 更新笔记属性 mutation。
+ * onMutate 处理父节点移动的双列表快照，失败精确回滚。
+ */
 export const updateNotePropertiesAtom = atomWithMutation(() => ({
   mutationFn: ({ noteId, properties }: UpdateNotePropertiesVariables) =>
     updateNoteProperties(noteId, properties),

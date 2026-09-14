@@ -7,7 +7,7 @@ import {
   UpdatePropertiesInputSchema,
 } from "../schemas/write.js";
 import { summarizeMutation } from "../services/summaries.js";
-import { runTool } from "../services/tool-runner.js";
+import { runTool } from "./tool-runner.js";
 import type { NubbiApi } from "../types.js";
 import {
   CREATE_ANNOTATIONS,

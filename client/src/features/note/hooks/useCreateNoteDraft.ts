@@ -1,12 +1,13 @@
 import { newNote, type Note, type NoteWithContent } from "@/api/note";
 import {
   createNoteAtom,
-  patchNotePropertiesCacheAtom,
   updateNoteContentAtom,
   updateNotePropertiesAtom,
-} from "@/store/atom/noteAtom";
+} from "@/store/atom/note/noteMutationAtom";
+import { patchNoteAcrossCaches } from "@/features/note/model/cache";
+import { queryClient } from "@/utils/queryClient";
 import { debounceWithControls } from "@/utils/common";
-import { useAtomValue, useSetAtom } from "jotai";
+import { useAtomValue } from "jotai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type SubmitDraftOptions = {
@@ -41,7 +42,6 @@ export const useCreateNoteDraft = ({ parent }: UseCreateNoteDraftOptions) => {
   const createNoteMutation = useAtomValue(createNoteAtom);
   const contentMutation = useAtomValue(updateNoteContentAtom);
   const propertiesMutation = useAtomValue(updateNotePropertiesAtom);
-  const patchNotePropertiesCache = useSetAtom(patchNotePropertiesCacheAtom);
   const createNoteRef = useRef(createNoteMutation.mutate);
   const updateContentRef = useRef(contentMutation.mutate);
   const updatePropertiesRef = useRef(propertiesMutation.mutate);
@@ -229,12 +229,8 @@ export const useCreateNoteDraft = ({ parent }: UseCreateNoteDraftOptions) => {
     const nextNote = { ...currentNote, title: nextDraftTitle };
     draftNoteRef.current = nextNote;
     setDraftNote(nextNote);
-    patchNotePropertiesCache({
-      noteId: currentNote._id,
-      parentId: currentNote.parentId,
-      properties: {
-        title: nextDraftTitle,
-      },
+    patchNoteAcrossCaches(queryClient, currentNote.parentId, currentNote._id, {
+      title: nextDraftTitle,
     });
     debouncedUpdateTitle(
       currentNote._id,

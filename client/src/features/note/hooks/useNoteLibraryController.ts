@@ -12,7 +12,7 @@ import {
   allNotesAtom,
   libraryExpandedNodesAtom,
   recentNoteAtom,
-} from "@/store/atom/noteAtom";
+} from "@/store/atom/note/noteAtom";
 import { useSession } from "@/utils/auth";
 import { message } from "antd";
 import { useAtom, useAtomValue } from "jotai";

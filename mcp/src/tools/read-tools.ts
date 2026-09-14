@@ -2,13 +2,14 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import {
   GetNoteInputSchema,
+  GetNotesInputSchema,
   ListNotesInputSchema,
   ListTrashInputSchema,
   SearchNotesInputSchema,
 } from "../schemas/read.js";
 import { ToolOutputSchema } from "../schemas/common.js";
-import { summarizeNote, summarizePage } from "../services/summaries.js";
-import { runTool } from "../services/tool-runner.js";
+import { summarizeBatchNotes, summarizeNote, summarizePage } from "../services/summaries.js";
+import { runTool } from "./tool-runner.js";
 import type { NubbiApi } from "../types.js";
 import { READ_ANNOTATIONS } from "./annotations.js";
 import { READ_TOOL_DESCRIPTIONS } from "./read-descriptions.js";
@@ -98,6 +99,32 @@ export const registerReadTools = (server: McpServer, api: NubbiApi): void => {
           retryRead: true,
         },
         summarizeNote,
+      ),
+  );
+
+  server.registerTool(
+    "nubbi_get_notes",
+    {
+      title: "Read Multiple Nubbi Notes",
+      description: READ_TOOL_DESCRIPTIONS.getBatch,
+      inputSchema: GetNotesInputSchema,
+      outputSchema: ToolOutputSchema,
+      annotations: READ_ANNOTATIONS,
+    },
+    async (input): Promise<CallToolResult> =>
+      runTool(
+        api,
+        "Reading notes in batch",
+        "POST",
+        "/mcp-api/notes/batch",
+        {
+          body: {
+            noteIds: input.note_ids,
+            contentLimit: input.content_limit,
+          },
+          retryRead: true,
+        },
+        summarizeBatchNotes,
       ),
   );
 

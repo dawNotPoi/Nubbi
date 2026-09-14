@@ -85,6 +85,7 @@ Docker Compose 使用 `mcp/Dockerfile` 构建此包。请在部署环境中配�
 | `nubbi_list_notes` | 分页列出笔记元数据，并支持筛选 |
 | `nubbi_search_notes` | 在标题、Markdown 和标签中进行字面搜索 |
 | `nubbi_get_note` | 读取元数据、祖先节点、修订版本和分段 Markdown 内容 |
+| `nubbi_get_notes` | 批量读取多篇笔记（1-20 篇），减少逐篇读取的请求次数 |
 | `nubbi_create_note` | 创建私有的 Agent 收件箱笔记 |
 | `nubbi_edit_note_content` | 替换、追加、前置或唯一匹配替换文本 |
 | `nubbi_update_note_properties` | 更新标题、作者、日期、标签和元数据 |

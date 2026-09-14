@@ -1,7 +1,7 @@
 import type { NotePathItem } from "@/api/note";
 import { noteKeys } from "@/features/note/model/keys";
 import type { DeleteNoteVariables } from "@/features/note/model/types";
-import { deleteSingleNoteAtom } from "@/store/atom/noteAtom";
+import { deleteSingleNoteAtom } from "@/store/atom/note/noteMutationAtom";
 import { routes } from "@/utils/routes";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAtomValue } from "jotai";
