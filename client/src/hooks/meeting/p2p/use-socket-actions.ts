@@ -1,170 +1,50 @@
-import {
-  useCallback,
-  type Dispatch,
-  type MutableRefObject,
-  type SetStateAction,
-} from "react";
+import { useCallback, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import type { Socket } from "socket.io-client";
-import type {
-  EndMeetingResponse,
-  JoinMeetingResponse,
-  RoomMedia,
-  RoomUserInfo,
-  RoomUserMap,
-  SendMeetingCommentResponse,
-  SocketActions,
-} from "./types";
-
-const JOIN_TIMEOUT_MS = 10_000;
+import { requestAcknowledgement } from "./request-acknowledgement";
+import type { EndMeetingResponse, JoinMeetingResponse, PeerManager, RoomMedia, RoomUserMap, SendMeetingCommentResponse, SocketActions } from "./types";
 
 type UseSocketActionsInput = {
   socketRef: MutableRefObject<Socket | null>;
   connectedRoomRef: MutableRefObject<string>;
   setLocalPeerId: Dispatch<SetStateAction<string>>;
   setRoomUsers: Dispatch<SetStateAction<RoomUserMap>>;
-  ensurePeerConnection: (
-    peerId: string,
-    initiator: boolean,
-  ) => unknown;
+  peerManager: PeerManager;
+  setIceWarning: (warning: string) => void;
+  clientSessionIdRef: MutableRefObject<string>;
 };
 
-function toRoomUsersMap(users: RoomUserInfo[]): RoomUserMap {
-  return users.reduce<RoomUserMap>((result, user) => {
-    result[user.peerId] = user;
+/** @param input 信令引用及成员状态更新器。@returns 带超时和断线保护的会议操作。 */
+export function useSocketActions({ socketRef, connectedRoomRef, setLocalPeerId, setRoomUsers, peerManager, setIceWarning, clientSessionIdRef }: UseSocketActionsInput): SocketActions {
+  const joinRoom = useCallback(async (roomId: string, accessToken: string, media?: RoomMedia): Promise<JoinMeetingResponse> => {
+    if (!roomId || !accessToken) return { ok: false, reason: "INVALID_PAYLOAD", existingPeers: [], roomUsers: [] };
+    const socket = socketRef.current;
+    const clientSessionId = clientSessionIdRef.current;
+    const response = await requestAcknowledgement<JoinMeetingResponse>(socket, "joinMeetingRoom", { roomId, accessToken, media, clientSessionId });
+    if (!response.ok) return { ok: false, reason: response.reason, existingPeers: [], roomUsers: [] };
+    const result = response.value;
+    if (clientSessionId !== clientSessionIdRef.current) return { ok: false, reason: "DISCONNECTED", existingPeers: [], roomUsers: [] };
+    if (result.ok && socket === socketRef.current && socket?.connected) {
+      connectedRoomRef.current = roomId;
+      setLocalPeerId(socket.id || "");
+      setRoomUsers(Object.fromEntries(result.roomUsers.map((user) => [user.peerId, user])));
+      const servers = result.iceServers ?? [];
+      peerManager.configure(servers);
+      setIceWarning(servers.some((server) => (Array.isArray(server.urls) ? server.urls : [server.urls]).some((url) => /^turns?:/.test(url))) ? "" : "未配置 TURN 中继，部分跨网络连接可能失败。");
+      peerManager.reconcile(result.roomUsers.map((user) => user.peerId));
+    }
     return result;
-  }, {});
-}
-
-export function useSocketActions({
-  socketRef,
-  connectedRoomRef,
-  setLocalPeerId,
-  setRoomUsers,
-  ensurePeerConnection,
-}: UseSocketActionsInput): SocketActions {
-  const joinRoom = useCallback(
-    (
-      roomId: string,
-      accessToken: string,
-      media?: RoomMedia,
-    ): Promise<JoinMeetingResponse> =>
-      new Promise<JoinMeetingResponse>((resolve) => {
-        const socket = socketRef.current;
-        if (!socket || !roomId || !accessToken) {
-          resolve({
-            ok: false,
-            reason: "INVALID_PAYLOAD",
-            existingPeers: [],
-            roomUsers: [],
-          });
-          return;
-        }
-
-        let settled = false;
-        const timeoutId = window.setTimeout(() => {
-          settled = true;
-          resolve({
-            ok: false,
-            reason: "JOIN_TIMEOUT",
-            existingPeers: [],
-            roomUsers: [],
-          });
-        }, JOIN_TIMEOUT_MS);
-
-        socket.emit(
-          "joinMeetingRoom",
-          {
-            roomId,
-            accessToken,
-            media: {
-              isVideoEnabled: media?.isVideoEnabled ?? false,
-              isAudioEnabled: media?.isAudioEnabled ?? false,
-            },
-          },
-          (response: JoinMeetingResponse) => {
-            if (settled) return;
-            settled = true;
-            window.clearTimeout(timeoutId);
-            if (!response.ok) {
-              resolve(response);
-              return;
-            }
-
-            connectedRoomRef.current = roomId;
-            setLocalPeerId(socket.id || "");
-            setRoomUsers(toRoomUsersMap(response.roomUsers));
-            response.existingPeers.forEach((peerId) => {
-              ensurePeerConnection(peerId, false);
-            });
-            resolve(response);
-          },
-        );
-      }),
-    [
-      connectedRoomRef,
-      ensurePeerConnection,
-      setLocalPeerId,
-      setRoomUsers,
-      socketRef,
-    ],
-  );
-
-  const syncRoomUser = useCallback(
-    (roomId: string, media?: RoomMedia): void => {
-      const socket = socketRef.current;
-      if (!socket || !roomId) return;
-      socket.emit("syncMeetingUser", {
-        roomId,
-        media: {
-          isVideoEnabled: media?.isVideoEnabled ?? false,
-          isAudioEnabled: media?.isAudioEnabled ?? false,
-        },
-      });
-    },
-    [socketRef],
-  );
-
-  const sendMeetingComment = useCallback(
-    (
-      roomId: string,
-      content: string,
-    ): Promise<SendMeetingCommentResponse> =>
-      new Promise<SendMeetingCommentResponse>((resolve) => {
-        const socket = socketRef.current;
-        if (!socket || !roomId || !content.trim()) {
-          resolve({ ok: false, reason: "INVALID_PAYLOAD" });
-          return;
-        }
-        socket.emit(
-          "sendMeetingComment",
-          { roomId, content },
-          (response: SendMeetingCommentResponse) => resolve(response),
-        );
-      }),
-    [socketRef],
-  );
-
-  const endMeeting = useCallback(
-    (roomId: string): Promise<EndMeetingResponse> =>
-      new Promise<EndMeetingResponse>((resolve) => {
-        const socket = socketRef.current;
-        if (!socket || !roomId) {
-          resolve({ ok: false, reason: "INVALID_ROOM" });
-          return;
-        }
-        socket.emit(
-          "endMeeting",
-          { roomId },
-          (response: EndMeetingResponse) => resolve(response),
-        );
-      }),
-    [socketRef],
-  );
-
-  return {
-    joinRoom,
-    syncRoomUser,
-    sendMeetingComment,
-    endMeeting,
-  };
+  }, [socketRef, connectedRoomRef, setLocalPeerId, setRoomUsers, peerManager, setIceWarning, clientSessionIdRef]);
+  const syncRoomUser = useCallback((roomId: string, media?: RoomMedia): void => {
+    if (socketRef.current?.connected && connectedRoomRef.current === roomId) socketRef.current.emit("syncMeetingUser", { roomId, media });
+  }, [socketRef, connectedRoomRef]);
+  const sendMeetingComment = useCallback(async (roomId: string, content: string): Promise<SendMeetingCommentResponse> => {
+    if (!content.trim()) return { ok: false, reason: "INVALID_PAYLOAD" };
+    const response = await requestAcknowledgement<SendMeetingCommentResponse>(socketRef.current, "sendMeetingComment", { roomId, content });
+    return response.ok ? response.value : { ok: false, reason: response.reason };
+  }, [socketRef]);
+  const endMeeting = useCallback(async (roomId: string): Promise<EndMeetingResponse> => {
+    const response = await requestAcknowledgement<EndMeetingResponse>(socketRef.current, "endMeeting", { roomId });
+    return response.ok ? response.value : { ok: false, reason: response.reason };
+  }, [socketRef]);
+  return { joinRoom, syncRoomUser, sendMeetingComment, endMeeting };
 }

@@ -23,12 +23,12 @@ export default function ParticipantSidebar({
       className={clsx(
         "shrink-0 flex-col overflow-hidden bg-bg-panel",
         open
-          ? "fixed inset-x-3 bottom-[calc(72px+env(safe-area-inset-bottom))] z-30 flex max-h-[58dvh] rounded-2xl border border-border-row shadow-2xl"
+          ? "absolute inset-x-3 bottom-3 z-30 flex max-h-[85%] rounded-2xl border border-border-row shadow-2xl"
           : "hidden",
-        "md:relative md:inset-auto md:z-auto md:flex md:h-full md:max-h-none md:w-[220px] md:rounded-none md:border-0 md:border-l md:shadow-none",
+        "md:relative md:inset-auto md:z-auto md:h-full md:max-h-none md:w-[220px] md:rounded-none md:border-0 md:border-l md:shadow-none",
       )}
     >
-      <header className="flex h-12 items-center justify-between border-b border-border-row px-4 md:hidden">
+      <header className="flex h-12 shrink-0 items-center justify-between border-b border-border-row px-4">
         <span className="text-sm font-medium">参会成员 · {participants.length}</span>
         <button
           aria-label="关闭成员列表"

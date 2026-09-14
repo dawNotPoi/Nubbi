@@ -5,6 +5,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "turn:init": "node scripts/turn/configure.mjs",
+    "turn:up": "docker compose up -d --build --no-deps --wait turn",
+    "turn:down": "docker compose stop turn",
+    "turn:logs": "docker compose logs -f turn",
+    "turn:check": "docker compose run --build --rm --no-deps turn check",
     "dev": "pnpm --parallel --filter nubbi-client --filter nubbi-server dev",
     "client": "pnpm dev:client",
     "server": "pnpm dev:server",

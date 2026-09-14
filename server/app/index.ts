@@ -69,6 +69,7 @@ app.use(cors(corsOptions));
 
 // CORS 中间件已处理 OPTIONS 预检请求，无需额外 app.options
 const socketIO = new Server({
+  connectionStateRecovery: { maxDisconnectionDuration: 15_000, skipMiddlewares: false },
   cors: {
     origin: resolveCorsOrigin,
     credentials: true,

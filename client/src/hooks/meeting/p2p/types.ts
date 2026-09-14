@@ -4,8 +4,8 @@ import type {
   MutableRefObject,
   SetStateAction,
 } from "react";
-import type Peer from "simple-peer";
 import type { Socket } from "socket.io-client";
+import type { MeetingSignal, PeerNegotiation, PeerStatusMap } from "./connection-types";
 
 export type RoomUserInfo = {
   peerId: string;
@@ -22,6 +22,7 @@ export type JoinMeetingResponse = {
   reason?: string;
   existingPeers: string[];
   roomUsers: RoomUserInfo[];
+  iceServers?: RTCIceServer[];
 };
 
 export type RoomMedia = {
@@ -40,25 +41,18 @@ export type EndMeetingResponse = {
   reason?: string;
 };
 
-export type PeerMap = Record<string, Peer.Instance>;
-export type PendingSignalMap = Record<string, Peer.SignalData[]>;
 export type RoomUserMap = Record<string, RoomUserInfo>;
 export type RemoteStreamMap = Record<string, MediaStream>;
 
 export type PeerManager = {
-  peersRef: MutableRefObject<PeerMap>;
-  localStreamRef: MutableRefObject<MediaStream | null>;
-  pendingSignalsRef: MutableRefObject<PendingSignalMap>;
-  ensurePeerConnection: (
-    peerId: string,
-    initiator: boolean,
-  ) => Peer.Instance;
+  configure: (servers: RTCIceServer[]) => void;
+  reconcile: (peerIds: string[]) => void;
+  acceptSession: (session: PeerNegotiation, iceServers?: RTCIceServer[]) => void;
+  suspend: () => void;
+  retryPeer: (peerId: string) => void;
   updateLocalStream: (stream: MediaStream | null) => void;
   removePeer: (peerId: string) => void;
-  acceptSignal: (data: {
-    senderId: string;
-    signal: Peer.SignalData;
-  }) => void;
+  acceptSignal: (data: MeetingSignal) => void;
   destroyAllPeers: () => void;
 };
 
@@ -77,6 +71,8 @@ export type SocketActions = {
 };
 
 export type UseP2PConnectionResult = SocketActions & {
+  transportConnected: boolean;
+  reconnect: () => void;
   connectToPeer: (roomId: string, stream: MediaStream | null) => void;
   remoteStreams: RemoteStreamMap;
   roomUsers: RoomUserMap;
@@ -85,10 +81,14 @@ export type UseP2PConnectionResult = SocketActions & {
   reconnectEpoch: number;
   localPeerId: string;
   destroyPeerConnections: () => void;
-  peersRef: MutableRefObject<PeerMap>;
+  peerStatuses: PeerStatusMap;
+  retryPeer: (peerId: string) => void;
+  iceWarning: string;
 };
 
 export type SocketEventState = {
+  clientSessionIdRef: MutableRefObject<string>;
+  setTransportConnected: Dispatch<SetStateAction<boolean>>;
   socket: Socket;
   connectedRoomRef: MutableRefObject<string>;
   peerManager: PeerManager;

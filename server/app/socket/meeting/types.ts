@@ -2,6 +2,7 @@ import type {
   MeetingCommentInfo,
   MeetingJoinFailureReason,
 } from "@/controller/meeting/types";
+import type { MeetingIceServer } from "@/services/meeting/ice-configuration";
 
 export type RoomUserInfo = {
   peerId: string;
@@ -16,6 +17,7 @@ export type RoomUserInfo = {
 export type JoinMeetingResponse =
   | {
       ok: true;
+      iceServers: MeetingIceServer[];
       existingPeers: string[];
       roomUsers: RoomUserInfo[];
     }

@@ -1,249 +1,39 @@
-﻿import Image from "@/component/UI/Image";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  type MutableRefObject,
-} from "react";
+import Image from "@/component/UI/Image";
 import { Mic, MicOff } from "lucide-react";
+import { useEffect, useRef, type MutableRefObject, type ReactElement } from "react";
+import { useAudioLevel } from "../hooks/use-audio-level";
 import type { StageParticipant } from "../types";
 
-type MainVideoStageProps = {
-  videoRef: MutableRefObject<HTMLVideoElement | null>;
-  participants: StageParticipant[];
-  activeParticipantId?: string;
-};
+type Props = { videoRef: MutableRefObject<HTMLVideoElement | null>; participants: StageParticipant[]; activeParticipantId?: string };
 
-const hasVideoTrack = (stream: MediaStream | null) =>
-  Boolean(stream?.getVideoTracks().length);
-
-declare global {
-  interface Window {
-    webkitAudioContext?: typeof AudioContext;
-  }
+/** @param props 成员信息。@returns 不创建音频播放出口的头像与发言标识。 */
+function ParticipantAvatar({ participant }: { participant: StageParticipant }): ReactElement {
+  const level = useAudioLevel(participant.stream?.getAudioTracks()[0], participant.isAudioEnabled);
+  return <div className="flex flex-col items-center gap-3 p-4">
+    <Image src={participant.avatarSrc || ""} alt={participant.name} className={`size-24 rounded-full object-cover ${level > 20 ? "ring-4 ring-accent-border" : ""}`} />
+    <span className="flex items-center gap-2 text-sm text-text-primary">{participant.isAudioEnabled ? <Mic size={16} /> : <MicOff size={16} />}{participant.name}</span>
+  </div>;
 }
 
-function useSpeaking(stream: MediaStream | null, enabled: boolean) {
-  const [speaking, setSpeaking] = useState(false);
-
+/** @param props 主画面选择和成员信息。@returns 纯视频展示；所有远端声音由 RemoteAudio 负责。 */
+export default function MainVideoStage({ videoRef, participants, activeParticipantId }: Props): ReactElement {
+  const videoParticipants = participants.filter((participant) => participant.isVideoEnabled && participant.stream?.getVideoTracks().length);
+  const active = videoParticipants.find((participant) => participant.id === activeParticipantId) || videoParticipants[0];
+  const stageRef = useRef<HTMLVideoElement>(null);
   useEffect(() => {
-    if (!stream || !enabled) {
-      setSpeaking(false);
-      return;
-    }
-    const audioTracks = stream
-      .getAudioTracks()
-      .filter((track) => track.enabled);
-    if (audioTracks.length === 0) {
-      setSpeaking(false);
-      return;
-    }
-
-    const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContextCtor) {
-      setSpeaking(false);
-      return;
-    }
-
-    const audioContext = new AudioContextCtor();
-    const analyser = audioContext.createAnalyser();
-    const source = audioContext.createMediaStreamSource(stream);
-    analyser.fftSize = 256;
-    analyser.smoothingTimeConstant = 0.85;
-    source.connect(analyser);
-
-    const dataArray = new Uint8Array(analyser.fftSize);
-    let animationFrameId = 0;
-    let disposed = false;
-
-    const detect = () => {
-      if (disposed) return;
-
-      analyser.getByteTimeDomainData(dataArray);
-      let total = 0;
-
-      for (let index = 0; index < dataArray.length; index += 1) {
-        const normalized = (dataArray[index] - 128) / 128;
-        total += normalized * normalized;
-      }
-
-      const volume = Math.sqrt(total / dataArray.length);
-      setSpeaking(volume > 0.06);
-      animationFrameId = window.requestAnimationFrame(detect);
-    };
-
-    if (audioContext.state === "suspended") {
-      audioContext.resume().catch(() => undefined);
-    }
-
-    detect();
-
-    return () => {
-      disposed = true;
-      window.cancelAnimationFrame(animationFrameId);
-      source.disconnect();
-      analyser.disconnect();
-      audioContext.close().catch(() => undefined);
-    };
-  }, [enabled, stream]);
-
-  return speaking;
-}
-
-function ParticipantLabel({
-  name,
-  speaking,
-  audioEnabled,
-}: {
-  name: string;
-  speaking: boolean;
-  audioEnabled: boolean;
-}) {
-  return (
-    <div className="flex items-center gap-2 rounded-full  px-3 py-1.5  backdrop-blur-sm">
-      {audioEnabled ? (
-        <Mic className={speaking ? "text-sky-500" : "text-black"} />
-      ) : (
-        <MicOff />
-      )}
-      <span className="text-sm font-medium">{name}</span>
-    </div>
-  );
-}
-
-function ParticipantStageCard({
-  participant,
-  videoRef,
-}: {
-  participant: StageParticipant;
-  videoRef?: MutableRefObject<HTMLVideoElement | null>;
-}) {
-  const isSpeaking = useSpeaking(
-    participant.stream,
-    participant.isAudioEnabled,
-  );
-  const avatarClassName = useMemo(() => {
-    const base =
-      "size-24 rounded-full object-cover transition-shadow duration-200";
-    return isSpeaking
-      ? `${base} shadow-[0_0_30px_rgba(59,130,246,0.75)]`
-      : `${base} shadow-sm`;
-  }, [isSpeaking]);
-
-  const bindVideoRef = useCallback(
-    (element: HTMLVideoElement | null) => {
-      if (!element) return;
-      if (videoRef) {
-        videoRef.current = element;
-      }
-      if (element.srcObject !== participant.stream) {
-        element.srcObject = participant.stream;
-      }
-      element.play().catch(() => undefined);
-    },
-    [participant.stream, videoRef],
-  );
-  const canRenderVideo =
-    participant.isVideoEnabled && hasVideoTrack(participant.stream);
-
-  return (
-    <div className="relative flex h-full min-h-0 w-full flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl bg-[#f5f5f5] p-0 text-center md:rounded-[28px]">
-      {canRenderVideo ? (
-        <video
-          autoPlay
-          playsInline
-          muted={participant.isLocal}
-          className="h-full w-full bg-black object-contain"
-          ref={bindVideoRef}
-        />
-      ) : (
-        <div className="flex flex-col items-center gap-3">
-          <Image
-            className={avatarClassName}
-            src={participant.avatarSrc || ""}
-            alt={participant.name}
-          />
-          <ParticipantLabel
-            name={participant.name}
-            speaking={isSpeaking}
-            audioEnabled={participant.isAudioEnabled}
-          />
-        </div>
-      )}
-      {canRenderVideo ? (
-        <div className="absolute bottom-4 left-4">
-          <ParticipantLabel
-            name={participant.name}
-            speaking={isSpeaking}
-            audioEnabled={participant.isAudioEnabled}
-          />
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function AvatarItem({ participant }: { participant: StageParticipant }) {
-  const isSpeaking = useSpeaking(
-    participant.stream,
-    participant.isAudioEnabled,
-  );
-
-  return (
-    <div className="flex p-2 flex-col items-center justify-center gap-3">
-      <Image
-        className={`size-24 rounded-full object-cover shadow-sm ${
-          isSpeaking ? "shadow-[0_0_30px_rgba(16,185,129,0.35)]" : ""
-        }`}
-        src={participant.avatarSrc || ""}
-        alt={participant.name}
-      />
-      <ParticipantLabel
-        name={participant.name}
-        speaking={isSpeaking}
-        audioEnabled={participant.isAudioEnabled}
-      />
-    </div>
-  );
-}
-
-function AvatarGallery({ participants }: { participants: StageParticipant[] }) {
-  return (
-    <div className="mx-auto flex h-full w-full flex-wrap content-center justify-center gap-2 overflow-y-auto sm:gap-4">
-      {participants.map((participant) => (
-        <AvatarItem key={participant.id} participant={participant} />
-      ))}
-    </div>
-  );
-}
-
-export default function MainVideoStage({
-  videoRef,
-  participants,
-  activeParticipantId,
-}: MainVideoStageProps) {
-  const videoParticipants = participants.filter(
-    (participant) => participant.isVideoEnabled && hasVideoTrack(participant.stream),
-  );
-  const activeParticipant =
-    videoParticipants.find(
-      (participant) => participant.id === activeParticipantId,
-    ) || videoParticipants[0];
-  const hasActiveVideo = !!activeParticipant;
-
-  return (
-    <div className="flex size-full flex-1 flex-col overflow-hidden bg-[#fbfbfa]">
-      <section className="w-full flex-1 overflow-hidden bg-bg-panel p-2 sm:p-3 md:p-4">
-        {hasActiveVideo && activeParticipant ? (
-          <ParticipantStageCard
-            participant={activeParticipant}
-            videoRef={activeParticipant.isLocal ? videoRef : undefined}
-          />
-        ) : (
-          <AvatarGallery participants={participants} />
-        )}
-      </section>
-    </div>
-  );
+    const video = stageRef.current;
+    if (!video) return;
+    video.srcObject = active?.stream ?? null;
+    videoRef.current = active?.isLocal ? video : null;
+    void video.play().catch(() => undefined);
+    return () => { video.srcObject = null; videoRef.current = null; };
+  }, [active?.id, active?.isLocal, active?.stream, videoRef]);
+  return <section className="min-h-0 min-w-0 flex-1 overflow-hidden bg-bg-panel p-2 sm:p-4">
+    {active ? <div className="relative size-full overflow-hidden rounded-xl bg-bg-selected">
+      <video ref={stageRef} autoPlay playsInline muted className="size-full object-contain" />
+      <div className="absolute bottom-3 left-3 rounded-lg bg-white px-3 py-1 text-sm text-text-primary">{active.name}{active.isLocal ? "（我）" : ""}</div>
+    </div> : <div className="flex size-full flex-wrap content-center justify-center overflow-y-auto">
+      {participants.map((participant) => <ParticipantAvatar key={participant.id} participant={participant} />)}
+    </div>}
+  </section>;
 }

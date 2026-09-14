@@ -26,7 +26,7 @@ export default function CommentPanel({
   onSendComment,
 }: CommentPanelProps): ReactElement {
   return (
-    <aside className="fixed inset-x-0 bottom-[calc(68px+env(safe-area-inset-bottom))] z-30 flex max-h-[76dvh] shrink-0 flex-col overflow-hidden rounded-t-3xl border border-border-row bg-bg-panel shadow-2xl md:static md:h-full md:max-h-none md:w-[360px] md:rounded-l-3xl md:rounded-tr-none md:border-y-0 md:border-r-0 md:shadow-none">
+    <aside className="absolute inset-x-0 bottom-0 z-30 flex max-h-[95%] shrink-0 flex-col overflow-hidden rounded-t-3xl border border-border-row bg-bg-panel shadow-2xl md:static md:h-full md:max-h-none md:w-[360px] md:rounded-l-3xl md:rounded-tr-none md:border-y-0 md:border-r-0 md:shadow-none">
       <header className="flex items-center justify-between border-b border-border-row px-4 py-3 sm:px-5 sm:py-4">
         <div className="flex items-center gap-3">
           <div className="flex size-9 items-center justify-center rounded-xl bg-white text-text-muted shadow-sm">

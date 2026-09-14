@@ -12,6 +12,7 @@ const MeetingAccessGuard = (): ReactElement => {
       <VideoPage
         meetingTitle={access.meeting?.title || ""}
         meetingHostId={access.meeting?.hostId || ""}
+        meetingStartTime={access.meeting?.startTime}
         meetingAccessToken={access.meetingAccessToken}
         onAccessRejected={access.rejectAccess}
       />

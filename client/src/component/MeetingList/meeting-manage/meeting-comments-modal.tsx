@@ -52,8 +52,8 @@ export const MeetingCommentsModal = ({
         <div className="py-10 text-center text-text-muted">暂无评论</div>
       ) : (
         <div className="divide-y divide-border-row">
-          {comments.map((comment, index) => (
-            <div key={comment.createdAt || index} className="flex gap-3 py-3">
+          {comments.map((comment) => (
+            <div key={comment._id} className="flex gap-3 py-3">
               <Image
                 src={comment.avatar || ""}
                 alt={comment.name}

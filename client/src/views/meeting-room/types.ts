@@ -7,11 +7,14 @@ export type DeviceStatus = {
   deviceId: string;
 };
 
-export type TrackReplaceHandler = (
-  stream: MediaStream,
-  oldTrack: MediaStreamTrack,
-  newTrack: MediaStreamTrack,
-) => void;
+/** 已经过身份验证的会议入口参数，不包含设备权限。 */
+export type MeetingRoomProps = {
+  meetingTitle?: string;
+  meetingHostId?: string;
+  meetingStartTime?: string | number | Date;
+  meetingAccessToken: string;
+  onAccessRejected: () => void;
+};
 
 export type MediaDevices = {
   audio: MediaDeviceInfo[];

@@ -111,6 +111,7 @@ export const useCommentComposer = ({
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLTextAreaElement>): void => {
+      if (event.nativeEvent.isComposing || event.keyCode === 229) return;
       if (showMentionSuggestions) {
         if (event.key === "ArrowDown") {
           event.preventDefault();

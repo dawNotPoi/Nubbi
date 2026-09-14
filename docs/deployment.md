@@ -3,6 +3,12 @@
 The default deployment path is Docker Compose, triggered by GitHub Actions over
 SSH.
 
+## 会议 TURN 服务
+
+项目包含独立的 coturn 容器，初始化方法、端口和 TLS 配置见 [TURN 部署说明](../turn/README.md)。服务器首次创建 `turn/.env` 后，现有后端部署脚本会同时构建、校验并启动 TURN；尚未配置的环境保持原来的部署范围。
+
+`turn/.env` 和证书不进入 Git、镜像或发布包。GitHub Actions 切换发布目录时保留服务器已有配置，不会自动生成公网地址或轮换密钥。TURN 需要额外开放 UDP 中继端口，不能仅配置网站的 HTTP 反向代理。
+
 ## Server prerequisites
 
 Install these on the server:

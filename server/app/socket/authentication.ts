@@ -59,6 +59,10 @@ export function authenticateSocket(
     }
 
     const data = socket.data as SocketData;
+    if (socket.recovered && data.actor?.id !== context.user.id) {
+      next(new Error("Unauthorized"));
+      return;
+    }
     data.actor = context.user;
     next();
   })().catch((error: unknown) => {

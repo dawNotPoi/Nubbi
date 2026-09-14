@@ -44,11 +44,12 @@ else
     case "$path" in
       client/*) client=true ;;
       server/*) server=true ;;
+      turn/*|scripts/turn/*) server=true ;;
       mcp/*) mcp=true ;;
       .dockerignore|docker-compose.yml|package.json|pnpm-workspace.yaml)
         mark_all
         ;;
-      .github/workflows/deploy.yml|.github/scripts/deploy-service.sh|.github/scripts/detect-service-changes.sh|scripts/deploy-docker.sh)
+      .github/workflows/deploy.yml|.github/scripts/*|scripts/deploy-docker*.sh)
         mark_all
         ;;
     esac
