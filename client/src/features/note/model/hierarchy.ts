@@ -23,9 +23,6 @@ export const compareNoteTitle = (first: Note, second: Note) =>
     },
   );
 
-export const getNoteChildren = (note: Note) =>
-  Array.isArray(note.children) ? note.children : [];
-
 export const collectBlockedMoveTargetIds = (
   notes: Note[],
   allNotes: Note[] = [],
@@ -36,12 +33,7 @@ export const collectBlockedMoveTargetIds = (
     allNotes.map((note) => [note._id, note.parentId ?? null]),
   );
 
-  const collectKnownChildren = (note: Note) => {
-    blockedIds.add(note._id);
-    getNoteChildren(note).forEach(collectKnownChildren);
-  };
-
-  notes.forEach(collectKnownChildren);
+  notes.forEach((note) => blockedIds.add(note._id));
   allNotes.forEach((note) => {
     let parentId = note.parentId ?? null;
     const visitedIds = new Set<string>();

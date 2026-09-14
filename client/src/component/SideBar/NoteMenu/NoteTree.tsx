@@ -139,13 +139,14 @@ function NoteTreeNode({ note, owner, depth }: NoteTreeNodeProps) {
         active={note._id === Id}
         depth={depth}
         expanded={open}
+        hasChildren={note.hasChildren}
         onToggle={() => {
           setOpen((value) => !value);
         }}
         title={normalizeNoteTitle(note.title)}
         to={`/note/${note._id}`}
       />
-      {open ? (
+      {open && note.hasChildren ? (
         <NoteChildren depth={depth + 1} owner={owner} noteId={note._id} />
       ) : null}
     </>

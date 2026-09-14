@@ -48,6 +48,7 @@ export const useMarkdownNoteImport = ({
             content: draft.content,
             meta: draft.meta,
             parentId: null,
+            tags: draft.tags,
             title: draft.title,
           });
 

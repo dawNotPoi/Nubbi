@@ -80,7 +80,13 @@ export const createFloderMutationAtom = atomWithMutation(() => ({
 }));
 
 export const deleteFileAtom = atomWithMutation(() => ({
-  mutationFn: deleteFile,
+  mutationFn: ({
+    _id,
+    kind = "file",
+  }: {
+    _id: string;
+    kind?: "file" | "folder";
+  }) => deleteFile(_id, kind),
   onSuccess: () => {
     // 刷新所有目录维度的文件列表
     queryClient.invalidateQueries({ queryKey: ["files"] });

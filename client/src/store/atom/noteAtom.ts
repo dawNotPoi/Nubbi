@@ -30,6 +30,10 @@ import {
   getNoteAncestors,
   getNoteDetail,
   getRecentNotes,
+  getTrashNotes,
+  publishNote,
+  purgeNote,
+  restoreNote,
   getRootNotes,
   updateNoteContent,
   updateNoteProperties,
@@ -51,7 +55,7 @@ export const rootNotesAtom = atomFamily((owner: string) =>
     () => ({
       queryKey: noteListQueryKey({ owner }),
       queryFn: async () => {
-        const response = await getRootNotes(owner);
+        const response = await getRootNotes();
         return response.data || [];
       },
       enabled: Boolean(owner),
@@ -95,6 +99,14 @@ export const recentNoteAtom = atomWithQuery(() => ({
   queryKey: noteKeys.recent(),
   queryFn: async () => {
     const response = await getRecentNotes();
+    return response.data || [];
+  },
+}));
+
+export const trashNoteAtom = atomWithQuery(() => ({
+  queryKey: [...noteKeys.lists, "trash"],
+  queryFn: async () => {
+    const response = await getTrashNotes();
     return response.data || [];
   },
 }));
@@ -148,6 +160,15 @@ export const createNoteAtom = atomWithMutation(() => ({
     patchNoteAcrossCaches(queryClient, variables.note._id, nextNote);
     patchNoteDetailCache(queryClient, variables.note._id, nextNote);
     markNoteListQueryStale(queryClient, scope);
+    if (variables.note.parentId) {
+      patchNoteAcrossCaches(queryClient, variables.note.parentId, {
+        hasChildren: true,
+      });
+      markNoteListQueryStale(queryClient, {
+        parentId: variables.note.parentId,
+        owner: variables.owner,
+      });
+    }
     queryClient.invalidateQueries({
       queryKey: noteKeys.recent(),
       refetchType: "none",
@@ -178,6 +199,43 @@ export const deleteSingleNoteAtom = atomWithMutation(() => ({
       queryKey: noteKeys.detailRoot,
       refetchType: "none",
     });
+    queryClient.invalidateQueries({
+      queryKey: [...noteKeys.lists, "trash"],
+      refetchType: "none",
+    });
+  },
+}));
+
+export const restoreNoteAtom = atomWithMutation(() => ({
+  mutationFn: ({ noteId }: { noteId: string }) => restoreNote(noteId),
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: noteKeys.lists });
+    queryClient.invalidateQueries({ queryKey: noteKeys.recent() });
+    queryClient.invalidateQueries({ queryKey: [...noteKeys.lists, "trash"] });
+  },
+}));
+
+export const purgeNoteAtom = atomWithMutation(() => ({
+  mutationFn: ({ noteId }: { noteId: string }) => purgeNote(noteId),
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: noteKeys.lists });
+    queryClient.invalidateQueries({ queryKey: noteKeys.recent() });
+    queryClient.invalidateQueries({ queryKey: [...noteKeys.lists, "trash"] });
+  },
+}));
+
+export const publishNoteAtom = atomWithMutation(() => ({
+  mutationFn: ({
+    noteId,
+    published,
+  }: {
+    noteId: string;
+    published: boolean;
+  }) => publishNote(noteId, published),
+  onSuccess: (response, variables) => {
+    if (response.data) {
+      patchNoteAcrossCaches(queryClient, variables.noteId, response.data);
+    }
   },
 }));
 
@@ -206,6 +264,11 @@ export const updateNotePropertiesAtom = atomWithMutation(() => ({
     rollbackOptimisticNotePropertiesUpdate(queryClient, variables, context);
   },
   onSuccess: (_data, _variables, context) => {
+    const nextParentId = _variables.properties.parentId;
+    if (typeof nextParentId === "string") {
+      patchNoteAcrossCaches(queryClient, nextParentId, { hasChildren: true });
+    }
+
     if (context) {
       invalidateNotePropertiesUpdate(queryClient, context);
     }

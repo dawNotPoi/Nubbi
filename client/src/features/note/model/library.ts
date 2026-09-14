@@ -1,4 +1,4 @@
-import type { Note } from "@/api/note";
+import type { Note, NoteStatus } from "@/api/note";
 import dayjs from "dayjs";
 import "dayjs/locale/zh-cn";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -28,7 +28,9 @@ type NoteLibraryRowsOptions = {
   expandedIds: string[];
   filterText: string;
   notes: Note[];
+  publishedFilter: "all" | "published" | "unpublished";
   sortMode: NoteLibrarySortMode;
+  statusFilter: "all" | NoteStatus;
 };
 
 type NoteLibraryIndex = {
@@ -235,10 +237,18 @@ export const getNoteLibraryRows = ({
   expandedIds,
   filterText,
   notes,
+  publishedFilter,
   sortMode,
+  statusFilter,
 }: NoteLibraryRowsOptions) => {
   const keyword = filterText.trim().toLowerCase();
-  const index = buildNoteLibraryIndex(notes, sortMode);
+  const filteredNotes = notes.filter((note) => {
+    if (statusFilter !== "all" && note.status !== statusFilter) return false;
+    if (publishedFilter === "published" && !note.published) return false;
+    if (publishedFilter === "unpublished" && note.published) return false;
+    return true;
+  });
+  const index = buildNoteLibraryIndex(filteredNotes, sortMode);
   const viewMode: NoteLibraryViewMode = keyword ? "search" : "tree";
 
   return {

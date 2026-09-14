@@ -38,11 +38,15 @@ export default function NoteLibrary() {
 
           <NoteLibraryToolbar
             filterText={library.filterText}
+            publishedFilter={library.publishedFilter}
             searchOpen={library.searchOpen}
             sortMode={library.sortMode}
+            statusFilter={library.statusFilter}
             onFilterTextChange={library.setFilterText}
+            onPublishedFilterChange={library.setPublishedFilter}
             onSearchOpenChange={library.setSearchOpen}
             onSortModeChange={library.setSortMode}
+            onStatusFilterChange={library.setStatusFilter}
           />
         </section>
 

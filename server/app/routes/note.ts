@@ -3,7 +3,7 @@ import requireAuth from "@/middleware/session";
 import express from "express";
 import { z } from "zod";
 import { createNote } from "../controller/note/create";
-import { deleteNote } from "../controller/note/delete";
+import { deleteNote, purgeNote, restoreNote } from "../controller/note/delete";
 import {
   getDirectChildren,
   getAllNotes,
@@ -12,36 +12,73 @@ import {
   getNotes,
   getRecentNotes,
   getRootNotes,
+  getTrashNotes,
   searchNotes,
   validateNoteMoveTarget,
   validateNoteUser,
 } from "../controller/note/query";
-import { updateNoteContent, updateNoteMeta } from "../controller/note/update";
+import {
+  publishNote,
+  updateNoteContent,
+  updateNoteMeta,
+} from "../controller/note/update";
 import { asyncHandler } from "../middleware/common";
 import { validate, validateQuery } from "../middleware/validator";
 import { successResponse } from "./utils";
 
 const router = express.Router();
 
+const objectIdSchema = z
+  .string()
+  .regex(/^[a-fA-F0-9]{24}$/, "Invalid ObjectId");
+const noteStatusSchema = z.enum(["inbox", "active", "done", "archived"]);
+const metaEntrySchema = z.object({
+  key: z.string().min(1),
+  value: z.any(),
+  type: z.string().default("text"),
+});
+const metaSchema = z.union([z.array(metaEntrySchema), z.record(z.any())]);
+
 const getSingleQueryValue = (value: unknown) =>
   typeof value === "string" ? value : undefined;
+
+const assertCanAccessNote = async (
+  userId: string,
+  noteId: string,
+  options: { includeDeleted?: boolean } = {},
+) => {
+  if (!(await validateNoteUser(userId, noteId, options))) {
+    throw Object.assign(new Error("Unauthorized"), { status: 401 });
+  }
+};
 
 router.post(
   "/create",
   requireAuth,
   validate(
     z.object({
-      title: z.string(),
+      _id: objectIdSchema.optional(),
+      title: z.string().optional(),
       content: z.string().optional(),
-      parentId: z.string().nullable().optional(),
-      meta: z.record(z.any()).optional(),
+      parentId: objectIdSchema.nullable().optional(),
+      source: z.enum(["user", "agent"]).optional(),
+      author: z.string().nullable().optional(),
+      tags: z.array(z.string()).optional(),
+      cover: z.string().optional(),
+      password: z.string().nullable().optional(),
+      date: z.coerce.date().optional(),
+      expiresAt: z.coerce.date().nullable().optional(),
+      meta: metaSchema.optional(),
     }),
   ),
   asyncHandler(async (req, res) => {
     const { id } = await getUser(req);
-    const noteData = req.body;
-    const result = await createNote({ ...noteData, userId: id });
-    successResponse(res, result, "创建成功");
+    if (req.body.parentId) {
+      await assertCanAccessNote(id, req.body.parentId);
+    }
+
+    const result = await createNote({ ...req.body, userId: id });
+    successResponse(res, result, "create success");
   }),
 );
 
@@ -50,18 +87,17 @@ router.put(
   requireAuth,
   validate(
     z.object({
-      noteId: z.string().min(1, "笔记ID不能为空"),
+      noteId: objectIdSchema,
       content: z.string(),
     }),
   ),
   asyncHandler(async (req, res) => {
     const { noteId, content } = req.body;
     const user = await getUser(req);
-    if (!(await validateNoteUser(user.id, noteId))) {
-      throw Object.assign(new Error("Unauthorized"), { status: 401 });
-    }
+    await assertCanAccessNote(user.id, noteId);
+
     const result = await updateNoteContent(noteId, content);
-    successResponse(res, result, "内容更新成功");
+    successResponse(res, result, "content updated");
   }),
 );
 
@@ -70,21 +106,26 @@ router.put(
   requireAuth,
   validate(
     z.object({
-      noteId: z.string().min(1, "笔记ID不能为空"),
+      noteId: objectIdSchema,
       title: z.string().optional(),
+      author: z.string().nullable().optional(),
+      source: z.enum(["user", "agent"]).optional(),
+      status: noteStatusSchema.optional(),
+      published: z.boolean().optional(),
       tags: z.array(z.string()).optional(),
-      status: z.enum(["Draft", "Published", "Archived"]).optional(),
-      parentId: z.string().nullable().optional(),
-      meta: z.record(z.any()).optional(),
+      parentId: objectIdSchema.nullable().optional(),
+      meta: metaSchema.optional(),
       cover: z.string().optional(),
+      password: z.string().nullable().optional(),
+      date: z.coerce.date().optional(),
+      expiresAt: z.coerce.date().nullable().optional(),
     }),
   ),
   asyncHandler(async (req, res) => {
     const { noteId, ...properties } = req.body;
     const user = await getUser(req);
-    if (!(await validateNoteUser(user.id, noteId))) {
-      throw Object.assign(new Error("Unauthorized"), { status: 401 });
-    }
+    await assertCanAccessNote(user.id, noteId);
+
     if (
       Object.prototype.hasOwnProperty.call(properties, "parentId") &&
       !(await validateNoteMoveTarget({
@@ -93,12 +134,51 @@ router.put(
         userId: user.id,
       }))
     ) {
-      throw Object.assign(new Error("不能移动到自身或子级"), {
-        status: 400,
-      });
+      throw Object.assign(
+        new Error("Cannot move note to itself or its descendant"),
+        { status: 400 },
+      );
     }
+
     const result = await updateNoteMeta(noteId, properties);
-    successResponse(res, result, "属性更新成功");
+    successResponse(res, result, "properties updated");
+  }),
+);
+
+router.put(
+  "/publish",
+  requireAuth,
+  validate(
+    z.object({
+      noteId: objectIdSchema,
+      published: z.boolean(),
+    }),
+  ),
+  asyncHandler(async (req, res) => {
+    const { noteId, published } = req.body;
+    const user = await getUser(req);
+    await assertCanAccessNote(user.id, noteId);
+
+    const result = await publishNote(noteId, published);
+    successResponse(res, result, "publish state updated");
+  }),
+);
+
+router.put(
+  "/restore",
+  requireAuth,
+  validate(
+    z.object({
+      noteId: objectIdSchema,
+    }),
+  ),
+  asyncHandler(async (req, res) => {
+    const { noteId } = req.body;
+    const { id } = await getUser(req);
+    await assertCanAccessNote(id, noteId, { includeDeleted: true });
+
+    const result = await restoreNote(noteId, id);
+    successResponse(res, result, "restore success");
   }),
 );
 
@@ -108,19 +188,17 @@ router.get(
   asyncHandler(async (req, res) => {
     const owner = await getUser(req);
     const result = await getAllNotes(owner.id);
-    successResponse(res, result, "查询成功");
+    successResponse(res, result, "query success");
   }),
 );
 
 router.get(
   "/roots",
+  requireAuth,
   asyncHandler(async (req, res) => {
-    const owner = getSingleQueryValue(req.query.owner);
-    if (!owner) {
-      throw Object.assign(new Error("owner is required"), { status: 400 });
-    }
-    const result = await getRootNotes(owner);
-    successResponse(res, result, "查询成功");
+    const owner = await getUser(req);
+    const result = await getRootNotes(owner.id);
+    successResponse(res, result, "query success");
   }),
 );
 
@@ -129,7 +207,7 @@ router.get(
   requireAuth,
   validateQuery(
     z.object({
-      parentId: z.string().min(1, "父级ID不能为空"),
+      parentId: objectIdSchema,
     }),
   ),
   asyncHandler(async (req, res) => {
@@ -137,8 +215,11 @@ router.get(
     if (!parentId) {
       throw Object.assign(new Error("parentId is required"), { status: 400 });
     }
-    const result = await getDirectChildren(parentId);
-    successResponse(res, result, "查询成功");
+    const user = await getUser(req);
+    await assertCanAccessNote(user.id, parentId);
+
+    const result = await getDirectChildren(parentId, user.id);
+    successResponse(res, result, "query success");
   }),
 );
 
@@ -147,7 +228,7 @@ router.get(
   requireAuth,
   validateQuery(
     z.object({
-      noteId: z.string().min(1, "笔记ID不能为空"),
+      noteId: objectIdSchema,
     }),
   ),
   asyncHandler(async (req, res) => {
@@ -158,7 +239,7 @@ router.get(
 
     const { id } = await getUser(req);
     const result = await getNoteAncestors(noteId, id);
-    successResponse(res, result, "查询成功");
+    successResponse(res, result, "query success");
   }),
 );
 
@@ -167,7 +248,7 @@ router.get(
   requireAuth,
   validateQuery(
     z.object({
-      noteId: z.string().min(1, "笔记ID不能为空"),
+      noteId: objectIdSchema,
     }),
   ),
   asyncHandler(async (req, res) => {
@@ -175,39 +256,9 @@ router.get(
     if (!noteId) {
       throw Object.assign(new Error("noteId is required"), { status: 400 });
     }
-    const result = await getNoteById(noteId);
-    successResponse(res, result, "查询成功");
-  }),
-);
-
-router.delete(
-  "/delete",
-  requireAuth,
-  validate(
-    z.object({
-      noteId: z.string().refine((val) => val.length > 0, "笔记ID不能为空"),
-    }),
-  ),
-  asyncHandler(async (req, res) => {
-    const { noteId } = req.body;
-    const { id } = await getUser(req);
-    if (!(await validateNoteUser(id, noteId))) {
-      throw Object.assign(new Error("Unauthorized"), { status: 401 });
-    }
-    await deleteNote(noteId);
-    successResponse(res, null, "删除成功");
-  }),
-);
-
-router.get(
-  "/getNote",
-  asyncHandler(async (req, res) => {
-    const userId = getSingleQueryValue(req.query.userId);
-    if (!userId) {
-      throw Object.assign(new Error("userId is required"), { status: 400 });
-    }
-    const result = await getNotes(userId);
-    successResponse(res, result, "查询成功");
+    const user = await getUser(req);
+    const result = await getNoteById(noteId, user.id);
+    successResponse(res, result, "query success");
   }),
 );
 
@@ -217,18 +268,79 @@ router.get(
   asyncHandler(async (req, res) => {
     const owner = await getUser(req);
     const result = await getRecentNotes(owner.id);
-    successResponse(res, result, "查询成功");
+    successResponse(res, result, "query success");
+  }),
+);
+
+router.get(
+  "/trash",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const owner = await getUser(req);
+    const result = await getTrashNotes(owner.id);
+    successResponse(res, result, "query success");
+  }),
+);
+
+router.get(
+  "/getNote",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const user = await getUser(req);
+    const result = await getNotes(user.id);
+    successResponse(res, result, "query success");
   }),
 );
 
 router.post(
   "/search",
   requireAuth,
+  validate(
+    z.object({
+      title: z.string().trim().min(1).max(100),
+    }),
+  ),
   asyncHandler(async (req, res) => {
     const owner = await getUser(req);
     const { title } = req.body;
     const result = await searchNotes(owner.id, title);
-    successResponse(res, result, "查询成功");
+    successResponse(res, result, "query success");
+  }),
+);
+
+router.delete(
+  "/delete",
+  requireAuth,
+  validate(
+    z.object({
+      noteId: objectIdSchema,
+    }),
+  ),
+  asyncHandler(async (req, res) => {
+    const { noteId } = req.body;
+    const { id } = await getUser(req);
+    await assertCanAccessNote(id, noteId);
+
+    await deleteNote(noteId, id);
+    successResponse(res, null, "delete success");
+  }),
+);
+
+router.delete(
+  "/purge",
+  requireAuth,
+  validate(
+    z.object({
+      noteId: objectIdSchema,
+    }),
+  ),
+  asyncHandler(async (req, res) => {
+    const { noteId } = req.body;
+    const { id } = await getUser(req);
+    await assertCanAccessNote(id, noteId, { includeDeleted: true });
+
+    const result = await purgeNote(noteId, id);
+    successResponse(res, result, "purge success");
   }),
 );
 

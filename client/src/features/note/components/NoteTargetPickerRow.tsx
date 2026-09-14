@@ -1,7 +1,7 @@
 import type { Note, SearchNote } from "@/api/note";
 import clsx from "clsx";
 import { ChevronRight, FileText } from "lucide-react";
-import { getNoteChildren, normalizeNoteTitle } from "../model/hierarchy";
+import { normalizeNoteTitle } from "../model/hierarchy";
 
 type NoteTargetPickerRowProps = {
   active?: boolean;
@@ -25,7 +25,7 @@ export function NoteTargetPickerRow({
   onToggle,
 }: NoteTargetPickerRowProps) {
   const pathLabel = "pathLabel" in note ? note.pathLabel : "";
-  const canExpand = hasChildren ?? getNoteChildren(note).length > 0;
+  const canExpand = hasChildren ?? note.hasChildren;
 
   return (
     <div

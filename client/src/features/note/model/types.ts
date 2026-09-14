@@ -1,6 +1,6 @@
-import type { NoteWithContent, updateNoteProperties } from "@/api/note";
+import type { NoteWithContent, UpdateNotePropertiesInput } from "@/api/note";
 
-export type NotePropertiesInput = Parameters<typeof updateNoteProperties>[1];
+export type NotePropertiesInput = UpdateNotePropertiesInput;
 
 export type CreateNoteVariables = {
   note: NoteWithContent;

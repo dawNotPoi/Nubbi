@@ -1,15 +1,21 @@
-import { Note } from "@/api/note";
+import {
+  metaEntriesToRecord,
+  recordToMetaEntries,
+  type Note,
+  type NoteStatus,
+  type UpdateNotePropertiesInput,
+} from "@/api/note";
 import { DatePicker } from "antd";
 import dayjs from "dayjs";
 import { useCallback, useEffect, useState } from "react";
 import { Select } from "./Select";
 
 const tagsOptions = ["算法", "React", "Node"];
-const statusOptions = ["Invisible", "Draft", "Published"];
+const statusOptions: NoteStatus[] = ["inbox", "active", "done", "archived"];
 const typeOptions = ["Note", "Thinking", "Share"];
 
 type Property = {
-  id: string;
+  id: "status" | "date" | "tags" | "type";
   name: string;
   type: "select" | "date" | "multi-select";
   options?: string[];
@@ -27,6 +33,13 @@ const formSchema: Property[] = [
   { id: "type", name: "类型", type: "select", options: typeOptions },
 ];
 
+const getMetaRecord = (note: Note) => ({
+  ...metaEntriesToRecord(note.meta),
+  date: note.date,
+  status: note.status,
+  tags: note.tags,
+});
+
 export default function NoteMeta({
   data,
   className,
@@ -34,23 +47,31 @@ export default function NoteMeta({
 }: {
   data: Note;
   className?: string;
-  onUpdate: (newData: Note["meta"]) => void;
+  onUpdate: (newData: UpdateNotePropertiesInput) => void;
 }) {
-  const [meta, setMeta] = useState<Record<string, any>>({
-    ...data.meta,
-  });
+  const [meta, setMeta] = useState<Record<string, any>>(() =>
+    getMetaRecord(data),
+  );
 
   useEffect(() => {
-    setMeta({
-      ...data.meta,
-    });
-  }, [data.meta]);
+    setMeta(getMetaRecord(data));
+  }, [data]);
 
   const handlerFormChange = useCallback(
     (newValue: string | any[], property?: Property) => {
+      if (!property) return;
+
       setMeta((current) => {
-        const nextMeta = { ...current, [property!.id]: newValue };
-        onUpdate(nextMeta);
+        const nextMeta = { ...current, [property.id]: newValue };
+
+        if (property.id === "type") {
+          const { date: _date, status: _status, tags: _tags, ...metaRecord } =
+            nextMeta;
+          onUpdate({ meta: recordToMetaEntries(metaRecord) });
+        } else {
+          onUpdate({ [property.id]: newValue });
+        }
+
         return nextMeta;
       });
     },
@@ -110,7 +131,7 @@ const InputRender = ({ property, value, onChange }: InputRenderProps) => {
           placeholder={placeholder}
           value={value ? dayjs(value) : null}
           onChange={(nextValue) => {
-            onChange?.(nextValue ? nextValue.valueOf() : undefined, property);
+            onChange?.(nextValue ? nextValue.toISOString() : undefined, property);
           }}
           className="w-full"
         />

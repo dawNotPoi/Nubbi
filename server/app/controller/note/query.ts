@@ -1,21 +1,34 @@
 import note from "@/models/note";
 
 const DEFAULT_TITLE = "Untitled";
+const QUERY_LIMIT = 500;
+const ACTIVE_NOTE_FILTER = { deletedAt: null };
+
+const escapeRegExp = (value: string) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 export type NotePathItem = {
   _id: string;
   title: string;
 };
 
-// 根据ID获取笔记（不增加观看次数）
-export const getNoteById = async (id: string) => {
-  return await note.findById(id);
+export type NoteFilter = {
+  status?: string;
+  tags?: string[];
+  published?: boolean;
+};
+
+export const getNoteById = async (id: string, userId: string) => {
+  return await note.findOne({ _id: id, userId, ...ACTIVE_NOTE_FILTER });
 };
 
 export const getNoteAncestors = async (noteId: string, userId: string) => {
   const ancestors: NotePathItem[] = [];
   const visitedNoteIds = new Set<string>();
-  let currentNote = await note.findById(noteId).select("parentId userId").lean();
+  let currentNote = await note
+    .findOne({ _id: noteId, ...ACTIVE_NOTE_FILTER })
+    .select("parentId userId")
+    .lean();
 
   if (!currentNote || currentNote.userId !== userId) {
     return ancestors;
@@ -27,7 +40,7 @@ export const getNoteAncestors = async (noteId: string, userId: string) => {
     visitedNoteIds.add(currentParentId);
 
     const parentNote = await note
-      .findById(currentParentId)
+      .findOne({ _id: currentParentId, ...ACTIVE_NOTE_FILTER })
       .select("title parentId userId")
       .lean();
 
@@ -45,117 +58,193 @@ export const getNoteAncestors = async (noteId: string, userId: string) => {
   return ancestors;
 };
 
-// 获取笔记的直接子笔记
-export const getDirectChildren = async (parentId: string) => {
+export const getDirectChildren = async (parentId: string, userId: string) => {
   return await note
-    .find({ parentId: parentId })
+    .find({ parentId, userId, ...ACTIVE_NOTE_FILTER })
     .sort({ createdAt: -1 })
-    .select("-content"); // 不返回内容，只返回元数据
+    .limit(QUERY_LIMIT)
+    .select("-content");
 };
 
-// 获取笔记的所有子笔记（递归）
-export const getAllChildren = async (parentId: string) => {
+export const getAllChildren = async (
+  parentId: string,
+  userId: string,
+  visitedNoteIds = new Set<string>(),
+) => {
+  if (visitedNoteIds.has(parentId)) return [];
+  visitedNoteIds.add(parentId);
+
   const children = await note
-    .find({ parentId: parentId })
-    .sort({ createdAt: -1 });
-  // 递归获取每个子笔记的子笔记
+    .find({ parentId, userId, ...ACTIVE_NOTE_FILTER })
+    .sort({ createdAt: -1 })
+    .limit(QUERY_LIMIT);
   const allChildren: any[] = [];
+
   for (const child of children) {
+    const childId = child._id.toString();
+    if (visitedNoteIds.has(childId)) continue;
+
     allChildren.push(child);
-    const grandChildren = await getAllChildren(child._id.toString());
+    const grandChildren = await getAllChildren(
+      childId,
+      userId,
+      visitedNoteIds,
+    );
     allChildren.push(...grandChildren);
   }
 
   return allChildren;
 };
 
-// 获取根级笔记（没有父级的笔记）
 export const getRootNotes = async (userId: string) => {
   return await note
-    .find({ parentId: null, userId })
+    .find({ parentId: null, userId, ...ACTIVE_NOTE_FILTER })
     .sort({ createdAt: -1 })
+    .limit(QUERY_LIMIT)
     .select("-content");
 };
 
 export const getAllNotes = async (userId: string) => {
   return await note
-    .find({ userId })
+    .find({ userId, ...ACTIVE_NOTE_FILTER })
     .sort({ updatedAt: -1, createdAt: -1 })
+    .limit(QUERY_LIMIT)
     .select("-content");
 };
 
-// 根据标签查询笔记
-export const findNotesByTags = async (tags: string[]) => {
+export const findNotesByTags = async (userId: string, tags: string[]) => {
   return await note
     .find({
+      userId,
       tags: { $in: tags },
+      ...ACTIVE_NOTE_FILTER,
     })
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .limit(QUERY_LIMIT);
 };
 
-// 根据状态查询笔记
-export const findNotesByStatus = async (status: string) => {
-  return await note.find({ status }).sort({ createdAt: -1 });
+export const findNotesByFilter = async (userId: string, filter: NoteFilter) => {
+  return await note
+    .find({
+      userId,
+      ...(filter.status ? { status: filter.status } : {}),
+      ...(filter.tags?.length ? { tags: { $in: filter.tags } } : {}),
+      ...(typeof filter.published === "boolean"
+        ? { published: filter.published }
+        : {}),
+      ...ACTIVE_NOTE_FILTER,
+    })
+    .sort({ createdAt: -1 })
+    .limit(QUERY_LIMIT);
 };
 
-// 获取笔记统计信息
-export const getNoteStats = async () => {
-  const total = await note.countDocuments();
-  const published = await note.countDocuments({ status: "Published" });
-  const draft = await note.countDocuments({ status: "Draft" });
-  const archived = await note.countDocuments({ status: "Archived" });
+export const findNotesByStatus = async (userId: string, status: string) => {
+  return await findNotesByFilter(userId, { status });
+};
+
+export const getNoteStats = async (userId: string) => {
+  const userFilter = { userId, ...ACTIVE_NOTE_FILTER };
+  const total = await note.countDocuments(userFilter);
+  const published = await note.countDocuments({
+    userId,
+    published: true,
+    ...ACTIVE_NOTE_FILTER,
+  });
+  const inbox = await note.countDocuments({
+    userId,
+    status: "inbox",
+    ...ACTIVE_NOTE_FILTER,
+  });
+  const active = await note.countDocuments({
+    userId,
+    status: "active",
+    ...ACTIVE_NOTE_FILTER,
+  });
+  const done = await note.countDocuments({
+    userId,
+    status: "done",
+    ...ACTIVE_NOTE_FILTER,
+  });
+  const archived = await note.countDocuments({
+    userId,
+    status: "archived",
+    ...ACTIVE_NOTE_FILTER,
+  });
 
   return {
     total,
     published,
-    draft,
+    inbox,
+    active,
+    done,
     archived,
   };
 };
 
-// 获取标签统计信息（每个标签的笔记数量）
-export const getTagStats = async () => {
-  const notes = await note.find({}, "tags");
+export const getTagStats = async (userId: string) => {
+  const notes = await note
+    .find({ userId, ...ACTIVE_NOTE_FILTER }, "tags")
+    .limit(QUERY_LIMIT);
   const tagCount: { [key: string]: number } = {};
-  notes.forEach((note) => {
-    if (note.meta.tags && Array.isArray(note.meta.tags)) {
-      note.meta.tags.forEach((tag) => {
-        if (tag && tag.trim()) {
-          const cleanTag = tag.trim();
-          tagCount[cleanTag] = (tagCount[cleanTag] || 0) + 1;
-        }
-      });
-    }
+
+  notes.forEach((noteItem) => {
+    noteItem.tags.forEach((tag) => {
+      if (tag && tag.trim()) {
+        const cleanTag = tag.trim();
+        tagCount[cleanTag] = (tagCount[cleanTag] || 0) + 1;
+      }
+    });
   });
 
-  // 转换为数组格式，按笔记数量降序排列
-  const tagStats = Object.entries(tagCount)
+  return Object.entries(tagCount)
     .map(([tag, count]) => ({ tag, count }))
     .sort((a, b) => b.count - a.count);
-
-  return tagStats;
 };
 
 export const getNotes = async (userId: string) => {
-  return await note.find({
-    userId: userId,
-    $or: [{ children: { $exists: false } }, { children: { $size: 0 } }],
-  });
+  return await note
+    .find({
+      userId,
+      hasChildren: false,
+      ...ACTIVE_NOTE_FILTER,
+    })
+    .limit(QUERY_LIMIT);
 };
 
 export const getRecentNotes = async (userId: string) => {
   return await note
     .find({
-      userId: userId,
-      $or: [{ children: { $exists: false } }, { children: { $size: 0 } }],
+      userId,
+      hasChildren: false,
+      ...ACTIVE_NOTE_FILTER,
     })
-    .sort({ updatedAt: -1 });
+    .sort({ updatedAt: -1 })
+    .limit(QUERY_LIMIT);
 };
 
-export const validateNoteUser = async (userId: string, noteId: string) => {
-  const Result = await note.findById(noteId);
-  if (Result?.userId === userId) return true;
-  else return false;
+export const getTrashNotes = async (userId: string) => {
+  return await note
+    .find({
+      userId,
+      deletedAt: { $ne: null },
+    })
+    .sort({ deletedAt: -1 })
+    .limit(QUERY_LIMIT)
+    .select("-content");
+};
+
+export const validateNoteUser = async (
+  userId: string,
+  noteId: string,
+  options: { includeDeleted?: boolean } = {},
+) => {
+  const result = await note
+    .findOne({
+      _id: noteId,
+      ...(options.includeDeleted ? {} : ACTIVE_NOTE_FILTER),
+    })
+    .select("userId");
+  return result?.userId === userId;
 };
 
 export const validateNoteMoveTarget = async ({
@@ -172,7 +261,7 @@ export const validateNoteMoveTarget = async ({
 
   try {
     const targetNote = await note
-      .findById(parentId)
+      .findOne({ _id: parentId, ...ACTIVE_NOTE_FILTER })
       .select("parentId userId")
       .lean();
 
@@ -193,7 +282,7 @@ export const validateNoteMoveTarget = async ({
       visitedNoteIds.add(currentParentId);
 
       const parentNote = await note
-        .findById(currentParentId)
+        .findOne({ _id: currentParentId, ...ACTIVE_NOTE_FILTER })
         .select("parentId userId")
         .lean();
 
@@ -213,11 +302,16 @@ export const validateNoteMoveTarget = async ({
 };
 
 export const searchNotes = async (userId: string, title: string) => {
+  const normalizedTitle = title.trim();
+  if (!normalizedTitle) return [];
+
   const result = await note
     .find({
-      userId: userId,
-      title: { $regex: title, $options: "i" },
+      userId,
+      title: { $regex: escapeRegExp(normalizedTitle), $options: "i" },
+      ...ACTIVE_NOTE_FILTER,
     })
+    .limit(QUERY_LIMIT)
     .lean();
 
   const noteCache = new Map<string, { title: string; parentId?: string | null }>();
@@ -227,9 +321,12 @@ export const searchNotes = async (userId: string, title: string) => {
       return noteCache.get(noteId)!;
     }
 
-    const parentNote = await note.findById(noteId).select("title parentId").lean();
+    const parentNote = await note
+      .findOne({ _id: noteId, userId, ...ACTIVE_NOTE_FILTER })
+      .select("title parentId")
+      .lean();
     const parentInfo = {
-      title: parentNote?.title || "未命名文档",
+      title: parentNote?.title || DEFAULT_TITLE,
       parentId: parentNote?.parentId ? String(parentNote.parentId) : null,
     };
     noteCache.set(noteId, parentInfo);

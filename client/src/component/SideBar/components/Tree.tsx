@@ -17,6 +17,7 @@ type SidebarTreeItemProps = {
   depth?: number;
   active?: boolean;
   expanded?: boolean;
+  hasChildren?: boolean;
   loading?: boolean;
   actions?: SidebarTreeAction[];
   to?: string;
@@ -82,6 +83,7 @@ export function SidebarTreeItem({
   depth = 0,
   active = false,
   expanded = false,
+  hasChildren = false,
   loading = false,
   actions = [],
   to,
@@ -112,7 +114,7 @@ export function SidebarTreeItem({
       )}
       style={{ paddingLeft: depthPadding(depth) }}
     >
-      {onToggle ? (
+      {onToggle && hasChildren ? (
         <span className="relative mr-0.5 flex size-6 shrink-0 items-center justify-center">
           <FileText
             className={clsx(

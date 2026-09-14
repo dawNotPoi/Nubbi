@@ -5,6 +5,14 @@ import env from "./env";
 const db = mongoose
   .connect(env.MONGO_URI, {
     dbName: env.MONGO_DB_NAME,
+    maxPoolSize: 10,
+    minPoolSize: 2,
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
+    connectTimeoutMS: 10000,
+    retryWrites: true,
+    retryReads: true,
+    authSource: "admin",
   })
   .then((res) => {
     logger.info("MonggoDB 连接成功");
