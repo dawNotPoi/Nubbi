@@ -162,6 +162,9 @@ fi
 preserve_ports
 
 log "building and starting server and mcp containers"
+# 先停止旧容器，确保端口完全释放，避免重建时端口冲突
+docker compose stop server mcp || true
+docker compose rm -f server mcp || true
 docker compose up -d --build --remove-orphans server mcp
 
 if command -v curl >/dev/null 2>&1; then
