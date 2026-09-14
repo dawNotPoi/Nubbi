@@ -24,15 +24,11 @@ const TiptapEditor = ({
   className,
   onChange,
   editable = true,
-  showMermaidSourceWhenReadOnly = false,
   variant = "editor",
   onEditorReady,
 }: TiptapEditorProps) => {
   const externalValue = serverValue ?? defaultValue;
-  const extensions = useMemo(
-    () => createExtensions({ showMermaidSourceWhenReadOnly }),
-    [showMermaidSourceWhenReadOnly],
-  );
+  const extensions = useMemo(() => createExtensions(), []);
 
   const initialContent = useMemo(() => {
     const content = externalValue?.trim() ?? "";

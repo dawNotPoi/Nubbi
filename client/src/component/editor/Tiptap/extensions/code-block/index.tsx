@@ -19,7 +19,6 @@ lowlight.registerAlias({
 
 export interface CodeBlockOptions extends CodeBlockLowlightOptions {
   onCopy?: (content: string) => void;
-  showMermaidSourceWhenReadOnly?: boolean;
 }
 
 export const CODE_BLOCK_LANGUAGES = [
@@ -62,7 +61,6 @@ export const CodeBlock = CodeBlockLowlight.extend<CodeBlockOptions>({
     return {
       ...CodeBlockLowlight.options,
       onCopy: () => {},
-      showMermaidSourceWhenReadOnly: false,
     };
   },
   renderMarkdown: (node) => {

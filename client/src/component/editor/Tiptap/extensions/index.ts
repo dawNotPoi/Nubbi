@@ -12,13 +12,7 @@ import { SmartSelectAllExtension } from "./smart-select-all";
 import { PasteMarkdownExtension } from "./paste-markdown";
 import { EDITOR_PLACEHOLDER } from "../constants";
 
-export interface CreateExtensionsOptions {
-  showMermaidSourceWhenReadOnly?: boolean;
-}
-
-export function createExtensions(options: CreateExtensionsOptions = {}) {
-  const { showMermaidSourceWhenReadOnly = false } = options;
-
+export function createExtensions() {
   return [
     StarterKit.configure({
       codeBlock: false,
@@ -28,7 +22,6 @@ export function createExtensions(options: CreateExtensionsOptions = {}) {
       onCopy: () => {
         message.success("复制成功");
       },
-      showMermaidSourceWhenReadOnly,
     }),
     TableKit.configure({
       table: {

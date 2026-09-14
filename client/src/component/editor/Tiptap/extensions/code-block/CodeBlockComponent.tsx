@@ -1,7 +1,7 @@
 import { NodeViewContent, NodeViewProps, NodeViewWrapper } from "@tiptap/react";
 import { Select } from "antd";
-import { Copy } from "lucide-react";
-import React, { useCallback, useEffect } from "react";
+import { ChevronDown, Copy } from "lucide-react";
+import React, { useCallback, useEffect, useState } from "react";
 import MermaidPreview from "./components/MermaidPreview";
 
 import {
@@ -16,16 +16,19 @@ const CodeBlockComponent: React.FC<NodeViewProps> = ({
   editor,
   updateAttributes,
   extension,
+  getPos,
 }) => {
   const [selectedLanguage, setSelectedLanguage] = React.useState(() => {
     return normalizeCodeBlockLanguage(node.attrs.language);
   });
+  const [isExpanded, setIsExpanded] = useState(
+    () => node.textContent.length === 0,
+  );
   const options = extension.options as CodeBlockOptions;
   const isEditable = editor.isEditable;
   const source = node.textContent;
   const isMermaid = selectedLanguage === "mermaid";
-  const shouldShowMermaidSource =
-    !isMermaid || isEditable || !!options.showMermaidSourceWhenReadOnly;
+  const firstLine = source.split(/\r?\n/, 1)[0] ?? "";
 
   const handleLanguageChange = useCallback(
     (newLanguage: string) => {
@@ -56,14 +59,41 @@ const CodeBlockComponent: React.FC<NodeViewProps> = ({
     }
   }, [node.textContent, options]);
 
+  const handleExpand = useCallback(() => {
+    setIsExpanded(true);
+
+    if (!isEditable) return;
+
+    requestAnimationFrame(() => {
+      const position = getPos();
+      if (typeof position === "number") {
+        editor.chain().focus(position + 1).run();
+      }
+    });
+  }, [editor, getPos, isEditable]);
+
+  const handleToggleExpanded = useCallback(() => {
+    if (isExpanded) {
+      setIsExpanded(false);
+      return;
+    }
+
+    handleExpand();
+  }, [handleExpand, isExpanded]);
+
+  const handleMermaidRenderError = useCallback(() => {
+    setIsExpanded(true);
+  }, []);
+
   return (
     <NodeViewWrapper
       className="blockCodeWrapper group rounded-xl pb-3"
       data-language={selectedLanguage}
+      data-expanded={isExpanded ? "true" : "false"}
     >
       <header className="toolbar flex items-center px-2 py-2">
         <div className="flex-1"></div>
-        <div className="codeToolbar flex h-[32px] items-center gap-1 overflow-hidden rounded-md p-0.5 opacity-0 focus-within:opacity-100 group-hover:opacity-100">
+        <div className="codeToolbar flex h-[32px] items-center gap-1 overflow-hidden rounded-md p-0.5">
           {isEditable ? (
             <Select
               variant="borderless"
@@ -86,6 +116,20 @@ const CodeBlockComponent: React.FC<NodeViewProps> = ({
           )}
           <button
             type="button"
+            aria-expanded={isExpanded}
+            aria-label={isExpanded ? "收起代码" : "展开代码"}
+            className="codeToolbarButton flex size-[28px] items-center justify-center overflow-hidden rounded-md p-1"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={handleToggleExpanded}
+            title={isExpanded ? "收起代码" : "展开代码"}
+          >
+            <ChevronDown
+              className={`transition-transform ${isExpanded ? "rotate-180" : ""}`}
+              size={16}
+            />
+          </button>
+          <button
+            type="button"
             aria-label="复制代码"
             className="codeToolbarButton flex size-[28px] items-center justify-center overflow-hidden rounded-md p-1"
             onMouseDown={(event) => event.preventDefault()}
@@ -95,20 +139,33 @@ const CodeBlockComponent: React.FC<NodeViewProps> = ({
           </button>
         </div>
       </header>
-      {shouldShowMermaidSource ? (
-        <pre className="blockCodeContent overflow-x-auto">
-          <NodeViewContent style={{ textWrap: "nowrap" }} />
+      {!isExpanded ? (
+        <pre
+          aria-label="展开并编辑代码"
+          className="blockCodeContent blockCodeSummary"
+          onClick={handleExpand}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              handleExpand();
+            }
+          }}
+          role="button"
+          tabIndex={0}
+        >
+          {firstLine || " "}
         </pre>
-      ) : (
-        <div className="hidden">
-          <NodeViewContent />
-        </div>
-      )}
+      ) : null}
+      <pre
+        className={`blockCodeContent overflow-x-auto ${isExpanded ? "" : "hidden"}`}
+      >
+        <NodeViewContent style={{ textWrap: "nowrap" }} />
+      </pre>
       {isMermaid ? (
         <div className="px-4 pt-3">
           <MermaidPreview
             source={source}
-            fallback={shouldShowMermaidSource ? null : source}
+            onRenderError={handleMermaidRenderError}
           />
         </div>
       ) : null}

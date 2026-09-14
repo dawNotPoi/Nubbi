@@ -9,7 +9,6 @@ export interface TiptapEditorProps {
   className?: string;
   onChange?: (markdown: string) => void;
   editable?: boolean;
-  showMermaidSourceWhenReadOnly?: boolean;
   variant?: TiptapEditorVariant;
   onEditorReady?: (editor: Editor) => void;
 }
