@@ -46,21 +46,12 @@ const envSchema = z.object({
   EMAIL_PASS: requiredString("EMAIL_PASS"),
   EMAIL_FROM: optionalString(),
   EMAIL_SERVICE: optionalString(),
-  AI_CONFIG_SECRET: optionalString(),
   GH_IMAGE_REPO: optionalString(),
   GH_IMAGE_TOKEN: optionalString(),
   GH_IMAGE_BRANCH: optionalString(),
   GITHUB_IMAGE_REPO: optionalString(),
   GITHUB_IMAGE_TOKEN: optionalString(),
   GITHUB_IMAGE_BRANCH: optionalString(),
-  WEB_SEARCH_PROVIDER: z
-    .preprocess((value) => {
-      const nextValue = emptyToUndefined(value);
-      return typeof nextValue === "string" ? nextValue.toLowerCase() : nextValue;
-    }, z.enum(["tavily", "brave", "serpapi", "searxng"]).optional())
-    .transform((value) => value || ""),
-  WEB_SEARCH_API_KEY: optionalString(),
-  WEB_SEARCH_BASE_URL: optionalString(),
   SMTP_HOST: optionalString(),
   SMTP_PORT: optionalNumber(),
   SMTP_SECURE: optionalBooleanString(),
@@ -95,7 +86,6 @@ log.success("环境变量加载成功", {
   AUTH_GITHUB_SECRET: env.AUTH_GITHUB_SECRET ? "***" : "",
   AUTH_GOOGLE_SECRET: env.AUTH_GOOGLE_SECRET ? "***" : "",
   GH_IMAGE_TOKEN: env.GH_IMAGE_TOKEN ? "***" : "",
-  WEB_SEARCH_API_KEY: env.WEB_SEARCH_API_KEY ? "***" : "",
 });
 
 export default env;

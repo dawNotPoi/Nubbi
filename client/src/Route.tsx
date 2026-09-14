@@ -16,7 +16,6 @@ import Home from "./views/home";
 import { LoginPage } from "./views/login";
 import MeetingAccessGuard from "./views/meeting-room/MeetingAccessGuard";
 import Meetings from "./views/meetings";
-import NoteAI from "./views/note-ai";
 import NoteTable from "./views/NoteTable";
 import { ResetPasswordPage } from "./views/reset-password";
 
@@ -119,7 +118,6 @@ export const RouteWrapper = () => {
             <Route path="meetings" element={<Meetings />} />
             <Route path="table" element={<NoteTable />} />
             <Route path="file/*" element={<FileManager />} />
-            <Route path="note-ai" element={<NoteAI />} />
             <Route path="note/:Id" element={<Note />} />
           </Route>
           <Route path="*" element={<Navigate to={routes.home} replace />} />

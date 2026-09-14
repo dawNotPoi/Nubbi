@@ -16,41 +16,41 @@ export const debounceWithControls = <T extends (...args: any[]) => any>(
   delay = 1000,
 ) => {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
-  let lastArgs: Parameters<T> | undefined;
-  let lastThis: ThisParameterType<T> | undefined;
+  let pendingCall:
+    | {
+        context: ThisParameterType<T>;
+        args: Parameters<T>;
+      }
+    | undefined;
 
   const debounced = function (
     this: ThisParameterType<T>,
     ...args: Parameters<T>
   ) {
-    lastThis = this;
-    lastArgs = args;
+    pendingCall = { context: this, args };
     if (timeoutId) clearTimeout(timeoutId);
 
     timeoutId = setTimeout(() => {
       timeoutId = undefined;
-      if (!lastArgs) return;
-      fn.apply(lastThis, lastArgs);
-      lastArgs = undefined;
-      lastThis = undefined;
+      if (!pendingCall) return;
+      fn.apply(pendingCall.context, pendingCall.args);
+      pendingCall = undefined;
     }, delay);
   };
 
   debounced.flush = () => {
-    if (!timeoutId || !lastArgs) return;
+    if (!timeoutId || !pendingCall) return;
 
     clearTimeout(timeoutId);
     timeoutId = undefined;
-    fn.apply(lastThis, lastArgs);
-    lastArgs = undefined;
-    lastThis = undefined;
+    fn.apply(pendingCall.context, pendingCall.args);
+    pendingCall = undefined;
   };
 
   debounced.cancel = () => {
     if (timeoutId) clearTimeout(timeoutId);
     timeoutId = undefined;
-    lastArgs = undefined;
-    lastThis = undefined;
+    pendingCall = undefined;
   };
 
   return debounced;
