@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+
 const CONSTRAINTS: MediaStreamConstraints = {
   audio: true,
   video: true,
 };
-function useMediaStream(contranints: MediaStreamConstraints = CONSTRAINTS) {
+
+function useMediaStream(constraints: MediaStreamConstraints = CONSTRAINTS) {
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
   const [videoStatu, setVideoStatu] = useState({
     open: false,
@@ -13,57 +15,56 @@ function useMediaStream(contranints: MediaStreamConstraints = CONSTRAINTS) {
     open: false,
     deviceId: "",
   });
-  //防止重复调用
-  let created = useRef(false);
+  const created = useRef(false);
   const [devices, setDevices] = useState<{
     audio: MediaDeviceInfo[];
     video: MediaDeviceInfo[];
   }>({ audio: [], video: [] });
 
-  //获取本地媒体流
   const getMediaStream = useCallback(async () => {
     try {
-      let newMedia: MediaStream | null = null;
-      newMedia = await navigator.mediaDevices.getUserMedia(contranints);
-      const videoTrack = newMedia.getVideoTracks()[0];
-      const audioTrack = newMedia.getAudioTracks()[0];
-      if (videoTrack)
+      const nextMediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      const videoTrack = nextMediaStream.getVideoTracks()[0];
+      const audioTrack = nextMediaStream.getAudioTracks()[0];
+
+      if (videoTrack) {
         setVideoStatu({
           open: true,
           deviceId: videoTrack.getSettings().deviceId || "",
         });
-      if (audioTrack)
+      }
+
+      if (audioTrack) {
         setAudioStatu({
           open: true,
           deviceId: audioTrack.getSettings().deviceId || "",
         });
-      return newMedia;
+      }
+
+      return nextMediaStream;
     } catch (error) {
-      console.error("获取媒体流失败", error);
+      console.error("Failed to get media stream.", error);
       setAudioStatu({ open: false, deviceId: "" });
       setVideoStatu({ open: false, deviceId: "" });
       return null;
     }
-  }, []);
+  }, [constraints]);
 
-  //获取设备列表
   const getDevices = useCallback(async () => {
-    let device: any[] = [];
+    let deviceList: MediaDeviceInfo[] = [];
+
     try {
-      //获取列表信息
-      device = await navigator.mediaDevices.enumerateDevices();
+      deviceList = await navigator.mediaDevices.enumerateDevices();
     } catch (error) {
-      console.error("设备信息获取失败", error);
+      console.error("Failed to get device list.", error);
     }
-    const audioInputs = device.filter((device) => device.kind === "audioinput");
-    const videoInputs = device.filter((device) => device.kind === "videoinput");
+
     setDevices({
-      audio: audioInputs,
-      video: videoInputs,
+      audio: deviceList.filter((item) => item.kind === "audioinput"),
+      video: deviceList.filter((item) => item.kind === "videoinput"),
     });
   }, []);
 
-  //切换设备
   const switchDevice = useCallback(
     async (
       kind: "audioinput" | "videoinput",
@@ -75,93 +76,103 @@ function useMediaStream(contranints: MediaStreamConstraints = CONSTRAINTS) {
       ) => void,
       afterSwitch?: (stream: MediaStream) => void
     ) => {
-      //获取track
-      let stream = null;
+      let nextTrackStream: MediaStream;
+
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { deviceId: { exact: deviceId } },
-        });
+        nextTrackStream = await navigator.mediaDevices.getUserMedia(
+          kind === "audioinput"
+            ? { audio: { deviceId: { exact: deviceId } }, video: false }
+            : { video: { deviceId: { exact: deviceId } }, audio: false }
+        );
       } catch (error) {
         console.error("Error accessing media devices.", error);
         return;
       }
-      const newTrack =
+
+      const nextTrack =
         kind === "audioinput"
-          ? stream.getAudioTracks()[0]
-          : stream.getVideoTracks()[0];
-      // 更新 localStream ref/state as needed
-      const prev = mediaStream;
-      if (!prev) return;
-      const oldTrack =
+          ? nextTrackStream.getAudioTracks()[0]
+          : nextTrackStream.getVideoTracks()[0];
+      const currentStream = mediaStream;
+
+      if (!currentStream || !nextTrack) return;
+
+      const currentTrack =
         kind === "audioinput"
-          ? prev.getAudioTracks()[0]
-          : prev.getVideoTracks()[0];
-      beforeSwitch?.(stream, oldTrack, newTrack);
-      oldTrack.stop();
-      prev.removeTrack(oldTrack);
-      prev.addTrack(newTrack);
-      newTrack.kind === "video"
-        ? setVideoStatu({
-            open: true,
-            deviceId: newTrack.getSettings().deviceId || "",
-          })
-        : setAudioStatu({
-            open: true,
-            deviceId: newTrack.getSettings().deviceId || "",
-          });
-      afterSwitch?.(stream);
-      return newTrack;
+          ? currentStream.getAudioTracks()[0]
+          : currentStream.getVideoTracks()[0];
+
+      if (!currentTrack) return;
+
+      beforeSwitch?.(nextTrackStream, currentTrack, nextTrack);
+      currentTrack.stop();
+      currentStream.removeTrack(currentTrack);
+      currentStream.addTrack(nextTrack);
+
+      if (nextTrack.kind === "video") {
+        setVideoStatu({
+          open: true,
+          deviceId: nextTrack.getSettings().deviceId || "",
+        });
+      } else {
+        setAudioStatu({
+          open: true,
+          deviceId: nextTrack.getSettings().deviceId || "",
+        });
+      }
+
+      afterSwitch?.(currentStream);
+      return nextTrack;
     },
     [mediaStream]
   );
 
-  //开关设备
   const toggleDevice = useCallback(
     async (kind: "video" | "audio", enabled: boolean) => {
-      console.log("toggleDevice");
-      console.log("deviceTracks", mediaStream?.getTracks());
       if (!mediaStream) return;
+
       const tracks =
         kind === "video"
           ? mediaStream.getVideoTracks()
           : mediaStream.getAudioTracks();
 
-      if (tracks.length > 0) {
-        tracks.forEach((track) => {
-          track.enabled = enabled;
-        });
-        if (kind === "video") {
-          setVideoStatu((prev) => ({ ...prev, open: enabled }));
-        } else {
-          setAudioStatu((prev) => ({ ...prev, open: enabled }));
-        }
+      if (tracks.length === 0) return;
+
+      tracks.forEach((track) => {
+        track.enabled = enabled;
+      });
+
+      if (kind === "video") {
+        setVideoStatu((prev) => ({ ...prev, open: enabled }));
+      } else {
+        setAudioStatu((prev) => ({ ...prev, open: enabled }));
       }
     },
     [mediaStream]
   );
 
-  // 初始化Media
   useEffect(() => {
-    //防止重复调用
-    if (!created.current) {
-      getMediaStream().then((stream) => {
-        if (stream) {
-          setMediaStream(stream);
-        }
-      });
-    }
+    if (created.current) return;
+
+    getMediaStream().then((stream) => {
+      if (stream) {
+        setMediaStream(stream);
+      }
+    });
+
     return () => {
       created.current = true;
     };
-  }, []);
+  }, [getMediaStream]);
 
-  //初始化设备列表
   useEffect(() => {
     getDevices();
     navigator.mediaDevices.addEventListener("devicechange", getDevices);
-    return () =>
+
+    return () => {
       navigator.mediaDevices.removeEventListener("devicechange", getDevices);
-  }, []);
+    };
+  }, [getDevices]);
 
   return {
     mediaStream,
@@ -172,4 +183,5 @@ function useMediaStream(contranints: MediaStreamConstraints = CONSTRAINTS) {
     toggleDevice,
   };
 }
+
 export default useMediaStream;
