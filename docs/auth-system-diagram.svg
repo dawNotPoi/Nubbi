@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1220" viewBox="0 0 1600 1220" role="img" aria-label="D-Note auth system overview">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M0 0 L10 5 L0 10 z" fill="#475569"/>
+    </marker>
+    <style>
+      .title { font: 700 34px 'Segoe UI', Arial, sans-serif; fill: #0f172a; }
+      .subtitle { font: 500 16px 'Segoe UI', Arial, sans-serif; fill: #475569; }
+      .lane-title { font: 700 20px 'Segoe UI', Arial, sans-serif; fill: #0f172a; }
+      .box-title { font: 700 16px 'Segoe UI', Arial, sans-serif; fill: #0f172a; }
+      .box-text { font: 400 14px 'Segoe UI', Arial, sans-serif; fill: #334155; }
+      .mini { font: 600 12px 'Segoe UI', Arial, sans-serif; fill: #475569; }
+      .note { font: 600 15px 'Segoe UI', Arial, sans-serif; fill: #7c2d12; }
+    </style>
+  </defs>
+
+  <rect width="100%" height="100%" fill="#f8fafc"/>
+  <text x="800" y="54" text-anchor="middle" class="title">D-Note Auth System Overview</text>
+  <text x="800" y="84" text-anchor="middle" class="subtitle">better-auth handles identity, business routes enforce requireAuth and resource ownership checks</text>
+
+  <rect x="40" y="120" width="340" height="940" rx="24" fill="#eff6ff" stroke="#bfdbfe" stroke-width="2"/>
+  <rect x="410" y="120" width="340" height="940" rx="24" fill="#f5f3ff" stroke="#ddd6fe" stroke-width="2"/>
+  <rect x="780" y="120" width="340" height="940" rx="24" fill="#ecfeff" stroke="#a5f3fc" stroke-width="2"/>
+  <rect x="1150" y="120" width="410" height="940" rx="24" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="2"/>
+
+  <text x="210" y="160" text-anchor="middle" class="lane-title">Frontend Pages and State</text>
+  <text x="580" y="160" text-anchor="middle" class="lane-title">Frontend Request Layer</text>
+  <text x="950" y="160" text-anchor="middle" class="lane-title">Auth Center</text>
+  <text x="1355" y="160" text-anchor="middle" class="lane-title">Business APIs and Data</text>
+
+  <rect x="74" y="200" width="272" height="96" rx="18" fill="#ffffff" stroke="#60a5fa" stroke-width="2"/>
+  <text x="94" y="228" class="box-title">LoginPage / useAuth</text>
+  <text x="94" y="252" class="box-text">Email password login</text>
+  <text x="94" y="272" class="box-text">GitHub and Google login</text>
+
+  <rect x="74" y="346" width="272" height="116" rx="18" fill="#ffffff" stroke="#60a5fa" stroke-width="2"/>
+  <text x="94" y="374" class="box-title">Auth runtime</text>
+  <text x="94" y="398" class="box-text">Keep accessToken in memory</text>
+  <text x="94" y="418" class="box-text">restoreAuthSession()</text>
+  <text x="94" y="438" class="box-text">handleUnauthorized()</text>
+
+  <rect x="74" y="512" width="272" height="116" rx="18" fill="#ffffff" stroke="#60a5fa" stroke-width="2"/>
+  <text x="94" y="540" class="box-title">ProtectedRoute</text>
+  <text x="94" y="564" class="box-text">Require session.user</text>
+  <text x="94" y="584" class="box-text">Require accessToken</text>
+  <text x="94" y="604" class="box-text">Else redirect to /login</text>
+
+  <rect x="74" y="678" width="272" height="156" rx="18" fill="#ffffff" stroke="#60a5fa" stroke-width="2"/>
+  <text x="94" y="706" class="box-title">MeetingAccessGuard</text>
+  <text x="94" y="730" class="box-text">Check logged-in state first</text>
+  <text x="94" y="750" class="box-text">Check meeting end time</text>
+  <text x="94" y="770" class="box-text">Check room password</text>
+  <text x="94" y="790" class="box-text">Remember access in sessionStorage</text>
+
+  <rect x="444" y="200" width="272" height="106" rx="18" fill="#ffffff" stroke="#8b5cf6" stroke-width="2"/>
+  <text x="464" y="228" class="box-title">createAuthClient</text>
+  <text x="464" y="252" class="box-text">baseURL points to server</text>
+  <text x="464" y="272" class="box-text">credentials set to include</text>
+
+  <rect x="444" y="356" width="272" height="116" rx="18" fill="#ffffff" stroke="#8b5cf6" stroke-width="2"/>
+  <text x="464" y="384" class="box-title">onSuccess token capture</text>
+  <text x="464" y="408" class="box-text">Read set-auth-token header</text>
+  <text x="464" y="428" class="box-text">Call setAccessToken(token)</text>
+
+  <rect x="444" y="522" width="272" height="136" rx="18" fill="#ffffff" stroke="#8b5cf6" stroke-width="2"/>
+  <text x="464" y="550" class="box-title">authorizedFetch</text>
+  <text x="464" y="574" class="box-text">ensureAccessToken()</text>
+  <text x="464" y="594" class="box-text">Add Authorization Bearer token</text>
+  <text x="464" y="614" class="box-text">401 goes to handleUnauthorized()</text>
+
+  <rect x="444" y="718" width="272" height="116" rx="18" fill="#ffffff" stroke="#8b5cf6" stroke-width="2"/>
+  <text x="464" y="746" class="box-title">Request targets</text>
+  <text x="464" y="770" class="box-text">/post /file /meeting APIs</text>
+  <text x="464" y="790" class="box-text">Some public, some protected</text>
+
+  <rect x="814" y="200" width="272" height="146" rx="18" fill="#ffffff" stroke="#06b6d4" stroke-width="2"/>
+  <text x="834" y="228" class="box-title">betterAuth config</text>
+  <text x="834" y="252" class="box-text">MongoDB adapter</text>
+  <text x="834" y="272" class="box-text">Email verification</text>
+  <text x="834" y="292" class="box-text">GitHub and Google providers</text>
+  <text x="834" y="312" class="box-text">bearer() plugin enabled</text>
+
+  <rect x="814" y="396" width="272" height="96" rx="18" fill="#ffffff" stroke="#06b6d4" stroke-width="2"/>
+  <text x="834" y="424" class="box-title">/api/auth/*</text>
+  <text x="834" y="448" class="box-text">Register, login, callback, session</text>
+
+  <rect x="814" y="542" width="272" height="126" rx="18" fill="#ffffff" stroke="#06b6d4" stroke-width="2"/>
+  <text x="834" y="570" class="box-title">auth.api.getSession()</text>
+  <text x="834" y="594" class="box-text">Recover session from request headers</text>
+  <text x="834" y="614" class="box-text">Return session.user</text>
+  <text x="834" y="634" class="box-text">Fail means unauthenticated</text>
+
+  <rect x="814" y="718" width="272" height="116" rx="18" fill="#ffffff" stroke="#06b6d4" stroke-width="2"/>
+  <text x="834" y="746" class="box-title">requireAuth middleware</text>
+  <text x="834" y="770" class="box-text">Success: req.user = session.user</text>
+  <text x="834" y="790" class="box-text">Failure: return 401</text>
+
+  <rect x="1184" y="200" width="342" height="126" rx="18" fill="#ffffff" stroke="#22c55e" stroke-width="2"/>
+  <text x="1204" y="228" class="box-title">Post routes</text>
+  <text x="1204" y="252" class="box-text">Create, update and delete are protected</text>
+  <text x="1204" y="272" class="box-text">Extra ownership check by post.userId</text>
+  <text x="1204" y="292" class="box-text">Some read routes stay public</text>
+
+  <rect x="1184" y="376" width="342" height="146" rx="18" fill="#ffffff" stroke="#22c55e" stroke-width="2"/>
+  <text x="1204" y="404" class="box-title">File routes</text>
+  <text x="1204" y="428" class="box-text">Nearly all key operations use requireAuth</text>
+  <text x="1204" y="448" class="box-text">Queries and writes filter by ownerId</text>
+  <text x="1204" y="468" class="box-text">This is the clearest ownership model</text>
+
+  <rect x="1184" y="572" width="342" height="166" rx="18" fill="#ffffff" stroke="#22c55e" stroke-width="2"/>
+  <text x="1204" y="600" class="box-title">Meeting routes</text>
+  <text x="1204" y="624" class="box-text">Create and findMyMeeting require login</text>
+  <text x="1204" y="644" class="box-text">findById, comments and validateAccess are public</text>
+  <text x="1204" y="664" class="box-text">Frontend also checks room password</text>
+  <text x="1204" y="684" class="box-text">This is a mixed access-control path</text>
+
+  <rect x="1184" y="788" width="342" height="116" rx="18" fill="#ffffff" stroke="#22c55e" stroke-width="2"/>
+  <text x="1204" y="816" class="box-title">Data layer</text>
+  <text x="1204" y="840" class="box-text">Auth tables plus session and account data</text>
+  <text x="1204" y="860" class="box-text">Business data filtered by ownerId and userId</text>
+
+  <rect x="90" y="1090" width="1420" height="86" rx="20" fill="#fff7ed" stroke="#fdba74" stroke-width="2"/>
+  <text x="120" y="1124" class="note">Key risks:</text>
+  <text x="212" y="1124" class="box-text">1. validatePostUser is async in post routes, but current callers do not await it.</text>
+  <text x="212" y="1148" class="box-text">2. /meeting/delete has no visible requireAuth guard and should be reviewed.</text>
+
+  <path d="M346 248 C390 248, 390 248, 444 248" fill="none" stroke="#475569" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <path d="M716 248 C760 248, 760 248, 814 248" fill="none" stroke="#475569" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <path d="M346 404 C390 404, 390 404, 444 404" fill="none" stroke="#475569" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <path d="M716 590 C760 590, 760 590, 814 590" fill="none" stroke="#475569" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <path d="M1086 606 C1130 606, 1130 606, 1184 606" fill="none" stroke="#475569" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <path d="M1086 776 C1130 776, 1130 776, 1184 776" fill="none" stroke="#475569" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <path d="M346 570 C400 570, 400 590, 444 590" fill="none" stroke="#475569" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <path d="M346 756 C400 756, 400 776, 444 776" fill="none" stroke="#475569" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <path d="M950 492 C950 514, 950 514, 950 542" fill="none" stroke="#475569" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <path d="M950 668 C950 690, 950 690, 950 718" fill="none" stroke="#475569" stroke-width="2.5" marker-end="url(#arrow)"/>
+
+  <path d="M1355 904 C1355 964, 580 964, 580 658" fill="none" stroke="#f97316" stroke-width="2.5" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+  <text x="760" y="948" text-anchor="middle" class="mini">401 flows back to frontend, then token is cleared, signOut runs, and user is redirected to login</text>
+</svg>

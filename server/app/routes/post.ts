@@ -1,4 +1,3 @@
-// routes.js
 import { getUser } from "@/lib/auth";
 import requireAuth from "@/middleware/session";
 import express from "express";
@@ -18,8 +17,12 @@ import { updatePostContent, updatePostMeta } from "../controller/post/update";
 import { asyncHandler } from "../middleware/common";
 import { validate, validateQuery } from "../middleware/validator";
 import { successResponse } from "./utils";
+
 const router = express.Router();
-// 创建文章
+
+const getSingleQueryValue = (value: unknown) =>
+  typeof value === "string" ? value : undefined;
+
 router.post(
   "/create",
   requireAuth,
@@ -39,7 +42,6 @@ router.post(
   }),
 );
 
-// 修改文章内容
 router.put(
   "/content",
   requireAuth,
@@ -52,14 +54,14 @@ router.put(
   asyncHandler(async (req, res) => {
     const { postId, content } = req.body;
     const user = await getUser(req);
-    if (!validatePostUser(user.id, postId))
+    if (!validatePostUser(user.id, postId)) {
       throw Object.assign(new Error("Unauthorized"), { status: 401 });
+    }
     const result = await updatePostContent(postId, content);
     successResponse(res, result, "内容更新成功");
   }),
 );
 
-// 修改文章属性
 router.put(
   "/properties",
   requireAuth,
@@ -74,24 +76,26 @@ router.put(
   asyncHandler(async (req, res) => {
     const { postId, ...properties } = req.body;
     const user = await getUser(req);
-    if (!validatePostUser(user.id, postId))
+    if (!validatePostUser(user.id, postId)) {
       throw Object.assign(new Error("Unauthorized"), { status: 401 });
+    }
     const result = await updatePostMeta(postId, properties);
     successResponse(res, result, "属性更新成功");
   }),
 );
 
-// 查询根级文章（不包含内容）
 router.get(
   "/roots",
   asyncHandler(async (req, res) => {
-    const { owner } = req.query;
-    const result = await getRootPosts(owner as string);
+    const owner = getSingleQueryValue(req.query.owner);
+    if (!owner) {
+      throw Object.assign(new Error("owner is required"), { status: 400 });
+    }
+    const result = await getRootPosts(owner);
     successResponse(res, result, "查询成功");
   }),
 );
 
-// 查询直接子文章（不包含内容）
 router.get(
   "/children",
   requireAuth,
@@ -101,12 +105,15 @@ router.get(
     }),
   ),
   asyncHandler(async (req, res) => {
-    const { parentId } = req.query;
+    const parentId = getSingleQueryValue(req.query.parentId);
+    if (!parentId) {
+      throw Object.assign(new Error("parentId is required"), { status: 400 });
+    }
     const result = await getDirectChildren(parentId);
     successResponse(res, result, "查询成功");
   }),
 );
-//查询详情
+
 router.get(
   "/detail",
   requireAuth,
@@ -116,44 +123,46 @@ router.get(
     }),
   ),
   asyncHandler(async (req, res) => {
-    const { postId } = req.query;
+    const postId = getSingleQueryValue(req.query.postId);
+    if (!postId) {
+      throw Object.assign(new Error("postId is required"), { status: 400 });
+    }
     const result = await getPostById(postId);
     successResponse(res, result, "查询成功");
   }),
 );
 
-// 删除文章（就删除单个吧）
 router.delete(
   "/delete",
   requireAuth,
   validate(
     z.object({
-      postId: z.string().refine((val) => {
-        return val.length > 0;
-      }, "文章ID不能为空"),
+      postId: z.string().refine((val) => val.length > 0, "文章ID不能为空"),
     }),
   ),
   asyncHandler(async (req, res) => {
     const { postId } = req.body;
     const { id } = await getUser(req);
-    if (!validatePostUser(id, postId))
+    if (!validatePostUser(id, postId)) {
       throw Object.assign(new Error("Unauthorized"), { status: 401 });
+    }
     await deletePost(postId);
     successResponse(res, null, "删除成功");
   }),
 );
 
-//查询所有叶子文章
 router.get(
   "/getPost",
   asyncHandler(async (req, res) => {
-    const { userId } = req.query;
+    const userId = getSingleQueryValue(req.query.userId);
+    if (!userId) {
+      throw Object.assign(new Error("userId is required"), { status: 400 });
+    }
     const result = await getPosts(userId);
     successResponse(res, result, "查询成功");
   }),
 );
 
-//查询最近修改文章
 router.get(
   "/recent",
   requireAuth,
@@ -164,7 +173,6 @@ router.get(
   }),
 );
 
-//根据标题过滤文章
 router.post(
   "/search",
   requireAuth,

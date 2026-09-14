@@ -19,6 +19,7 @@ lowlight.registerAlias({
 
 export interface CodeBlockOptions extends CodeBlockLowlightOptions {
   onCopy?: (content: string) => void;
+  showMermaidSourceWhenReadOnly?: boolean;
 }
 
 export const CODE_BLOCK_LANGUAGES = [
@@ -31,6 +32,7 @@ export const CODE_BLOCK_LANGUAGES = [
   { label: "JSON", value: "json" },
   { label: "Bash", value: "bash" },
   { label: "Markdown", value: "markdown" },
+  { label: "Mermaid", value: "mermaid" },
 ] as const;
 
 export const normalizeCodeBlockLanguage = (language?: string | null) => {
@@ -47,6 +49,7 @@ export const normalizeCodeBlockLanguage = (language?: string | null) => {
     return "bash";
   }
   if (normalized === "yml") return "yaml";
+  if (normalized === "mmd") return "mermaid";
 
   return normalized;
 };
@@ -58,6 +61,7 @@ export const CodeBlock = CodeBlockLowlight.extend<CodeBlockOptions>({
     return {
       ...CodeBlockLowlight.options,
       onCopy: () => {},
+      showMermaidSourceWhenReadOnly: false,
     };
   },
   renderMarkdown: (node) => {

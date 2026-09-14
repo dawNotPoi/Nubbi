@@ -6,8 +6,8 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { message } from "antd";
 import clsx from "clsx";
-import { Move } from "lucide-react";
-import { useMemo } from "react";
+import { GripVertical } from "lucide-react";
+import { useEffect, useMemo } from "react";
 import { CodeBlock } from "./extensions/code-block";
 import image from "./extensions/image";
 import { SlashCommandExtension } from "./extensions/slash-command";
@@ -23,10 +23,14 @@ const TiptapEditor = ({
   defaultValue,
   className,
   onChange,
+  editable = true,
+  showMermaidSourceWhenReadOnly = false,
 }: {
   defaultValue?: string;
   className?: string;
   onChange?: (markdown: string) => void;
+  editable?: boolean;
+  showMermaidSourceWhenReadOnly?: boolean;
 }) => {
   const extensions = [
     StarterKit.configure({
@@ -37,6 +41,7 @@ const TiptapEditor = ({
       onCopy: () => {
         message.success("复制成功");
       },
+      showMermaidSourceWhenReadOnly,
     }),
     Placeholder.configure({
       placeholder: ({ node }) => {
@@ -73,31 +78,36 @@ const TiptapEditor = ({
 
   const editor = useEditor({
     extensions,
+    editable,
     editorProps: {
       attributes: {
         class: "dn-editor__content",
       },
     },
-    onUpdate: ({ editor }) => {
-      const markdown = editor.getMarkdown();
+    onUpdate: ({ editor: currentEditor }) => {
+      const markdown = currentEditor.getMarkdown();
       onChange?.(markdown);
     },
     content: initialContent.content,
     contentType: initialContent.contentType,
   });
 
+  useEffect(() => {
+    editor?.setEditable(editable);
+  }, [editable, editor]);
+
   return (
     <div className={clsx("dn-editor size-full", className)}>
       <DragHandle
         computePositionConfig={{
           placement: "left-start",
-          strategy: "fixed",
+          strategy: "absolute",
         }}
         onNodeChange={() => {}}
         editor={editor}
       >
-        <div className="dn-editor__drag-handle flex h-[24px] items-center px-2">
-          <Move size={15} />
+        <div className="dn-editor__drag-handle flex size-8 items-center justify-center">
+          <GripVertical size={18} strokeWidth={2.2} />
         </div>
       </DragHandle>
       <EditorContent editor={editor} />

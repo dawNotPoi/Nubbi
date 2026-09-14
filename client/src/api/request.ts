@@ -1,122 +1,127 @@
-import { authClient } from "@/utils/auth";
+import {
+  getAccessToken,
+  handleUnauthorized,
+  restoreAuthSession,
+} from "@/utils/auth";
 
 const baseUrl = import.meta.env.VITE_API_URL;
 
-// 获取认证 token
-const getAuthToken = async (): Promise<string | null> => {
-  try {
-    const session = await authClient.getSession();
-    return session.data?.session.token || null;
-  } catch {
-    return null;
+type ApiResponse<T> = {
+  code: 0 | 1;
+  data: T;
+  message: string;
+};
+
+const resolveApiUrl = (url: string) => {
+  const pathUrl = url.startsWith("/") ? url : `/${url}`;
+  return `${baseUrl}${pathUrl}`;
+};
+
+const ensureAccessToken = async () => {
+  const existingToken = getAccessToken();
+  if (existingToken) return existingToken;
+
+  await restoreAuthSession();
+  return getAccessToken();
+};
+
+const withAuthHeaders = async (headers?: HeadersInit) => {
+  const nextHeaders = new Headers(headers);
+  const token = await ensureAccessToken();
+
+  if (token) {
+    nextHeaders.set("Authorization", `Bearer ${token}`);
   }
+
+  return nextHeaders;
+};
+
+export const authorizedFetch = async (
+  url: string,
+  init: RequestInit = {},
+): Promise<Response> => {
+  const response = await fetch(resolveApiUrl(url), {
+    ...init,
+    credentials: init.credentials ?? "omit",
+    headers: await withAuthHeaders(init.headers),
+  });
+
+  if (response.status === 401) {
+    await handleUnauthorized();
+    throw new Error("认证失败，请重新登录");
+  }
+
+  return response;
 };
 
 export default async function request<T>(
   url: string,
-  body?: any,
+  body?: unknown,
   method = "post",
-  init?: any,
-): Promise<{
-  code: 0 | 1;
-  data: T;
-  message: string;
-}> {
-  //header文件由外部传入，设置json格式会导致不兼容formdata
-  // 获取认证 token
-  const token = await getAuthToken();
-  const config = {
-    method,
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token && { Authorization: `Bearer ${token}` }), // 添加认证头
-    },
-    ...init,
-  };
-  if (body) config.body = JSON.stringify(body);
-  const pathUrl = url.startsWith("/") ? url : "/" + url;
+  init: RequestInit = {},
+): Promise<ApiResponse<T>> {
+  const headers = await withAuthHeaders(init.headers);
 
-  try {
-    const response = await fetch(baseUrl + pathUrl, config);
-
-    // 处理认证失败的情况
-    if (response.status === 401) {
-      // 清除本地认证信息
-      await authClient.signOut();
-      // 重定向到登录页面
-      const returnTo = encodeURIComponent(
-        `${window.location.pathname}${window.location.search}${window.location.hash}`,
-      );
-      window.location.href = `/login?returnTo=${returnTo}`;
-      throw new Error("认证失败，请重新登录");
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error("请求失败:", error);
-    throw error;
+  if (!headers.has("Content-Type") && body !== undefined) {
+    headers.set("Content-Type", "application/json");
   }
+
+  const response = await authorizedFetch(url, {
+    ...init,
+    method,
+    headers,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+
+  return response.json();
 }
 
 export async function requestWithNoJson<T>(
   url: string,
-  body?: any,
+  body?: BodyInit | null,
   method = "post",
-  init?: any,
-): Promise<{
-  code: 0 | 1;
-  data: T;
-  message: string;
-}> {
-  const token = await getAuthToken();
-  //header文件由外部传入，设置json格式会导致不兼容formdata
-  const config = {
-    method,
-    credentials: "include",
-    headers: {
-      ...(token && { Authorization: `Bearer ${token}` }), // 添加认证头
-    },
+  init: RequestInit = {},
+): Promise<ApiResponse<T>> {
+  const response = await authorizedFetch(url, {
     ...init,
-  };
-  if (body) config.body = body;
-  const pathUrl = url.startsWith("/") ? url : "/" + url;
-  return fetch(baseUrl + pathUrl, config).then((res) => res.json());
+    method,
+    body: body ?? undefined,
+  });
+
+  return response.json();
 }
 
-export function Get<T = any>(
+export function Get<T = unknown>(
   url: string,
-  params?: { [key: string]: any },
-  options?: any,
-): Promise<{
-  code: 0 | 1;
-  data: T;
-  message: string;
-}> {
-  const pathUrl = url.startsWith("/") ? url : "/" + url;
-  let ResultUrl = baseUrl + pathUrl;
-  if (params && Object.keys(params).length > 0) {
-    const searchParams = new URLSearchParams();
-    Object.entries(params).forEach(([key, value]) => {
-      // 支持数组和基本类型
-      if (Array.isArray(value)) {
-        value.forEach((v) => searchParams.append(key, v));
-      } else if (value !== undefined && value !== null) {
-        searchParams.append(key, value);
-      }
-    });
-    if (searchParams.toString()) {
-      ResultUrl += `?${searchParams.toString()}`;
-    }
-  }
+  params?: Record<string, unknown>,
+  options: RequestInit = {},
+): Promise<ApiResponse<T>> {
+  const searchParams = new URLSearchParams();
 
-  return fetch(ResultUrl, {
-    method: "GET",
-    credentials: "include",
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (Array.isArray(value)) {
+      value.forEach((item) => {
+        if (item !== undefined && item !== null) {
+          searchParams.append(key, String(item));
+        }
+      });
+      return;
+    }
+
+    if (value !== undefined && value !== null) {
+      searchParams.append(key, String(value));
+    }
+  });
+
+  const query = searchParams.toString();
+  const requestUrl = query ? `${url}?${query}` : url;
+
+  return authorizedFetch(requestUrl, {
     ...options,
-  }).then((res) => res.json());
+    method: "GET",
+  }).then((response) => response.json());
 }
 
 export function getWebData() {
-  return request("admin/info", null, "get");
+  return request("admin/info", undefined, "get");
 }

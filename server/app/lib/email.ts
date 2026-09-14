@@ -1,41 +1,45 @@
 import nodemailer from "nodemailer";
 import env from "./env";
 
-// 创建邮件传输对象
-const transporter = nodemailer.createTransport({
-  service: "qq", // 使用 QQ 邮箱服务
-  auth: {
-    user: env.EMAIL_USER, // 你的邮箱地址
-    pass: env.EMAIL_PASS, // 邮箱授权码（不是登录密码）
-  },
-});
+const transporter = env.SMTP_HOST
+  ? nodemailer.createTransport({
+      host: env.SMTP_HOST,
+      port: env.SMTP_PORT || 587,
+      secure: env.SMTP_SECURE ?? false,
+      auth: {
+        user: env.EMAIL_USER,
+        pass: env.EMAIL_PASS,
+      },
+    })
+  : nodemailer.createTransport({
+      service: env.EMAIL_SERVICE || "qq",
+      auth: {
+        user: env.EMAIL_USER,
+        pass: env.EMAIL_PASS,
+      },
+    });
 
-// 发送验证邮件
-export const sendVerificationEmail = async (to: string, token: string) => {
-  const verificationUrl = `${env.BETTER_AUTH_URL}/api/auth/verify-email?token=${token}`;
-
+export const sendVerificationEmail = async (
+  to: string,
+  verificationCode: string,
+) => {
   const mailOptions = {
-    from: env.EMAIL_USER,
-    to: to,
-    subject: "验证您的邮箱地址",
+    from: env.EMAIL_FROM,
+    to,
+    subject: "邮箱验证码",
     html: `
       <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
-        <h2 style="color: #333; text-align: center;">邮箱验证</h2>
+        <h2 style="color: #333; text-align: center;">邮箱验证码</h2>
         <p style="color: #666; line-height: 1.6;">
-          您好！感谢您注册我们的服务。请点击下面的按钮验证您的邮箱地址：
+          您好，感谢注册。请在注册页面输入下面的 6 位数字验证码，完成邮箱验证。
         </p>
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${verificationUrl}" 
-             style="background-color: #1890ff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
-            验证邮箱
-          </a>
+        <div style="margin: 30px 0; text-align: center;">
+          <div style="display: inline-block; padding: 14px 24px; border-radius: 8px; background: #f5f7ff; border: 1px solid #dbe4ff; font-size: 28px; font-weight: 700; letter-spacing: 6px; color: #1d4ed8;">
+            ${verificationCode}
+          </div>
         </div>
         <p style="color: #999; font-size: 12px; text-align: center;">
-          如果按钮无法点击，请复制以下链接到浏览器：<br>
-          <a href="${verificationUrl}" style="color: #1890ff;">${verificationUrl}</a>
-        </p>
-        <p style="color: #999; font-size: 12px; text-align: center;">
-          此链接将在24小时后失效。
+          验证码 24 小时内有效。如果不是您本人操作，请忽略这封邮件。
         </p>
       </div>
     `,
@@ -43,40 +47,35 @@ export const sendVerificationEmail = async (to: string, token: string) => {
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log("验证邮件发送成功:", to);
+    console.log("Verification email sent:", to);
     return { success: true };
   } catch (error) {
-    console.error("验证邮件发送失败:", error);
+    console.error("Verification email failed:", error);
     return { success: false, error };
   }
 };
 
-// 发送密码重置邮件
-export const sendPasswordResetEmail = async (to: string, token: string) => {
-  const resetUrl = `${env.BETTER_AUTH_URL}/api/auth/reset-password?token=${token}`;
-
+export const sendPasswordResetEmail = async (to: string, resetCode: string) => {
   const mailOptions = {
-    from: env.EMAIL_USER,
-    to: to,
-    subject: "重置您的密码",
+    from: env.EMAIL_FROM,
+    to,
+    subject: "重置密码验证码",
     html: `
       <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
-        <h2 style="color: #333; text-align: center;">密码重置</h2>
+        <h2 style="color: #333; text-align: center;">密码重置验证码</h2>
         <p style="color: #666; line-height: 1.6;">
-          您请求重置密码。请点击下面的按钮重置您的密码：
+          您发起了重置密码请求，请在当前页面输入下面的 6 位数字验证码完成密码重置。
         </p>
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${resetUrl}" 
-             style="background-color: #1890ff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
-            重置密码
-          </a>
+        <div style="margin: 30px 0; text-align: center;">
+          <div style="display: inline-block; padding: 14px 24px; border-radius: 8px; background: #f5f7ff; border: 1px solid #dbe4ff; font-size: 28px; font-weight: 700; letter-spacing: 6px; color: #1d4ed8;">
+            ${resetCode}
+          </div>
         </div>
         <p style="color: #999; font-size: 12px; text-align: center;">
-          如果按钮无法点击，请复制以下链接到浏览器：<br>
-          <a href="${resetUrl}" style="color: #1890ff;">${resetUrl}</a>
+          请回到登录页的“忘记密码”流程，输入该验证码和您的新密码。
         </p>
         <p style="color: #999; font-size: 12px; text-align: center;">
-          此链接将在1小时后失效。如果您没有请求重置密码，请忽略此邮件。
+          验证码 1 小时内有效。如果不是您本人操作，请忽略这封邮件。
         </p>
       </div>
     `,
@@ -84,10 +83,10 @@ export const sendPasswordResetEmail = async (to: string, token: string) => {
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log("密码重置邮件发送成功:", to);
+    console.log("Password reset email sent:", to);
     return { success: true };
   } catch (error) {
-    console.error("密码重置邮件发送失败:", error);
+    console.error("Password reset email failed:", error);
     return { success: false, error };
   }
 };

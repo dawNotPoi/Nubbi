@@ -14,6 +14,7 @@ export interface PopoverProps {
   className?: string;
   style?: CSSProperties;
   offset?: number;
+  matchTriggerWidth?: boolean;
   onOpen?: () => void;
   onClose?: () => void;
   coords?: { top: number; left: number };
@@ -31,6 +32,7 @@ const Popover: FC<PopoverProps> = ({
   children,
   coords,
   offset = 6,
+  matchTriggerWidth = false,
   onOpen,
   onClose,
   style,
@@ -48,6 +50,7 @@ const Popover: FC<PopoverProps> = ({
     top: -9999,
     left: -9999,
   });
+  const [width, setWidth] = useState<number | undefined>(undefined);
   const setTrigger = useCallback((node: HTMLElement | null) => {
     triggerRef.current = node;
   }, []);
@@ -75,7 +78,8 @@ const Popover: FC<PopoverProps> = ({
     top = Math.max(0, Math.min(top, vh - popRect.height));
 
     setPos({ top, left });
-  }, [coords, offset]);
+    setWidth(matchTriggerWidth ? triggerRect.width : undefined);
+  }, [coords, matchTriggerWidth, offset]);
 
   //处理弹窗打开关闭时的回调
   useEffect(() => {
@@ -91,10 +95,8 @@ const Popover: FC<PopoverProps> = ({
     function onDocClick(e: MouseEvent) {
       const trg = triggerRef.current;
       const pop = popRef.current;
-      console.log("clickinsdie");
       if (trg && trg.contains(e.target as Node)) return;
       if (pop && pop.contains(e.target as Node)) return;
-      console.log("clickoutsite");
 
       onClickOutside?.();
       setOpen(false);
@@ -107,7 +109,7 @@ const Popover: FC<PopoverProps> = ({
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [open, updatePosition]);
+  }, [onClickOutside, open, updatePosition]);
 
   const triggerProps: PopoverTriggerProps = {
     ref: setTrigger,
@@ -137,6 +139,7 @@ const Popover: FC<PopoverProps> = ({
         left: pos.left,
         minWidth: 100,
         minHeight: 40,
+        width,
         zIndex: 1000,
         ...style,
       }}

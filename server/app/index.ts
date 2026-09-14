@@ -8,14 +8,14 @@ import log from "./common/chalk";
 import { auth } from "./lib/auth";
 import env from "./lib/env";
 import { errorHandler } from "./middleware/common";
-import admin from "./routes/admin";
-import commentRouter from "./routes/comment";
+
+import authRouter from "./routes/auth";
 import fileRouter from "./routes/file";
 import imageRouter from "./routes/image";
 import meetingRouter from "./routes/meeting";
 import postRouter from "./routes/post";
 import summryRouter from "./routes/summary";
-import talkRotuer from "./routes/talk";
+
 import P2PHandler from "./socket/P2PHandler";
 import userHandlers from "./socket/userHandler";
 const app = express();
@@ -27,9 +27,9 @@ const SOCKETPORT = env.SOCKET_PORT || 4040;
 
 //跨域处理
 const corsOptions = {
-  origin: ["http://localhost:3000", "http://localhost:5173"], // 替换为前端实际域名
+  origin: [env.CLIENT_URL, "http://localhost:3000", "http://localhost:5173"],
   credentials: true, // 允许携带凭证（如 cookies）
-  methods: ["GET", "POST", "PUT", "DELETE"], // 允许的请求方法
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"], // 允许的请求头
 };
 app.use(cors(corsOptions));
@@ -59,15 +59,15 @@ app.get("/", (req, res) => {
 });
 
 //接口路由处理
+app.use("/auth", authRouter);
 app.use("/post", postRouter);
 app.use("/download", express.static("static"));
 app.use("/file", fileRouter);
 app.use("/summary", summryRouter);
-app.use("/talk", talkRotuer);
+
 app.use("/meeting", meetingRouter);
 app.use("/image", imageRouter);
-app.use("/admin", admin);
-app.use("/comment", commentRouter);
+
 app.use(errorHandler);
 // 404 处理
 app.use((req, res) => {

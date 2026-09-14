@@ -1,7 +1,7 @@
 @import "tippy.js/themes/light.css";
 
 .dn-editor {
-  @apply size-full overflow-hidden rounded-2xl transition-shadow duration-200;
+  @apply relative size-full overflow-visible rounded-2xl transition-shadow duration-200;
   --editor-bg: #ffffff;
   --editor-surface: #fbfbfa;
   --editor-surface-hover: #f3f3f1;
@@ -30,7 +30,7 @@
 }
 
 .dn-editor .dn-editor__content {
-  @apply size-full min-h-[320px] px-8 py-6 pb-[100px] text-[16px] outline-none;
+  @apply size-full min-h-[320px] px-2 py-6 pb-[100px] text-[16px] outline-none;
   color: var(--editor-text);
   font-family:
     "Inter",
@@ -171,14 +171,25 @@
 }
 
 .dn-editor .dn-editor__drag-handle {
-  color: rgba(55, 53, 47, 0.28);
+  @apply rounded-lg border border-stone-200/80;
+  z-index: 20;
+  color: rgba(55, 53, 47, 0.58);
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
   transition:
     color 150ms ease,
-    opacity 150ms ease;
+    opacity 150ms ease,
+    border-color 150ms ease,
+    background-color 150ms ease,
+    box-shadow 150ms ease;
 }
 
 .dn-editor .dn-editor__drag-handle:hover {
-  color: rgba(55, 53, 47, 0.52);
+  color: rgba(55, 53, 47, 0.78);
+  border-color: rgba(55, 53, 47, 0.16);
+  background: rgba(247, 246, 243, 0.98);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12);
 }
 
 .dn-editor .ProseMirror-dropcursor {

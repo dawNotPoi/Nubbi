@@ -1,11 +1,17 @@
 import { NextFunction, Request, Response } from "express";
 
-// 统一错误处理中间件
-export function errorHandler(err, req, res, next) {
-  // 记录日志
+export interface AppError extends Error {
+  status?: number;
+}
+
+export function errorHandler(
+  err: AppError,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   console.error(err);
 
-  // 统一返回格式
   res.status(err.status || 500).json({
     code: 0,
     message: err.message || "服务器内部错误",
@@ -18,7 +24,8 @@ type AsyncRequestHandler = (
   req: AuthRequest,
   res: Response,
   next: NextFunction,
-) => Promise<any>;
+) => Promise<unknown>;
+
 export const asyncHandler =
   (fn: AsyncRequestHandler) =>
   (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -29,5 +36,6 @@ export interface AuthRequest extends Request {
   user?: {
     id: string;
     email: string;
+    name?: string;
   };
 }

@@ -1,10 +1,7 @@
 import clsx from "clsx";
 import { useAtom } from "jotai";
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import type { PropsWithChildren } from "react";
-import {
-  TbLayoutSidebarLeftCollapse,
-  TbLayoutSidebarLeftExpand,
-} from "react-icons/tb";
 import { sideBarOpenedAtom } from "../store/atom/common";
 
 export const Header = ({
@@ -28,9 +25,9 @@ export const Header = ({
         title={sideBarOpened ? "收起侧边栏" : "展开侧边栏"}
       >
         {sideBarOpened ? (
-          <TbLayoutSidebarLeftCollapse size={25} />
+          <PanelLeftClose size={20} strokeWidth={1.9} />
         ) : (
-          <TbLayoutSidebarLeftExpand size={25} />
+          <PanelLeftOpen size={20} strokeWidth={1.9} />
         )}
       </button>
       <div className="min-w-0 flex-1">

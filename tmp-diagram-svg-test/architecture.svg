@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="650" viewBox="0 0 640 650" role="img" aria-label="Module Overview">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569" />
+    </marker>
+  </defs>
+  <rect width="100%" height="100%" fill="#ffffff" />
+  <text x="320" y="34" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#0f172a">Module Overview</text>
+  
+    <rect x="182" y="88" width="276" height="184" rx="24" ry="24" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2" />
+    <text x="202" y="114" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="600" fill="#0f172a">Client Layer</text>
+  
+    <rect x="48" y="316" width="544" height="298" rx="24" ry="24" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2" />
+    <text x="68" y="342" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="600" fill="#0f172a">Core Services</text>
+  
+  <path d="M 320 244 C 253 244, 253 380, 186 380" fill="none" stroke="#475569" stroke-width="2.2" marker-end="url(#arrow)" /><text x="253" y="304" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#334155">RPC</text><path d="M 296 426 C 320 426, 320 426, 344 426" fill="none" stroke="#475569" stroke-width="2.2" marker-end="url(#arrow)" /><text x="320" y="416" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#334155">Jobs</text><path d="M 186 472 C 186 472, 186 494, 186 494" fill="none" stroke="#475569" stroke-width="2.2" marker-end="url(#arrow)" /><text x="186" y="475" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#334155">SQL</text>
+  <rect x="210" y="152" width="220" height="92" rx="18" ry="18" fill="#fae8ff" stroke="#a21caf" stroke-width="2" /><rect x="226" y="172" width="40" height="40" rx="10" ry="10" fill="#ffffff" fill-opacity="0.75" stroke="#a21caf" stroke-width="1.5" /><text x="246" y="196" text-anchor="middle" dominant-baseline="middle" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="700" fill="#a21caf">UI</text><text x="282" y="206" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#0f172a">Desktop Client</text><rect x="76" y="380" width="220" height="92" rx="18" ry="18" fill="#dbeafe" stroke="#1d4ed8" stroke-width="2" /><rect x="92" y="400" width="40" height="40" rx="10" ry="10" fill="#ffffff" fill-opacity="0.75" stroke="#1d4ed8" stroke-width="1.5" /><text x="112" y="424" text-anchor="middle" dominant-baseline="middle" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="700" fill="#1d4ed8">SVC</text><text x="148" y="434" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#0f172a">API Module</text><rect x="344" y="380" width="220" height="92" rx="18" ry="18" fill="#e2e8f0" stroke="#334155" stroke-width="2" /><rect x="360" y="400" width="40" height="40" rx="10" ry="10" fill="#ffffff" fill-opacity="0.75" stroke="#334155" stroke-width="1.5" /><text x="380" y="424" text-anchor="middle" dominant-baseline="middle" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="700" fill="#334155">MOD</text><text x="416" y="434" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#0f172a">Sync Worker</text><rect x="76" y="494" width="220" height="92" rx="18" ry="18" fill="#dcfce7" stroke="#15803d" stroke-width="2" /><ellipse cx="112" cy="520" rx="20" ry="8" fill="#ffffff" fill-opacity="0.75" stroke="#15803d" stroke-width="1.5" /><path d="M 92 520 v 24 c 0 4 9 8 20 8 s 20 -4 20 -8 v -24" fill="none" stroke="#15803d" stroke-width="1.5" /><text x="148" y="548" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#0f172a">SQLite Store</text>
+</svg>

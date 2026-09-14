@@ -2,6 +2,7 @@ import { NodeViewContent, NodeViewProps, NodeViewWrapper } from "@tiptap/react";
 import { Select } from "antd";
 import { Copy } from "lucide-react";
 import React, { useCallback, useEffect } from "react";
+import mermaid from "mermaid";
 
 import {
   CODE_BLOCK_LANGUAGES,
@@ -10,8 +11,85 @@ import {
 } from ".";
 import "./index.css";
 
+let mermaidInitialized = false;
+
+const ensureMermaid = () => {
+  if (mermaidInitialized) return;
+
+  mermaid.initialize({
+    startOnLoad: false,
+    securityLevel: "loose",
+    theme: "default",
+  });
+
+  mermaidInitialized = true;
+};
+
+const MermaidPreview = ({ source }: { source: string }) => {
+  const [svg, setSvg] = React.useState("");
+  const [error, setError] = React.useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const render = async () => {
+      if (!source.trim()) {
+        setSvg("");
+        setError(null);
+        return;
+      }
+
+      try {
+        ensureMermaid();
+        const id = `mermaid-preview-${Math.random().toString(36).slice(2)}`;
+        const result = await mermaid.render(id, source);
+
+        if (cancelled) return;
+
+        setSvg(result.svg);
+        setError(null);
+      } catch (renderError) {
+        if (cancelled) return;
+
+        setSvg("");
+        setError(
+          renderError instanceof Error
+            ? renderError.message
+            : "Mermaid render failed",
+        );
+      }
+    };
+
+    void render();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [source]);
+
+  if (error) {
+    return (
+      <div className="mermaidPreviewError rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+        Mermaid 渲染失败: {error}
+      </div>
+    );
+  }
+
+  if (!svg) {
+    return null;
+  }
+
+  return (
+    <div
+      className="mermaidPreview rounded-lg border border-stone-200 bg-stone-50 p-4"
+      dangerouslySetInnerHTML={{ __html: svg }}
+    />
+  );
+};
+
 const CodeBlockComponent: React.FC<NodeViewProps> = ({
   node,
+  editor,
   updateAttributes,
   extension,
 }) => {
@@ -19,14 +97,23 @@ const CodeBlockComponent: React.FC<NodeViewProps> = ({
     return normalizeCodeBlockLanguage(node.attrs.language);
   });
   const options = extension.options as CodeBlockOptions;
+  const isEditable = editor.isEditable;
+  const source = node.textContent;
+  const shouldShowMermaidSource =
+    selectedLanguage !== "mermaid" ||
+    isEditable ||
+    !!options.showMermaidSourceWhenReadOnly;
 
-  const handleLanguageChange = useCallback((newLanguage: string) => {
-    const normalizedLanguage = normalizeCodeBlockLanguage(newLanguage);
-    setSelectedLanguage(normalizedLanguage);
-    updateAttributes({
-      language: normalizedLanguage,
-    });
-  }, []);
+  const handleLanguageChange = useCallback(
+    (newLanguage: string) => {
+      const normalizedLanguage = normalizeCodeBlockLanguage(newLanguage);
+      setSelectedLanguage(normalizedLanguage);
+      updateAttributes({
+        language: normalizedLanguage,
+      });
+    },
+    [updateAttributes],
+  );
 
   useEffect(() => {
     setSelectedLanguage(normalizeCodeBlockLanguage(node.attrs.language));
@@ -44,7 +131,7 @@ const CodeBlockComponent: React.FC<NodeViewProps> = ({
           console.error("Copy failed:", err);
         });
     }
-  }, [node.textContent]);
+  }, [node.textContent, options]);
 
   return (
     <NodeViewWrapper
@@ -54,20 +141,26 @@ const CodeBlockComponent: React.FC<NodeViewProps> = ({
       <header className="toolbar flex items-center px-2 py-2">
         <div className="flex-1"></div>
         <div className="codeToolbar flex h-[32px] items-center gap-1 overflow-hidden rounded-md p-0.5 opacity-0 focus-within:opacity-100 group-hover:opacity-100">
-          <Select
-            variant="borderless"
-            className="codeToolbarSelect h-[28px] overflow-hidden rounded-md text-[13px]"
-            value={selectedLanguage}
-            onChange={(value) => {
-              handleLanguageChange(value);
-            }}
-          >
-            {CODE_BLOCK_LANGUAGES.map((lang) => (
-              <Select.Option key={lang.value} value={lang.value}>
-                {lang.label}
-              </Select.Option>
-            ))}
-          </Select>
+          {isEditable ? (
+            <Select
+              variant="borderless"
+              className="codeToolbarSelect h-[28px] overflow-hidden rounded-md text-[13px]"
+              value={selectedLanguage}
+              onChange={(value) => {
+                handleLanguageChange(value);
+              }}
+            >
+              {CODE_BLOCK_LANGUAGES.map((lang) => (
+                <Select.Option key={lang.value} value={lang.value}>
+                  {lang.label}
+                </Select.Option>
+              ))}
+            </Select>
+          ) : (
+            <span className="px-2 text-xs uppercase tracking-wide text-neutral-400">
+              {selectedLanguage}
+            </span>
+          )}
           <button
             className="codeToolbarButton flex size-[28px] items-center justify-center overflow-hidden rounded-md p-1"
             onClick={handleCopy}
@@ -76,9 +169,20 @@ const CodeBlockComponent: React.FC<NodeViewProps> = ({
           </button>
         </div>
       </header>
-      <pre className="blockCodeContent overflow-x-auto">
-        <NodeViewContent style={{ textWrap: "nowrap" }} />
-      </pre>
+      {shouldShowMermaidSource ? (
+        <pre className="blockCodeContent overflow-x-auto">
+          <NodeViewContent style={{ textWrap: "nowrap" }} />
+        </pre>
+      ) : (
+        <div className="hidden">
+          <NodeViewContent />
+        </div>
+      )}
+      {selectedLanguage === "mermaid" ? (
+        <div className="px-4 pt-3">
+          <MermaidPreview source={source} />
+        </div>
+      ) : null}
     </NodeViewWrapper>
   );
 };

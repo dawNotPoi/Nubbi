@@ -3,8 +3,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { createPostAtom } from "@/store/atom/postAtom";
 import clsx from "clsx";
 import { useAtomValue, useSetAtom } from "jotai";
+import { PanelLeftClose } from "lucide-react";
 import React from "react";
-import { TbLayoutSidebarLeftCollapse, TbWritingSign } from "react-icons/tb";
+import { TbWritingSign } from "react-icons/tb";
 import { useNavigate } from "react-router-dom";
 import { sideBarOpenedAtom } from "../../store/atom/common";
 import Image from "../UI/Image";
@@ -72,7 +73,7 @@ const SideBar: React.FC = () => {
                 setSideBarOpened(false);
               }}
             >
-              <TbLayoutSidebarLeftCollapse className="size-full" />
+              <PanelLeftClose size={18} strokeWidth={1.9} />
             </IconButton>
           </div>
         </MenuItemContainer>

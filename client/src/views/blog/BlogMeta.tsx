@@ -1,34 +1,21 @@
 import { Post } from "@/api/post";
-import { DatePicker, Input, Select, SelectProps } from "antd";
+import { DatePicker, Input } from "antd";
 import dayjs from "dayjs";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { Select } from "./Select";
 
-const tagsOptions: SelectProps["options"] = [
-  { value: "算法" },
-  { value: "React" },
-  { value: "Node" },
-];
+const tagsOptions = ["算法", "React", "Node"];
+const statusOptions = ["Invisible", "Draft", "Published"];
+const typeOptions = ["Note", "Thinking", "Share"];
 
-const statusOptions: SelectProps["options"] = [
-  { value: "Invisible" },
-  { value: "Draft" },
-  { value: "Published" },
-];
-
-const typeOptions: SelectProps["options"] = [
-  { value: "Note" },
-  { value: "Thinking" },
-  { value: "Share" },
-];
-
-type property = {
+type Property = {
   id: string;
   name: string;
   type: "select" | "date" | "multi-select" | "input";
-  options?: any;
+  options?: string[];
 };
 
-const formSchema: property[] = [
+const formSchema: Property[] = [
   {
     id: "status",
     name: "状态",
@@ -54,36 +41,40 @@ export default function BlogMeta({
     ...data.meta,
   });
 
+  useEffect(() => {
+    setMeta({
+      ...data.meta,
+    });
+  }, [data.meta]);
+
   const handlerFormChange = useCallback(
-    (newValue: string | any[], property?: property) => {
-      setMeta((v) => {
-        const tmp = { ...v, [property!.id]: newValue };
-        onUpdate(tmp);
-        return tmp;
+    (newValue: string | any[], property?: Property) => {
+      setMeta((current) => {
+        const nextMeta = { ...current, [property!.id]: newValue };
+        onUpdate(nextMeta);
+        return nextMeta;
       });
     },
-    []
+    [onUpdate],
   );
 
   return (
     <div className={className}>
       <form>
-        {formSchema.map((item) => {
-          return (
-            <li key={item.id} className="flex gap-1 h-10 ">
-              <label className="w-[200px] rounded-sm text-slate-500 hover:bg-gray-100/60 p-2 items-center flex">
-                {item.name}
-              </label>
-              <div className="flex-1 h-full flex items-center hover:bg-gray-100/60">
-                <InputRender
-                  onChange={handlerFormChange}
-                  property={item}
-                  value={meta[item.id]}
-                />
-              </div>
-            </li>
-          );
-        })}
+        {formSchema.map((item) => (
+          <li key={item.id} className="flex min-h-10 gap-1">
+            <label className="flex w-[200px] items-center rounded-sm p-2 text-slate-500 hover:bg-gray-100/60">
+              {item.name}
+            </label>
+            <div className=" min-h-10 flex-1 items-center hover:bg-gray-100/60">
+              <InputRender
+                onChange={handlerFormChange}
+                property={item}
+                value={meta[item.id]}
+              />
+            </div>
+          </li>
+        ))}
       </form>
     </div>
   );
@@ -91,62 +82,64 @@ export default function BlogMeta({
 
 type InputRenderProps = {
   value: any;
-  property: property;
-  onChange?: (value: any, property?: property) => void;
+  property: Property;
+  onChange?: (value: any, property?: Property) => void;
 };
+
 const InputRender = ({ property, value, onChange }: InputRenderProps) => {
   const placeholder = "Empty";
+
   switch (property.type) {
     case "multi-select":
       return (
         <Select
-          defaultValue={value}
+          value={Array.isArray(value) ? value : []}
           className="w-full"
-          variant="borderless"
           placeholder={placeholder}
           mode="multiple"
-          onChange={(v) => {
-            onChange?.(v, property);
+          creatable
+          onChange={(nextValue) => {
+            onChange?.(nextValue, property);
           }}
           options={property.options}
-        ></Select>
+        />
       );
     case "date":
       return (
         <DatePicker
           variant="borderless"
           placeholder={placeholder}
-          defaultValue={dayjs(value)}
-          onChange={(v) => {
-            onChange?.(v.valueOf(), property);
+          value={value ? dayjs(value) : null}
+          onChange={(nextValue) => {
+            onChange?.(nextValue ? nextValue.valueOf() : undefined, property);
           }}
           className="w-full"
-        ></DatePicker>
+        />
       );
     case "select":
       return (
         <Select
-          defaultValue={value}
-          variant="borderless"
+          value={typeof value === "string" ? value : ""}
           className="w-full"
-          onChange={(v) => {
-            onChange?.(v, property);
-          }}
           placeholder={placeholder}
+          mode="single"
+          onChange={(nextValue) => {
+            onChange?.(nextValue, property);
+          }}
           options={property.options}
-        ></Select>
+        />
       );
     case "input":
       return (
         <Input
-          defaultValue={value}
+          value={value ?? ""}
           variant="borderless"
           className="w-full"
-          onChange={(e) => {
-            onChange?.(e.target.value, property);
+          onChange={(event) => {
+            onChange?.(event.target.value, property);
           }}
           placeholder={placeholder}
-        ></Input>
+        />
       );
     default:
       return <></>;

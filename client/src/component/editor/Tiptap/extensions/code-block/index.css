@@ -40,6 +40,17 @@
   padding: 0 1.1rem 0.9rem;
 }
 
+.dn-editor .mermaidPreview {
+  overflow-x: auto;
+}
+
+.dn-editor .mermaidPreview svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+
 .dn-editor pre {
   line-height: 1.5;
   font-family: "JetBrains Mono", "SFMono-Regular", "Cascadia Code", Menlo,

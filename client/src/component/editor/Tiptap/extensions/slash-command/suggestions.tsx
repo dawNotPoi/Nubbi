@@ -55,6 +55,30 @@ const allItems: {
     },
   },
   {
+    title: "code-mermaid",
+    description: "Insert a Mermaid code block with preview",
+    icon: "</>",
+    command: ({ editor, range }) => {
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .insertContent({
+          type: "codeBlock",
+          attrs: {
+            language: "mermaid",
+          },
+          content: [
+            {
+              type: "text",
+              text: "graph TD\n  A[Start] --> B[Next]",
+            },
+          ],
+        })
+        .run();
+    },
+  },
+  {
     title: "Paragraph",
     description: "Switch back to normal text",
     icon: <Pilcrow size={18} />,

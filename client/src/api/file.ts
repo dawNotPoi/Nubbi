@@ -1,5 +1,5 @@
-﻿import { authClient } from "@/utils/auth";
-import request, { requestWithNoJson } from "./request";
+import request, { authorizedFetch, requestWithNoJson } from "./request";
+
 const baseUrl = import.meta.env.VITE_API_URL;
 
 export interface FolderRecord {
@@ -102,7 +102,6 @@ export async function moveFileItem(
   return request("file/move", { _id, targetFolderId, kind });
 }
 
-//鍒濆鍖栦笂浼犱换鍔?hash妫€楠?
 export const initUploadTask = async (param: {
   fileName: string;
   fileHash: string;
@@ -113,12 +112,10 @@ export const initUploadTask = async (param: {
   return request<InitUploadTaskData>("file/init", param);
 };
 
-//涓婁紶鍒嗙墖
 export const uploadChunk = async (formdata: FormData) => {
   return requestWithNoJson("/file/uploadchunk", formdata);
 };
 
-//鍒嗙墖鍚堝苟
 export const mergeChunk = async (uploadId: string) => {
   return request("/file/merge", { uploadId });
 };
@@ -129,22 +126,24 @@ export const imgToGitCloud = async (file: File): Promise<string> => {
   const formData = new FormData();
   formData.append("file", file);
   const reader = new FileReader();
-  function getBase64(file: File) {
+
+  function getBase64(nextFile: File) {
     return new Promise((resolve, reject) => {
       reader.onload = function (event) {
         const fileContent = event.target?.result as string;
         if (!fileContent) {
-          reject(new Error("鏂囦欢涓虹┖"));
+          reject(new Error("文件为空"));
+          return;
         }
-        resolve(fileContent!.split(",")[1]);
+        resolve(fileContent.split(",")[1]);
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(nextFile);
     });
   }
-  const path = "img/" + new Date().valueOf() + "_" + file.name;
 
+  const path = `img/${new Date().valueOf()}_${file.name}`;
   const content = await getBase64(file);
-  const url = "https://api.github.com/repos/" + repo + "/contents/" + path;
+  const url = `https://api.github.com/repos/${repo}/contents/${path}`;
 
   const res = await fetch(url, {
     method: "put",
@@ -159,14 +158,15 @@ export const imgToGitCloud = async (file: File): Promise<string> => {
       path,
     }),
   });
+
   if (res.ok) {
     const data = await res.json();
     return data.content.download_url;
-  } else {
-    console.log(res);
-    console.log("鏂囦欢鏍煎紡閿欒");
-    return "";
   }
+
+  console.log(res);
+  console.log("文件格式错误");
+  return "";
 };
 
 export const getFileDownloadUrl = (fileId: string) => {
@@ -177,30 +177,8 @@ export const getFilePreviewUrl = (fileId: string) => {
   return `${baseUrl}/file/preview/${fileId}`;
 };
 
-const getAuthorizedFileRequestInit = async (): Promise<RequestInit> => {
-  const session = await authClient.getSession();
-  const token = session.data?.session.token;
-
-  return {
-    credentials: "include",
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-  };
-};
-
 export const fetchFilePreviewBlob = async (fileId: string) => {
-  const response = await fetch(
-    getFilePreviewUrl(fileId),
-    await getAuthorizedFileRequestInit(),
-  );
-
-  if (response.status === 401) {
-    await authClient.signOut();
-    const returnTo = encodeURIComponent(
-      `${window.location.pathname}${window.location.search}${window.location.hash}`,
-    );
-    window.location.href = `/login?returnTo=${returnTo}`;
-    throw new Error("认证失败，请重新登录");
-  }
+  const response = await authorizedFetch(`/file/preview/${fileId}`);
 
   if (!response.ok) {
     throw new Error(`文件预览加载失败: ${response.status}`);

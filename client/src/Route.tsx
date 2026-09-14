@@ -1,4 +1,5 @@
 import SideBar from "@/component/SideBar";
+import { useAuth } from "@/hooks/useAuth";
 import { PropsWithChildren } from "react";
 import {
   BrowserRouter,
@@ -8,7 +9,6 @@ import {
   Routes,
   useLocation,
 } from "react-router-dom";
-import { useSession } from "./utils/auth";
 import Blog from "./views/blog/Blog";
 import FileManager from "./views/FileManage";
 import Home from "./views/Home";
@@ -16,6 +16,7 @@ import { LoginPage } from "./views/Login";
 import MeetingAccessGuard from "./views/MeetingRoom/MeetingAccessGuard";
 import Meetings from "./views/Mettings";
 import PostTable from "./views/PostTable";
+import { ResetPasswordPage } from "./views/ResetPassword";
 
 const UserLayout = () => {
   return (
@@ -31,16 +32,24 @@ const UserLayout = () => {
 };
 
 const ProtectedRoute: React.FC<PropsWithChildren> = ({ children }) => {
-  const { data, isPending } = useSession();
-
+  const { initialized, isAuthenticated, sessionPending } = useAuth();
   const location = useLocation();
-  if (isPending) {
+  if (!initialized || sessionPending) {
     return null;
   }
-  if (data?.user) {
+  if (isAuthenticated) {
     return children;
   }
-  return <Navigate to="/login" state={{ from: location }} replace />;
+  const returnTo = encodeURIComponent(
+    `${location.pathname}${location.search}${location.hash}`,
+  );
+  return (
+    <Navigate
+      to={`/login?returnTo=${returnTo}`}
+      state={{ from: location }}
+      replace
+    />
+  );
 };
 
 export const RouteWrapper = () => {
@@ -50,6 +59,7 @@ export const RouteWrapper = () => {
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/meeting/:roomId" element={<MeetingAccessGuard />} />
           <Route
             element={

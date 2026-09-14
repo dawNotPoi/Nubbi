@@ -99,8 +99,16 @@ const resolveDeleteTargets = async (
   userId: string | undefined,
   targets: DeleteTarget[],
 ) => {
-  const fileIds = [...new Set(targets.filter((item) => item.kind === "file").map((item) => item.id))];
-  const folderIds = [...new Set(targets.filter((item) => item.kind === "folder").map((item) => item.id))];
+  const fileIds = [
+    ...new Set(
+      targets.filter((item) => item.kind === "file").map((item) => item.id),
+    ),
+  ];
+  const folderIds = [
+    ...new Set(
+      targets.filter((item) => item.kind === "folder").map((item) => item.id),
+    ),
+  ];
 
   const directFiles =
     fileIds.length > 0
@@ -123,8 +131,12 @@ const resolveDeleteTargets = async (
     };
   }
 
-  const ownedFolders = await Folder.find({ ownerId: userId }).select("_id parentId");
-  const ownedFolderIds = new Set(ownedFolders.map((folder) => String(folder._id)));
+  const ownedFolders = await Folder.find({ ownerId: userId }).select(
+    "_id parentId",
+  );
+  const ownedFolderIds = new Set(
+    ownedFolders.map((folder) => String(folder._id)),
+  );
   const foundFolderIds = folderIds.filter((id) => ownedFolderIds.has(id));
   const missingFolderIds = folderIds.filter((id) => !ownedFolderIds.has(id));
 
@@ -340,8 +352,12 @@ router.post(
       return res.status(400).json({ message: "对象 id 不能为空" });
     }
 
-    const { filesToDelete, folderIdsToDelete, missingFileIds, missingFolderIds } =
-      await resolveDeleteTargets(userId, [{ id: fileId, kind }]);
+    const {
+      filesToDelete,
+      folderIdsToDelete,
+      missingFileIds,
+      missingFolderIds,
+    } = await resolveDeleteTargets(userId, [{ id: fileId, kind }]);
 
     if (filesToDelete.length === 0 && folderIdsToDelete.length === 0) {
       return res.status(404).json({ message: "文件不存在或无权操作" });
@@ -390,7 +406,10 @@ router.post(
 
     const normalizedTargets = Array.isArray(targets)
       ? targets
-          .filter((item) => item?.id && (item.kind === "file" || item.kind === "folder"))
+          .filter(
+            (item) =>
+              item?.id && (item.kind === "file" || item.kind === "folder"),
+          )
           .map((item) => ({ id: item.id, kind: item.kind }))
       : Array.isArray(fileIds)
         ? fileIds.filter(Boolean).map((id) => ({ id, kind: "file" as const }))

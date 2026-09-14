@@ -1,0 +1,26 @@
+{
+  "title": "Module Overview",
+  "groups": [
+    {
+      "id": "client",
+      "label": "Client Layer",
+      "nodes": [
+        { "id": "web", "label": "Desktop Client", "type": "client" }
+      ]
+    },
+    {
+      "id": "core",
+      "label": "Core Services",
+      "nodes": [
+        { "id": "api", "label": "API Module", "type": "service" },
+        { "id": "worker", "label": "Sync Worker", "type": "module" },
+        { "id": "db", "label": "SQLite Store", "type": "database" }
+      ]
+    }
+  ],
+  "edges": [
+    { "from": "web", "to": "api", "label": "RPC" },
+    { "from": "api", "to": "worker", "label": "Jobs" },
+    { "from": "api", "to": "db", "label": "SQL" }
+  ]
+}

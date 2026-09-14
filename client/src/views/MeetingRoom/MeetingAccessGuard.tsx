@@ -163,13 +163,23 @@ const MeetingAccessGuard = () => {
             </Button>
             <Button
               loading={authLoading}
-              onClick={() => loginWithGitHub(window.location.href)}
+              onClick={async () => {
+                const result = await loginWithGitHub(window.location.href);
+                if (!result.success) {
+                  message.error(result.error?.message || "GitHub 登录失败");
+                }
+              }}
             >
               使用 GitHub 登录
             </Button>
             <Button
               loading={authLoading}
-              onClick={() => loginWithGoogle(window.location.href)}
+              onClick={async () => {
+                const result = await loginWithGoogle(window.location.href);
+                if (!result.success) {
+                  message.error(result.error?.message || "Google 登录失败");
+                }
+              }}
             >
               使用 Google 登录
             </Button>
