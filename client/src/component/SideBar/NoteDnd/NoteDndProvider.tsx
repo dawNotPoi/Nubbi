@@ -1,6 +1,4 @@
-import { Note } from "@/api/note";
-import { queryClient } from "@/AppProvider";
-import { patchNoteAcrossCaches } from "@/features/note/model/cache";
+import { type Note } from "@/api/note";
 import { collectBlockedMoveTargetIds } from "@/features/note/model/hierarchy";
 import { useDeleteNote } from "@/features/note/hooks/useDeleteNote";
 import { noteKeys } from "@/features/note/model/keys";
@@ -19,6 +17,7 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
+import { useQueryClient } from "@tanstack/react-query";
 import { message } from "antd";
 import { useAtomValue, useSetAtom } from "jotai";
 import { type PropsWithChildren, useState } from "react";
@@ -32,7 +31,14 @@ import {
   type NoteDropData,
 } from "./model";
 
+/**
+ * 侧边栏笔记拖拽的全局 Provider：为笔记树和回收站提供统一的 DnD 上下文。
+ * - 包裹 dnd-kit 的 DndContext，用 pointerWithin 做碰撞检测，拖动距离超 8px 触发；
+ * - 拖拽开始时从缓存收集禁用移动的目标（不能移到自身或其子级）；
+ * - 拖拽结束时处理三种结果：移入回收站、移动到目标父级（含展开目标节点）、取消。
+ */
 export function NoteDndProvider({ children }: PropsWithChildren) {
+  const queryClient = useQueryClient();
   const { mutate: updateNoteProperties } = useAtomValue(
     updateNotePropertiesAtom,
   );
@@ -52,12 +58,12 @@ export function NoteDndProvider({ children }: PropsWithChildren) {
     const dragData = active.data.current as NoteDragData | undefined;
     if (dragData?.type !== "note") return;
 
-    const cachedNotes = queryClient
-      .getQueriesData<Note[]>({ queryKey: noteKeys.lists })
+    const loadedNotes = queryClient
+      .getQueriesData<Note[]>({ queryKey: noteKeys.treeRoot })
       .flatMap(([, notes]) => notes ?? []);
     setState({
       activeNote: dragData.note,
-      blockedIds: collectBlockedMoveTargetIds([dragData.note], cachedNotes),
+      blockedIds: collectBlockedMoveTargetIds([dragData.note], loadedNotes),
     });
   };
 
@@ -96,7 +102,6 @@ export function NoteDndProvider({ children }: PropsWithChildren) {
     }
 
     if (targetParentId) {
-      patchNoteAcrossCaches(queryClient, targetParentId, { hasChildren: true });
       setExpandedNodes((prev) =>
         prev.includes(targetParentId) ? prev : [...prev, targetParentId],
       );

@@ -1,15 +1,10 @@
-export type NoteListScope = {
-  parentId?: string | null;
-};
-
 export const noteKeys = {
   all: ["notes"] as const,
   lists: ["notes", "list"] as const,
   allLists: ["notes", "list", "all"] as const,
-  rootLists: ["notes", "list", "root"] as const,
-  childrenLists: ["notes", "list", "children"] as const,
-  children: (parentId: string) =>
-    ["notes", "list", "children", parentId] as const,
+  treeRoot: ["notes", "list", "tree"] as const,
+  tree: (parentId: string | null) =>
+    ["notes", "list", "tree", parentId ?? "root"] as const,
   recentRoot: ["notes", "recent"] as const,
   recent: () => ["notes", "recent"] as const,
   detailRoot: ["notes", "detail"] as const,
@@ -19,16 +14,3 @@ export const noteKeys = {
   searchRoot: ["notes", "search"] as const,
   search: (keyword: string) => ["notes", "search", keyword] as const,
 };
-
-export const hasParentId = (parentId?: string | null): parentId is string =>
-  typeof parentId === "string" && parentId.length > 0;
-
-export const noteListQueryKey = ({ parentId }: NoteListScope) =>
-  hasParentId(parentId)
-    ? noteKeys.children(parentId)
-    : noteKeys.rootLists;
-
-export const sameQueryKey = (
-  firstKey: readonly unknown[],
-  secondKey: readonly unknown[],
-) => JSON.stringify(firstKey) === JSON.stringify(secondKey);

@@ -8,13 +8,13 @@ export type CreateNoteVariables = {
 
 export type DeleteNoteVariables = {
   noteId: string;
-  parentId?: string | null;
+  parentId: string | null | undefined;
 };
 
 export type UpdateNotePropertiesVariables = {
   noteId: string;
+  parentId: string | null | undefined;
   properties: NotePropertiesInput;
-  parentId?: string | null;
 };
 
 export type UpdateNoteContentVariables = {
@@ -26,6 +26,7 @@ export type UpdateNoteContentVariables = {
 
 export type PatchNoteCacheVariables = {
   noteId: string;
+  parentId: string | null | undefined;
   properties: Partial<NoteWithContent>;
 };
 

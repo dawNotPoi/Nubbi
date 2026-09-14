@@ -1,4 +1,4 @@
-import { queryClient } from "@/AppProvider";
+import { queryClient } from "@/utils/queryClient";
 import { fileDirectoryQueryKey } from "@/api/file";
 import {
   type UploadTask,

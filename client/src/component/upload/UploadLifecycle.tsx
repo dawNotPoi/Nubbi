@@ -15,12 +15,20 @@ import {
   removeUploadSession,
 } from "@/features/upload/session";
 
+// 恢复到本地上传会话时，用 restored: 前缀标记，避免与真实任务 id 冲突
 const restoredTaskId = (uploadId: string) => `restored:${uploadId}`;
 
+/**
+ * 上传任务的生命周期管理器（无 UI，常驻应用根节点）。
+ * - 启动时从 localStorage 恢复上次中断的上传任务，查询服务端已传分块，
+ *   重建为 needsFile 状态的条目供用户续传；已完成的会话会被清理。
+ * - 存在活跃上传时监听 beforeunload，拦截页面关闭/刷新，防止上传丢失。
+ */
 export default function UploadLifecycle() {
   const store = useStore();
   const hasActiveUpload = useAtomValue(hasActiveUploadAtom);
 
+  // 有活跃上传时，拦截页面关闭/刷新，防止上传中断丢失
   useEffect(() => {
     if (!hasActiveUpload) return;
     const handler = (event: BeforeUnloadEvent) => {
@@ -31,6 +39,7 @@ export default function UploadLifecycle() {
     return () => window.removeEventListener("beforeunload", handler);
   }, [hasActiveUpload]);
 
+  // 启动时恢复上次未完成的上传：从 localStorage 读取会话，向服务端查询已传分块
   useEffect(() => {
     let active = true;
     const restore = async () => {
@@ -60,11 +69,13 @@ export default function UploadLifecycle() {
               size: session.size,
               folderId: session.folderId,
               uploadId: session.uploadId,
+              // 服务端已有分块作为保底进度，10% 起步、封顶 99%，剩余部分需重新选文件补齐
               progress: Math.min(
                 99,
                 10 + Math.round((completed / session.totalChunks) * 89),
               ),
               speed: 0,
+              // 服务端只存了分块，没有完整文件，必须由用户重新选择原文件才能续传
               status: UploadStatus.needsFile,
               error: response.data.error || undefined,
               instance: null,

@@ -5,14 +5,12 @@ import {
   SidebarTreeState,
 } from "@/component/SideBar/components";
 import { useDeleteNote } from "@/features/note/hooks/useDeleteNote";
+import { useNoteTreeQuery } from "@/features/note/hooks/useNoteTreeQuery";
 import { normalizeNoteTitle } from "@/features/note/model/hierarchy";
-import {
-  expandedNodesAtom,
-  noteChildrenAtom,
-} from "@/store/atom/noteAtom";
+import { expandedNodesAtom } from "@/store/atom/noteAtom";
 import { useDraggable } from "@dnd-kit/core";
 import clsx from "clsx";
-import { useAtom, useAtomValue } from "jotai";
+import { useAtom } from "jotai";
 import { Plus, Trash2 } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { type NoteDragData, noteDragId } from "../NoteDnd/model";
@@ -40,7 +38,7 @@ function NoteChildren({ noteId, depth }: NoteChildrenProps) {
     isError,
     isLoading,
     refetch,
-  } = useAtomValue(noteChildrenAtom(noteId));
+  } = useNoteTreeQuery(noteId);
   const hasChildrenData = children !== undefined;
 
   if (isLoading && !hasChildrenData) {
@@ -140,8 +138,8 @@ function NoteTreeNode({ note, depth }: NoteTreeNodeProps) {
       danger: true,
       onClick: () => {
         deleteNote({
-          parentId: note.parentId,
           noteId: note._id,
+          parentId: note.parentId,
         });
       },
     },
@@ -178,11 +176,18 @@ function NoteTreeNode({ note, depth }: NoteTreeNodeProps) {
   );
 }
 
-export default function NoteTree({ notes, depth = 1 }: NoteTreeProps) {
+export default function NoteTree({
+  notes,
+  depth = 1,
+}: NoteTreeProps) {
   return (
     <div>
       {notes.map((note) => (
-        <NoteTreeNode depth={depth} key={note._id} note={note} />
+        <NoteTreeNode
+          depth={depth}
+          key={note._id}
+          note={note}
+        />
       ))}
     </div>
   );

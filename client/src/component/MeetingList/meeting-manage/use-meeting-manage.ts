@@ -5,7 +5,7 @@ import {
   type MeetingComment,
   type MeetingType,
 } from "@/api/meeting";
-import { queryClient } from "@/AppProvider";
+import { queryClient } from "@/utils/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { AllMeetingAtom } from "@/store/atom/meetingAtom";
 import { App } from "antd";

@@ -50,13 +50,13 @@ export const useNoteEditorDraft = ({
       debounceWithControls(
         (
           nextNoteId: string,
+          parentId: string | null | undefined,
           nextTitle: string,
-          parentId?: string | null,
         ) => {
           setTitleDebouncing(false);
           updatePropertiesRef.current({
-            parentId: parentId ?? undefined,
             noteId: nextNoteId,
+            parentId,
             properties: { title: nextTitle },
           });
         },
@@ -130,12 +130,10 @@ export const useNoteEditorDraft = ({
       setTitleDebouncing(true);
       patchNotePropertiesCache({
         noteId,
-        properties: {
-          parentId: data?.parentId ?? null,
-          title: nextTitle,
-        },
+        parentId: data?.parentId,
+        properties: { title: nextTitle },
       });
-      debouncedUpdateTitle(noteId, nextTitle, data?.parentId);
+      debouncedUpdateTitle(noteId, data?.parentId, nextTitle);
     },
     [data?.parentId, debouncedUpdateTitle, patchNotePropertiesCache, noteId],
   );
@@ -145,8 +143,8 @@ export const useNoteEditorDraft = ({
       if (!noteId) return;
 
       updatePropertiesRef.current({
-        parentId: data?.parentId ?? undefined,
         noteId,
+        parentId: data?.parentId,
         properties,
       });
     },

@@ -20,20 +20,49 @@ type WritingModalProps = {
   trigger?: React.ReactElement;
 };
 
-export const WrittingModal = ({
-  parent,
-  onTrigger,
-  trigger,
-}: WritingModalProps) => {
-  const [open, setOpen] = useState(false);
-  const navigate = useNavigate();
-  const draft = useCreateNoteDraft({ parent });
-  const { data: allNotes = [] } = useAtomValue(allNotesAtom);
-  const { data: recentNotes = [] } = useAtomValue(recentNoteAtom);
-  const addToTargets = useMemo(
+type LazyTargetPickerProps = {
+  blockedIds: Set<string>;
+  onCancel: () => void;
+  onSelect: (note: Note) => void;
+  selectedId?: string;
+};
+
+function LazyTargetPicker({
+  blockedIds,
+  onCancel,
+  onSelect,
+  selectedId,
+}: LazyTargetPickerProps) {
+  const { data: allNotes = [], isLoading: allNotesLoading } = useAtomValue(allNotesAtom);
+  const { data: recentNotes = [], isLoading: recentNotesLoading } = useAtomValue(recentNoteAtom);
+  const targets = useMemo(
     () => getRecentTargetNotes(recentNotes, allNotes),
     [allNotes, recentNotes],
   );
+
+  return (
+    <NoteTargetPickerPanel
+      allNotes={allNotes}
+      autoFocus
+      blockedIds={blockedIds}
+      className="h-[min(440px,65dvh)] w-[min(420px,calc(100vw-32px))]"
+      disabled={allNotesLoading || recentNotesLoading}
+      emptyMessage={
+        allNotesLoading || recentNotesLoading ? "正在加载..." : "暂无可添加的位置"
+      }
+      onCancel={onCancel}
+      onSelect={onSelect}
+      placeholder="添加到..."
+      selectedId={selectedId}
+      targets={targets}
+    />
+  );
+}
+
+export const WrittingModal = ({ parent, onTrigger, trigger }: WritingModalProps) => {
+  const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
+  const draft = useCreateNoteDraft({ parent });
   const blockedTargetIds = useMemo(() => {
     return new Set(draft.draftNote ? [draft.draftNote._id] : []);
   }, [draft.draftNote]);
@@ -128,18 +157,14 @@ export const WrittingModal = ({
                 </button>
               }
             >
-              <NoteTargetPickerPanel
-                allNotes={allNotes}
-                autoFocus
-                blockedIds={blockedTargetIds}
-                className="h-[min(440px,65dvh)] w-[min(420px,calc(100vw-32px))]"
-                emptyMessage="暂无可添加的位置"
-                onCancel={() => draft.setTargetPickerOpen(false)}
-                onSelect={draft.selectParent}
-                placeholder="添加到..."
-                selectedId={draft.targetNote?._id}
-                targets={addToTargets}
-              />
+              {draft.targetPickerOpen ? (
+                <LazyTargetPicker
+                  blockedIds={blockedTargetIds}
+                  onCancel={() => draft.setTargetPickerOpen(false)}
+                  onSelect={draft.selectParent}
+                  selectedId={draft.targetNote?._id}
+                />
+              ) : null}
             </Popover>
           </div>
         }

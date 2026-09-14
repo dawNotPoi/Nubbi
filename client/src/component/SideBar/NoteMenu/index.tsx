@@ -3,7 +3,8 @@ import {
   SidebarSectionHeader,
   SidebarTreeState,
 } from "@/component/SideBar/components";
-import { createNoteAtom, rootNotesAtom } from "@/store/atom/noteAtom";
+import { useNoteTreeQuery } from "@/features/note/hooks/useNoteTreeQuery";
+import { createNoteAtom } from "@/store/atom/noteAtom";
 import { useSession } from "@/utils/auth";
 import { routes } from "@/utils/routes";
 import { useAtomValue } from "jotai";
@@ -64,7 +65,7 @@ export default function NoteMenu() {
     isError,
     isLoading,
     refetch,
-  } = useAtomValue(rootNotesAtom);
+  } = useNoteTreeQuery(null, { enabled: Boolean(owner) });
   const { mutate: createNote } = useAtomValue(createNoteAtom);
   const [open, setOpen] = useState(true);
   const navigate = useNavigate();

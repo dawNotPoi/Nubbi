@@ -1,47 +1,29 @@
-import { useAuth } from "@/hooks/useAuth";
 import { activeUploadCountAtom } from "@/store/atom/FileAtom";
 import { routes } from "@/utils/routes";
 import clsx from "clsx";
 import { useAtomValue, useSetAtom } from "jotai";
 import {
-  Camera,
-  ChevronsLeft,
   FolderTree,
   House,
-  KeyRound,
-  LogOut,
   Presentation,
   Trash2,
 } from "lucide-react";
-import React, { useState } from "react";
+import React from "react";
 import { useLocation } from "react-router-dom";
 import { useIsMobile } from "../../hooks/useIsMobile";
-import {
-  mobileSideBarOpenedAtom,
-  sideBarOpenedAtom,
-} from "../../store/atom/common";
-import { Modal } from "antd";
-import AccountDeletionModal from "../AccountDeletionModal";
-import ApiTokenModal from "../ApiTokenModal";
-import ChangeAvatarModal from "../ChangeAvatarModal";
-import Image from "../UI/Image";
-import Popover from "../UI/Popover";
-import { IconButton, MenuItemContainer } from "./components";
+import { mobileSideBarOpenedAtom } from "../../store/atom/common";
+import { MenuItemContainer } from "./components";
 import { TrashDropTarget } from "./NoteDnd/DropZones";
 import { NoteDndProvider } from "./NoteDnd/NoteDndProvider";
 import NoteMenu from "./NoteMenu";
 import ResizeTab from "./ResizeTab";
+import SideBarHeader from "./SideBarHeader";
 
 const SideBar: React.FC = () => {
-  const setSideBarOpened = useSetAtom(sideBarOpenedAtom);
-  const setMobileSideBarOpened = useSetAtom(mobileSideBarOpenedAtom);
   const activeUploads = useAtomValue(activeUploadCountAtom);
+  const setMobileSideBarOpened = useSetAtom(mobileSideBarOpenedAtom);
   const isMobile = useIsMobile();
   const location = useLocation();
-  const { user, logout, updateAvatar } = useAuth();
-  const [deletionModalOpen, setDeletionModalOpen] = useState(false);
-  const [avatarModalOpen, setAvatarModalOpen] = useState(false);
-  const [apiTokenModalOpen, setApiTokenModalOpen] = useState(false);
 
   React.useEffect(() => {
     setMobileSideBarOpened(false);
@@ -56,93 +38,12 @@ const SideBar: React.FC = () => {
     return () => document.removeEventListener("keydown", closeOnEscape);
   }, [isMobile, setMobileSideBarOpened]);
 
-  const handleRequestAccountDeletion = () => {
-    Modal.confirm({
-      title: "确认注销账号？",
-      content: "注销会删除账号、登录会话以及个人数据。继续后需要邮箱验证码验证。",
-      okText: "继续验证",
-      cancelText: "取消",
-      okButtonProps: { danger: true },
-      onOk: () => setDeletionModalOpen(true),
-    });
-  };
-
-  const handleChangeAvatar = () => {
-    setAvatarModalOpen(true);
-  };
-
   return (
     <ResizeTab
       className={clsx("group/sidebar px-3 bg-sidebar py-2 font-medium ")}
     >
       <div className="h-full flex flex-col">
-        <div className="flex gap-2 justify-between relative">
-          <Popover
-            trigger={
-              <div className="flex gap-2 items-center cursor-pointer">
-                <Image
-                  className="rounded size-7"
-                  src={user?.image || ""}
-                  defaultLink="/default.jpg"
-                  alt={user?.name}
-                />
-                <span>{user?.name}</span>
-              </div>
-            }
-          >
-            {
-              <div className="w-[144px] space-y-1 p-1.5">
-                <button
-                  className="flex h-9 w-full items-center gap-2 rounded-md px-2 text-left text-sm text-red-600 transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200"
-                  onClick={handleRequestAccountDeletion}
-                >
-                  <Trash2 size={15} />
-                  <span>注销账号</span>
-                </button>
-                <button
-                  className="flex h-9 w-full items-center gap-2 rounded-md px-2 text-left text-sm text-slate-700 transition-colors hover:bg-gray-200/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300"
-                  onClick={handleChangeAvatar}
-                >
-                  <Camera size={15} />
-                  <span>更换头像</span>
-                </button>
-                <button
-                  className="flex h-9 w-full items-center gap-2 rounded-md px-2 text-left text-sm text-slate-700 transition-colors hover:bg-gray-200/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300"
-                  onClick={() => setApiTokenModalOpen(true)}
-                >
-                  <KeyRound size={15} />
-                  <span>鉴权管理</span>
-                </button>
-                <button
-                  className="flex h-9 w-full items-center gap-2 rounded-md px-2 text-left text-sm text-slate-700 transition-colors hover:bg-gray-200/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300"
-                  onClick={logout}
-                >
-                  <LogOut size={15} />
-                  <span>退出登录</span>
-                </button>
-              </div>
-            }
-          </Popover>
-          <div className="flex-1" />
-          <div
-            className="flex "
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
-          >
-            <IconButton
-              onClick={() => {
-                if (isMobile) {
-                  setMobileSideBarOpened(false);
-                  return;
-                }
-                setSideBarOpened(false);
-              }}
-            >
-              <ChevronsLeft />
-            </IconButton>
-          </div>
-        </div>
+        <SideBarHeader />
         <div className="flex mt-2 flex-col flex-1 gap-2 overflow-auto ">
           <NoteDndProvider>
             <MenuItemContainer to={routes.home}>
@@ -172,21 +73,6 @@ const SideBar: React.FC = () => {
           </NoteDndProvider>
         </div>
       </div>
-      <AccountDeletionModal
-        open={deletionModalOpen}
-        userEmail={user?.email}
-        onClose={() => setDeletionModalOpen(false)}
-      />
-      <ChangeAvatarModal
-        open={avatarModalOpen}
-        currentImage={user?.image || undefined}
-        onClose={() => setAvatarModalOpen(false)}
-        onConfirm={updateAvatar}
-      />
-      <ApiTokenModal
-        open={apiTokenModalOpen}
-        onClose={() => setApiTokenModalOpen(false)}
-      />
     </ResizeTab>
   );
 };

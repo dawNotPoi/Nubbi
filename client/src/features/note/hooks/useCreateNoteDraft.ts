@@ -66,8 +66,8 @@ export const useCreateNoteDraft = ({ parent }: UseCreateNoteDraftOptions) => {
       debounceWithControls(
         (
           noteId: string,
+          parentId: string | null | undefined,
           nextTitle: string,
-          parentId?: string | null,
         ) => {
           if (!createdNoteIdsRef.current.has(noteId)) {
             pendingTitleSaveRef.current.set(noteId, {
@@ -78,8 +78,8 @@ export const useCreateNoteDraft = ({ parent }: UseCreateNoteDraftOptions) => {
           }
 
           updatePropertiesRef.current({
-            parentId: parentId ?? undefined,
             noteId,
+            parentId,
             properties: { title: nextTitle },
           });
         },
@@ -169,11 +169,11 @@ export const useCreateNoteDraft = ({ parent }: UseCreateNoteDraftOptions) => {
           createdNoteIdsRef.current.add(note._id);
 
           const pendingTitle = pendingTitleSaveRef.current.get(note._id);
-          if (pendingTitle) {
+          if (pendingTitle !== undefined) {
             pendingTitleSaveRef.current.delete(note._id);
             updatePropertiesRef.current({
-              parentId: pendingTitle.parentId ?? undefined,
               noteId: note._id,
+              parentId: pendingTitle.parentId,
               properties: { title: pendingTitle.title },
             });
           }
@@ -212,8 +212,8 @@ export const useCreateNoteDraft = ({ parent }: UseCreateNoteDraftOptions) => {
     draftNoteRef.current = nextNote;
     setDraftNote(nextNote);
     updatePropertiesRef.current({
-      parentId: currentNote.parentId ?? undefined,
       noteId: currentNote._id,
+      parentId: currentNote.parentId,
       properties: { parentId: nextParent._id },
     });
   };
@@ -231,15 +231,15 @@ export const useCreateNoteDraft = ({ parent }: UseCreateNoteDraftOptions) => {
     setDraftNote(nextNote);
     patchNotePropertiesCache({
       noteId: currentNote._id,
+      parentId: currentNote.parentId,
       properties: {
-        parentId: currentNote.parentId ?? null,
         title: nextDraftTitle,
       },
     });
     debouncedUpdateTitle(
       currentNote._id,
-      nextDraftTitle,
       currentNote.parentId,
+      nextDraftTitle,
     );
   };
 

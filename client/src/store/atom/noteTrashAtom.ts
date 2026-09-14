@@ -4,7 +4,7 @@ import {
   restoreNote,
   type Note,
 } from "@/api/note";
-import { queryClient } from "@/AppProvider";
+import { queryClient } from "@/utils/queryClient";
 import { noteKeys } from "@/features/note/model/keys";
 import { atomWithMutation, atomWithQuery } from "jotai-tanstack-query";
 

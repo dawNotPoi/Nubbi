@@ -1,7 +1,7 @@
 import { atomWithMutation, atomWithQuery } from "jotai-tanstack-query";
 import { noteKeys } from "@/features/note/model/keys";
 import { createTag, deleteTag, getTags } from "../../api/tag";
-import { queryClient } from "../../AppProvider";
+import { queryClient } from "../../utils/queryClient";
 
 export const tagListQueryKey = ["tags", "list"];
 

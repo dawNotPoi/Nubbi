@@ -75,14 +75,12 @@ export const useNoteLibraryActions = ({
       title: notes.length === 1 ? "删除 note" : `删除 ${notes.length} 个 note`,
       onOk: async () => {
         try {
-          await Promise.all(
-            actionNotes.map((note) =>
-              deleteNote({
-                noteId: note._id,
-                parentId: note.parentId ?? null,
-              }),
-            ),
-          );
+          for (const note of actionNotes) {
+            await deleteNote({
+              noteId: note._id,
+              parentId: note.parentId,
+            });
+          }
           setSelectedIds((current) =>
             current.filter((id) => !notes.some((note) => note._id === id)),
           );
@@ -110,7 +108,7 @@ export const useNoteLibraryActions = ({
     try {
       await updateNoteProperties({
         noteId: note._id,
-        parentId: note.parentId ?? null,
+        parentId: note.parentId,
         properties: { title },
       });
     } catch (error) {
@@ -127,15 +125,13 @@ export const useNoteLibraryActions = ({
     }
 
     try {
-      await Promise.all(
-        moveCandidates.map((note) =>
-          updateNoteProperties({
-            noteId: note._id,
-            parentId: note.parentId ?? null,
-            properties: { parentId: target._id },
-          }),
-        ),
-      );
+      for (const note of moveCandidates) {
+        await updateNoteProperties({
+          noteId: note._id,
+          parentId: note.parentId,
+          properties: { parentId: target._id },
+        });
+      }
       setSelectedIds((current) =>
         current.filter((id) => !blockedMoveTargetIds.has(id)),
       );

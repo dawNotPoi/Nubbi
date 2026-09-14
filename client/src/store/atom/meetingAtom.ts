@@ -4,7 +4,7 @@ import {
   getMeetingList,
   type MeetingType,
 } from "@/api/meeting";
-import { queryClient } from "@/AppProvider";
+import { queryClient } from "@/utils/queryClient";
 
 import { atomWithMutation, atomWithQuery } from "jotai-tanstack-query";
 
