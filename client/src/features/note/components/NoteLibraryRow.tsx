@@ -102,7 +102,7 @@ export function NoteLibraryRow({
   return (
     <li
       className={clsx(
-        "group/note-row grid cursor-pointer grid-cols-[40px_minmax(280px,1fr)_minmax(180px,28vw)_132px] items-center border-b border-[#efefed] text-[14px] transition-colors",
+        "group/note-row grid cursor-pointer grid-cols-[40px_minmax(260px,1fr)_minmax(220px,26vw)_minmax(160px,18vw)_132px] items-center border-b border-[#efefed] text-[14px] transition-colors",
         "hover:bg-[#f7f7f5] focus-within:bg-[#f7f7f5]",
         viewMode === "search" ? "min-h-[54px] py-1" : "h-11",
         selected && "bg-[#f1f1ef]",
@@ -198,6 +198,33 @@ export function NoteLibraryRow({
       <span className="truncate text-[#4b5563]">
         {formatNoteEditedTime(note)}
       </span>
+      <div className="flex min-w-0 flex-wrap items-center gap-1 pr-2">
+        <span
+          className={clsx(
+            "rounded px-1.5 py-0.5 text-xs font-medium",
+            note.status === "inbox" && "bg-amber-50 text-amber-700",
+            note.status === "active" && "bg-blue-50 text-blue-700",
+            note.status === "done" && "bg-emerald-50 text-emerald-700",
+            note.status === "archived" && "bg-neutral-100 text-neutral-600",
+          )}
+        >
+          {note.status}
+        </span>
+        {note.published ? (
+          <span className="rounded bg-purple-50 px-1.5 py-0.5 text-xs font-medium text-purple-700">
+            published
+          </span>
+        ) : null}
+        {note.tags.slice(0, 2).map((tag) => (
+          <span
+            className="max-w-[86px] truncate rounded bg-[#f1f1ef] px-1.5 py-0.5 text-xs text-[#787774]"
+            key={tag}
+            title={tag}
+          >
+            {tag}
+          </span>
+        ))}
+      </div>
       <div className="flex items-center justify-end gap-1 pr-2 opacity-0 transition-opacity group-hover/note-row:opacity-100 group-focus-within/note-row:opacity-100">
         {viewMode === "search" ? (
           <button

@@ -1,4 +1,4 @@
-import type { Note } from "@/api/note";
+import type { Note, NoteStatus } from "@/api/note";
 import { collectBlockedMoveTargetIds } from "@/features/note/model/hierarchy";
 import {
   getNoteAncestorIds,
@@ -33,6 +33,10 @@ export const useNoteLibraryController = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [sortMode, setSortMode] =
     useState<NoteLibrarySortMode>("updated-desc");
+  const [statusFilter, setStatusFilter] = useState<"all" | NoteStatus>("all");
+  const [publishedFilter, setPublishedFilter] = useState<
+    "all" | "published" | "unpublished"
+  >("all");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [moveOpen, setMoveOpen] = useState(false);
   const [moveCandidates, setMoveCandidates] = useState<Note[]>([]);
@@ -47,9 +51,11 @@ export const useNoteLibraryController = () => {
         expandedIds: expandedLibraryNodeIds,
         filterText,
         notes: allNotes,
+        publishedFilter,
         sortMode,
+        statusFilter,
       }),
-    [allNotes, expandedLibraryNodeIds, filterText, sortMode],
+    [allNotes, expandedLibraryNodeIds, filterText, publishedFilter, sortMode, statusFilter],
   );
 
   const selectedNotes = useMemo(() => {
@@ -164,9 +170,13 @@ export const useNoteLibraryController = () => {
     selectedIds,
     selectedNotes,
     setFilterText,
+    setPublishedFilter,
     setSearchOpen,
     setSortMode,
+    setStatusFilter,
     sortMode,
+    publishedFilter,
+    statusFilter,
     toggleAllVisible,
     toggleLibraryNodeExpanded,
     toggleSelected,

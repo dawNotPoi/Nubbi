@@ -3,6 +3,7 @@ import { Header } from "@/component/Header";
 import { useNoteEditorDraft } from "@/features/note/hooks/useNoteEditorDraft";
 import type { NoteSaveStatus } from "@/features/note/model/types";
 import { noteAncestorsAtom, noteDetailAtom } from "@/store/atom/noteAtom";
+import { Switch } from "antd";
 import { useAtomValue } from "jotai";
 import { CheckCircle2, LoaderCircle } from "lucide-react";
 import { useMemo } from "react";
@@ -97,7 +98,25 @@ export default function Note() {
             ancestors={ancestors}
             current={{ _id: Id, title: headerTitle }}
           />
-          <div className="shrink-0">
+          <div className="flex shrink-0 items-center gap-3">
+            <label
+              className="flex items-center gap-2 text-xs text-neutral-500"
+              title={
+                ["done", "archived"].includes(data.status)
+                  ? "Toggle published state"
+                  : "Only done or archived notes can be published"
+              }
+            >
+              <span>Published</span>
+              <Switch
+                checked={data.published}
+                disabled={!["done", "archived"].includes(data.status)}
+                size="small"
+                onChange={(published) => {
+                  updateProperties({ published });
+                }}
+              />
+            </label>
             <SaveIndicator status={saveStatus} />
           </div>
         </div>

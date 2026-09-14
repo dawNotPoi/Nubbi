@@ -6,7 +6,8 @@ const summarySchema = new mongoose.Schema(
       required: true,
     },
     noteId: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Note",
       required: true,
       unique: true,
     },
