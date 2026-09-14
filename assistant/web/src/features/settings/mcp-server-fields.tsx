@@ -1,7 +1,7 @@
 import { KeyValueEditor } from "./key-value-editor.tsx";
 import type { McpDraft } from "./mcp-form-utils.ts";
 
-const inputClass =
+const INPUT_CLASS =
   "h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15";
 
 /**
@@ -21,7 +21,7 @@ export const HttpFields = ({
     <label className="block space-y-1.5 text-sm font-medium">
       MCP HTTP URL
       <input
-        className={inputClass}
+        className={INPUT_CLASS}
         onChange={(event) => onChange({ ...draft, url: event.target.value })}
         placeholder="https://example.com/mcp"
         value={draft.url}
@@ -48,7 +48,7 @@ export const StdioFields = ({
     <label className="block space-y-1.5 text-sm font-medium">
       启动命令
       <input
-        className={inputClass}
+        className={INPUT_CLASS}
         onChange={(event) => onChange({ ...draft, command: event.target.value })}
         placeholder="node"
         value={draft.command}
@@ -66,7 +66,7 @@ export const StdioFields = ({
     <label className="block space-y-1.5 text-sm font-medium">
       工作目录（可选）
       <input
-        className={inputClass}
+        className={INPUT_CLASS}
         onChange={(event) => onChange({ ...draft, cwd: event.target.value })}
         placeholder="缺省继承 Assistant 进程目录"
         value={draft.cwd}

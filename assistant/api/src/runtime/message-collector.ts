@@ -1,4 +1,4 @@
-import type { AgentEvent, MessagePart } from "@nubbi/assistant-shared/contracts";
+import { DELTA_PART_TYPES, type AgentEvent, type MessagePart } from "@nubbi/assistant-shared/contracts";
 
 /** 收集运行中的可见内容，异常退出时也能保存已产生的输出。 */
 export class RunMessageCollector {
@@ -12,7 +12,7 @@ export class RunMessageCollector {
    */
   public record(event: AgentEvent): void {
     if (event.type === "text-delta" || event.type === "reasoning-delta") {
-      const type = event.type === "text-delta" ? "text" : "reasoning";
+      const type = DELTA_PART_TYPES[event.type];
       const previous = this.parts.at(-1);
       if (previous?.type === type) previous.text += event.text;
       else this.parts.push({ type, text: event.text });

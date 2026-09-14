@@ -1,5 +1,8 @@
+import { Logger } from "@nestjs/common";
 import mongoose from "mongoose";
 import { env } from "./env.ts";
+
+const logger = new Logger("AssistantDatabase");
 
 // 独立的连接实例：与主服务共享 Mongo 实例，但拥有专属连接池与库名，避免相互干扰。
 /** Assistant 独立数据库连接，不复用主应用的模型注册表。 */
@@ -24,5 +27,5 @@ export const assistantConnection = mongoose.createConnection(env.MONGO_URI, {
  */
 export const connectAssistantDatabase = async (): Promise<void> => {
   await assistantConnection.asPromise();
-  console.log(`Assistant MongoDB connected: ${env.ASSISTANT_MONGO_DB_NAME}`);
+  logger.log(`Assistant MongoDB connected: ${env.ASSISTANT_MONGO_DB_NAME}`);
 };

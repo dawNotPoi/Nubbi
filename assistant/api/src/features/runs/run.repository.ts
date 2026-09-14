@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { RunStatus, RunSummary, RuntimeEvent } from "../../runtime/events.ts";
 import { RunEventModel, type RunEventRecord } from "./run-event.model.ts";
 
-const terminalTypes = new Set(["run-completed", "run-failed", "run-abandoned"]);
+const TERMINAL_TYPES = new Set(["run-completed", "run-failed", "run-abandoned"]);
 
 /**
  * 将完整事件拆分为平铺的元信息 + 业务 payload，适配数据库结构。
@@ -98,7 +98,7 @@ export const listRunSummaries = async (conversationId: string): Promise<RunSumma
           provider: start.provider,
           status: statusOf(last),
           startedAt: start.timestamp,
-          finishedAt: terminalTypes.has(last.type) ? last.timestamp : undefined,
+          finishedAt: TERMINAL_TYPES.has(last.type) ? last.timestamp : undefined,
           message: last.type === "run-failed" ? last.message : undefined,
         },
       ];
@@ -118,7 +118,7 @@ export const abandonIncompleteRuns = async (): Promise<void> => {
   const terminalRunIds = new Set(
     await RunEventModel.distinct("runId", {
       runId: { $in: runIds },
-      type: { $in: [...terminalTypes] },
+      type: { $in: [...TERMINAL_TYPES] },
     }),
   );
   await Promise.all(
@@ -126,7 +126,7 @@ export const abandonIncompleteRuns = async (): Promise<void> => {
       .filter((start) => !terminalRunIds.has(start.runId))
       .map(async (start) => {
         const last = await RunEventModel.findOne({ runId: start.runId }).sort({ sequence: -1 }).exec();
-        if (!last || terminalTypes.has(last.type)) return;
+        if (!last || TERMINAL_TYPES.has(last.type)) return;
         await appendRunEvent({
           type: "run-abandoned",
           reason: "Assistant API restarted before the run completed",

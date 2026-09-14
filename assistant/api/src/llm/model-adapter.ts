@@ -1,4 +1,4 @@
-import type { TokenUsage } from "@nubbi/assistant-shared/contracts";
+import type { DeltaType, TokenUsage } from "@nubbi/assistant-shared/contracts";
 import type { ToolCall, ToolDefinition } from "../tools/tool-contracts.ts";
 
 /** 模型输出的有序内容块；私有协议数据不放入内容块。 */
@@ -22,7 +22,7 @@ export type ModelTurnResult = {
   usage: TokenUsage | null;
 };
 /** 已解码的可展示内容增量。 */
-export type ModelDelta = { type: "text" | "reasoning"; text: string };
+export type ModelDelta = { type: DeltaType; text: string };
 /** 模型单轮输入；连接参数在创建适配器时绑定。 */
 export type ModelTurnInput = {
   instructions: string;

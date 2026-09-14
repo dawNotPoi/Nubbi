@@ -4,6 +4,7 @@ import { FastifyAdapter, type NestFastifyApplication } from "@nestjs/platform-fa
 import "reflect-metadata";
 import { AppModule } from "./app.module.ts";
 import { env } from "./config/env.ts";
+import { SourceLocationLogger } from "./common/source-location-logger.ts";
 
 const logger = new Logger("Bootstrap");
 
@@ -32,7 +33,11 @@ const tolerateEmptyJsonBody = (app: NestFastifyApplication): void => {
  * @returns 服务启动完成后的 Promise。
  */
 const bootstrap = async (): Promise<void> => {
-  const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter({ bodyLimit: 1_048_576 }));
+  const app = await NestFactory.create<NestFastifyApplication>(
+    AppModule,
+    new FastifyAdapter({ bodyLimit: 1_048_576 }),
+    { logger: new SourceLocationLogger(env.NODE_ENV === undefined || env.NODE_ENV === "development") },
+  );
   // 宽容处理空 JSON body，避免旧客户端发起的空 body 请求直接被 400。
   tolerateEmptyJsonBody(app);
   app.setGlobalPrefix("api");

@@ -1,4 +1,4 @@
-import type { Message, MessagePart, StreamEvent } from "../contracts/index.ts";
+import { DELTA_PART_TYPES, type Message, type MessagePart, type StreamEvent } from "../contracts/index.ts";
 
 /** 工具的临时执行状态仅供客户端展示，不属于持久化消息协议。 */
 export type ClientMessagePart = MessagePart extends infer Part
@@ -18,7 +18,7 @@ export type ClientMessage = Omit<Message, "parts"> & { parts: ClientMessagePart[
 export function applyMessageEvent(messageParts: ClientMessagePart[], event: StreamEvent): ClientMessagePart[] {
   if (event.type === "done") return event.message.parts;
   if (event.type === "text-delta" || event.type === "reasoning-delta") {
-    const type = event.type === "text-delta" ? "text" : "reasoning";
+    const type = DELTA_PART_TYPES[event.type];
     const previousPart = messageParts.at(-1);
     return previousPart?.type === type
       ? [...messageParts.slice(0, -1), { ...previousPart, text: previousPart.text + event.text }]

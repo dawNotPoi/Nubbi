@@ -1,8 +1,8 @@
-import type { Conversation, Message, MessagePart } from "../types.ts";
 import { countTokens, messageOverheadTokens } from "../runtime/tokens.ts";
+import type { Conversation, Message, MessagePart } from "../types.ts";
 
-const toolResultLimit = 2_000; // 工具结果截断长度
-const omissionText = "[较早的对话内容因上下文预算已省略]";
+const TOOL_RESULT_LIMIT = 2_000; // 工具结果截断长度
+const OMISSION_TEXT = "[较早的对话内容因上下文预算已省略]";
 
 /** 经预算裁剪后交给执行器的单条历史消息，不包含持久化细节。 */
 export type AgentContextMessage = {
@@ -34,7 +34,7 @@ const partText = (part: MessagePart): string => {
   }
   if (part.type === "tool") {
     const status = part.success === false ? "失败" : "完成";
-    return `[工具${status}：${part.server}/${part.tool}]\n${part.result.slice(0, toolResultLimit)}`;
+    return `[工具${status}：${part.server}/${part.tool}]\n${part.result.slice(0, TOOL_RESULT_LIMIT)}`;
   }
   return `[运行错误：${part.message}]`;
 };
@@ -45,12 +45,17 @@ const partText = (part: MessagePart): string => {
  * @returns 转换后的上下文消息；无可渲染内容时返回 null。
  */
 const toContextMessage = (message: Message): AgentContextMessage | null => {
-  const content = message.parts.map(partText).filter(Boolean).join("\n\n").trim();
+  const content = message.parts
+    .map(partText)
+    .filter(Boolean)
+    .join("\n\n")
+    .trim();
   return content ? { id: message.id, role: message.role, content } : null;
 };
 
 /** 估算单条上下文消息的 token 数（内容 + 固定开销）。 */
-const messageTokens = (message: AgentContextMessage): number => countTokens(message.content) + messageOverheadTokens;
+const messageTokens = (message: AgentContextMessage): number =>
+  countTokens(message.content) + messageOverheadTokens;
 
 /**
  * 构建注入模型的对话上下文。
@@ -60,12 +65,18 @@ const messageTokens = (message: AgentContextMessage): number => countTokens(mess
  * @param maxTokens 上下文 token 预算，默认 100_000。
  * @returns 裁剪后的上下文消息列表、是否截断以及 token 占用信息。
  */
-export const buildAgentContext = (conversation: Conversation, maxTokens = 100_000): AgentContext => {
+export const buildAgentContext = (
+  conversation: Conversation,
+  maxTokens = 100_000,
+): AgentContext => {
   const source = conversation.messages.flatMap((message) => {
     const converted = toContextMessage(message);
     return converted ? [converted] : [];
   });
-  const usedTokens = source.reduce((sum, message) => sum + messageTokens(message), 0);
+  const usedTokens = source.reduce(
+    (sum, message) => sum + messageTokens(message),
+    0,
+  );
   if (usedTokens <= maxTokens) {
     return { messages: source, truncated: false, usedTokens, maxTokens };
   }
@@ -73,7 +84,10 @@ export const buildAgentContext = (conversation: Conversation, maxTokens = 100_00
   // 超预算：保留首条用户消息，从最新开始向前挑选放得下的消息。
   const firstUser = source.find((message) => message.role === "user");
   const selected: AgentContextMessage[] = [];
-  let remaining = maxTokens - countTokens(omissionText) - (firstUser ? messageTokens(firstUser) : 0);
+  let remaining =
+    maxTokens -
+    countTokens(OMISSION_TEXT) -
+    (firstUser ? messageTokens(firstUser) : 0);
   for (let index = source.length - 1; index >= 0; index -= 1) {
     const message = source[index];
     if (!message || message.id === firstUser?.id) continue;
@@ -85,10 +99,13 @@ export const buildAgentContext = (conversation: Conversation, maxTokens = 100_00
   const marker: AgentContextMessage = {
     id: "context-omitted",
     role: "assistant",
-    content: omissionText,
+    content: OMISSION_TEXT,
   };
   const messages = [...(firstUser ? [firstUser] : []), marker, ...selected];
-  const trimmedTokens = messages.reduce((sum, message) => sum + messageTokens(message), 0);
+  const trimmedTokens = messages.reduce(
+    (sum, message) => sum + messageTokens(message),
+    0,
+  );
   return {
     messages,
     truncated: true,

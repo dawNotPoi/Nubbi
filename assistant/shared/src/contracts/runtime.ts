@@ -43,6 +43,22 @@ export type AgentEvent =
   | { type: "text-delta"; text: string }
   | { type: "reasoning-delta"; text: string };
 
+/** 模型可产生的增量类型；新增类型时下面两张映射表会由类型检查强制补齐。 */
+export type DeltaType = "text" | "reasoning";
+/** 承载增量的流式事件类型，从 AgentEvent 推导以保证取值真实存在。 */
+export type DeltaEventType = Extract<AgentEvent, { type: `${string}-delta` }>["type"];
+
+/** 模型增量类型 → 对外流式事件类型，避免各处重复写三元表达式。 */
+export const DELTA_EVENT_TYPES: Record<DeltaType, DeltaEventType> = {
+  text: "text-delta",
+  reasoning: "reasoning-delta",
+};
+/** 流式事件类型 → 消息 part 类型，落库与前端渲染共用同一份映射。 */
+export const DELTA_PART_TYPES: Record<DeltaEventType, DeltaType> = {
+  "text-delta": "text",
+  "reasoning-delta": "reasoning",
+};
+
 /** Run 生命周期事件，与 AgentEvent 一起构成完整的 RuntimeEvent。 */
 export type RuntimeEventPayload =
   | AgentEvent

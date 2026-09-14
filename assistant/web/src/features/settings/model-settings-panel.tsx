@@ -6,7 +6,7 @@ import { OpenAiModelForm } from "./openai-model-form.tsx";
 
 import { Button } from "../../components/ui/button.tsx";
 
-const inputClass =
+const INPUT_CLASS =
   "h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15";
 
 /**
@@ -96,7 +96,7 @@ export const ModelSettingsPanel = ({ configAccessToken }: { configAccessToken: s
         </div>
         {modelOptions.length ? (
           <select
-            className={inputClass}
+            className={INPUT_CLASS}
             id="model-select"
             onChange={(event) => setConfig({ ...config, model: event.target.value })}
             value={config.model}
@@ -110,7 +110,7 @@ export const ModelSettingsPanel = ({ configAccessToken }: { configAccessToken: s
           </select>
         ) : (
           <input
-            className={inputClass}
+            className={INPUT_CLASS}
             id="model-select"
             onChange={(event) => setConfig({ ...config, model: event.target.value })}
             placeholder="模型 ID"

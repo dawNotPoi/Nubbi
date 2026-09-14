@@ -1,7 +1,10 @@
+import { Logger } from "@nestjs/common";
 import { runWithClient } from "./client-pool.ts";
 
 import { listMcpServers, type McpServerConfig } from "./mcp-config.ts";
 import type { ToolDefinition } from "../../tools/tool-contracts.ts";
+
+const logger = new Logger("McpTools");
 
 /** 发现后的工具定义及调用定位信息，不携带模型厂商包装。 */
 export type McpTool = {
@@ -79,7 +82,7 @@ export const discoverMcpTools = async (signal?: AbortSignal): Promise<McpTool[]>
       } catch (error) {
         signal?.throwIfAborted();
         const message = error instanceof Error ? error.message : String(error);
-        console.warn(`MCP ${server.name} 工具发现失败: ${message}`);
+        logger.warn(`MCP ${server.name} 工具发现失败: ${message}`);
         return [];
       }
     }),

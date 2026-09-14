@@ -3,7 +3,7 @@ import type { ModelConfig } from "../../types.ts";
 import { KeyValueEditor } from "./key-value-editor.tsx";
 import type { KeyValuePair } from "./mcp-form-utils.ts";
 
-const inputClass =
+const INPUT_CLASS =
   "h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15";
 
 /**
@@ -53,7 +53,7 @@ export const OpenAiModelForm = ({
     <label className="block space-y-1.5 text-sm font-medium">
       Base URL
       <input
-        className={inputClass}
+        className={INPUT_CLASS}
         onChange={(event) => onPatch({ baseUrl: event.target.value })}
         placeholder="https://api.example.com/v1"
         value={config.baseUrl}
@@ -65,7 +65,7 @@ export const OpenAiModelForm = ({
         <KeyRound className="pointer-events-none absolute left-3 top-3 size-4 text-muted-foreground" />
         <input
           autoComplete="off"
-          className={`${inputClass} pl-9`}
+          className={`${INPUT_CLASS} pl-9`}
           disabled={clearApiKey}
           onChange={(event) => onApiKeyChange(event.target.value)}
           placeholder={config.apiKeyConfigured ? "已保存，留空保持不变" : "sk-..."}
@@ -88,7 +88,7 @@ export const OpenAiModelForm = ({
     <label className="block space-y-1.5 text-sm font-medium">
       采样温度
       <input
-        className={inputClass}
+        className={INPUT_CLASS}
         max={2}
         min={0}
         onChange={(event) => onTemperatureChange(event.target.value)}
@@ -101,7 +101,7 @@ export const OpenAiModelForm = ({
     <label className="block space-y-1.5 text-sm font-medium">
       上下文窗口（token）
       <input
-        className={inputClass}
+        className={INPUT_CLASS}
         min={1024}
         onChange={(event) => onContextWindowChange(event.target.value)}
         placeholder="默认 128000，用于上下文占用百分比"

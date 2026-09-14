@@ -34,7 +34,7 @@ const TransportButton = ({ active, label, onClick }: { active: boolean; label: s
  * @param props.onTest 测试回调，返回提示文案。
  * @returns MCP 编辑表单视图。
  */
-const inputClass =
+const INPUT_CLASS =
   "h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15";
 
 /** 编辑单个 MCP 服务的传输配置并发起连接检查。
@@ -90,7 +90,7 @@ export const McpServerForm = ({
         <label className="space-y-1.5 text-sm font-medium">
           名称
           <input
-            className={inputClass}
+            className={INPUT_CLASS}
             onChange={(event) => setDraft({ ...draft, name: event.target.value })}
             value={draft.name}
           />
@@ -98,7 +98,7 @@ export const McpServerForm = ({
         {draft.id ? (
           <div className="space-y-1.5 text-sm font-medium">
             ID
-            <input className={inputClass + " cursor-not-allowed bg-muted"} disabled readOnly value={draft.id} />
+            <input className={INPUT_CLASS + " cursor-not-allowed bg-muted"} disabled readOnly value={draft.id} />
           </div>
         ) : null}
       </div>

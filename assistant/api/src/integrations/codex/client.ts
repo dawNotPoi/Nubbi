@@ -1,3 +1,4 @@
+import { Logger } from "@nestjs/common";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
@@ -6,6 +7,8 @@ import { projectRoot } from "../../config/env.ts";
 import { codexHome, codexWorkspace, resolveCommand } from "./process-config.ts";
 import { CodexRpcChannel } from "./rpc-channel.ts";
 import type { NotificationListener, RpcMessage, ServerRequestHandler } from "./protocol.ts";
+
+const logger = new Logger("CodexAppServer");
 
 /** Codex 子进程生命周期，JSON-RPC 关联与解析由 channel 负责。 */
 class CodexAppServerClient {
@@ -100,7 +103,7 @@ class CodexAppServerClient {
     });
     child.stderr.on("data", (chunk: Buffer) => {
       const message = chunk.toString("utf8").trim();
-      if (message) console.warn(`[Codex App Server] ${message}`);
+      if (message) logger.warn(message);
     });
     const fail = (error: Error): void => {
       lines.close();

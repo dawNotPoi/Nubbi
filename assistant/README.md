@@ -23,10 +23,12 @@ pnpm install
 pnpm dev:assistant
 ```
 
-在 `assistant/.env` 中设置 MongoDB 和 `CONFIG_ADMIN_TOKEN`。`MONGO_URI` 可以与 Nubbi Server 使用相同地址；本地仓库运行且未填写时，API 会读取 `server/.env` 中的 `MONGO_URI` 作为回退。Assistant 始终通过 `ASSISTANT_MONGO_DB_NAME` 使用独立数据库，默认是 `NubbiAssistant`。`CONFIG_ADMIN_TOKEN` 只用于保护模型登录与 MCP 管理接口，不是模型 API Key。
+在 `assistant/.env` 中设置 MongoDB 和 `CONFIG_ADMIN_TOKEN`。`MONGO_URI` 必须显式填写，可以从 `server/.env` 复制远程连接，但运行时不会读取主服务配置或使用默认地址；未填写时启动失败。Assistant 始终通过 `ASSISTANT_MONGO_DB_NAME` 使用独立数据库，默认是 `NubbiAssistant`。`CONFIG_ADMIN_TOKEN` 只用于保护模型登录与 MCP 管理接口，不是模型 API Key。
 
 - Web：`http://localhost:5174`
 - API：`http://localhost:8787`
+
+本地后端日志会附加 `绝对路径:行号:列号`，在 VS Code 集成终端中可按住 Ctrl 点击跳转到日志调用处。继续使用 Nest 的 `Logger.log(...)` 或 `new Logger("模块名")` 即可；新增日志不要使用 `console.log`，它不会经过统一日志器。`NODE_ENV` 未设置或为 `development` 时启用定位，`production` 和 `test` 时不采集调用位置。框架内部日志不附加业务源码位置，错误日志仍保留原始异常堆栈。
 
 ## 手机真机测试
 

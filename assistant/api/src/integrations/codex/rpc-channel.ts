@@ -1,4 +1,7 @@
+import { Logger } from "@nestjs/common";
 import type { NotificationListener, RpcMessage, ServerRequestHandler } from "./protocol.ts";
+
+const logger = new Logger("CodexRpcChannel");
 
 /** 等待中的 RPC 调用，退出或超时后必须释放。 */
 type PendingRequest = { resolve: (value: unknown) => void; reject: (error: Error) => void; timeout: NodeJS.Timeout };
@@ -105,7 +108,7 @@ export class CodexRpcChannel {
       try {
         listener(method, params);
       } catch (error) {
-        console.warn("Codex 通知处理失败", error);
+        logger.warn("Codex 通知处理失败", { error });
       }
     }
   }

@@ -1,3 +1,4 @@
+import type { DeltaType } from "@nubbi/assistant-shared/contracts";
 import type { ModelContentBlock, ModelDelta, ModelTurnResult } from "../model-adapter.ts";
 import {
   CHAT_COMPLETIONS_ADAPTER_ID,
@@ -99,7 +100,7 @@ export class CompletionAccumulator {
   }
 
   /** 合并相邻的同类文本块，同时立即发布增量。 */
-  private appendText(type: "text" | "reasoning", text: string): void {
+  private appendText(type: DeltaType, text: string): void {
     const previous = this.blocks.at(-1);
     if (previous?.type === type) previous.text += text;
     else this.blocks.push({ type, text });

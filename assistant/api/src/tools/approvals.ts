@@ -19,7 +19,7 @@ type PendingApproval = {
 
 const pending = new Map<string, PendingApproval>();
 // 审批有效期：用户长时间不操作时自动按“拒绝”处理，避免 Run 无限等待。
-const approvalTimeoutMs = 5 * 60 * 1000;
+const APPROVAL_TIMEOUT_MS = 5 * 60 * 1000;
 
 /**
  * 发起一次工具审批并挂起等待用户决定。
@@ -35,7 +35,7 @@ export const requestApproval = async (
 }> => {
   input.abortSignal.throwIfAborted();
   const approvalId = randomUUID();
-  const expiresAt = new Date(Date.now() + approvalTimeoutMs).toISOString();
+  const expiresAt = new Date(Date.now() + APPROVAL_TIMEOUT_MS).toISOString();
   const approved = await new Promise<boolean>((resolve) => {
     let settled = false;
     const cancel = (): void => settle(false);
@@ -50,7 +50,7 @@ export const requestApproval = async (
       input.emit({ type: "approval-resolved", approvalId, approved: decision });
       resolve(decision);
     };
-    const timeout = setTimeout(() => settle(false), approvalTimeoutMs);
+    const timeout = setTimeout(() => settle(false), APPROVAL_TIMEOUT_MS);
     pending.set(approvalId, { runId: input.runId, settle, timeout });
     input.abortSignal.addEventListener("abort", cancel, { once: true });
     input.emit({

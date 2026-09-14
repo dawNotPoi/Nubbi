@@ -17,6 +17,12 @@
 
 - 单文件 ≤ 200 行；超出则拆分
 - 无 `any`；所有公开函数/组件必须有明确类型
+- 命名：模块级**纯值常量**用 `UPPER_SNAKE_CASE`（数字、字符串、正则、常量 Set）；Schema、可变状态（Map/缓存）、实例、路径拼接和箭头函数保持 `camelCase`
+  ```ts
+  const MAX_MODEL_TURNS = 8;              // 纯值常量
+  const messageSchema = z.object({});     // Schema 对象
+  const clientCache = new Map();          // 可变状态
+  ```
 - 函数必须写 JSDoc/TSDoc，公开/导出函数需用 `@param` 注明每个入参、用 `@returns` 注明出参：
   ```ts
   /**
