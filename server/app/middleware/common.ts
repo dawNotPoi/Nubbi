@@ -65,15 +65,19 @@ type AsyncRequestHandler = (
   next: NextFunction,
 ) => Promise<unknown>;
 
-export const asyncHandler =
+/**
+ * 包装异步路由处理器，设置账户变更追踪的 AsyncLocalStorage 上下文，
+ * 并在处理器完成后自动释放变更锁。
+ * Express 5 原生捕获异步处理器抛出的异常，不再需要手动 .catch(next)。
+ */
+export const withAccountContext =
   (fn: AsyncRequestHandler): RequestHandler =>
-  (req: Request, res: Response, next: NextFunction): void => {
+  (req: Request, res: Response, next: NextFunction) => {
     const authRequest = req as AuthRequest;
-    runWithAccountMutationContext(res, () =>
-      Promise.resolve().then(() => fn(authRequest, res, next)),
-    )
-      .finally(() => completeAccountMutationHandler(res))
-      .catch(next);
+    // 返回 Promise 链，Express 5 自动处理 rejections
+    return runWithAccountMutationContext(res, () =>
+      Promise.resolve(fn(authRequest, res, next)),
+    ).finally(() => completeAccountMutationHandler(res));
   };
 
 export interface AuthRequest extends Request {

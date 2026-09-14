@@ -9,7 +9,7 @@ import {
   requireAuthenticatedUser,
   type AuthenticatedUser,
 } from "@/lib/authUser";
-import { asyncHandler } from "@/middleware/common";
+import { withAccountContext } from "@/middleware/common";
 import { requireAuthWithApiKey as requireAuth } from "@/middleware/session";
 import { validateParams } from "@/middleware/validator";
 import { createJsonRouteRegistrar } from "@/routes/infrastructure/json-route-registrar";
@@ -39,29 +39,29 @@ fileAccessRoutes.get("/share-url/:fileId", {
 router.head(
   "/stream/:fileId",
   validateParams(fileIdParamsSchema),
-  asyncHandler(signedStreamPreviewController),
+  withAccountContext(signedStreamPreviewController),
 );
 router.get(
   "/stream/:fileId",
   validateParams(fileIdParamsSchema),
-  asyncHandler(signedStreamPreviewController),
+  withAccountContext(signedStreamPreviewController),
 );
 router.get(
   "/public-download/:fileId",
   validateParams(fileIdParamsSchema),
-  asyncHandler(publicDownloadController),
+  withAccountContext(publicDownloadController),
 );
 router.get(
   "/download/:fileId",
   requireAuth,
   validateParams(fileIdParamsSchema),
-  asyncHandler(downloadFileController),
+  withAccountContext(downloadFileController),
 );
 router.get(
   "/preview/:fileId",
   requireAuth,
   validateParams(fileIdParamsSchema),
-  asyncHandler(previewFileController),
+  withAccountContext(previewFileController),
 );
 
 export default router;

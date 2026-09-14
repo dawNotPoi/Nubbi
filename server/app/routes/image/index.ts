@@ -10,7 +10,7 @@ import {
   type AuthenticatedUser,
 } from "@/lib/authUser";
 import env from "@/lib/env";
-import { asyncHandler } from "@/middleware/common";
+import { withAccountContext } from "@/middleware/common";
 import { skipAccountMutationTracking } from "@/middleware/account-mutation";
 import { requireAuthWithApiKey } from "@/middleware/session";
 import { createJsonRouteRegistrar } from "@/routes/infrastructure/json-route-registrar";
@@ -93,7 +93,7 @@ router.post(
   skipAccountMutationTracking,
   requireAuthWithApiKey,
   receiveImageUpload,
-  asyncHandler(async (req, res) => {
+  withAccountContext(async (req, res) => {
     if (!req.file) {
       throw httpError(400, "请选择图片文件");
     }

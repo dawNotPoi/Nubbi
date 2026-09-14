@@ -14,7 +14,7 @@ import {
   requireAuthenticatedUser,
   type AuthenticatedUser,
 } from "@/lib/authUser";
-import { asyncHandler } from "@/middleware/common";
+import { withAccountContext } from "@/middleware/common";
 import { skipAccountMutationTracking } from "@/middleware/account-mutation";
 import { requireAuthWithApiKey as requireAuth } from "@/middleware/session";
 import { createJsonRouteRegistrar } from "@/routes/infrastructure/json-route-registrar";
@@ -79,7 +79,7 @@ router.post(
   skipAccountMutationTracking,
   requireAuth,
   receiveChunk,
-  asyncHandler(async (req, res) => {
+  withAccountContext(async (req, res) => {
     if (!req.file) {
       throw httpError(400, "缺少上传分片");
     }

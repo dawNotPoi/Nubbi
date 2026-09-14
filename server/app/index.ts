@@ -1,5 +1,4 @@
 import { toNodeHandler } from "better-auth/node";
-import bodyParser from "body-parser";
 import cors, { type CorsOptions, type CorsOriginCallback } from "cors";
 import express from "express";
 import http from "http";
@@ -9,7 +8,7 @@ import { auth } from "./lib/auth";
 import env from "./lib/env";
 import { isTrustedOrigin } from "./lib/trusted-origins";
 import { trackBetterAuthMutation } from "./middleware/better-auth-mutation";
-import { asyncHandler, errorHandler } from "./middleware/common";
+import { errorHandler, withAccountContext } from "./middleware/common";
 import { requestLogger } from "./middleware/requestLogger";
 import { rejectScopedApiKeys } from "./middleware/session";
 import { subscribeAccountDeletionStart } from "./services/auth/account-mutation-guard";
@@ -67,7 +66,8 @@ const corsOptions: CorsOptions = {
   ],
 };
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+
+// CORS 中间件已处理 OPTIONS 预检请求，无需额外 app.options
 const socketIO = new Server({
   cors: {
     origin: resolveCorsOrigin,
@@ -81,15 +81,16 @@ subscribeAccountDeletionStart((userId) =>
 // 请求日志
 app.use(requestLogger);
 //拦截用户信息请求
+// 将所有 /api/auth/* 请求转发给 Better Auth 处理器
 app.all(
-  "/api/auth/*",
+  "/api/auth/{:.*}",
   trackBetterAuthMutation,
-  asyncHandler((req, res) => betterAuthHandler(req, res)),
+  withAccountContext((req, res) => betterAuthHandler(req, res)),
 );
 
-//进行表单上传时，默认限制100kb，要使用文件上传需要修改限制
-app.use(bodyParser.json({ limit: "10MB" }));
-app.use(bodyParser.urlencoded({ extended: false, limit: "10MB" }));
+// 解析 JSON 和 URL 编码请求体（Express 5 内置，替代 body-parser）
+app.use(express.json({ limit: "10MB" }));
+app.use(express.urlencoded({ extended: false, limit: "10MB" }));
 
 //测试是否能正常访问
 app.get("/", (req, res) => {

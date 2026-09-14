@@ -2,7 +2,7 @@ import type {
   AuthRequest,
   RequestAuthContext,
 } from "@/middleware/common";
-import { asyncHandler } from "@/middleware/common";
+import { withAccountContext } from "@/middleware/common";
 import { successResponse } from "@/routes/utils";
 import type { RequestHandler, Router } from "express";
 import type { IncomingHttpHeaders } from "node:http";
@@ -127,7 +127,7 @@ export const createJsonRouteRegistrar = <Action extends string, Actor>(
     const handlers: RequestHandler[] = [
       ...(config.beforeAuthorization ?? []),
       options.authorize(config.action),
-      asyncHandler(async (req, res) => {
+      withAccountContext(async (req, res) => {
         try {
           const data = await config.handler({
             actor: options.resolveActor(req),
