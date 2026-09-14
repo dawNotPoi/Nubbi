@@ -1,85 +1,13 @@
-import { Note } from "@/api/note";
-import Image from "@/component/UI/Image";
 import { useAuth } from "@/hooks/useAuth";
 import { recentNoteAtom } from "@/store/atom/noteAtom";
-import clsx from "clsx";
-import dayjs from "dayjs";
 import { useAtomValue } from "jotai";
-import { ChevronLeft, ChevronRight, Clock, Notebook } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import CardWrapper from "./CardWrapper";
+import { RecentNoteCard, RecentNoteCardSkeleton } from "./RecentNoteCard";
 
 const AVATAR_CACHE_KEY = "home_recent_note_user_avatar";
 const NAME_CACHE_KEY = "home_recent_note_user_name";
-
-const NoteCard = ({
-  note,
-  avatarSrc,
-}: {
-  note: Note;
-  avatarSrc?: string;
-}) => {
-  const navigate = useNavigate();
-
-  return (
-    <li
-      onClick={() => {
-        navigate("/note/" + note._id);
-      }}
-      className="min-w-[150px] max-w-[150px] cursor-pointer hover:border-sky-400 flex flex-col overflow-hidden border rounded-xl"
-    >
-      <header className="relative mb-[16px]">
-        <div className="h-[40px] bg-slate-50"></div>
-        <div className="absolute bottom-0 rounded-md overflow-hidden translate-x-6 translate-y-[14px] size-[25px]">
-          <Notebook />
-        </div>
-      </header>
-      <div className="pt-[10px] px-4 flex-1 pb-[14px]">
-        <header>
-          <div
-            className={clsx(
-              "text-[14px] h-[60px]",
-              !note.title && "text-zinc-500",
-            )}
-          >
-            {note.title || "未命名笔记"}
-          </div>
-          <section className="text-[13px] text-gray-500 flex gap-1 items-center">
-            <Image
-              src={avatarSrc}
-              alt="user avatar"
-              className="size-5 rounded-full border border-slate-200 bg-slate-100 object-cover"
-            />
-            <span>{dayjs(note.updatedAt).format("YYYY-MM-DD")}</span>
-          </section>
-        </header>
-      </div>
-    </li>
-  );
-};
-
-const NoteCardSkeleton = () => {
-  return (
-    <li className="min-w-[150px] max-w-[150px] flex flex-col overflow-hidden border rounded-xl animate-pulse">
-      <header className="relative mb-[16px]">
-        <div className="h-[40px] bg-slate-100"></div>
-        <div className="absolute bottom-0 translate-x-6 translate-y-[14px] size-[25px] rounded-md bg-slate-200"></div>
-      </header>
-      <div className="pt-[10px] px-4 flex-1 pb-[14px]">
-        <div className="space-y-2">
-          <div className="h-4 rounded bg-slate-200"></div>
-          <div className="h-4 w-4/5 rounded bg-slate-200"></div>
-          <div className="h-4 w-3/5 rounded bg-slate-200"></div>
-        </div>
-        <div className="mt-4 flex items-center gap-2">
-          <div className="size-5 rounded-full bg-slate-200"></div>
-          <div className="h-3 w-20 rounded bg-slate-200"></div>
-        </div>
-      </div>
-    </li>
-  );
-};
 
 const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
   const {
@@ -145,7 +73,7 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
         </>
       }
     >
-      <div ref={wrapperRef} className="overflow-hidden group relative">
+      <div ref={wrapperRef} className="group relative -mx-2 overflow-hidden px-2 py-1">
         <ul
           ref={listRef}
           style={
@@ -156,18 +84,18 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
                   transition: "all 0.3s",
                 }
           }
-          className="gap-4 flex left-0"
+          className="left-0 flex gap-4"
         >
           {isPending ? (
             Array.from({ length: 4 }).map((_, index) => (
-              <NoteCardSkeleton key={`recent-note-skeleton-${index}`} />
+              <RecentNoteCardSkeleton key={`recent-note-skeleton-${index}`} />
             ))
           ) : hasNotes ? (
             data.map((note) => (
-              <NoteCard
+              <RecentNoteCard
+                avatarSrc={cachedAvatar || user?.image || ""}
                 key={note._id}
                 note={note}
-                avatarSrc={cachedAvatar || user?.image || ""}
               />
             ))
           ) : (

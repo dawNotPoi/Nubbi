@@ -109,7 +109,10 @@ const TiptapEditor = ({
     editable,
     editorProps: {
       attributes: {
+        autocapitalize: "off",
+        autocorrect: "off",
         class: "dn-editor__content",
+        spellcheck: "false",
       },
     },
     onUpdate: ({ editor: currentEditor }) => {

@@ -6,45 +6,74 @@ import { getNoteChildren, normalizeNoteTitle } from "../model/hierarchy";
 type NoteTargetPickerRowProps = {
   active?: boolean;
   disabled?: boolean;
+  depth?: number;
+  expanded?: boolean;
+  hasChildren?: boolean;
   note: Note | SearchNote;
   onSelect: (note: Note) => void;
+  onToggle?: (noteId: string) => void;
 };
 
 export function NoteTargetPickerRow({
   active = false,
   disabled = false,
+  depth = 0,
+  expanded = false,
+  hasChildren,
   note,
   onSelect,
+  onToggle,
 }: NoteTargetPickerRowProps) {
   const pathLabel = "pathLabel" in note ? note.pathLabel : "";
-  const hasChildren = getNoteChildren(note).length > 0;
+  const canExpand = hasChildren ?? getNoteChildren(note).length > 0;
 
   return (
-    <button
+    <div
       className={clsx(
-        "group flex min-h-9 w-full items-center gap-2 rounded-md px-2 text-left transition-colors",
-        "hover:bg-[#f1f1ef] focus-visible:bg-[#f1f1ef] focus-visible:outline-none",
+        "group flex min-h-9 w-full items-center gap-1 rounded-md pr-2 text-left transition-colors",
+        "hover:bg-[#f1f1ef] focus-within:bg-[#f1f1ef]",
         active && "bg-[#f1f1ef]",
         disabled && "cursor-wait opacity-70",
       )}
-      disabled={disabled}
-      onClick={() => onSelect(note)}
-      type="button"
+      style={{ paddingLeft: 8 + depth * 16 }}
     >
-      <span className="flex size-4 shrink-0 items-center justify-center text-[#9b9a97]">
-        {hasChildren ? <ChevronRight className="size-3.5" /> : null}
-      </span>
-      <FileText className="size-4 shrink-0 text-[#8f8d89]" />
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-[15px] leading-5">
-          {normalizeNoteTitle(note.title)}
-        </span>
-        {pathLabel ? (
-          <span className="block truncate text-xs leading-4 text-[#9b9a97]">
-            {pathLabel}
+      {canExpand ? (
+        <button
+          aria-expanded={expanded}
+          aria-label={expanded ? "收起子 note" : "展开子 note"}
+          className="flex size-5 shrink-0 items-center justify-center rounded text-[#9b9a97] hover:bg-[#e9e9e7] hover:text-[#37352f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d3d1cb]"
+          disabled={disabled}
+          onClick={(event) => {
+            event.stopPropagation();
+            onToggle?.(note._id);
+          }}
+          type="button"
+        >
+          <ChevronRight
+            className={clsx("size-3.5 transition-transform", expanded && "rotate-90")}
+          />
+        </button>
+      ) : (
+        <span className="size-5 shrink-0" />
+      )}
+      <button
+        className="flex min-w-0 flex-1 items-center gap-2 rounded py-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-[#d3d1cb]"
+        disabled={disabled}
+        onClick={() => onSelect(note)}
+        type="button"
+      >
+        <FileText className="size-4 shrink-0 text-[#8f8d89]" />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[15px] leading-5">
+            {normalizeNoteTitle(note.title)}
           </span>
-        ) : null}
-      </span>
-    </button>
+          {pathLabel ? (
+            <span className="block truncate text-xs leading-4 text-[#9b9a97]">
+              {pathLabel}
+            </span>
+          ) : null}
+        </span>
+      </button>
+    </div>
   );
 }

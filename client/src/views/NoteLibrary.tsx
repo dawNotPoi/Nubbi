@@ -1,4 +1,5 @@
 import { Header } from "@/component/Header";
+import { MarkdownImportButton } from "@/features/note/components/MarkdownImportButton";
 import { NoteLibraryTable } from "@/features/note/components/NoteLibraryTable";
 import { NoteLibraryToolbar } from "@/features/note/components/NoteLibraryToolbar";
 import { NoteTargetPickerOverlay } from "@/features/note/components/NoteTargetPickerOverlay";
@@ -19,13 +20,20 @@ export default function NoteLibrary() {
             <h1 className="text-[40px] font-bold leading-none tracking-normal text-[#1f2933]">
               Notes
             </h1>
-            <Button
-              className="h-9 rounded-md px-4 font-medium"
-              onClick={() => void library.createRootNote()}
-              type="primary"
-            >
-              新页面
-            </Button>
+            <div className="flex items-center gap-2">
+              <MarkdownImportButton
+                disabled={!library.owner}
+                importing={library.importingMarkdown}
+                onImport={(files) => void library.importMarkdownFiles(files)}
+              />
+              <Button
+                className="h-9 rounded-md px-4 font-medium"
+                onClick={() => void library.createRootNote()}
+                type="primary"
+              >
+                新页面
+              </Button>
+            </div>
           </div>
 
           <NoteLibraryToolbar
@@ -64,6 +72,7 @@ export default function NoteLibrary() {
       </main>
 
       <NoteTargetPickerOverlay
+        allNotes={library.allNotes}
         blockedIds={library.blockedMoveTargetIds}
         disabled={library.moving}
         emptyMessage="暂无可移动的位置"

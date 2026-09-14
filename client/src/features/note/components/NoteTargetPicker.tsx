@@ -3,14 +3,19 @@ import clsx from "clsx";
 import { LoaderCircle, Search } from "lucide-react";
 import type { MouseEventHandler } from "react";
 import { useEffect, useMemo, useState } from "react";
-import { NoteTargetPickerRow } from "./NoteTargetPickerRow";
+import {
+  buildTargetChildrenByParentId,
+  getTopLevelTargetNotes,
+  type NoteTarget,
+} from "../model/targetPicker";
+import { NoteTargetPickerLoadingRows } from "./NoteTargetPickerLoadingRows";
+import { NoteTargetPickerTree } from "./NoteTargetPickerTree";
 
 const DEFAULT_LIMIT = 10;
 const SEARCH_DELAY = 220;
 
-type NoteTarget = Note | SearchNote;
-
 export type NoteTargetPickerPanelProps = {
+  allNotes?: Note[];
   autoFocus?: boolean;
   blockedIds?: Set<string>;
   className?: string;
@@ -28,6 +33,7 @@ export type NoteTargetPickerPanelProps = {
 };
 
 export function NoteTargetPickerPanel({
+  allNotes = [],
   autoFocus = false,
   blockedIds = new Set<string>(),
   className,
@@ -46,6 +52,7 @@ export function NoteTargetPickerPanel({
   const [searchValue, setSearchValue] = useState("");
   const [searchResults, setSearchResults] = useState<SearchNote[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const query = searchValue.trim();
 
   const recentTargets = useMemo(
@@ -61,9 +68,18 @@ export function NoteTargetPickerPanel({
     [blockedIds, searchResults],
   );
 
-  const visibleTargets: NoteTarget[] = query ? resultTargets : recentTargets;
   const sectionLabel = query ? searchLabel : recentLabel;
   const visibleEmptyMessage = query ? "没有匹配的页面" : emptyMessage;
+  const visibleTargets: NoteTarget[] = query ? resultTargets : recentTargets;
+  const hierarchyNotes = allNotes.length > 0 ? allNotes : targets;
+  const childrenByParentId = useMemo(
+    () => buildTargetChildrenByParentId(hierarchyNotes, blockedIds),
+    [blockedIds, hierarchyNotes],
+  );
+  const topLevelTargets = useMemo(
+    () => getTopLevelTargetNotes(visibleTargets, hierarchyNotes),
+    [hierarchyNotes, visibleTargets],
+  );
 
   useEffect(() => {
     const nextQuery = searchValue.trim();
@@ -107,16 +123,17 @@ export function NoteTargetPickerPanel({
     onSelect(firstTarget);
   };
 
-  const renderLoadingRows = () =>
-    Array.from({ length: 6 }).map((_, index) => (
-      <div
-        className="flex h-9 animate-pulse items-center gap-2 rounded-md px-2"
-        key={index}
-      >
-        <div className="size-4 rounded bg-[#e7e5e1]" />
-        <div className="h-3 w-36 rounded bg-[#e7e5e1]" />
-      </div>
-    ));
+  const toggleExpanded = (noteId: string) => {
+    setExpandedIds((current) => {
+      const next = new Set(current);
+      if (next.has(noteId)) {
+        next.delete(noteId);
+      } else {
+        next.add(noteId);
+      }
+      return next;
+    });
+  };
 
   return (
     <div
@@ -160,19 +177,17 @@ export function NoteTargetPickerPanel({
           {sectionLabel}
         </div>
         {isSearching ? (
-          <div className="space-y-1">{renderLoadingRows()}</div>
+          <NoteTargetPickerLoadingRows />
         ) : visibleTargets.length > 0 ? (
-          <div className="space-y-1">
-            {visibleTargets.map((note) => (
-              <NoteTargetPickerRow
-                active={selectedId === note._id}
-                disabled={disabled}
-                key={note._id}
-                note={note}
-                onSelect={onSelect}
-              />
-            ))}
-          </div>
+          <NoteTargetPickerTree
+            childrenByParentId={childrenByParentId}
+            disabled={disabled}
+            expandedIds={expandedIds}
+            notes={topLevelTargets}
+            selectedId={selectedId}
+            onSelect={onSelect}
+            onToggle={toggleExpanded}
+          />
         ) : (
           <div className="flex h-32 items-center justify-center text-sm text-[#9b9a97]">
             {visibleEmptyMessage}

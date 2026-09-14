@@ -10,6 +10,7 @@ import { useSession } from "@/utils/auth";
 import { message } from "antd";
 import { useAtomValue } from "jotai";
 import { useMemo, useState } from "react";
+import { useMarkdownNoteImport } from "./useMarkdownNoteImport";
 import { useNoteLibraryActions } from "./useNoteLibraryActions";
 
 export const useNoteLibraryController = () => {
@@ -73,6 +74,11 @@ export const useNoteLibraryController = () => {
     setMoveOpen,
     setSelectedIds,
   });
+  const markdownImport = useMarkdownNoteImport({
+    messageApi,
+    owner,
+    refetch,
+  });
 
   const toggleSelected = (checked: boolean, noteId: string) => {
     setSelectedIds((current) => {
@@ -98,6 +104,7 @@ export const useNoteLibraryController = () => {
 
   return {
     ...actions,
+    ...markdownImport,
     allVisibleSelected,
     blockedMoveTargetIds,
     clearSelection,
@@ -105,6 +112,7 @@ export const useNoteLibraryController = () => {
     emptyDescription,
     filterText,
     filteredNotes,
+    allNotes,
     isError,
     isLoading,
     moveOpen,

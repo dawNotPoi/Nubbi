@@ -117,6 +117,7 @@ export const WrittingModal = ({
               }
             >
               <NoteTargetPickerPanel
+                allNotes={allNotes}
                 autoFocus
                 blockedIds={blockedTargetIds}
                 className="h-[360px] w-[360px]"
