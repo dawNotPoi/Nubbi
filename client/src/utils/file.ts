@@ -1,4 +1,4 @@
-﻿import { initUploadTask, mergeChunk, uploadChunk } from "../api/file";
+import { initUploadTask, mergeChunk, uploadChunk } from "../api/file";
 import Worker from "./worker?worker";
 
 export enum UploadStatus {
@@ -24,200 +24,284 @@ type Chunk = {
   file: Blob;
 };
 
-//鍝堝笇璁＄畻鍗犳嵁鐨勮繘搴︾櫨鍒嗘瘮,浣跨敤鏁存暟
+type HashWorkerMessage = {
+  percentage?: number;
+  hash?: string;
+  error?: string;
+};
+
 const HASH_PERCENTAGE = 10;
 
-//鏂囦欢涓婁紶绫?鐢ㄤ簬绠＄悊鏂囦欢涓婁紶鐨勭姸鎬?
 export class Uploader {
-  private file: File; //涓婁紶鐨勬枃浠舵暟鎹?
+  private file: File;
   private chunks: Chunk[] = [];
   private status: UploadStatus = UploadStatus.pending;
-  private RestSize = 6; //鍒嗙墖涓婁紶闄愬埗 涓€鑸祻瑙堝櫒鍏佽鍚屾椂瀛樺湪鐨勮姹傛暟涓?
-  private finishedCount = 0; //宸蹭笂浼犲垎鐗囨暟閲?
+  private restSize = 6;
+  private finishedCount = 0;
   private mergeStarted = false;
   private hash = "";
   private name = "";
-  private size = 5; //鍒嗙墖澶у皬 MB
+  private size = 5;
   public progress = 0;
   private uploadId: string | null = null;
   private totalChunksSize = 0;
-  //涓婁紶鐘舵€佹敼鍙樻椂瑙﹀彂
-  private onChange?: (status: UploadStatus, progress: number) => void;
-  //涓婁紶瀹屾垚鏃惰Е鍙?
+  private uploadedBytes = 0;
+  private uploadStartedAt = 0;
+  private uploadSpeed = 0;
+  private onChange?: (
+    status: UploadStatus,
+    progress: number,
+    speed: number,
+  ) => void;
   private onFinish?: () => void;
+
   constructor(options: {
     file: File;
-    onChange?: (status: UploadStatus, progress: number) => void;
+    onChange?: (
+      status: UploadStatus,
+      progress: number,
+      speed: number,
+    ) => void;
     onFinish?: () => void;
   }) {
     this.file = options.file;
     this.name = options.file.name;
-    this.onChange = options?.onChange;
-    this.onFinish = options?.onFinish;
+    this.onChange = options.onChange;
+    this.onFinish = options.onFinish;
     this.totalChunksSize = this.splitFileToChunks(this.file).length;
   }
 
-  //璁＄畻鏂囦欢hash
+  private fail(error?: unknown) {
+    if (error) {
+      console.error("Upload failed", error);
+    }
+    this.status = UploadStatus.fail;
+    this.uploadSpeed = 0;
+    this.onChange?.(this.status, this.progress, this.uploadSpeed);
+  }
+
+  private emitChange() {
+    this.onChange?.(this.status, this.progress, this.uploadSpeed);
+  }
+
+  private updateUploadSpeed(chunkSize: number) {
+    if (!this.uploadStartedAt) {
+      this.uploadStartedAt = performance.now();
+    }
+
+    this.uploadedBytes += chunkSize;
+
+    const elapsedSeconds = Math.max(
+      (performance.now() - this.uploadStartedAt) / 1000,
+      0.001,
+    );
+    this.uploadSpeed = this.uploadedBytes / elapsedSeconds;
+  }
+
+  private getProgressFromFinishedChunks(finishedCount: number) {
+    const uploadPercentage = 100 - HASH_PERCENTAGE;
+
+    return (
+      HASH_PERCENTAGE +
+      Math.round((finishedCount / this.totalChunksSize) * uploadPercentage)
+    );
+  }
+
   private getHash(file: File): Promise<string> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const worker = new Worker();
-      worker.onmessage = (event) => {
+
+      worker.onmessage = (event: MessageEvent<HashWorkerMessage>) => {
         const { data } = event;
-        if (data?.percentage) {
-          this.progress = Math.round((data.percentage * HASH_PERCENTAGE) / 100); // Hash璁＄畻鍗犳€昏繘搴?0%
-          this.onChange?.(this.status, this.progress);
+
+        if (typeof data?.percentage === "number") {
+          this.progress = Math.round(
+            (data.percentage * HASH_PERCENTAGE) / 100,
+          );
+          this.emitChange();
         }
-        if (data?.hash) {
-          resolve(data?.hash);
+
+        if (data?.error) {
           worker.terminate();
+          reject(new Error(data.error));
+          return;
+        }
+
+        if (data?.hash) {
+          worker.terminate();
+          resolve(data.hash);
         }
       };
+
+      worker.onerror = (event) => {
+        worker.terminate();
+        reject(new Error(event.message || "File hash worker failed"));
+      };
+
       worker.postMessage(file);
     });
   }
-  // 杩涜鏂囦欢鍒嗙墖
+
   private splitFileToChunks(file: File, size = this.size) {
     const chunkSize = 1024 * 1024 * size;
     const chunks: Chunk[] = [];
+
     for (
       let start = 0, index = 0;
       start < file.size;
       start += chunkSize, index++
     ) {
-      const blob = file.slice(start, start + chunkSize); //瓒呰繃閮ㄥ垎锛屽彇鍒扮粨灏?
       chunks.push({
         retries: 0,
         status: ChunkStatus.pending,
         chunkIndex: index,
-        file: blob,
+        file: file.slice(start, start + chunkSize),
       });
     }
+
     return chunks;
   }
 
-  //鍚庣画瑕佺湅涓€涓嬶紝鍙兘瀛樺湪骞跺彂鎺у埗闂
   private async start() {
     if (this.status !== UploadStatus.uploading) return;
+
     const totalChunks = this.totalChunksSize;
-    const len = this.chunks.length;
-    const maxConcurrency = this.RestSize;
+    const maxConcurrency = this.restSize;
     let stopped = false;
+
     const uploadNext = async () => {
       if (stopped || this.status !== UploadStatus.uploading) return;
+
       const chunk = this.chunks.find(
         (item) => item.status === ChunkStatus.pending,
       );
       if (!chunk) return;
+
       chunk.status = ChunkStatus.uploading;
+
       try {
         await uploadChunk(chunk.formData!);
         chunk.status = ChunkStatus.success;
         this.finishedCount++;
-        // 鏇存柊杩涘害
-        const UPLOAD_PERCENTAGE = 100 - HASH_PERCENTAGE;
-        this.progress =
-          HASH_PERCENTAGE +
-          Math.round((this.finishedCount / totalChunks) * UPLOAD_PERCENTAGE);
-        this.onChange?.(this.status, this.progress);
-        console.log(this.finishedCount, totalChunks);
+        this.updateUploadSpeed(chunk.file.size);
+        this.progress = this.getProgressFromFinishedChunks(this.finishedCount);
+        this.emitChange();
 
-        // 妫€鏌ユ槸鍚﹀叏閮ㄥ畬鎴?
         if (this.finishedCount === totalChunks && !this.mergeStarted) {
           this.mergeStarted = true;
           await mergeChunk(this.uploadId!);
           this.status = UploadStatus.success;
           this.progress = 100;
-          this.onChange?.(this.status, this.progress);
+          this.uploadSpeed = 0;
+          this.emitChange();
           this.onFinish?.();
           stopped = true;
           return;
         }
-      } catch (err) {
+      } catch (error) {
         chunk.retries++;
+
         if (chunk.retries >= 3) {
           chunk.status = ChunkStatus.fail;
-          this.status = UploadStatus.fail;
-          this.onChange?.(this.status, this.progress);
           stopped = true;
+          this.fail(error);
           return;
-        } else {
-          chunk.status = ChunkStatus.pending; // 澶辫触閲嶈瘯
         }
+
+        chunk.status = ChunkStatus.pending;
       } finally {
-        // 缁х画涓婁紶涓嬩竴涓?
         if (!stopped && this.status === UploadStatus.uploading) {
           void uploadNext();
         }
       }
     };
-    // 鍚姩鏈€澶у苟鍙戞暟鐨勪笂浼?
-    for (let i = 0; i < Math.min(maxConcurrency, len); i++) {
+
+    for (let i = 0; i < Math.min(maxConcurrency, this.chunks.length); i++) {
       void uploadNext();
     }
   }
 
   pause() {
     this.status = UploadStatus.paused;
-    this.onChange?.(this.status, this.progress);
+    this.uploadSpeed = 0;
+    this.emitChange();
   }
 
   resume() {
     this.status = UploadStatus.uploading;
-    this.onChange?.(this.status, this.progress);
-    this.start();
+    this.uploadStartedAt = performance.now();
+    this.uploadedBytes = 0;
+    this.uploadSpeed = 0;
+    this.emitChange();
+    void this.start();
   }
 
   async upload() {
-    this.status = UploadStatus.uploading;
-    this.onChange?.(this.status, this.progress);
-    this.finishedCount = 0;
-    this.mergeStarted = false;
-    this.hash = await this.getHash(this.file);
-    const { data } = await initUploadTask({
-      fileName: this.name,
-      fileHash: this.hash,
-      totalSize: this.file.size + "",
-      totalChunksSize: this.totalChunksSize + "",
-    });
-    //涓嶉渶瑕佸啀娆′笂浼?
-    if (data?.needUpload == false) {
-      this.status = UploadStatus.success;
-      this.progress = 100;
-      this.onChange?.(this.status, this.progress);
-      this.onFinish?.();
-      return;
-    }
-    //涓嶅瓨鍦ㄥ垯寮€濮嬩笂浼?
-    if (!("uploadId" in data)) return;
-    this.uploadId = data.uploadId;
-    const uploadedChunksIndex = data.uploadedChunks;
-    const AllChunks = this.splitFileToChunks(this.file);
-    this.finishedCount = uploadedChunksIndex.length;
-    this.chunks = AllChunks.filter((_, index) => {
-      if (uploadedChunksIndex.includes(index)) return false;
-      return true;
-    }).map((chunk) => {
-      const formData = new FormData();
-      formData.append("chunk", chunk.file);
-      formData.append("hash", this.hash);
-      formData.append("name", this.name);
-      formData.append("chunkIndex", chunk.chunkIndex + "");
-      formData.append("uploadId", data.uploadId);
-      return {
-        ...chunk,
-        formData,
-      };
-    });
+    try {
+      this.status = UploadStatus.uploading;
+      this.uploadSpeed = 0;
+      this.emitChange();
+      this.finishedCount = 0;
+      this.mergeStarted = false;
+      this.hash = await this.getHash(this.file);
 
-    //鍏ㄩ儴涓婁紶瀹屾垚璇锋眰鍚堝苟
-    if (this.chunks.length === 0) {
-      await mergeChunk(this.uploadId!);
-      this.status = UploadStatus.success;
-      this.progress = 100;
-      this.onChange?.(this.status, this.progress);
-      this.onFinish?.();
-    } else this.start();
+      const { data } = await initUploadTask({
+        fileName: this.name,
+        fileHash: this.hash,
+        totalSize: String(this.file.size),
+        totalChunksSize: String(this.totalChunksSize),
+      });
+
+      if (data?.needUpload === false) {
+        this.status = UploadStatus.success;
+        this.progress = 100;
+        this.uploadSpeed = 0;
+        this.emitChange();
+        this.onFinish?.();
+        return;
+      }
+
+      if (!("uploadId" in data)) {
+        throw new Error("Upload task initialization failed");
+      }
+
+      this.uploadId = data.uploadId;
+      this.finishedCount = data.uploadedChunks.length;
+      this.progress = this.getProgressFromFinishedChunks(this.finishedCount);
+      this.emitChange();
+      this.chunks = this.splitFileToChunks(this.file)
+        .filter((_, index) => !data.uploadedChunks.includes(index))
+        .map((chunk) => {
+          const formData = new FormData();
+
+          formData.append("chunk", chunk.file);
+          formData.append("hash", this.hash);
+          formData.append("name", this.name);
+          formData.append("chunkIndex", String(chunk.chunkIndex));
+          formData.append("uploadId", data.uploadId);
+
+          return {
+            ...chunk,
+            formData,
+          };
+        });
+
+      if (this.chunks.length === 0) {
+        await mergeChunk(this.uploadId);
+        this.status = UploadStatus.success;
+        this.progress = 100;
+        this.uploadSpeed = 0;
+        this.emitChange();
+        this.onFinish?.();
+        return;
+      }
+
+      this.uploadStartedAt = performance.now();
+      this.uploadedBytes = 0;
+      this.uploadSpeed = 0;
+      void this.start();
+    } catch (error) {
+      this.fail(error);
+    }
   }
 }
-
-

@@ -3,9 +3,13 @@ import {
   Code2,
   Heading1,
   Heading2,
+  Heading3,
   List,
+  ListOrdered,
+  Minus,
   Pilcrow,
   PictureInPictureIcon,
+  Quote,
 } from "lucide-react";
 
 const allItems: {
@@ -31,11 +35,43 @@ const allItems: {
     },
   },
   {
+    title: "Heading 3",
+    description: "Small section heading",
+    icon: <Heading3 size={18} />,
+    command: ({ editor, range }) => {
+      editor.chain().focus().deleteRange(range).setHeading({ level: 3 }).run();
+    },
+  },
+  {
     title: "Bullet List",
     description: "Create a bulleted list item",
     icon: <List size={18} />,
     command: ({ editor, range }) => {
       editor.chain().focus().deleteRange(range).toggleBulletList().run();
+    },
+  },
+  {
+    title: "Numbered List",
+    description: "Create an ordered list item",
+    icon: <ListOrdered size={18} />,
+    command: ({ editor, range }) => {
+      editor.chain().focus().deleteRange(range).toggleOrderedList().run();
+    },
+  },
+  {
+    title: "Quote",
+    description: "Create a quote block",
+    icon: <Quote size={18} />,
+    command: ({ editor, range }) => {
+      editor.chain().focus().deleteRange(range).toggleBlockquote().run();
+    },
+  },
+  {
+    title: "Divider",
+    description: "Insert a horizontal rule",
+    icon: <Minus size={18} />,
+    command: ({ editor, range }) => {
+      editor.chain().focus().deleteRange(range).setHorizontalRule().run();
     },
   },
   {

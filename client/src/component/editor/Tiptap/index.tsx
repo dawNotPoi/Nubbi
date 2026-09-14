@@ -7,11 +7,13 @@ import StarterKit from "@tiptap/starter-kit";
 import { message } from "antd";
 import clsx from "clsx";
 import { GripVertical } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { CodeBlock } from "./extensions/code-block";
 import image from "./extensions/image";
+import { ListIndentExtension } from "./extensions/list-indent";
 import { SlashCommandExtension } from "./extensions/slash-command";
 import { SmartSelectAllExtension } from "./extensions/smart-select-all";
+import FormatBubbleMenu from "./FormatBubbleMenu";
 import "./index.css";
 
 const EMPTY_DOC = {
@@ -25,12 +27,14 @@ const TiptapEditor = ({
   onChange,
   editable = true,
   showMermaidSourceWhenReadOnly = false,
+  variant = "editor",
 }: {
   defaultValue?: string;
   className?: string;
   onChange?: (markdown: string) => void;
   editable?: boolean;
   showMermaidSourceWhenReadOnly?: boolean;
+  variant?: "editor" | "preview";
 }) => {
   const extensions = [
     StarterKit.configure({
@@ -58,6 +62,7 @@ const TiptapEditor = ({
       },
     }),
     SlashCommandExtension,
+    ListIndentExtension,
     SmartSelectAllExtension,
   ];
 
@@ -91,26 +96,52 @@ const TiptapEditor = ({
     content: initialContent.content,
     contentType: initialContent.contentType,
   });
+  const latestContentRef = useRef(defaultValue ?? "");
 
   useEffect(() => {
     editor?.setEditable(editable);
   }, [editable, editor]);
 
+  useEffect(() => {
+    if (!editor) return;
+    const nextValue = defaultValue ?? "";
+    if (latestContentRef.current === nextValue) return;
+
+    latestContentRef.current = nextValue;
+    const nextContent = nextValue.trim()
+      ? { content: nextValue, contentType: "markdown" as const }
+      : { content: EMPTY_DOC, contentType: "json" as const };
+
+    editor.commands.setContent(nextContent.content, {
+      contentType: nextContent.contentType,
+      emitUpdate: false,
+    } as any);
+  }, [defaultValue, editor]);
+
   return (
-    <div className={clsx("dn-editor size-full", className)}>
-      <DragHandle
-        computePositionConfig={{
-          placement: "left-start",
-          strategy: "absolute",
-        }}
-        onNodeChange={() => {}}
-        editor={editor}
-      >
-        <div className="dn-editor__drag-handle flex size-8 items-center justify-center">
-          <GripVertical size={18} strokeWidth={2.2} />
-        </div>
-      </DragHandle>
+    <div
+      className={clsx(
+        "dn-editor size-full",
+        variant === "preview" && "dn-editor--preview",
+        className,
+      )}
+    >
+      {editable && (
+        <DragHandle
+          computePositionConfig={{
+            placement: "left-start",
+            strategy: "absolute",
+          }}
+          onNodeChange={() => {}}
+          editor={editor}
+        >
+          <div className="dn-editor__drag-handle flex size-8 items-center justify-center">
+            <GripVertical size={18} strokeWidth={2.2} />
+          </div>
+        </DragHandle>
+      )}
       <EditorContent editor={editor} />
+      <FormatBubbleMenu editor={editor} />
     </div>
   );
 };

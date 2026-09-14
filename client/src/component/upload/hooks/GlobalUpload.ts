@@ -42,6 +42,7 @@ export const useGlobalUpload = () => {
       id: taskId,
       name: file.name,
       progress: 0,
+      speed: 0,
       status: UploadStatus.pending,
       instance: null as unknown as Uploader,
     };
@@ -50,9 +51,9 @@ export const useGlobalUpload = () => {
     setUploadTasks((prev) => [taskId, ...prev]);
     const instance = new Uploader({
       file: file,
-      onChange: (status, progress) => {
+      onChange: (status, progress, speed) => {
         store.set(uploadTaskAtomFamily(taskId), (prevTask) =>
-          prevTask ? { ...prevTask, status, progress } : null,
+          prevTask ? { ...prevTask, status, progress, speed } : null,
         );
       },
       onFinish: () => {

@@ -1,6 +1,7 @@
 import post from "@/models/post";
 
 export type NoteAiSource = {
+  type: "note";
   postId: string;
   title: string;
   snippet: string;
@@ -117,6 +118,7 @@ export const findRelevantNotes = async (
     .slice(0, 5);
 
   return ranked.map(({ candidate }) => ({
+    type: "note",
     postId: String(candidate._id),
     title: String(candidate.title || "Untitled Note"),
     snippet: buildSnippet(String(candidate.content || ""), terms),

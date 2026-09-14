@@ -80,14 +80,14 @@ const SuggestionList = forwardRef<SuggestionListRef, SuggestionListProps>(
 
     if (!props.items || props.items.length === 0) {
       return (
-        <div className="px-3 py-2 text-sm text-[rgba(55,53,47,0.5)]">
+        <div className="bg-[#fffdf9] px-3 py-2 text-sm text-[rgba(55,53,47,0.5)]">
           No matching command
         </div>
       );
     }
 
     return (
-      <div className="flex min-w-[300px] flex-col gap-1 p-1">
+      <div className="flex min-w-[300px] flex-col gap-1 bg-[#fffdf9] p-1">
         {props.items.map((item, index: number) => (
           <div
             key={index}

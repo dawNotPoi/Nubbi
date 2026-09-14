@@ -1,4 +1,5 @@
 import { Header } from "@/component/Header";
+import TiptapEditor from "@/component/editor/Tiptap";
 import {
   NoteAiConfig,
   NoteAiMessage,
@@ -14,11 +15,13 @@ import {
   saveNoteAiConfig,
   streamNoteAiChat,
 } from "@/api/noteAi";
-import { Button, Empty, Input, Select, Spin, Switch, message } from "antd";
+import { Button, Empty, Input, Select, Spin, Switch, Tooltip, message } from "antd";
 import clsx from "clsx";
 import dayjs from "dayjs";
 import {
   Bot,
+  Check,
+  Copy,
   Globe,
   LibraryBig,
   MessageSquarePlus,
@@ -82,9 +85,43 @@ const createLocalUserMessage = (
   updatedAt: new Date().toISOString(),
 });
 
+const getSourceKey = (messageId: string, source: NoteAiMessage["sources"][number]) =>
+  source.type === "web"
+    ? `${messageId}-web-${source.url}`
+    : `${messageId}-note-${source.postId}`;
+
+const copyText = async (text: string) => {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "true");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand("copy");
+  document.body.removeChild(textarea);
+};
+
 const MessageBubble = ({ item }: { item: NoteAiMessage }) => {
   const navigate = useNavigate();
   const isAssistant = item.role === "assistant";
+  const [answerCopied, setAnswerCopied] = useState(false);
+
+  const handleCopyAnswer = async () => {
+    try {
+      await copyText(item.content);
+      setAnswerCopied(true);
+      message.success("回答已复制");
+      window.setTimeout(() => setAnswerCopied(false), 1400);
+    } catch (error: any) {
+      message.error(error?.message || "复制失败");
+    }
+  };
 
   return (
     <div className={clsx("flex", isAssistant ? "justify-start" : "justify-end")}>
@@ -96,24 +133,68 @@ const MessageBubble = ({ item }: { item: NoteAiMessage }) => {
             : "bg-neutral-900 text-white",
         )}
       >
-        <div className="whitespace-pre-wrap text-sm leading-6">
-          {item.content || (item.status === "streaming" ? "..." : "")}
-        </div>
+        {isAssistant ? (
+          item.content ? (
+            <TiptapEditor
+              defaultValue={item.content}
+              editable={false}
+              showMermaidSourceWhenReadOnly
+              variant="preview"
+            />
+          ) : (
+            <div className="text-sm leading-6 text-neutral-500">
+              {item.status === "streaming" ? "..." : ""}
+            </div>
+          )
+        ) : (
+          <div className="whitespace-pre-wrap text-sm leading-6">
+            {item.content || (item.status === "streaming" ? "..." : "")}
+          </div>
+        )}
+        {isAssistant && item.content && (
+          <div className="mt-3 flex items-center justify-end border-t border-neutral-100 pt-2">
+            <Tooltip title={answerCopied ? "已复制" : "复制回答"}>
+              <button
+                type="button"
+                className="flex h-7 items-center gap-1 rounded-md px-2 text-xs text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800"
+                onClick={handleCopyAnswer}
+              >
+                {answerCopied ? <Check size={14} /> : <Copy size={14} />}
+                <span>{answerCopied ? "已复制" : "复制"}</span>
+              </button>
+            </Tooltip>
+          </div>
+        )}
         {isAssistant && Array.isArray(item.sources) && item.sources.length > 0 && (
           <div className="mt-3 rounded-xl border border-neutral-200 bg-neutral-50 p-3 text-xs text-neutral-600">
-            <div className="mb-2 font-medium text-neutral-700">参考笔记</div>
+            <div className="mb-2 font-medium text-neutral-700">参考来源</div>
             <div className="space-y-2">
               {item.sources.map((source) => (
                 <button
-                  key={`${item._id}-${source.postId}`}
+                  key={getSourceKey(item._id, source)}
                   type="button"
                   className="block w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-left hover:border-neutral-300 hover:bg-neutral-100"
-                  onClick={() => navigate(`/note/${source.postId}`)}
+                  onClick={() => {
+                    if (source.type === "web") {
+                      window.open(source.url, "_blank", "noopener,noreferrer");
+                      return;
+                    }
+
+                    navigate(`/note/${source.postId}`);
+                  }}
                 >
-                  <div className="font-medium text-neutral-800">{source.title}</div>
+                  <div className="flex items-center gap-2 font-medium text-neutral-800">
+                    <span>{source.type === "web" ? "网页" : "笔记"}</span>
+                    <span className="min-w-0 flex-1 truncate">{source.title}</span>
+                  </div>
                   <div className="mt-1 line-clamp-3 text-neutral-500">
                     {source.snippet || "无摘要片段"}
                   </div>
+                  {source.type === "web" && (
+                    <div className="mt-1 truncate text-[11px] text-neutral-400">
+                      {source.url}
+                    </div>
+                  )}
                 </button>
               ))}
             </div>
@@ -152,12 +233,13 @@ export default function NoteAI() {
   const scrollerRef = useRef<HTMLDivElement>(null);
 
   const activeMessages = activeSessionId ? messagesState[activeSessionId] || [] : [];
+  const safeModelOptions = Array.isArray(modelOptions) ? modelOptions : [];
   const modelSelectOptions = [
-    ...modelOptions.map((item) => ({
+    ...safeModelOptions.map((item) => ({
       label: item.ownedBy ? `${item.id} (${item.ownedBy})` : item.id,
       value: item.id,
     })),
-    ...(config.model && !modelOptions.some((item) => item.id === config.model)
+    ...(config.model && !safeModelOptions.some((item) => item.id === config.model)
       ? [{ label: config.model, value: config.model }]
       : []),
   ];
@@ -284,6 +366,11 @@ export default function NoteAI() {
       return;
     }
 
+    if (!config.baseURL.trim()) {
+      message.warning("请先填写 Base URL 后再拉取模型");
+      return;
+    }
+
     setLoadingModels(true);
     try {
       const models = await fetchNoteAiModels({
@@ -337,7 +424,9 @@ export default function NoteAI() {
       setStreamError(undefined);
       setRetryMessage(outgoingMessage);
 
-      const tempSessionId = activeSessionId || `draft-${Date.now()}`;
+      const initialSessionId = activeSessionId;
+      const tempSessionId = initialSessionId || `draft-${Date.now()}`;
+      let streamSessionId = tempSessionId;
       const localUserMessage = createLocalUserMessage(tempSessionId, outgoingMessage);
       const pendingAssistant = createPendingAssistantMessage(tempSessionId);
 
@@ -350,7 +439,7 @@ export default function NoteAI() {
         ],
       }));
 
-      if (!activeSessionId) {
+      if (!initialSessionId) {
         setActiveSessionId(tempSessionId);
       }
 
@@ -363,14 +452,16 @@ export default function NoteAI() {
       try {
         await streamNoteAiChat(
           {
-            sessionId: activeSessionId,
+            sessionId: initialSessionId,
             message: outgoingMessage,
             enableKnowledgeBase: config.enableKnowledgeBase,
             enableWeb: config.enableWeb,
           },
           {
             onSession: ({ sessionId, title }) => {
-              if (!activeSessionId) {
+              streamSessionId = sessionId;
+
+              if (!initialSessionId) {
                 const now = new Date().toISOString();
                 upsertSession({
                   _id: sessionId,
@@ -404,7 +495,7 @@ export default function NoteAI() {
               });
             },
             onSources: ({ sources }) => {
-              const targetSessionId = activeSessionId || tempSessionId;
+              const targetSessionId = streamSessionId;
               setMessagesState((current) => ({
                 ...current,
                 [targetSessionId]: (current[targetSessionId] || []).map((item) =>
@@ -413,7 +504,7 @@ export default function NoteAI() {
               }));
             },
             onDelta: ({ delta }) => {
-              const targetSessionId = activeSessionId || tempSessionId;
+              const targetSessionId = streamSessionId;
               setMessagesState((current) => ({
                 ...current,
                 [targetSessionId]: (current[targetSessionId] || []).map((item) =>
@@ -423,8 +514,9 @@ export default function NoteAI() {
                 ),
               }));
             },
-            onDone: async ({ message: assistantMessage }) => {
-              const targetSessionId = assistantMessage.sessionId;
+            onDone: ({ message: assistantMessage }) => {
+              const targetSessionId = assistantMessage.sessionId || streamSessionId;
+              streamSessionId = targetSessionId;
               setMessagesState((current) => ({
                 ...current,
                 [targetSessionId]: [
@@ -434,11 +526,12 @@ export default function NoteAI() {
                   assistantMessage,
                 ],
               }));
-              await loadMessages(targetSessionId);
-              await loadSessions();
+              void loadSessions().catch((error: any) => {
+                message.error(error?.message || "刷新会话列表失败");
+              });
             },
             onError: ({ message: nextError }) => {
-              removeStreamingMessage(activeSessionId || tempSessionId);
+              removeStreamingMessage(streamSessionId);
               setStreamError(nextError);
             },
           },
@@ -446,7 +539,7 @@ export default function NoteAI() {
         );
       } catch (error: any) {
         if (!abortController.signal.aborted) {
-          removeStreamingMessage(activeSessionId || tempSessionId);
+          removeStreamingMessage(streamSessionId);
           setStreamError(error?.message || "AI 生成失败");
         }
       } finally {
@@ -481,8 +574,8 @@ export default function NoteAI() {
   }
 
   return (
-    <div className="min-w-[1200px]">
-      <Header className="mb-4">
+    <div className="flex h-screen min-w-[1200px] flex-col overflow-hidden">
+      <Header className="shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm text-neutral-500">
             <Bot className="size-4" />
@@ -494,8 +587,8 @@ export default function NoteAI() {
         </div>
       </Header>
 
-      <main className="grid min-h-[calc(100vh-56px)] grid-cols-[280px_minmax(0,1fr)_340px] gap-4 px-4 pb-6">
-        <section className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
+      <main className="grid min-h-0 flex-1 grid-cols-[280px_minmax(0,1fr)_340px] gap-4 overflow-hidden px-4 py-4">
+        <section className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <div className="text-sm font-semibold text-neutral-800">会话</div>
@@ -510,7 +603,7 @@ export default function NoteAI() {
             </Button>
           </div>
 
-          <div className="space-y-2">
+          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
             {sessions.length === 0 ? (
               <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="还没有会话" />
             ) : (
@@ -565,7 +658,7 @@ export default function NoteAI() {
           </div>
         </section>
 
-        <section className="flex min-h-0 flex-col rounded-2xl border border-neutral-200 bg-[#f7f7f5] shadow-sm">
+        <section className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-neutral-200 bg-[#f7f7f5] shadow-sm">
           <div className="border-b border-neutral-200 px-5 py-4">
             <div className="text-sm font-semibold text-neutral-800">
               {sessions.find((item) => item._id === activeSessionId)?.title || "新对话"}
@@ -580,7 +673,7 @@ export default function NoteAI() {
               <div className="flex items-center gap-1">
                 <Globe className="size-3.5" />
                 <span>
-                  {config.enableWeb ? "联网开关已开启（预留）" : "联网开关已关闭"}
+                  {config.enableWeb ? "联网搜索已开启" : "联网搜索已关闭"}
                 </span>
               </div>
             </div>
@@ -648,7 +741,7 @@ export default function NoteAI() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
+        <section className="min-h-0 overflow-hidden rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
           <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-neutral-800">
             <Settings2 className="size-4" />
             <span>AI 设置</span>
@@ -784,7 +877,7 @@ export default function NoteAI() {
                 <div>
                   <div className="text-sm font-medium text-neutral-800">允许联网</div>
                   <div className="text-xs text-neutral-500">
-                    第一版仅保存开关并透传给后端，不会真实联网搜索
+                    开启后会在回答前检索网页，并把来源附在回答下方
                   </div>
                 </div>
                 <Switch

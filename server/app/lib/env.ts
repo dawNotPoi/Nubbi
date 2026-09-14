@@ -20,6 +20,12 @@ const envSchema = z.object({
   EMAIL_FROM: z.string().optional(),
   EMAIL_SERVICE: z.string().optional(),
   AI_CONFIG_SECRET: z.string().optional(),
+  WEB_SEARCH_PROVIDER: z
+    .enum(["tavily", "brave", "serpapi", "searxng", ""])
+    .optional()
+    .default(""),
+  WEB_SEARCH_API_KEY: z.string().optional(),
+  WEB_SEARCH_BASE_URL: z.string().optional(),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().optional(),
   SMTP_SECURE: z
@@ -50,6 +56,7 @@ log.success("环境变量加载成功", {
   BETTER_AUTH_SECRET: env.BETTER_AUTH_SECRET ? "***" : "",
   AUTH_GITHUB_SECRET: env.AUTH_GITHUB_SECRET ? "***" : "",
   AUTH_GOOGLE_SECRET: env.AUTH_GOOGLE_SECRET ? "***" : "",
+  WEB_SEARCH_API_KEY: env.WEB_SEARCH_API_KEY ? "***" : "",
 });
 
 export default env;

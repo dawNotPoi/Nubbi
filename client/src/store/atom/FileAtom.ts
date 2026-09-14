@@ -61,6 +61,7 @@ export interface UploadTask {
   id: string;
   name: string;
   progress: number;
+  speed: number;
   status: UploadStatus;
   instance: Uploader;
 }

@@ -39,7 +39,7 @@ const suggestion: Omit<SuggestionOptions, "editor"> = {
           interactive: true,
           trigger: "manual",
           placement: "bottom-start",
-          theme: "light",
+          theme: "slash-command",
         });
       },
 

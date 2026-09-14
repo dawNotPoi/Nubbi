@@ -2,7 +2,7 @@ import request, { Get, authorizedFetch } from "./request";
 
 type ApiResponse<T> = {
   code: 0 | 1;
-  data: T;
+  data: T | null;
   message: string;
 };
 
@@ -36,7 +36,22 @@ export type NoteAiSession = {
   updatedAt: string;
 };
 
-export type NoteAiSource = {
+export type NoteAiSource =
+  | {
+      type?: "note";
+      postId: string;
+      title: string;
+      snippet: string;
+    }
+  | {
+      type: "web";
+      url: string;
+      title: string;
+      snippet: string;
+    };
+
+export type NoteAiNoteSource = {
+  type?: "note";
   postId: string;
   title: string;
   snippet: string;
@@ -92,43 +107,83 @@ type StreamHandlers = {
   onError?: (payload: { message: string }) => void;
 };
 
+const unwrapNoteAiResponse = <T>(
+  response: ApiResponse<T>,
+  fallbackMessage: string,
+): T => {
+  if (response.code !== 1) {
+    throw new Error(response.message || fallbackMessage);
+  }
+
+  if (response.data === null || response.data === undefined) {
+    throw new Error(fallbackMessage);
+  }
+
+  return response.data;
+};
+
 export async function getNoteAiConfig() {
   const response = await Get<NoteAiConfig>("note-ai/config");
-  return response.data;
+  return unwrapNoteAiResponse(response, "加载 Note AI 配置失败");
 }
 
 export async function saveNoteAiConfig(input: SaveNoteAiConfigInput) {
   const response = await request<NoteAiConfig>("note-ai/config", input, "put");
-  return response.data;
+  return unwrapNoteAiResponse(response, "保存 AI 配置失败");
 }
 
 export async function fetchNoteAiModels(input: FetchNoteAiModelsInput) {
   const response = await request<NoteAiModel[]>("note-ai/models", input);
-  return response.data;
+  const models = unwrapNoteAiResponse(response, "拉取模型列表失败");
+
+  if (!Array.isArray(models)) {
+    throw new Error("模型列表格式异常");
+  }
+
+  return models
+    .map((model) => ({
+      id: typeof model?.id === "string" ? model.id.trim() : "",
+      name: typeof model?.name === "string" ? model.name.trim() : "",
+      ownedBy:
+        typeof model?.ownedBy === "string" && model.ownedBy.trim()
+          ? model.ownedBy.trim()
+          : undefined,
+    }))
+    .filter((model) => model.id)
+    .map((model) => ({
+      ...model,
+      name: model.name || model.id,
+    }));
 }
 
 export async function getNoteAiSessions() {
   const response = await Get<NoteAiSession[]>("note-ai/sessions");
-  return response.data;
+  return unwrapNoteAiResponse(response, "加载会话列表失败");
 }
 
 export async function createNoteAiSession() {
   const response = await request<NoteAiSession>("note-ai/sessions");
-  return response.data;
+  return unwrapNoteAiResponse(response, "新建会话失败");
 }
 
 export async function deleteNoteAiSession(sessionId: string) {
   const response = await authorizedFetch(`/note-ai/sessions/${sessionId}`, {
     method: "DELETE",
   });
-  return (await response.json()) as ApiResponse<null>;
+  const payload = (await response.json()) as ApiResponse<null>;
+
+  if (payload.code !== 1) {
+    throw new Error(payload.message || "删除会话失败");
+  }
+
+  return payload;
 }
 
 export async function getNoteAiMessages(sessionId: string) {
   const response = await Get<NoteAiMessage[]>(
     `note-ai/sessions/${sessionId}/messages`,
   );
-  return response.data;
+  return unwrapNoteAiResponse(response, "加载消息失败");
 }
 
 const processSseEvent = (rawEvent: string, handlers: StreamHandlers) => {

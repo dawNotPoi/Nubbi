@@ -1,5 +1,6 @@
 import { getUser } from "@/lib/auth";
 import { findRelevantNotes } from "@/lib/noteAiKnowledge";
+import { searchWeb } from "@/lib/noteAiWebSearch";
 import {
   listProviderModels,
   NoteAiChatMessage,
@@ -104,22 +105,28 @@ const buildSessionTitle = (message: string) => {
 const buildMessagesForModel = ({
   history,
   knowledgeContext,
+  webContext,
   webRequested,
 }: {
   history: Array<{ role: "user" | "assistant"; content: string }>;
   knowledgeContext: string;
+  webContext: string;
   webRequested: boolean;
 }): NoteAiChatMessage[] => {
   const systemSections = [
     "You are Note AI inside D-NOTE. Answer clearly and helpfully.",
     "When note context is provided, prefer grounding your answer in that context and say when information is based on user notes.",
     webRequested
-      ? "The user enabled web access, but this version does not have real external search. Explicitly say that online search is not available yet if needed."
+      ? "The user enabled web access. When web search results are provided, use them for current or external information and cite the source URLs."
       : "Do not mention web search unless the user asks.",
   ];
 
   if (knowledgeContext) {
     systemSections.push(`Relevant note context:\n${knowledgeContext}`);
+  }
+
+  if (webContext) {
+    systemSections.push(`Web search results:\n${webContext}`);
   }
 
   return [
@@ -189,14 +196,19 @@ router.post(
       : config?.apiKeyEncrypted
         ? decryptSecret(config.apiKeyEncrypted)
         : "";
+    const resolvedBaseURL = baseURL.trim();
 
     if (!resolvedApiKey) {
       throw Object.assign(new Error("AI API key is required"), { status: 400 });
     }
 
+    if (!resolvedBaseURL) {
+      throw Object.assign(new Error("AI Base URL is required"), { status: 400 });
+    }
+
     const models = await listProviderModels({
       provider,
-      baseURL,
+      baseURL: resolvedBaseURL,
       apiKey: resolvedApiKey,
     });
 
@@ -343,9 +355,11 @@ router.post(
         sources: [],
       });
 
-      const sources = normalizedEnableKnowledgeBase
+      const noteSources = normalizedEnableKnowledgeBase
         ? await findRelevantNotes(id, message)
         : [];
+      const webSources = normalizedEnableWeb ? await searchWeb(message) : [];
+      const sources = [...noteSources, ...webSources];
 
       sendSse(res, "sources", {
         messageId: String(userMessage._id),
@@ -360,10 +374,16 @@ router.post(
         .sort({ createdAt: 1 })
         .lean();
 
-      const knowledgeContext = sources
+      const knowledgeContext = noteSources
         .map(
           (source, index) =>
             `[${index + 1}] ${source.title}\n${source.snippet || "(no excerpt)"}`,
+        )
+        .join("\n\n");
+      const webContext = webSources
+        .map(
+          (source, index) =>
+            `[${index + 1}] ${source.title}\nURL: ${source.url}\n${source.snippet || "(no excerpt)"}`,
         )
         .join("\n\n");
 
@@ -373,6 +393,7 @@ router.post(
           content: item.content,
         })),
         knowledgeContext,
+        webContext,
         webRequested: normalizedEnableWeb,
       });
 

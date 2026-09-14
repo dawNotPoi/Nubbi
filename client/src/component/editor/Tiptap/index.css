@@ -47,6 +47,46 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+.dn-editor.dn-editor--preview {
+  @apply h-auto overflow-visible rounded-none bg-transparent;
+  --editor-bg: transparent;
+}
+
+.dn-editor.dn-editor--preview .dn-editor__content {
+  @apply h-auto min-h-0 px-0 py-0 pb-0 text-sm;
+}
+
+.dn-editor.dn-editor--preview .dn-editor__content p {
+  margin: 0.45rem 0;
+}
+
+.dn-editor.dn-editor--preview .dn-editor__content h1,
+.dn-editor.dn-editor--preview .dn-editor__content h2,
+.dn-editor.dn-editor--preview .dn-editor__content h3,
+.dn-editor.dn-editor--preview .dn-editor__content h4,
+.dn-editor.dn-editor--preview .dn-editor__content h5,
+.dn-editor.dn-editor--preview .dn-editor__content h6 {
+  margin-top: 0.95rem;
+  margin-bottom: 0.4rem;
+  letter-spacing: 0;
+}
+
+.dn-editor.dn-editor--preview .dn-editor__content h1 {
+  font-size: 1.35rem;
+}
+
+.dn-editor.dn-editor--preview .dn-editor__content h2 {
+  font-size: 1.18rem;
+}
+
+.dn-editor.dn-editor--preview .dn-editor__content h3 {
+  font-size: 1.05rem;
+}
+
+.dn-editor.dn-editor--preview .dn-editor__content pre {
+  margin: 0.8rem 0;
+}
+
 .dn-editor .dn-editor__content > :first-child {
   margin-top: 0;
 }
@@ -232,6 +272,30 @@
   box-shadow: 0 18px 44px rgba(15, 23, 42, 0.1);
 }
 
+.tippy-box[data-theme~="slash-command"] {
+  border: 1px solid rgba(55, 53, 47, 0.12);
+  border-radius: 1rem;
+  background: #fffdf9;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.1);
+}
+
 .tippy-box[data-theme~="light"] .tippy-content {
   padding: 0.4rem;
+}
+
+.tippy-box[data-theme~="slash-command"] .tippy-content {
+  border-radius: inherit;
+  background: #fffdf9;
+  padding: 0.4rem;
+}
+
+.dn-editor__bubble-menu {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+  padding: 0.35rem;
+  border: 1px solid rgba(55, 53, 47, 0.12);
+  border-radius: 0.75rem;
+  background: #fffdf9;
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.12);
 }

@@ -1,61 +1,56 @@
-  import SparkMD5 from "spark-md5";
-const spark = new SparkMD5.ArrayBuffer();
+import SparkMD5 from "spark-md5";
 
-// 计算大文件
-const calPickFile = (file: File, offset = 1 * 1024 * 1024) => {
-  const size = file.size;
-  const chunks: Blob[] = [];
-  let cur = offset;
-  // 取第一块
-  chunks.push(file.slice(0, cur));
-  while (cur < size) {
-    if (cur + offset >= size) {
-      //取最后一块
-      chunks.push(file.slice(cur, size));
-    } else {
-      const mid = cur + offset / 2;
-      const last = cur + offset;
-      // 取分片的前中后二比特
-      chunks.push(file.slice(cur, cur + 2));
-      chunks.push(file.slice(mid, mid + 2));
-      chunks.push(file.slice(last - 2, last));
-      // 看情况要不要给hash计算进度
-      postMessage({
-        percentage: (cur / size) * 100,
-      });
-    }
-    cur += offset;
-  }
-  return chunks;
+const HASH_CHUNK_SIZE = 2 * 1024 * 1024;
+
+const readAsArrayBuffer = (blob: Blob) => {
+  return new Promise<ArrayBuffer>((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+      const result = event.target?.result;
+
+      if (result instanceof ArrayBuffer) {
+        resolve(result);
+        return;
+      }
+
+      reject(new Error("File chunk read failed"));
+    };
+    reader.onerror = () => reject(reader.error ?? new Error("File read error"));
+    reader.readAsArrayBuffer(blob);
+  });
 };
 
-// 大文件抽样hash  小文件进行全量hash
-onmessage = function (event) {
-  const calFileHash = async (file: File) => {
-    const size = file.size;
-    let chunks: Blob[] = [];
-    const reader = new FileReader();
-    return new Promise((resolve) => {
-      // 大于500mb使用抽样小文件使用全样
-      if (size > 500 * 1024 * 1024) {
-        chunks = calPickFile(file);
-      } else chunks = [file];
-      reader.onload = (e) => {
-        if (!e.target) {
-          console.log("empty file");
-          return;
-        }
-        spark.append(e.target.result as ArrayBuffer);
-        resolve(spark.end());
-      };
-      reader.readAsArrayBuffer(new Blob(chunks));
-    });
-  };
-  const { data }: { data: File } = event;
-  calFileHash(data).then((res) => {
+const calculateFileHash = async (file: File) => {
+  const spark = new SparkMD5.ArrayBuffer();
+  const chunkCount = Math.ceil(file.size / HASH_CHUNK_SIZE);
+
+  for (let index = 0; index < chunkCount; index++) {
+    const start = index * HASH_CHUNK_SIZE;
+    const end = Math.min(start + HASH_CHUNK_SIZE, file.size);
+    const buffer = await readAsArrayBuffer(file.slice(start, end));
+
+    spark.append(buffer);
     postMessage({
-      percentage: 100,
-      hash: res,
+      percentage: Math.round(((index + 1) / chunkCount) * 100),
     });
-  });
+  }
+
+  return spark.end();
+};
+
+onmessage = (event: MessageEvent<File>) => {
+  calculateFileHash(event.data)
+    .then((hash) => {
+      postMessage({
+        percentage: 100,
+        hash,
+      });
+    })
+    .catch((error) => {
+      postMessage({
+        error:
+          error instanceof Error ? error.message : "File hash calculation failed",
+      });
+    });
 };

@@ -2,13 +2,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { createPostAtom } from "@/store/atom/postAtom";
 import clsx from "clsx";
 import { useAtomValue, useSetAtom } from "jotai";
-import {
-  Bot,
-  ChevronsLeft,
-  FolderTree,
-  House,
-  Presentation,
-} from "lucide-react";
+import { ChevronsLeft, FolderTree, House, Presentation } from "lucide-react";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { sideBarOpenedAtom } from "../../store/atom/common";
@@ -82,10 +76,10 @@ const SideBar: React.FC = () => {
             <Presentation size={16} />
             <span>会议</span>
           </MenuItemContainer>
-          <MenuItemContainer to="note-ai">
+          {/* <MenuItemContainer to="note-ai">
             <Bot size={16} />
             <span>Note AI</span>
-          </MenuItemContainer>
+          </MenuItemContainer> */}
           <NoteMenu />
         </div>
       </div>

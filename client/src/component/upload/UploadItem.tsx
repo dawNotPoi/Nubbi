@@ -3,6 +3,21 @@ import { useAtomValue } from "jotai";
 import { uploadTaskAtomFamily } from "../../store/atom/FileAtom";
 import { UploadStatus } from "../../utils/file";
 
+const formatSpeed = (speed: number) => {
+  if (speed <= 0) return "--";
+
+  const units = ["B/s", "KB/s", "MB/s", "GB/s"];
+  let nextSpeed = speed;
+  let unitIndex = 0;
+
+  while (nextSpeed >= 1024 && unitIndex < units.length - 1) {
+    nextSpeed /= 1024;
+    unitIndex++;
+  }
+
+  return `${nextSpeed.toFixed(nextSpeed >= 10 ? 1 : 2)} ${units[unitIndex]}`;
+};
+
 const UploadItem = ({ id }: { id: string }) => {
   const task = useAtomValue(uploadTaskAtomFamily(id));
   const statusText: Record<UploadStatus, string> = {
@@ -13,26 +28,37 @@ const UploadItem = ({ id }: { id: string }) => {
     [UploadStatus.paused]: "已暂停",
   };
   const percent = task?.progress ?? 0;
+  const speedText =
+    task?.status === UploadStatus.uploading ? formatSpeed(task.speed) : "--";
   const canResume =
     task &&
-    [UploadStatus.pending, UploadStatus.paused, UploadStatus.fail].includes(task.status);
+    [UploadStatus.pending, UploadStatus.paused, UploadStatus.fail].includes(
+      task.status,
+    );
   const canPause = task && task.status === UploadStatus.uploading;
+
   return (
-    <div className="upload-item py-2 space-y-2">
+    <div className="upload-item space-y-2 py-2">
       <header className="flex items-center justify-between gap-2">
         <span className="truncate">{task?.name}</span>
-        <span className="text-xs text-gray-500">{task ? statusText[task.status] : ""}</span>
+        <span className="text-xs text-gray-500">
+          {task ? statusText[task.status] : ""}
+        </span>
       </header>
       <Progress percent={percent} />
-      <footer className="flex gap-4">
-        <Button disabled={!canResume} onClick={() => task?.instance.resume()}>
-          开始
-        </Button>
-        <Button disabled={!canPause} onClick={() => task?.instance.pause()}>
-          暂停
-        </Button>
+      <footer className="flex items-center justify-between gap-4">
+        <span className="text-xs text-gray-500">速度：{speedText}</span>
+        <div className="flex gap-4">
+          <Button disabled={!canResume} onClick={() => task?.instance.resume()}>
+            开始
+          </Button>
+          <Button disabled={!canPause} onClick={() => task?.instance.pause()}>
+            暂停
+          </Button>
+        </div>
       </footer>
     </div>
   );
 };
+
 export default UploadItem;
