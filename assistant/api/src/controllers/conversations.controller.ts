@@ -21,7 +21,13 @@ import {
 import { ConversationsService } from "../services/conversations.service.js";
 import type { Conversation, RuntimeEvent } from "../types.js";
 
-const messageSchema = z.object({ content: z.string().trim().min(1).max(20_000) });
+// 拒绝含 U+FFFD（替换字符）的消息：说明客户端未按 UTF-8 发送，避免把乱码存进对话历史。
+const messageSchema = z.object({
+  content: z.string().trim().min(1).max(20_000).refine(
+    (value) => !value.includes("\uFFFD"),
+    "消息内容包含无法识别的字符，请检查输入编码",
+  ),
+});
 
 /**
  * 手动接管 Fastify 响应所需的最小类型，仅声明用到的两个成员：
