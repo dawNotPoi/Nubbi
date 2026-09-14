@@ -5,7 +5,7 @@ import { X } from "lucide-react";
 
 type ParticipantSidebarProps = {
   participants: StageParticipant[];
-  activeParticipantId?: string;
+  pinnedParticipantId?: string;
   open?: boolean;
   onClose?: () => void;
   onSelectParticipant: (participantId: string) => void;
@@ -13,7 +13,7 @@ type ParticipantSidebarProps = {
 
 export default function ParticipantSidebar({
   participants,
-  activeParticipantId,
+  pinnedParticipantId,
   open = false,
   onClose,
   onSelectParticipant,
@@ -39,18 +39,13 @@ export default function ParticipantSidebar({
           <X className="size-5" />
         </button>
       </header>
-      <ul className="flex h-full w-full flex-col gap-2 overflow-y-auto p-3 scrollbar-none md:justify-center md:p-2">
+      <ul className="flex min-h-0 w-full flex-1 flex-col gap-2 overflow-y-auto p-3 scrollbar-none md:p-2">
         {participants.map((participant) => (
           <ParticipantTile
             key={participant.id}
-            id={participant.id}
-            name={participant.name}
-            stream={participant.stream}
-            avatarSrc={participant.avatarSrc}
-            isVideoEnabled={participant.isVideoEnabled}
-            isAudioEnabled={participant.isAudioEnabled}
-            isActive={participant.id === activeParticipantId}
-            onSelect={onSelectParticipant}
+            participant={participant}
+            isPinned={participant.id === pinnedParticipantId}
+            onTogglePin={onSelectParticipant}
           />
         ))}
       </ul>

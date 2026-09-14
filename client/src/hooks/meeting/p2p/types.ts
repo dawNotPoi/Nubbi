@@ -15,6 +15,8 @@ export type RoomUserInfo = {
   image: string;
   isVideoEnabled: boolean;
   isAudioEnabled: boolean;
+  /** 可选的展示标记，不改变成员权限。 */
+  isScreenSharing?: boolean;
 };
 
 export type JoinMeetingResponse = {
@@ -28,6 +30,7 @@ export type JoinMeetingResponse = {
 export type RoomMedia = {
   isVideoEnabled?: boolean;
   isAudioEnabled?: boolean;
+  isScreenSharing?: boolean;
 };
 
 export type SendMeetingCommentResponse = {

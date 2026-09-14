@@ -12,6 +12,8 @@ export type RoomUserInfo = {
   image: string;
   isVideoEnabled: boolean;
   isAudioEnabled: boolean;
+  /** 仅用于客户端选择展示画面，不用于鉴权。 */
+  isScreenSharing?: boolean;
 };
 
 export type JoinMeetingResponse =

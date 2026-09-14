@@ -1,9 +1,10 @@
 import { Input } from "antd";
 import { Camera, CameraOff, MessageSquareText, Mic, MicOff, Monitor, Users } from "lucide-react";
-import { useRef, useState, type ReactElement, type ReactNode } from "react";
+import type { ReactElement, ReactNode } from "react";
 import type { DeviceStatus, MediaDeviceKind, MediaDevices, MediaToggleKind } from "../types";
 import type { MediaSnapshot } from "../media/media-state";
 import { MediaDeviceControl } from "./media-device-control";
+import type { MeetingChat } from "../hooks/use-meeting-chat";
 
 type VideoControlsProps = {
   devices: MediaDevices; videoStatus: DeviceStatus; audioStatus: DeviceStatus; busy: MediaSnapshot["busy"];
@@ -11,7 +12,8 @@ type VideoControlsProps = {
   participantCount: number; commentCount: number; endActionLabel: string; ending?: boolean;
   onToggleDevice: (kind: MediaToggleKind, enabled: boolean) => void;
   onSwitchDevice: (kind: MediaDeviceKind, deviceId: string) => void;
-  onToggleScreenShare: () => void; onSendComment: (content: string) => Promise<boolean>;
+  onToggleScreenShare: () => void;
+  chat: MeetingChat;
   onToggleComment: () => void; onToggleParticipants: () => void; onEndMeeting: () => void;
 };
 type ActionProps = { label: string; icon: ReactNode; active: boolean; count?: number; disabled?: boolean; onClick: () => void };
@@ -26,20 +28,11 @@ function ControlAction({ label, icon, active, count, disabled, onClick }: Action
 
 /** @param props 媒体状态及会议操作。@returns 桌面和手机共用的底部操作栏。 */
 export default function VideoControls(props: VideoControlsProps): ReactElement {
-  const [draft, setDraft] = useState("");
-  const [sending, setSending] = useState(false);
-  const sendingRef = useRef(false);
-  /** 失败保留原草稿；避免同一事件循环内重复发送。 */
-  const send = async (): Promise<void> => {
-    if (!draft.trim() || sendingRef.current) return;
-    sendingRef.current = true; setSending(true);
-    try { if (await props.onSendComment(draft.trim())) setDraft(""); }
-    finally { sendingRef.current = false; setSending(false); }
-  };
+  const { chat } = props;
   return <footer className="shrink-0 border-t border-border-row bg-white px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2">
     <div className="flex min-w-0 items-center gap-2">
-      <Input className="hidden max-w-48 lg:block" aria-label="快捷发送会议消息" placeholder="输入消息，回车发送" value={draft} disabled={sending}
-        onChange={(event) => setDraft(event.target.value)} onPressEnter={(event) => { if (!event.nativeEvent.isComposing && event.keyCode !== 229) void send(); }} />
+      <Input className="hidden max-w-48 lg:block" aria-label="快捷发送会议消息" placeholder={chat.needsResendConfirmation ? "请先核对聊天记录" : "输入消息，回车发送"} value={chat.draft}
+        onChange={(event) => chat.updateDraft(event.target.value)} onPressEnter={(event) => { if (!event.nativeEvent.isComposing && event.keyCode !== 229) void chat.send(); }} />
       <div className="flex min-w-0 flex-1 flex-wrap gap-2 md:flex-nowrap md:justify-center md:overflow-x-auto">
         <MediaDeviceControl label={props.audioStatus.open ? "关闭麦克风" : "开启麦克风"} icon={props.audioStatus.open ? <Mic size={18} /> : <MicOff size={18} />}
           status={props.audioStatus} devices={props.devices.audio} busy={props.busy.audio} onToggle={() => props.onToggleDevice("audio", !props.audioStatus.open)} onSelect={(id) => props.onSwitchDevice("audioinput", id)} />

@@ -14,12 +14,13 @@ import {
   type MentionUser,
 } from "../helpers/comment-panel";
 import type { VideoRoomUser } from "../types";
+import type { MeetingChat } from "./use-meeting-chat";
 
 type UseCommentComposerOptions = {
   currentUserName: string;
   currentUserAvatar: string;
   roomUsers: VideoRoomUser[];
-  onSendComment: (content: string) => Promise<boolean>;
+  chat: MeetingChat;
 };
 
 export type CommentComposerResult = {
@@ -40,10 +41,9 @@ export const useCommentComposer = ({
   currentUserName,
   currentUserAvatar,
   roomUsers,
-  onSendComment,
+  chat,
 }: UseCommentComposerOptions): CommentComposerResult => {
-  const [draft, setDraft] = useState("");
-  const [sending, setSending] = useState(false);
+  const { draft, sending, send, updateDraft: setSharedDraft } = chat;
   const [cursorIndex, setCursorIndex] = useState(0);
   const [activeMentionIndex, setActiveMentionIndex] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -68,24 +68,12 @@ export const useCommentComposer = ({
     mentionMatch && mentionSuggestions.length,
   );
 
-  const send = useCallback(async (): Promise<void> => {
-    const content = draft.trim();
-    if (!content || sending) return;
-    setSending(true);
-    try {
-      const sent = await onSendComment(content);
-      if (sent) setDraft("");
-    } finally {
-      setSending(false);
-    }
-  }, [draft, onSendComment, sending]);
-
   const updateDraft = useCallback(
     (nextDraft: string, nextCursorIndex: number): void => {
-      setDraft(nextDraft);
+      setSharedDraft(nextDraft);
       setCursorIndex(nextCursorIndex);
     },
-    [],
+    [setSharedDraft],
   );
 
   const updateCursor = useCallback((nextCursorIndex: number): void => {
@@ -97,7 +85,7 @@ export const useCommentComposer = ({
       if (!mentionMatch) return;
       const nextDraft =
         `${draft.slice(0, mentionMatch.start)}@${user.name} ${draft.slice(mentionMatch.end)}`;
-      setDraft(nextDraft);
+      setSharedDraft(nextDraft);
       setActiveMentionIndex(0);
       window.requestAnimationFrame(() => {
         const nextCursor = mentionMatch.start + user.name.length + 2;
@@ -106,7 +94,7 @@ export const useCommentComposer = ({
         setCursorIndex(nextCursor);
       });
     },
-    [draft, mentionMatch],
+    [draft, mentionMatch, setSharedDraft],
   );
 
   const handleKeyDown = useCallback(

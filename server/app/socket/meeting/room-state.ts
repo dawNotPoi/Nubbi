@@ -43,6 +43,7 @@ export function upsertRoomUser(input: {
     image: input.actor.image || "",
     isVideoEnabled: input.media?.isVideoEnabled ?? false,
     isAudioEnabled: input.media?.isAudioEnabled ?? false,
+    isScreenSharing: input.media?.isScreenSharing ?? false,
   };
 
   const users =

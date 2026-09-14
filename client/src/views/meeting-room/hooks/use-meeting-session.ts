@@ -37,7 +37,11 @@ export function useMeetingSession({ roomId, meetingAccessToken, media, onAccessR
     setConnectionError("");
     const localMedia = currentMedia.current;
     connectToPeer(roomId, localMedia.stream);
-    void joinRoom(roomId, meetingAccessToken, { isVideoEnabled: localMedia.video.open || localMedia.sharing, isAudioEnabled: localMedia.audio.open }).then((response) => {
+    void joinRoom(roomId, meetingAccessToken, {
+      isVideoEnabled: localMedia.video.open || localMedia.sharing,
+      isAudioEnabled: localMedia.audio.open,
+      isScreenSharing: localMedia.sharing,
+    }).then((response) => {
       if (cancelled) return;
       if (response.ok) { hasJoined.current = true; setStatus("joined"); return; }
       const reason = getJoinErrorMessage(response.reason);
@@ -54,7 +58,11 @@ export function useMeetingSession({ roomId, meetingAccessToken, media, onAccessR
   useEffect(() => {
     if (status !== "joined") return;
     connectToPeer(roomId, media.stream);
-    syncRoomUser(roomId, { isVideoEnabled: media.video.open || media.sharing, isAudioEnabled: media.audio.open });
+    syncRoomUser(roomId, {
+      isVideoEnabled: media.video.open || media.sharing,
+      isAudioEnabled: media.audio.open,
+      isScreenSharing: media.sharing,
+    });
   }, [connectToPeer, media.audio.open, media.video.open, media.sharing, media.stream, media.revision, roomId, status, syncRoomUser]);
 
   useEffect(() => {

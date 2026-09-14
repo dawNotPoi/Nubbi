@@ -1,158 +1,27 @@
-import Image from "@/component/UI/Image";
-import { Mic, MicOff } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Pin, PinOff } from "lucide-react";
+import type { ReactElement } from "react";
+import type { StageParticipant } from "../types";
+import { ParticipantMedia } from "./participant-media";
 
 type ParticipantTileProps = {
-  id: string;
-  name: string;
-  stream: MediaStream | null;
-  avatarSrc?: string;
-  isVideoEnabled?: boolean;
-  isAudioEnabled?: boolean;
-  isActive?: boolean;
-  onSelect?: (participantId: string) => void;
+  participant: StageParticipant;
+  isPinned: boolean;
+  onTogglePin: (participantId: string) => void;
 };
 
-const hasVideoTrack = (stream: MediaStream | null) => {
-  return Boolean(stream?.getVideoTracks().length);
-};
-
-declare global {
-  interface Window {
-    webkitAudioContext?: typeof AudioContext;
-  }
-}
-
-function useSpeaking(stream: MediaStream | null, enabled: boolean) {
-  const [speaking, setSpeaking] = useState(false);
-
-  useEffect(() => {
-    if (!stream || !enabled) {
-      setSpeaking(false);
-      return;
-    }
-
-    const audioTracks = stream
-      .getAudioTracks()
-      .filter((track) => track.enabled);
-    if (audioTracks.length === 0) {
-      setSpeaking(false);
-      return;
-    }
-
-    const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContextCtor) {
-      setSpeaking(false);
-      return;
-    }
-
-    const audioContext = new AudioContextCtor();
-    const analyser = audioContext.createAnalyser();
-    const source = audioContext.createMediaStreamSource(stream);
-    analyser.fftSize = 256;
-    analyser.smoothingTimeConstant = 0.85;
-    source.connect(analyser);
-
-    const dataArray = new Uint8Array(analyser.fftSize);
-    let animationFrameId = 0;
-    let disposed = false;
-
-    const detect = () => {
-      if (disposed) return;
-
-      analyser.getByteTimeDomainData(dataArray);
-      let total = 0;
-
-      for (let index = 0; index < dataArray.length; index += 1) {
-        const normalized = (dataArray[index] - 128) / 128;
-        total += normalized * normalized;
-      }
-
-      const volume = Math.sqrt(total / dataArray.length);
-      setSpeaking(volume > 0.06);
-      animationFrameId = window.requestAnimationFrame(detect);
-    };
-
-    if (audioContext.state === "suspended") {
-      audioContext.resume().catch(() => undefined);
-    }
-
-    detect();
-
-    return () => {
-      disposed = true;
-      window.cancelAnimationFrame(animationFrameId);
-      source.disconnect();
-      analyser.disconnect();
-      audioContext.close().catch(() => undefined);
-    };
-  }, [enabled, stream]);
-
-  return speaking;
-}
-
-export default function ParticipantTile({
-  id,
-  name,
-  stream,
-  avatarSrc,
-  isVideoEnabled = false,
-  isAudioEnabled = false,
-  isActive = false,
-  onSelect,
-}: ParticipantTileProps) {
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const canRenderVideo = isVideoEnabled && hasVideoTrack(stream);
-  const isSelectable = canRenderVideo && !!onSelect;
-  const isSpeaking = useSpeaking(stream, isAudioEnabled);
-
-  const bindVideoRef = useCallback(
-    (element: HTMLVideoElement | null) => {
-      videoRef.current = element;
-      if (!element) return;
-      if (element.srcObject !== stream) {
-        element.srcObject = stream;
-      }
-      element.play().catch(() => undefined);
-    },
-    [stream],
-  );
-
-  const content = !canRenderVideo ? (
-    <div className="flex size-full items-center justify-center overflow-hidden bg-[#2f3437]">
-      <Image
-        className="size-16 rounded-full border border-white/10"
-        src={avatarSrc || ""}
-      />
-    </div>
-  ) : (
-    <video
-      ref={bindVideoRef}
-      className="size-full overflow-hidden object-cover"
-      autoPlay
-      playsInline
-      muted
-    />
-  );
-
-  return (
-    <li
-      onClick={isSelectable ? () => onSelect(id) : undefined}
-      className={`relative aspect-video w-full overflow-hidden rounded-2xl border bg-white shadow-sm transition-all ${isActive ? "ring-2 ring-blue-400" : ""} ${isSelectable ? "cursor-pointer hover:-translate-y-0.5 hover:shadow-md" : ""}`}
-    >
-      {content}
-      <footer className="absolute bottom-2 left-2 flex items-center gap-1 rounded-full bg-black/45 px-2.5 py-1 text-white backdrop-blur-sm">
-        {isAudioEnabled ? (
-          <Mic
-            className={
-              isSpeaking ? "text-xs text-emerald-300" : "text-xs text-white/35"
-            }
-          />
-        ) : (
-          <MicOff className="text-xs text-white/55" />
-        )}
-        <span className="text-xs">{name}</span>
-      </footer>
-    </li>
-  );
+/**
+ * 用显式按钮固定成员，键盘与触摸操作和鼠标具有相同行为。
+ * @param props 当前成员、固定状态及操作。
+ * @returns 包含独立固定按钮的成员卡片；无摄像头成员也可固定。
+ */
+export default function ParticipantTile({ participant, isPinned, onTogglePin }: ParticipantTileProps): ReactElement {
+  return <li className={`relative flex h-fit min-w-0 shrink-0 flex-col overflow-hidden rounded-xl border bg-white ${isPinned ? "border-accent-border ring-2 ring-accent-border" : "border-border-row"}`}>
+    <div className="aspect-video shrink-0"><ParticipantMedia participant={participant} /></div>
+    <button type="button" aria-pressed={isPinned} aria-label={`${isPinned ? "取消固定" : "固定"} ${participant.name}`}
+      onClick={() => onTogglePin(participant.id)}
+      className="flex min-h-10 w-full shrink-0 items-center justify-center gap-2 text-sm text-text-primary hover:bg-bg-hover focus-visible:ring-2 focus-visible:ring-focus-ring">
+      {isPinned ? <PinOff size={14} /> : <Pin size={14} />}
+      {isPinned ? "取消固定" : "固定此成员"}
+    </button>
+  </li>;
 }

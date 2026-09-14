@@ -9,6 +9,7 @@ export const roomMediaSchema = z
   .object({
     isVideoEnabled: z.boolean().optional(),
     isAudioEnabled: z.boolean().optional(),
+    isScreenSharing: z.boolean().optional(),
   })
   .strict();
 

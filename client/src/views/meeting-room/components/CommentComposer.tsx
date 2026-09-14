@@ -7,32 +7,33 @@ import {
 } from "../helpers/comment-panel";
 import { useCommentComposer } from "../hooks/use-comment-composer";
 import type { VideoRoomUser } from "../types";
+import type { MeetingChat } from "../hooks/use-meeting-chat";
 
 type CommentComposerProps = {
   currentUserName: string;
   currentUserAvatar: string;
   roomUsers: VideoRoomUser[];
-  onSendComment: (content: string) => Promise<boolean>;
+  chat: MeetingChat;
 };
 
 export default function CommentComposer({
   currentUserName,
   currentUserAvatar,
   roomUsers,
-  onSendComment,
+  chat,
 }: CommentComposerProps): ReactElement {
   const composer = useCommentComposer({
     currentUserName,
     currentUserAvatar,
     roomUsers,
-    onSendComment,
+    chat,
   });
   const audienceLabel = getCommentAudienceLabel(roomUsers.length);
   const placeholder = getCommentPlaceholder(roomUsers);
 
   return (
     <footer className="border-t border-border-row bg-bg-panel px-4 py-3 sm:px-5 sm:py-4">
-      <div className="mb-3 text-xs font-medium text-text-muted">
+      <div className="mb-2 text-xs font-medium text-text-muted">
         {audienceLabel}
       </div>
       <div className="relative rounded-2xl border border-border-toolbar bg-white p-3 shadow-sm transition-shadow focus-within:shadow-md">
@@ -73,6 +74,7 @@ export default function CommentComposer({
           </div>
         )}
         <textarea
+          aria-label="会议聊天消息"
           ref={composer.textareaRef}
           value={composer.draft}
           onChange={(event) =>
@@ -88,7 +90,7 @@ export default function CommentComposer({
             composer.updateCursor(event.currentTarget.selectionStart)
           }
           onKeyDown={composer.handleKeyDown}
-          rows={4}
+          rows={3}
           placeholder={placeholder}
           className="w-full resize-none border-none bg-transparent text-sm leading-6 text-text-primary outline-none placeholder:text-text-subtle"
         />
@@ -98,12 +100,12 @@ export default function CommentComposer({
           </div>
           <button
             type="button"
-            disabled={composer.sending}
+            disabled={composer.sending || !composer.draft.trim() || chat.needsResendConfirmation}
             onClick={() => void composer.send()}
             className="inline-flex items-center gap-2 rounded-xl bg-text-primary px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:bg-text-subtle"
           >
             <SendHorizontal className="text-sm" />
-            {composer.sending ? "发送中" : "发送"}
+            {composer.sending ? "发送中" : chat.needsResendConfirmation ? "请核对记录" : "发送"}
           </button>
         </div>
       </div>
