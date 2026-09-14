@@ -1,6 +1,7 @@
 import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { spawn } from "node:child_process";
+import { createRequire } from "node:module";
 
 const root = process.cwd();
 const testRoot = path.join(root, "test");
@@ -30,8 +31,11 @@ if (tests.length === 0) {
   process.exit(0);
 }
 
-const command = process.platform === "win32" ? "tsx.cmd" : "tsx";
-const child = spawn(command, ["--test", ...tests], { stdio: "inherit" });
+const require = createRequire(import.meta.url);
+const tsxCli = require.resolve("tsx/cli");
+const child = spawn(process.execPath, [tsxCli, "--test", ...tests], {
+  stdio: "inherit",
+});
 
 child.on("exit", (code, signal) => {
   if (signal) {

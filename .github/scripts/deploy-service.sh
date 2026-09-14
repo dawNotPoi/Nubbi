@@ -153,6 +153,13 @@ if [ -f ~/nubbi-deploy/server/.env ]; then
   cp -f ~/nubbi-deploy/server/.env ~/nubbi-deploy.next/server/.env
 fi
 
+# A server-only or MCP-only release does not download a new client artifact.
+# Keep the currently deployed client build available for future Compose operations.
+if [ ! -f ~/nubbi-deploy.next/client/dist/index.html ] && [ -d ~/nubbi-deploy/client/dist ]; then
+  mkdir -p ~/nubbi-deploy.next/client/dist
+  cp -a ~/nubbi-deploy/client/dist/. ~/nubbi-deploy.next/client/dist/
+fi
+
 rm -rf ~/nubbi-deploy.prev
 if [ -d ~/nubbi-deploy ]; then
   mv ~/nubbi-deploy ~/nubbi-deploy.prev
