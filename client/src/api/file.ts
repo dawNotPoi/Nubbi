@@ -157,3 +157,36 @@ export const fetchFilePreviewBlob = async (fileId: string) => {
     contentType: response.headers.get("content-type") || blob.type || "",
   };
 };
+
+export const fetchFilePreviewStreamUrl = async (fileId: string) => {
+  const response = await authorizedFetch(
+    `/file/preview-url/${encodeURIComponent(fileId)}`,
+    { method: "GET" },
+  );
+
+  if (!response.ok) {
+    throw new Error(`文件流式预览地址获取失败: ${response.status}`);
+  }
+
+  const result = (await response.json()) as {
+    code: 0 | 1;
+    data?: {
+      url?: string;
+      expiresAt?: number;
+    };
+    message?: string;
+  };
+
+  if (result.code !== 1 || !result.data?.url || !result.data.expiresAt) {
+    throw new Error(result.message || "文件流式预览地址获取失败");
+  }
+
+  const url = result.data.url.startsWith("http")
+    ? result.data.url
+    : `${baseUrl}${result.data.url.startsWith("/") ? "" : "/"}${result.data.url}`;
+
+  return {
+    url,
+    expiresAt: result.data.expiresAt,
+  };
+};

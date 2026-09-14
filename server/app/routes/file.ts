@@ -2,6 +2,8 @@
 import { File } from "@/models/file/file";
 import { Folder } from "@/models/file/folder";
 import { UploadTask } from "@/models/file/uploadTask";
+import env from "@/lib/env";
+import crypto from "crypto";
 import express from "express";
 import fse from "fs-extra";
 import multer from "multer";
@@ -15,6 +17,19 @@ const router = express.Router();
 const upload = multer({ dest: "storage/temp_multer/" });
 const UPLOAD_TEMP_DIR = path.join(process.cwd(), "storage/temp");
 const UPLOAD_FINAL_DIR = path.join(process.cwd(), "storage/uploads");
+const PREVIEW_STREAM_TTL_MS = 60 * 60 * 1000;
+
+type PreviewStreamFile = {
+  fileId: string;
+  userId: string;
+  expiresAt: number;
+  storagePath: string;
+  mimeType?: string | null;
+  extension?: string | null;
+  name: string;
+};
+
+const previewStreamCache = new Map<string, PreviewStreamFile>();
 
 if (!fse.existsSync(UPLOAD_TEMP_DIR)) {
   fse.mkdirSync(UPLOAD_TEMP_DIR, { recursive: true });
@@ -66,6 +81,165 @@ const getOwnedActiveFile = async (fileId: string, userId?: string) => {
 
 const ensureFileResourceExists = async (storagePath: string) => {
   return fse.pathExists(storagePath);
+};
+
+const normalizeQueryValue = (value: unknown) => {
+  if (Array.isArray(value)) {
+    return typeof value[0] === "string" ? value[0] : "";
+  }
+
+  return typeof value === "string" ? value : "";
+};
+
+const createPreviewSignature = (
+  fileId: string,
+  userId: string,
+  expiresAt: number,
+) =>
+  crypto
+    .createHmac("sha256", env.BETTER_AUTH_SECRET)
+    .update(`${fileId}:${userId}:${expiresAt}`)
+    .digest("hex");
+
+const isSafeEqual = (left: string, right: string) => {
+  const leftBuffer = Buffer.from(left);
+  const rightBuffer = Buffer.from(right);
+
+  if (leftBuffer.length !== rightBuffer.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(leftBuffer, rightBuffer);
+};
+
+const buildPreviewStreamPath = (
+  fileId: string,
+  userId: string,
+  expiresAt: number,
+) => {
+  const token = createPreviewSignature(fileId, userId, expiresAt);
+  const searchParams = new URLSearchParams({
+    uid: userId,
+    expires: String(expiresAt),
+    token,
+  });
+
+  return `/file/stream/${encodeURIComponent(fileId)}?${searchParams.toString()}`;
+};
+
+const prunePreviewStreamCache = (now = Date.now()) => {
+  for (const [token, file] of previewStreamCache.entries()) {
+    if (file.expiresAt < now) {
+      previewStreamCache.delete(token);
+    }
+  }
+};
+
+const resolveSignedPreviewUserId = (
+  fileId: string,
+  query: Record<string, unknown>,
+) => {
+  const userId = normalizeQueryValue(query.uid);
+  const expires = normalizeQueryValue(query.expires);
+  const token = normalizeQueryValue(query.token);
+  const expiresAt = Number(expires);
+
+  if (!userId || !expires || !token || !Number.isFinite(expiresAt)) {
+    return null;
+  }
+
+  if (expiresAt < Date.now()) {
+    return null;
+  }
+
+  const expectedToken = createPreviewSignature(fileId, userId, expiresAt);
+
+  return isSafeEqual(token, expectedToken) ? userId : null;
+};
+
+const isGenericMimeType = (mimeType?: string | null) => {
+  const normalized = (mimeType || "").toLowerCase().trim();
+  return (
+    !normalized ||
+    normalized === "application/octet-stream" ||
+    normalized === "binary/octet-stream"
+  );
+};
+
+const resolveFileResponseType = (file: {
+  mimeType?: string | null;
+  extension?: string | null;
+  name: string;
+}) => {
+  if (!isGenericMimeType(file.mimeType)) {
+    return file.mimeType!;
+  }
+
+  return file.extension || path.extname(file.name) || file.mimeType || "bin";
+};
+
+const streamFileResponse = async (
+  res: express.Response,
+  file: {
+    storagePath: string;
+    mimeType?: string | null;
+    extension?: string | null;
+    name: string;
+  },
+  rangeHeader?: string,
+) => {
+  const stat = await fse.stat(file.storagePath);
+  const fileSize = stat.size;
+  const inferredType = resolveFileResponseType(file);
+
+  res.type(inferredType);
+  res.setHeader(
+    "Content-Disposition",
+    `inline; filename="${encodeURIComponent(file.name)}"`,
+  );
+  res.setHeader("Cache-Control", "private, max-age=60");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Accept-Ranges", "bytes");
+
+  if (rangeHeader) {
+    const match = /^bytes=(\d*)-(\d*)$/.exec(rangeHeader.trim());
+    if (!match) {
+      res.status(416).end();
+      return;
+    }
+
+    let start = match[1] ? Number(match[1]) : 0;
+    let end = match[2] ? Number(match[2]) : fileSize - 1;
+
+    if (!match[1] && match[2]) {
+      const suffixLength = Number(match[2]);
+      start = Math.max(fileSize - suffixLength, 0);
+      end = fileSize - 1;
+    }
+
+    if (
+      !Number.isFinite(start) ||
+      !Number.isFinite(end) ||
+      start < 0 ||
+      end < start ||
+      start >= fileSize
+    ) {
+      res.setHeader("Content-Range", `bytes */${fileSize}`);
+      res.status(416).end();
+      return;
+    }
+
+    end = Math.min(end, fileSize - 1);
+
+    res.status(206);
+    res.setHeader("Content-Range", `bytes ${start}-${end}/${fileSize}`);
+    res.setHeader("Content-Length", String(end - start + 1));
+    fse.createReadStream(file.storagePath, { start, end }).pipe(res);
+    return;
+  }
+
+  res.setHeader("Content-Length", String(fileSize));
+  fse.createReadStream(file.storagePath).pipe(res);
 };
 
 const removeOrphanedStorageFiles = async (storagePaths: string[]) => {
@@ -659,6 +833,112 @@ router.post(
 );
 
 router.get(
+  "/preview-url/:fileId",
+  requireAuth,
+  asyncHandler(async (req: AuthRequest, res) => {
+    const { fileId } = req.params;
+    const userId = req.user?.id;
+
+    const file = await getOwnedActiveFile(fileId, userId);
+
+    if (!file) {
+      return res.status(404).json({ message: "文件不存在或无权访问" });
+    }
+
+    if (!(await ensureFileResourceExists(file.storagePath))) {
+      return res.status(404).json({ message: "文件资源不存在" });
+    }
+
+    const expiresAt = Date.now() + PREVIEW_STREAM_TTL_MS;
+    const token = createPreviewSignature(fileId, userId!, expiresAt);
+    const url = buildPreviewStreamPath(fileId, userId!, expiresAt);
+    prunePreviewStreamCache();
+    previewStreamCache.set(token, {
+      fileId,
+      userId: userId!,
+      expiresAt,
+      storagePath: file.storagePath,
+      mimeType: file.mimeType,
+      extension: file.extension,
+      name: file.name,
+    });
+
+    successResponse(res, { url, expiresAt });
+  }),
+);
+
+const handleSignedStreamPreview = async (
+  req: AuthRequest,
+  res: express.Response,
+) => {
+  const { fileId } = req.params;
+  const userId = resolveSignedPreviewUserId(
+    fileId,
+    req.query as Record<string, unknown>,
+  );
+
+  if (!userId) {
+    return res.status(403).json({ message: "预览链接无效或已过期" });
+  }
+
+  const token = normalizeQueryValue(req.query.token);
+  const expiresAt = Number(normalizeQueryValue(req.query.expires));
+  const cachedFile = token ? previewStreamCache.get(token) : undefined;
+
+  if (
+    cachedFile &&
+    cachedFile.fileId === fileId &&
+    cachedFile.userId === userId &&
+    cachedFile.expiresAt >= Date.now()
+  ) {
+    await streamFileResponse(res, cachedFile, req.headers.range);
+    return;
+  }
+
+  if (cachedFile) {
+    previewStreamCache.delete(token);
+  }
+
+  const file = await getOwnedActiveFile(fileId, userId);
+
+  if (!file) {
+    return res.status(404).json({ message: "文件不存在或无权访问" });
+  }
+
+  if (!(await ensureFileResourceExists(file.storagePath))) {
+    return res.status(404).json({ message: "文件资源不存在" });
+  }
+
+  if (token && Number.isFinite(expiresAt)) {
+    previewStreamCache.set(token, {
+      fileId,
+      userId,
+      expiresAt,
+      storagePath: file.storagePath,
+      mimeType: file.mimeType,
+      extension: file.extension,
+      name: file.name,
+    });
+  }
+
+  await streamFileResponse(res, file, req.headers.range);
+};
+
+router.head(
+  "/stream/:fileId",
+  asyncHandler(async (req: AuthRequest, res) => {
+    await handleSignedStreamPreview(req, res);
+  }),
+);
+
+router.get(
+  "/stream/:fileId",
+  asyncHandler(async (req: AuthRequest, res) => {
+    await handleSignedStreamPreview(req, res);
+  }),
+);
+
+router.get(
   "/download/:fileId",
   requireAuth,
   asyncHandler(async (req: AuthRequest, res) => {
@@ -696,21 +976,7 @@ router.get(
       return res.status(404).json({ message: "文件资源不存在" });
     }
 
-    const stat = await fse.stat(file.storagePath);
-    const inferredType =
-      file.mimeType || file.extension || path.extname(file.name) || "bin";
-
-    res.type(inferredType);
-    res.setHeader(
-      "Content-Disposition",
-      `inline; filename="${encodeURIComponent(file.name)}"`,
-    );
-    res.setHeader("Content-Length", String(stat.size));
-    res.setHeader("Cache-Control", "private, max-age=60");
-    res.setHeader("X-Content-Type-Options", "nosniff");
-
-    const stream = fse.createReadStream(file.storagePath);
-    await pipeline(stream, res);
+    await streamFileResponse(res, file, req.headers.range);
   }),
 );
 
