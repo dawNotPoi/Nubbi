@@ -27,15 +27,28 @@ const SOCKETPORT = env.SOCKET_PORT || 4040;
 
 //跨域处理
 const corsOptions = {
-  origin: [env.CLIENT_URL, "http://localhost:3000", "http://localhost:5173"],
+  origin: (
+    origin: string | undefined,
+    callback: (error: Error | null, allow?: boolean | string) => void,
+  ) => {
+    callback(null, origin || true);
+  },
   credentials: true, // 允许携带凭证（如 cookies）
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"], // 允许的请求头
+  exposedHeaders: ["set-auth-token"],
 };
 app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 const socketIO = new Server(SOCKETPORT as number, {
   cors: {
-    origin: "*",
+    origin: (
+      origin: string | undefined,
+      callback: (error: Error | null, allow?: boolean | string) => void,
+    ) => {
+      callback(null, origin || true);
+    },
+    credentials: true,
   },
 });
 

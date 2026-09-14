@@ -29,7 +29,7 @@ MONGO_URI=mongodb://mongo:27017/d-note
 SERVER_PORT=4000
 SOCKET_PORT=4040
 BETTER_AUTH_SECRET=
-BETTER_AUTH_URL=http://your-domain-or-ip
+BETTER_AUTH_URL=http://your-api-domain-or-ip
 CLIENT_URL=http://your-domain-or-ip
 AUTH_GITHUB_ID=
 AUTH_GITHUB_SECRET=
@@ -56,14 +56,18 @@ GitHub Actions variables/secrets. Set a port explicitly when you want to change
 the public mapping.
 
 The frontend is built before it is uploaded to the server. The frontend Nginx
-container only serves the already-built `client/dist` files, proxies API routes
-to the server container, and proxies `/socket.io` to the Socket.IO port.
+container only serves the already-built `client/dist` files. API and Socket.IO
+requests are made directly to the backend URLs configured at build time.
 
-For the bundled Nginx deployment, leave `VITE_AUTH_URL` empty. Production
-auth requests default to the current site origin so `/api/auth/*` goes through
-the Nginx proxy instead of calling the API port directly. Only set
-`VITE_AUTH_URL` when the auth API is intentionally served from a separate
-public origin and the server CORS settings allow that origin.
+Set `VITE_API_URL` to the public backend HTTP origin, for example
+`http://your-domain-or-ip:4000`. Leave `VITE_AUTH_URL` empty when auth uses the
+same backend origin as `VITE_API_URL`; set it only when auth is served from a
+different origin. Set `VITE_SOCKET_URL` to the public Socket.IO origin, for
+example `http://your-domain-or-ip:4040`.
+
+The backend CORS policy is intentionally permissive for now so external browser
+clients can call the API directly. Tighten it later if the API surface needs
+origin-level restrictions.
 
 Do not put high-privilege secrets in `VITE_` variables. Vite embeds them into
 browser assets. If `VITE_GITHUB_TOKEN` is still needed, use a minimal-scope token
