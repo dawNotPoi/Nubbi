@@ -59,6 +59,12 @@ The frontend is built before it is uploaded to the server. The frontend Nginx
 container only serves the already-built `client/dist` files, proxies API routes
 to the server container, and proxies `/socket.io` to the Socket.IO port.
 
+For the bundled Nginx deployment, leave `VITE_AUTH_URL` empty. Production
+auth requests default to the current site origin so `/api/auth/*` goes through
+the Nginx proxy instead of calling the API port directly. Only set
+`VITE_AUTH_URL` when the auth API is intentionally served from a separate
+public origin and the server CORS settings allow that origin.
+
 Do not put high-privilege secrets in `VITE_` variables. Vite embeds them into
 browser assets. If `VITE_GITHUB_TOKEN` is still needed, use a minimal-scope token
 or move the upload flow behind the server later.
