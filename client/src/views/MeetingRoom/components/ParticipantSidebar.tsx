@@ -1,49 +1,33 @@
-import type { VideoRoomUser } from "../types";
+import type { StageParticipant } from "../types";
 import ParticipantTile from "./ParticipantTile";
 
 type ParticipantSidebarProps = {
-  localStream: MediaStream | null;
-  remoteStreams: Record<string, MediaStream>;
-  remoteUsers: VideoRoomUser[];
-  localName: string;
-  localAvatar?: string;
-  localVideoEnabled: boolean;
+  participants: StageParticipant[];
+  activeParticipantId?: string;
+  onSelectParticipant: (participantId: string) => void;
 };
 
 export default function ParticipantSidebar({
-  localStream,
-  remoteStreams,
-  remoteUsers,
-  localName,
-  localAvatar,
-  localVideoEnabled,
+  participants,
+  activeParticipantId,
+  onSelectParticipant,
 }: ParticipantSidebarProps) {
   return (
     <aside className="w-[15%] py-10 bg-normal">
       <ul className="min-w-[200px] h-full max-w-[300px] flex gap-1 flex-col overflow-y-scroll justify-center scrollbar-none">
-        <ParticipantTile
-          name={localName}
-          stream={localStream}
-          avatarSrc={localAvatar}
-          isVideoEnabled={localVideoEnabled}
-        />
-        {remoteUsers.map((roomUser) => {
-          const stream = remoteStreams[roomUser.peerId] || null;
-          const isVideoEnabled =
-            stream
-              ?.getVideoTracks()
-              .some((track) => track.readyState === "live") || false;
-
-          return (
-            <ParticipantTile
-              key={roomUser.peerId}
-              name={roomUser.name || roomUser.peerId}
-              stream={stream}
-              avatarSrc={roomUser.image || ""}
-              isVideoEnabled={isVideoEnabled}
-            />
-          );
-        })}
+        {participants.map((participant) => (
+          <ParticipantTile
+            key={participant.id}
+            id={participant.id}
+            name={participant.name}
+            stream={participant.stream}
+            avatarSrc={participant.avatarSrc}
+            isVideoEnabled={participant.isVideoEnabled}
+            isAudioEnabled={participant.isAudioEnabled}
+            isActive={participant.id === activeParticipantId}
+            onSelect={onSelectParticipant}
+          />
+        ))}
       </ul>
     </aside>
   );

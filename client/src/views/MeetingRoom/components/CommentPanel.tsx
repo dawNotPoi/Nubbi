@@ -1,15 +1,19 @@
 import Image from "@/component/UI/Image";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { LuMessageSquareText, LuSendHorizontal, LuSparkles } from "react-icons/lu";
+import {
+  LuMessageSquareText,
+  LuSendHorizontal,
+  LuSparkles,
+} from "react-icons/lu";
 import type { MeetingComment, VideoRoomUser } from "../types";
 
 type CommentPanelProps = {
+  meetingTitle?: string;
   currentUserName: string;
   currentUserAvatar?: string;
   roomUsers: VideoRoomUser[];
   comments: MeetingComment[];
   onSendComment: (content: string) => Promise<boolean>;
-  onCommentCountChange?: (count: number) => void;
 };
 
 const mentionPattern = /@([^\s@]+)/g;
@@ -47,12 +51,12 @@ const renderCommentContent = (content: string, isSelf: boolean) => {
 };
 
 export default function CommentPanel({
+  meetingTitle = "",
   currentUserName,
   currentUserAvatar,
   roomUsers,
   comments,
   onSendComment,
-  onCommentCountChange,
 }: CommentPanelProps) {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
@@ -69,6 +73,8 @@ export default function CommentPanel({
         name: currentUserName,
         image: currentUserAvatar || "",
         email: "",
+        isVideoEnabled: false,
+        isAudioEnabled: false,
       },
       ...roomUsers,
     ];
@@ -111,7 +117,9 @@ export default function CommentPanel({
     });
   }, [mentionMatch, mentionUsers]);
 
-  const showMentionSuggestions = Boolean(mentionMatch && mentionSuggestions.length);
+  const showMentionSuggestions = Boolean(
+    mentionMatch && mentionSuggestions.length,
+  );
 
   const audienceLabel = useMemo(() => {
     const total = roomUsers.length + 1;
@@ -158,10 +166,6 @@ export default function CommentPanel({
   };
 
   useEffect(() => {
-    onCommentCountChange?.(comments.length);
-  }, [comments.length, onCommentCountChange]);
-
-  useEffect(() => {
     setActiveMentionIndex(0);
   }, [mentionMatch?.keyword]);
 
@@ -174,7 +178,9 @@ export default function CommentPanel({
           </div>
           <div>
             <div className="text-sm font-semibold text-[#2f3437]">评论</div>
-            <div className="text-xs text-[#8b8b89]">像 Notion 一样记录会议上下文</div>
+            <div className="text-xs text-[#8b8b89]">
+              {meetingTitle || "未命名会议"}
+            </div>
           </div>
         </div>
         <div className="rounded-full bg-white px-3 py-1 text-xs text-[#787774] shadow-sm">
@@ -195,7 +201,9 @@ export default function CommentPanel({
             </div>
           ) : (
             comments.map((comment) => {
-              const isSelf = comment.name === currentUserName && comment.avatar === currentUserAvatar;
+              const isSelf =
+                comment.name === currentUserName &&
+                comment.avatar === currentUserAvatar;
 
               return (
                 <article
@@ -214,7 +222,9 @@ export default function CommentPanel({
                     className={`flex max-w-[78%] flex-col gap-1 ${isSelf ? "items-end" : "items-start"}`}
                   >
                     <div className="flex items-center gap-2 text-xs text-[#8b8b89]">
-                      <span className="font-medium text-[#5b5b57]">{comment.name}</span>
+                      <span className="font-medium text-[#5b5b57]">
+                        {comment.name}
+                      </span>
                       <span>{formatCommentTime(comment.createdAt)}</span>
                     </div>
                     <div
@@ -239,7 +249,9 @@ export default function CommentPanel({
       </div>
 
       <footer className="border-t border-[#ecebe8] bg-[#fbfbfa] px-5 py-4">
-        <div className="mb-3 text-xs font-medium text-[#787774]">{audienceLabel}</div>
+        <div className="mb-3 text-xs font-medium text-[#787774]">
+          {audienceLabel}
+        </div>
         <div className="relative rounded-2xl border border-[#e7e6e4] bg-white p-3 shadow-sm transition-shadow focus-within:shadow-md">
           {showMentionSuggestions && (
             <div className="absolute bottom-[calc(100%+12px)] left-0 right-0 z-10 overflow-hidden rounded-2xl border border-[#ecebe8] bg-white shadow-xl">
@@ -328,7 +340,9 @@ export default function CommentPanel({
             className="w-full resize-none border-none bg-transparent text-sm leading-6 text-[#37352f] outline-none placeholder:text-[#9b9a97]"
           />
           <div className="mt-3 flex items-center justify-between">
-            <div className="text-xs text-[#9b9a97]">Enter 发送，Shift + Enter 换行</div>
+            <div className="text-xs text-[#9b9a97]">
+              Enter 发送，Shift + Enter 换行
+            </div>
             <button
               type="button"
               disabled={sending}

@@ -7,11 +7,14 @@ import { Modal } from "@/component/UI/Dialog";
 import { useAuth } from "@/hooks/useAuth";
 import VideoPage from "@/views/MeetingRoom";
 import { Button, Input, Spin, message } from "antd";
-import { Lock, LogIn, Video } from "lucide-react";
+import { Clock3, Lock, LogIn, Video } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 const getMeetingAccessKey = (roomId: string) => `meeting-access:${roomId}`;
+const isMeetingEnded = (meeting: MeetingType) =>
+  Boolean(meeting.endedAt) ||
+  Date.now() >= new Date(meeting.startTime).getTime() + meeting.duration * 60 * 1000;
 
 const MeetingAccessGuard = () => {
   const { roomId = "" } = useParams();
@@ -46,6 +49,10 @@ const MeetingAccessGuard = () => {
 
         const nextMeeting = response.data;
         setMeeting(nextMeeting);
+
+        if (nextMeeting && isMeetingEnded(nextMeeting)) {
+          return;
+        }
 
         if (!nextMeeting) {
           message.error("会议房间不存在");
@@ -89,6 +96,11 @@ const MeetingAccessGuard = () => {
   const handleSubmitPassword = async () => {
     if (!meeting || !roomId) return;
 
+    if (isMeetingEnded(meeting)) {
+      message.warning("会议已结束");
+      return;
+    }
+
     if (!user) {
       setShowLoginModal(true);
       return;
@@ -119,7 +131,12 @@ const MeetingAccessGuard = () => {
   };
 
   if (granted) {
-    return <VideoPage />;
+    return (
+      <VideoPage
+        meetingTitle={meeting?.title || ""}
+        meetingHostId={meeting?.hostId || ""}
+      />
+    );
   }
 
   return (
@@ -180,6 +197,36 @@ const MeetingAccessGuard = () => {
         ) : !meeting ? (
           <div className="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-600">
             未找到对应的会议房间。
+          </div>
+        ) : meeting && isMeetingEnded(meeting) ? (
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-amber-900">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+                  <Clock3 className="size-5" />
+                </div>
+                <div>
+                  <div className="font-medium">会议已结束</div>
+                  <div className="mt-1 text-sm text-amber-700">
+                    当前会议已超过预定结束时间，不能再进入房间。
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-xl bg-slate-50 px-4 py-3">
+              <div className="text-sm text-slate-500">会议主题</div>
+              <div className="mt-1 font-medium text-slate-900">
+                {meeting.title}
+              </div>
+            </div>
+
+            <Button
+              type="primary"
+              onClick={() => navigate("/home", { replace: true })}
+            >
+              返回首页
+            </Button>
           </div>
         ) : (
           <>

@@ -1,5 +1,6 @@
-﻿import Input from "antd/es/input/Input";
+import Input from "antd/es/input/Input";
 import clsx from "clsx";
+import { useState } from "react";
 import {
   BiCamera,
   BiCameraOff,
@@ -20,11 +21,17 @@ type VideoControlsProps = {
   devices: MediaDevices;
   videoStatus: DeviceStatus;
   audioStatus: DeviceStatus;
+  isScreenSharing: boolean;
   isCommentOpen: boolean;
   commentCount: number;
+  endActionLabel: string;
+  ending?: boolean;
   onToggleDevice: (kind: MediaToggleKind, enabled: boolean) => void;
   onSwitchDevice: (kind: MediaDeviceKind, deviceId: string) => void;
+  onToggleScreenShare: () => void;
+  onSendComment: (content: string) => Promise<boolean>;
   onToggleComment: () => void;
+  onEndMeeting: () => void;
 };
 
 type DeviceMenuProps = {
@@ -90,19 +97,19 @@ function ActionItem({
   children,
 }: ActionItemProps) {
   return (
-    <div className="flex items-stretch rounded-xl border border-slate-200 shadow-sm">
+    <div className="flex items-stretch rounded-md border shadow-sm">
       <button
         type="button"
         onClick={onClick}
         className={clsx(
-          "relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-l-xl px-3 py-2 text-center transition-all",
+          "relative flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-l-xl px-3 py-1 text-center transition-all",
           active
             ? "bg-white text-slate-700 hover:bg-slate-50"
             : "bg-slate-50 text-slate-400 hover:bg-slate-100",
         )}
       >
         {badgeCount ? (
-          <span className="absolute -right-1.5 -top-1.5 flex min-w-5 items-center justify-center rounded-full bg-[#2f3437] px-1.5 text-[10px] font-semibold leading-5 text-white shadow-sm">
+          <span className="absolute -right-1 -top-1 flex min-w-4 items-center justify-center rounded-full bg-[#2f3437] px-1 text-[9px] font-semibold leading-4 text-white shadow-sm">
             {badgeCount > 99 ? "99+" : badgeCount}
           </span>
         ) : null}
@@ -127,22 +134,48 @@ export default function VideoControls({
   devices,
   videoStatus,
   audioStatus,
+  isScreenSharing,
   isCommentOpen,
   commentCount,
+  endActionLabel,
+  ending = false,
   onToggleDevice,
   onSwitchDevice,
+  onToggleScreenShare,
+  onSendComment,
   onToggleComment,
+  onEndMeeting,
 }: VideoControlsProps) {
+  const [draft, setDraft] = useState("");
+  const [sending, setSending] = useState(false);
+
+  const handleSend = async () => {
+    const content = draft.trim();
+    if (!content || sending) return;
+
+    setSending(true);
+    const sent = await onSendComment(content);
+    setSending(false);
+
+    if (sent) {
+      setDraft("");
+    }
+  };
+
   return (
-    <footer className="w-full border-t border-slate-200 bg-white/95 px-3 py-2 backdrop-blur-sm">
+    <footer className="w-full border-t border-slate-200 bg-white/95 px-3 py-1 backdrop-blur-sm">
       <div className="flex items-center justify-between gap-4">
         <div className="flex w-[210px] items-center gap-2">
-          <div className="w-full rounded-xl bg-slate-100 px-1 py-1">
+          <div className="w-full rounded-xl bg-slate-100 px-1 py-0.5">
             <Input
+              value={draft}
               placeholder="说点什么..."
               bordered={false}
               className="bg-transparent"
               type="text"
+              disabled={sending}
+              onChange={(event) => setDraft(event.target.value)}
+              onPressEnter={() => void handleSend()}
             />
           </div>
         </div>
@@ -180,7 +213,13 @@ export default function VideoControls({
             </Select>
           </ActionItem>
 
-          <ActionItem active label="共享屏幕" icon={<SlScreenDesktop />} />
+          <ActionItem
+            active={isScreenSharing}
+            label={isScreenSharing ? "停止共享" : "共享屏幕"}
+            icon={<SlScreenDesktop />}
+            onClick={onToggleScreenShare}
+          />
+
           <ActionItem
             active={isCommentOpen}
             label={isCommentOpen ? "关闭评论" : "打开评论"}
@@ -193,9 +232,11 @@ export default function VideoControls({
         <div className="flex w-[210px] justify-end">
           <button
             type="button"
-            className="rounded-xl px-4 py-2 text-sm font-medium text-rose-500 transition-colors hover:bg-rose-50"
+            disabled={ending}
+            onClick={onEndMeeting}
+            className="rounded-xl px-4 py-1 text-sm font-medium text-rose-500 transition-colors hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            结束会议
+            {ending ? "处理中..." : endActionLabel}
           </button>
         </div>
       </div>

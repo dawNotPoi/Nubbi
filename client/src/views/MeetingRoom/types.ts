@@ -7,6 +7,12 @@ export type DeviceStatus = {
   deviceId: string;
 };
 
+export type TrackReplaceHandler = (
+  stream: MediaStream,
+  oldTrack: MediaStreamTrack,
+  newTrack: MediaStreamTrack,
+) => void;
+
 export type MediaDevices = {
   audio: MediaDeviceInfo[];
   video: MediaDeviceInfo[];
@@ -19,6 +25,8 @@ export type VideoRoomUser = {
   name: string;
   image: string;
   email: string;
+  isVideoEnabled: boolean;
+  isAudioEnabled: boolean;
 };
 
 export type StageParticipant = {

@@ -7,6 +7,7 @@ export interface MeetingType {
   createdAt: Date;
   duration: number;
   password?: string;
+  endedAt?: string | Date | null;
 }
 
 export interface MeetingAccessResult {

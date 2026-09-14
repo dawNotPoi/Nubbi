@@ -45,7 +45,10 @@ export default async function request<T>(
       // 清除本地认证信息
       await authClient.signOut();
       // 重定向到登录页面
-      window.location.href = "/login";
+      const returnTo = encodeURIComponent(
+        `${window.location.pathname}${window.location.search}${window.location.hash}`,
+      );
+      window.location.href = `/login?returnTo=${returnTo}`;
       throw new Error("认证失败，请重新登录");
     }
 

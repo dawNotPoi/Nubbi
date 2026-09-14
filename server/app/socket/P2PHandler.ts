@@ -7,6 +7,8 @@ type JoinUserPayload = {
   name?: string;
   image?: string;
   email?: string;
+  isVideoEnabled?: boolean;
+  isAudioEnabled?: boolean;
 };
 
 type RoomUserInfo = {
@@ -16,11 +18,18 @@ type RoomUserInfo = {
   name: string;
   image: string;
   email: string;
+  isVideoEnabled: boolean;
+  isAudioEnabled: boolean;
 };
 
 type JoinMeetingResponse = {
   existingPeers: string[];
   roomUsers: RoomUserInfo[];
+};
+
+type EndMeetingPayload = {
+  roomId?: string;
+  userId?: string;
 };
 
 type MeetingCommentInfo = {
@@ -86,6 +95,8 @@ function upsertRoomUser(roomId: string, socketId: string, user?: JoinUserPayload
     name: user?.name || "Guest",
     image: user?.image || "",
     email: user?.email || "",
+    isVideoEnabled: user?.isVideoEnabled || false,
+    isAudioEnabled: user?.isAudioEnabled || false,
   };
 
   if (!roomUsers.has(roomId)) {
@@ -120,6 +131,22 @@ function leaveRoom(io: Server, socket: Socket, roomId: string) {
 
   socket.to(roomId).emit("user-left", socket.id);
   syncRoomUsers(io, roomId);
+}
+
+async function endMeetingRoom(io: Server, roomId: string, endedBy?: string) {
+  const socketsInRoom = await io.in(roomId).fetchSockets();
+
+  io.to(roomId).emit("meeting-ended", {
+    roomId,
+    endedBy: endedBy || "",
+  });
+
+  socketsInRoom.forEach((memberSocket) => {
+    memberSocket.leave(roomId);
+    removeRoomUser(memberSocket.id);
+  });
+
+  roomUsers.delete(roomId);
 }
 
 const P2PHandler = (io: Server, socket: Socket) => {
@@ -175,6 +202,42 @@ const P2PHandler = (io: Server, socket: Socket) => {
       signal: data.signal,
     });
   });
+
+  socket.on(
+    "endMeeting",
+    async (
+      { roomId, userId }: EndMeetingPayload,
+      callback?: (response: { ok: boolean; reason?: string }) => void,
+    ) => {
+      try {
+        if (!roomId) {
+          callback?.({ ok: false, reason: "INVALID_ROOM" });
+          return;
+        }
+
+        const existingMeeting = await meeting.findById(roomId);
+        if (!existingMeeting) {
+          callback?.({ ok: false, reason: "MEETING_NOT_FOUND" });
+          return;
+        }
+
+        if (userId && String(existingMeeting.hostId) !== String(userId)) {
+          callback?.({ ok: false, reason: "FORBIDDEN" });
+          return;
+        }
+
+        await meeting.updateOne(
+          { _id: roomId },
+          { $set: { endedAt: new Date() } },
+        );
+
+        await endMeetingRoom(io, roomId, userId);
+        callback?.({ ok: true });
+      } catch {
+        callback?.({ ok: false, reason: "END_FAILED" });
+      }
+    },
+  );
 
   socket.on(
     "sendMeetingComment",

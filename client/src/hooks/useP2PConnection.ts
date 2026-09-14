@@ -12,6 +12,8 @@ export type RoomUserInfo = {
   name: string;
   image: string;
   email: string;
+  isVideoEnabled: boolean;
+  isAudioEnabled: boolean;
 };
 
 type JoinMeetingResponse = {
@@ -24,6 +26,8 @@ type CurrentUserInfo = {
   name?: string | null;
   image?: string | null;
   email?: string | null;
+  isVideoEnabled?: boolean;
+  isAudioEnabled?: boolean;
 };
 
 type SendMeetingCommentResponse = {
@@ -32,11 +36,26 @@ type SendMeetingCommentResponse = {
   comment?: MeetingComment;
 };
 
+type EndMeetingResponse = {
+  ok: boolean;
+  reason?: string;
+};
+
 const toRoomUsersMap = (users: RoomUserInfo[]) => {
   return users.reduce<Record<string, RoomUserInfo>>((result, user) => {
     result[user.peerId] = user;
     return result;
   }, {});
+};
+
+const syncPeerTracks = (peer: Peer.Instance, stream: MediaStream) => {
+  stream.getTracks().forEach((track) => {
+    try {
+      peer.addTrack(track, stream);
+    } catch (error) {
+      console.error("Failed to add local track to peer.", error);
+    }
+  });
 };
 
 const useP2PConnection = () => {
@@ -50,13 +69,21 @@ const useP2PConnection = () => {
   const [roomUsers, setRoomUsers] = useState<Record<string, RoomUserInfo>>({});
   const [localPeerId, setLocalPeerId] = useState("");
   const [meetingComments, setMeetingComments] = useState<MeetingComment[]>([]);
+  const [meetingEndedAt, setMeetingEndedAt] = useState(0);
   const peersRef = useRef<{ [id: string]: Peer.Instance }>({});
   const createPeer = useCallback(
-    (peerId: string, initiator: boolean, stream: MediaStream) => {
+    (peerId: string, initiator: boolean, stream: MediaStream | null) => {
+      const syncRemoteStream = (remoteStream: MediaStream) => {
+        setRemoteStreams((prev) => ({
+          ...prev,
+          [peerId]: remoteStream,
+        }));
+      };
+
       const peer = new Peer({
         initiator,
         trickle: false,
-        stream,
+        stream: stream || undefined,
         config: {
           iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
         },
@@ -67,10 +94,13 @@ const useP2PConnection = () => {
       });
 
       peer.on("stream", (remoteStream) => {
-        setRemoteStreams((prev) => ({
-          ...prev,
-          [peerId]: remoteStream,
-        }));
+        syncRemoteStream(remoteStream);
+      });
+
+      peer.on("track", (_, remoteStream) => {
+        if (!remoteStream) return;
+
+        syncRemoteStream(remoteStream);
       });
 
       peer.on("close", () => {
@@ -108,8 +138,6 @@ const useP2PConnection = () => {
 
   const ensurePeerConnection = useCallback(
     (peerId: string, initiator: boolean) => {
-      if (!localStreamRef.current) return null;
-
       const existingPeer = peersRef.current[peerId];
       if (existingPeer && !existingPeer.destroyed) {
         return existingPeer;
@@ -137,37 +165,14 @@ const useP2PConnection = () => {
             name: currentUser?.name || undefined,
             image: currentUser?.image || undefined,
             email: currentUser?.email || undefined,
+            isVideoEnabled: currentUser?.isVideoEnabled || false,
+            isAudioEnabled: currentUser?.isAudioEnabled || false,
           },
         },
-        ({ roomUsers }: JoinMeetingResponse) => {
+        ({ existingPeers, roomUsers }: JoinMeetingResponse) => {
+          connectedRoomRef.current = roomId;
+          setLocalPeerId(socket.id || "");
           setRoomUsers(toRoomUsersMap(roomUsers));
-        },
-      );
-    },
-    [],
-  );
-
-  const connectToPeer = useCallback(
-    (roomId: string, stream: MediaStream, currentUser?: CurrentUserInfo) => {
-      const socket = socketRef.current;
-      if (!socket || !stream) return;
-
-      localStreamRef.current = stream;
-      connectedRoomRef.current = roomId;
-      setLocalPeerId(socket.id || "");
-
-      socket.emit(
-        "joinMeetingRoom",
-        {
-          roomId,
-          user: {
-            id: currentUser?.id,
-            name: currentUser?.name || undefined,
-            image: currentUser?.image || undefined,
-            email: currentUser?.email || undefined,
-          },
-        },
-        ({ existingPeers }: JoinMeetingResponse) => {
           existingPeers.forEach((peerId) => {
             ensurePeerConnection(peerId, false);
           });
@@ -175,6 +180,25 @@ const useP2PConnection = () => {
       );
     },
     [ensurePeerConnection],
+  );
+
+  const connectToPeer = useCallback(
+    (roomId: string, stream: MediaStream | null, currentUser?: CurrentUserInfo) => {
+      if (!roomId) return;
+
+      const previousStream = localStreamRef.current;
+      localStreamRef.current = stream;
+      connectedRoomRef.current = roomId;
+
+      if (stream && previousStream !== stream) {
+        Object.values(peersRef.current).forEach((peer) => {
+          if (!peer.destroyed) {
+            syncPeerTracks(peer, stream);
+          }
+        });
+      }
+    },
+    [],
   );
 
   const syncRoomUser = useCallback(
@@ -189,6 +213,8 @@ const useP2PConnection = () => {
           name: currentUser?.name || undefined,
           image: currentUser?.image || undefined,
           email: currentUser?.email || undefined,
+          isVideoEnabled: currentUser?.isVideoEnabled || false,
+          isAudioEnabled: currentUser?.isAudioEnabled || false,
         },
       });
     },
@@ -205,6 +231,7 @@ const useP2PConnection = () => {
     localStreamRef.current = null;
     pendingSignalsRef.current = {};
     setRemoteStreams({});
+    setRoomUsers({});
     setMeetingComments([]);
   }, []);
 
@@ -237,6 +264,20 @@ const useP2PConnection = () => {
     },
     [],
   );
+
+  const endMeeting = useCallback((roomId: string, userId?: string) => {
+    return new Promise<EndMeetingResponse>((resolve) => {
+      const socket = socketRef.current;
+      if (!socket || !roomId) {
+        resolve({ ok: false, reason: "INVALID_ROOM" });
+        return;
+      }
+
+      socket.emit("endMeeting", { roomId, userId }, (response: EndMeetingResponse) => {
+        resolve(response);
+      });
+    });
+  }, []);
 
   //初始化socket连接
   useEffect(() => {
@@ -313,6 +354,19 @@ const useP2PConnection = () => {
         });
       },
     );
+    socketRef.current.on("meeting-ended", () => {
+      Object.values(peersRef.current).forEach((peer) => {
+        peer.destroy();
+      });
+      peersRef.current = {};
+      connectedRoomRef.current = "";
+      localStreamRef.current = null;
+      pendingSignalsRef.current = {};
+      setRemoteStreams({});
+      setRoomUsers({});
+      setMeetingComments([]);
+      setMeetingEndedAt(Date.now());
+    });
 
     return () => {
       socketRef.current?.off("connect", handleConnect);
@@ -323,6 +377,7 @@ const useP2PConnection = () => {
       socketRef.current?.off("room-users-sync");
       socketRef.current?.off("meeting-comments-sync");
       socketRef.current?.off("meeting-comment-created");
+      socketRef.current?.off("meeting-ended");
       socketRef.current?.disconnect();
     };
   }, [ensurePeerConnection]);
@@ -332,9 +387,11 @@ const useP2PConnection = () => {
     connectToPeer,
     syncRoomUser,
     sendMeetingComment,
+    endMeeting,
     remoteStreams,
     roomUsers,
     meetingComments,
+    meetingEndedAt,
     localPeerId,
     destroyPeerConnections,
     peersRef,

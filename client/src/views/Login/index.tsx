@@ -2,7 +2,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Alert, Button, Divider, Form, Input, message } from "antd";
 import { useState } from "react";
 import { FaGithub, FaGoogle } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 interface LoginFormData {
   email: string;
@@ -16,11 +16,32 @@ interface RegisterFormData extends LoginFormData {
 
 export const LoginPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const { login, register, loginWithGitHub, loginWithGoogle, user, loading } =
     useAuth();
   const [isRegister, setIsRegister] = useState(false);
   const [showVerificationAlert, setShowVerificationAlert] = useState(false);
+  const stateFrom = (
+    location.state as
+      | {
+          from?: {
+            pathname?: string;
+            search?: string;
+            hash?: string;
+          };
+        }
+      | undefined
+  )?.from;
+  const queryReturnTo = new URLSearchParams(location.search).get("returnTo");
+  const stateReturnTo = stateFrom
+    ? `${stateFrom.pathname || ""}${stateFrom.search || ""}${stateFrom.hash || ""}`
+    : "";
+  const returnTo =
+    (queryReturnTo && queryReturnTo.startsWith("/") ? queryReturnTo : "") ||
+    (stateReturnTo.startsWith("/") ? stateReturnTo : "") ||
+    "/home";
+  const callbackURL = `${window.location.origin}${returnTo}`;
   const onLoginFinish = async (values: LoginFormData) => {
     const result = await login(values.email, values.password);
     if (result.error) {
@@ -28,7 +49,7 @@ export const LoginPage = () => {
     } else {
       message.success("登录成功！");
 
-      navigate("/home");
+      navigate(returnTo, { replace: true });
     }
   };
 
@@ -45,20 +66,18 @@ export const LoginPage = () => {
     if (result.success) {
       message.success("注册成功！请检查邮箱完成验证。");
       setShowVerificationAlert(true);
-      navigate("/home");
+      navigate(returnTo, { replace: true });
     } else {
       message.error("注册失败");
     }
   };
 
   const handleGitHubLogin = async () => {
-    await loginWithGitHub();
-    navigate("/home");
+    await loginWithGitHub(callbackURL);
   };
 
   const handleGoogleLogin = async () => {
-    await loginWithGoogle();
-    navigate("/home");
+    await loginWithGoogle(callbackURL);
   };
 
   return (
