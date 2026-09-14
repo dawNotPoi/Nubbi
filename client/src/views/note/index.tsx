@@ -226,7 +226,6 @@ export default function Note() {
         onChange={setContent}
         onEditorReady={setEditor}
         serverValue={content}
-        showTOC
       />
     );
   }, [

@@ -26,7 +26,6 @@ const TiptapEditor = ({
   editable = true,
   showMermaidSourceWhenReadOnly = false,
   variant = "editor",
-  showTOC = false,
   onEditorReady,
 }: TiptapEditorProps) => {
   const externalValue = serverValue ?? defaultValue;
