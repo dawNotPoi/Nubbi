@@ -1,9 +1,9 @@
 import {
   deleteFile,
   deleteTargetsBatch,
+  fetchFileDownloadBlob,
   fetchFileShareDownloadUrl,
   getAllFolders,
-  getFileDownloadUrl,
   listFiles,
   moveFileItem,
   renameFile,
@@ -49,6 +49,28 @@ type FolderTreeNode = DataNode & {
 };
 
 const DEFAULT_FOLDER_NAME = "未命名文件夹";
+
+const getActionErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+
+  return fallback;
+};
+
+const saveBlobAsFile = (blob: Blob, fileName: string) => {
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = objectUrl;
+  link.download = fileName;
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+};
 
 const buildDescendantSet = (folders: FolderRecord[], rootId: string) => {
   const childrenMap = new Map<string, string[]>();
@@ -164,16 +186,15 @@ const FileManager = () => {
     navigate(buildFilePath(nextCrumbs));
   };
 
-  const handleDownload = (record: FileTableRow) => {
+  const handleDownload = async (record: FileTableRow) => {
     if (record.kind !== "file") return;
 
-    const link = document.createElement("a");
-    link.href = getFileDownloadUrl(record._id);
-    link.download = record.name || "";
-    link.style.display = "none";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      const { blob } = await fetchFileDownloadBlob(record._id);
+      saveBlobAsFile(blob, record.name || "download");
+    } catch (error) {
+      messageApi.error(getActionErrorMessage(error, "文件下载失败"));
+    }
   };
 
   const handlePreview = (record: FileTableRow) => {
@@ -194,8 +215,8 @@ const FileManager = () => {
       const { url } = await fetchFileShareDownloadUrl(record._id);
       await navigator.clipboard.writeText(url);
       messageApi.success("已复制公开下载链接，7 天内有效");
-    } catch {
-      messageApi.error("分享链接生成失败，请稍后重试");
+    } catch (error) {
+      messageApi.error(getActionErrorMessage(error, "分享链接生成失败"));
     }
   };
 
@@ -558,6 +579,7 @@ const FileManager = () => {
         open={Boolean(previewRecord)}
         record={previewRecord}
         onClose={() => setPreviewRecord(null)}
+        onDownload={handleDownload}
       />
 
       <header className="flex gap-2 pb-4">

@@ -1,7 +1,6 @@
 ﻿import {
   fetchFilePreviewBlob,
   fetchFilePreviewStreamUrl,
-  getFileDownloadUrl,
 } from "@/api/file";
 import type { FileTableRow } from "@/views/file-manage/components/FileListTable/fileIcons";
 import { Button, Modal, Spin, Tabs } from "antd";
@@ -161,10 +160,12 @@ const FilePreviewModal = ({
   open,
   record,
   onClose,
+  onDownload,
 }: {
   open: boolean;
   record: FileTableRow | null;
   onClose: () => void;
+  onDownload?: (record: FileTableRow) => void;
 }) => {
   const [previewState, setPreviewState] = useState<PreviewState>({ mode: "idle" });
 
@@ -553,13 +554,9 @@ const FilePreviewModal = ({
         record ? (
           <div className="flex items-center justify-end gap-3">
             <Button onClick={onClose}>关闭</Button>
-            <a
-              href={getFileDownloadUrl(record._id)}
-              download={record.name}
-              className="inline-flex h-8 items-center rounded-md border border-[#d9dce1] px-4 text-sm text-[#1f1f1f] transition-colors hover:border-[#bfc4cc] hover:bg-[#fafafa]"
-            >
+            <Button onClick={() => onDownload?.(record)}>
               下载文件
-            </a>
+            </Button>
           </div>
         ) : null
       }

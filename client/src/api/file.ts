@@ -8,6 +8,32 @@ const resolveApiUrl = (url: string) =>
     ? url
     : `${baseUrl}${url.startsWith("/") ? "" : "/"}${url}`;
 
+const readFileResponseError = async (response: Response, fallback: string) => {
+  try {
+    const contentType = response.headers.get("content-type") || "";
+
+    if (contentType.includes("application/json")) {
+      const result = (await response.json()) as {
+        message?: unknown;
+        error?: unknown;
+      };
+
+      if (typeof result.message === "string" && result.message.trim()) {
+        return result.message;
+      }
+
+      if (typeof result.error === "string" && result.error.trim()) {
+        return result.error;
+      }
+    }
+
+    const text = await response.text();
+    return text.trim() || fallback;
+  } catch {
+    return fallback;
+  }
+};
+
 export interface FolderRecord {
   _id: string;
   name: string;
@@ -140,8 +166,24 @@ export const imgToGitCloud = async (file: File): Promise<string> => {
   return response.data.url;
 };
 
-export const getFileDownloadUrl = (fileId: string) => {
-  return `${baseUrl}/file/download/${fileId}`;
+export const fetchFileDownloadBlob = async (fileId: string) => {
+  const response = await authorizedFetch(
+    `/file/download/${encodeURIComponent(fileId)}`,
+    { method: "GET" },
+  );
+
+  if (!response.ok) {
+    const message = await readFileResponseError(
+      response,
+      `文件下载失败: ${response.status}`,
+    );
+    throw new Error(message);
+  }
+
+  return {
+    blob: await response.blob(),
+    contentType: response.headers.get("content-type") || "",
+  };
 };
 
 export const getFilePreviewUrl = (fileId: string) => {
@@ -199,7 +241,11 @@ export const fetchFileShareDownloadUrl = async (fileId: string) => {
   );
 
   if (!response.ok) {
-    throw new Error(`文件分享链接获取失败: ${response.status}`);
+    const message = await readFileResponseError(
+      response,
+      `文件分享链接获取失败: ${response.status}`,
+    );
+    throw new Error(message);
   }
 
   const result = (await response.json()) as {
