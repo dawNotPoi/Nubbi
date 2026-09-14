@@ -176,4 +176,4 @@ export const publishNote = async (
   return updatedNote;
 };
 
-export { recalculateHasChildren };
+export { recalculateHasChildren } from "./structure-update";
