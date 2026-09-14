@@ -24,6 +24,8 @@ type Chunk = {
 
 //哈希计算占据的进度百分比,使用整数
 const HASH_PERCENTAGE = 10;
+
+//文件上传类,用于管理文件上传的状态
 export class Uploader {
   private file: File; //上传的文件数据
   private chunks: Chunk[] = [];
@@ -36,6 +38,7 @@ export class Uploader {
   public progress = 0;
   //上传状态改变时触发
   private onChange?: (status: UploadStatus, progress: number) => void;
+  //上传完成时触发
   private onFinish?: () => void;
   constructor(options: {
     file: File;

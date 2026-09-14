@@ -22,4 +22,3 @@ export interface FileEntry {
   dirParts: string[];
   fullName: string;
 }
-

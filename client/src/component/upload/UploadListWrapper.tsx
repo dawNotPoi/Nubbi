@@ -38,14 +38,16 @@ export default function UploadListWrapper({
     >
       <header className="border-b-4 p-2">
         <div>
-          <h4>Downloading</h4>
+          <h4>上传队列</h4>
         </div>
       </header>
       {/* <GlobalFileUpload /> */}
       <div className="overflow-y-auto flex-1">
-        {tasks?.map((id) => (
-          <UploadItem key={id} id={id} />
-        ))}
+        {tasks?.length ? (
+          tasks.map((id) => <UploadItem key={id} id={id} />)
+        ) : (
+          <div className="text-center text-gray-400 py-10 text-sm">暂无上传任务</div>
+        )}
       </div>
       <div className="flex justify-center items-center p-2 ">
         <span className="text-xs text-gray-500/80">-仅展示本次上传任务-</span>

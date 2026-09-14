@@ -108,7 +108,7 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
               onClick={() => {
                 setOffset((v) => (v - 450 <= 0 ? 0 : v - 450));
               }}
-              className="cursor-pointer   group-hover:opacity-100 hover:border-sky-400  opacity-0  p-2 rounded-full bg-white border flex items-center justify-center"
+              className="cursor-pointer group-hover:opacity-100 hover:border-sky-400  opacity-0  p-2 rounded-full bg-white border flex items-center justify-center"
             >
               <ChevronLeft size={14} />
             </button>

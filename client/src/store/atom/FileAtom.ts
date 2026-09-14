@@ -1,22 +1,29 @@
 import { atom } from "jotai";
-import { atomWithMutation, atomWithQuery } from "jotai-tanstack-query";
+import { atomWithMutation } from "jotai-tanstack-query";
 import { atomFamily } from "jotai/utils";
-import { deleteFile, getFiles } from "../../api/file";
+import { createFloder, deleteFile, listFiles } from "../../api/file";
 import { queryClient } from "../../AppProvider";
 import { Uploader, UploadStatus } from "../../utils/file";
 
-export const getFilesAtom = atomWithQuery(
-  () => ({
-    queryKey: ["files"],
-    queryFn: async () => {
-      const response = await getFiles();
-      return response.data || [];
-    },
-    staleTime: 5 * 60 * 1000, // 5分钟内不重新请求
-    gcTime: 10 * 60 * 1000, // 10分钟内保留在内存
-  }),
-  () => queryClient
-);
+export const listFilesAtom = atomWithMutation(() => ({
+  mutationKey: ["files"],
+  mutationFn: async (parentId?: string) => {
+    return listFiles(parentId);
+  },
+}));
+
+export const createFloderMutationAtom = atomWithMutation(() => ({
+  mutationFn: async ({
+    parentId,
+    name,
+  }: {
+    parentId: string;
+    name: string;
+  }) => {
+    const res = await createFloder(parentId, name);
+    return res;
+  },
+}));
 
 export const deleteFileAtom = atomWithMutation(() => ({
   mutationFn: deleteFile,

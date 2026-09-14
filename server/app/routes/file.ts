@@ -39,22 +39,21 @@ const validateFile = async (user, fileId) => {
   }
 };
 
+//处理分片上传
 router.post(
   "/upload",
   upload.single("file"),
   asyncHandler((req, res) => {
+    //获取到上传文件的hash值和分片对应的index
     const { hash, index } = req.body;
-    //临时文件夹，存储当前文件的所有分片
+    //创建临时文件夹
     let tempFileDir = path.resolve(tempDir, hash);
-    // 如果当前文件的临时文件夹不存在，则创建该文件夹
     if (!fse.pathExistsSync(tempFileDir)) {
       fse.mkdirSync(tempFileDir);
     }
-    //存储分片的文件夹
+    //移动上传分片到临时文件夹
     const tempChunkDir = path.resolve(tempFileDir, index);
-    // （multer默认保存的分片位置）
     let multerChunkPath = path.resolve(req.file!.path);
-    log.info(multerChunkPath);
     if (!fse.existsSync(tempChunkDir)) {
       fse.moveSync(multerChunkPath, tempChunkDir);
     } else {
@@ -64,6 +63,7 @@ router.post(
   })
 );
 
+//处理文件删除
 router.delete(
   "/delete",
   requireAuth,
@@ -76,6 +76,7 @@ router.delete(
   })
 );
 
+//检验文件
 router.get(
   "/checkFile",
   asyncHandler(async (req, res) => {
@@ -95,6 +96,7 @@ router.get(
   })
 );
 
+//检验分片
 router.get(
   "/checkChunks",
   asyncHandler(async (req, res) => {
@@ -111,55 +113,77 @@ router.get(
   })
 );
 
-router.get("/merge", requireAuth, async (req, res) => {
-  const { hash, name } = req.query as { hash: string; name: string };
-  // 最终合并的文件路径
-  const filePath = path.resolve(finalDir, hash);
-  // 临时文件夹路径
-  let tempFileDir = path.resolve(tempDir, hash);
-  // 读取临时文件夹，获取所有切片
-  const chunkPaths = fse.readdirSync(tempFileDir);
-  log.info(chunkPaths);
-  let mergeTasks: Promise<void>[] = [];
-  for (let index = 0; index < chunkPaths.length; index++) {
-    mergeTasks.push(
-      new Promise((resolve) => {
-        // 当前遍历的切片路径
-        const chunkPath = path.resolve(tempFileDir, index + "");
-        // 将当前遍历的切片切片追加到文件中
-        fse.appendFileSync(filePath, fse.readFileSync(chunkPath));
-        // 删除当前遍历的切片
-        resolve();
-      })
-    );
-  }
-  await Promise.all(mergeTasks);
-  // 等待所有切片追加到文件后，删除临时文件夹
-  fse.removeSync(tempFileDir);
-  const extname = path.extname(name);
-  const user = await getUser(req);
-  try {
-    await File.create({
-      userId: user.id,
-      hash,
-      name,
-      type: extname,
+//文件合并操作,需要处理一下文件分片是否存在的问题
+router.get(
+  "/merge",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const { hash, name } = req.query as { hash: string; name: string };
+    // 文件最终存储路径
+    const filePath = path.resolve(finalDir, hash);
+    fse.mkdir(filePath);
+    //获取临时文件分片路径
+    let tempFileDir = path.resolve(tempDir, hash);
+    const chunkPaths = fse.readdirSync(tempFileDir);
+    let mergeTasks: Promise<void>[] = [];
+    for (let index = 0; index < chunkPaths.length; index++) {
+      mergeTasks.push(
+        new Promise((resolve) => {
+          // 当前遍历的切片路径
+          const chunkPath = path.resolve(tempFileDir, index + "");
+          // 将当前遍历的切片切片追加到文件中
+          fse.appendFileSync(filePath, fse.readFileSync(chunkPath));
+          // 删除当前遍历的切片
+          resolve();
+        })
+      );
+    }
+    await Promise.all(mergeTasks);
+    // 等待所有切片追加到文件后，删除临时文件夹
+    fse.removeSync(tempFileDir);
+    const extname = path.extname(name);
+    const user = await getUser(req);
+    try {
+      await File.create({
+        userId: user.id,
+        hash,
+        name,
+        type: extname,
+      });
+    } catch (error) {
+      console.error(error);
+    }
+    res.send({
+      msg: "合并成功",
+      success: true,
     });
-  } catch (error) {
-    console.error(error);
-  }
-  res.send({
-    msg: "合并成功",
-    success: true,
-  });
-});
+  })
+);
 
 router.get(
-  "/getFiles",
+  "/list",
   requireAuth,
   asyncHandler(async (req, res) => {
     const user = await getUser(req);
-    const result = await File.find({ userId: user.id });
+    const { parentId } = req.query;
+    const result = await File.find({ userId: user.id, parentId }).sort({
+      name: 1,
+    });
+    successResponse(res, result);
+  })
+);
+
+router.post(
+  "/createfloder",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const user = await getUser(req);
+    const { name, parentId } = req.body;
+    const result = await File.create({
+      userId: user.id,
+      name,
+      parentId,
+    });
     successResponse(res, result);
   })
 );
@@ -171,7 +195,6 @@ router.post(
     try {
       const { _id, name } = req.body;
       const result = await File.updateOne({ _id }, { name });
-      log.info(result);
       successResponse(res, result);
     } catch (error) {
       log.error(error);

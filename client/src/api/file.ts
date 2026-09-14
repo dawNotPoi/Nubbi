@@ -1,7 +1,11 @@
 import request, { Get, requestWithNoJson } from "./request";
 
-export const getFiles = async () => {
-  return Get("file/getFiles");
+export const listFiles = async (parentId?: string) => {
+  return Get("file/list", { parentId });
+};
+
+export const createFloder = async (name: string, parentId?: string) => {
+  return request("file/createfloder", { parentId, name });
 };
 
 export async function deleteFile(_id: string) {

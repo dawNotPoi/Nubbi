@@ -17,7 +17,6 @@ const fileSchema = new mongoose.Schema(
     },
     hash: {
       type: String,
-      required: true,
     },
     name: {
       type: String,
@@ -29,8 +28,19 @@ const fileSchema = new mongoose.Schema(
     },
     path: {
       type: String,
-      required: false, // 改为可选，因为会自动生成
     },
+    parentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "FsNode",
+      default: null,
+    },
+    // 冗余路径：包含所有父级文件夹的 ID 和名称
+    ancestors: [
+      {
+        _id: { type: mongoose.Schema.Types.ObjectId, ref: "FsNode" },
+        name: String,
+      },
+    ],
     // size: {
     //   type: Number,
     //   required: true,
