@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ES2022",
+    "strict": true, // 启用所有严格类型检查选项
+    "noImplicitAny": false,
+    "moduleResolution": "node",
+    "baseUrl": ".", // 指定模块解析的基目录
+    "paths": {
+      // 指定路径映射
+      "@/*": ["app/*"]
+    },
+    // "rootDirs": ["app"], // 指定根目录
+
+    // /* 输出选项 */
+    // "outDir": "./dist", // 指定输出目录
+    // "rootDir": "./app", // 指定源文件根目录
+    // "removeComments": true, // 移除注释
+    // // "sourceMap": true, // 生成 source map
+    // /* 高级选项 */
+    "esModuleInterop": true,
+    // "skipLibCheck": true, // 跳过库文件检查
+    // "forceConsistentCasingInFileNames": true, // 禁用文件名大小写不一致
+    "resolveJsonModule": true // 允许导入 JSON 模块
+    // "isolatedModules": true // 禁用跨文件的类型检查
+  },
+  "ts-node": {
+    "compilerOptions": {
+      "module": "commonjs"
+    },
+    "transpileOnly": true,
+    "files": true
+  },
+  "include": ["app/**/*.ts"], // 包含的文件或目录
+  "exclude": ["node_modules", "dist"] // 排除的文件或目录
+}

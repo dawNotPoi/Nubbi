@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  width: 100vw;
+  overflow-x: hidden;
+  min-width: 320px;
+  min-height: 100vh;
+  max-width: 100vw;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+h2{
+  font-size:1.6em;
+  line-height: 1;
+}
+
+h3{
+  font-size: 1.2em;
+}
+
+/* Custom CSS Needed for TipTap PlaceHolder */
+.tiptap .is-empty::before {
+  @apply text-slate-300;
+  @apply content-[attr(data-placeholder)];
+  @apply float-left;
+  @apply pointer-events-none;
+  @apply h-0;
+}
