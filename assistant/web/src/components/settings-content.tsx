@@ -65,7 +65,7 @@ export const SettingsContent = ({
         {notice ? <p className="rounded-lg bg-accent px-3 py-2 text-sm text-accent-foreground">{notice}</p> : null}
         {error ? <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
         {servers.map((server) => (
-          <article className="rounded-lg border p-3" key={server.id}>
+          <article className="rounded-lg border p-3" key={server.id ?? server.name}>
             <div className="flex items-start gap-3">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">

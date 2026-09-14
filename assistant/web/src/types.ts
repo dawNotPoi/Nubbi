@@ -56,7 +56,8 @@ export type Conversation = ConversationSummary & {
 };
 
 type McpServerBase = {
-  id: string;
+  // 新增时由后端按名称生成，保存后必有值。
+  id?: string;
   name: string;
   enabled: boolean;
 };
@@ -68,6 +69,8 @@ export type McpServerConfig = McpServerBase & {
   headers: Record<string, string>;
   command?: string;
   args?: string[];
+  // stdio 子进程可选工作目录。
+  cwd?: string;
   env: Record<string, string>;
 };
 

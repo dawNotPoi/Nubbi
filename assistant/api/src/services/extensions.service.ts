@@ -6,7 +6,7 @@ import { listAllSkills, setSkillEnabled } from "../orchestration/skills.js";
 export type ExtensionResponse = {
   skills: { name: string; description: string; enabled: boolean }[];
   servers: {
-    id: string;
+    id?: string;
     name: string;
     transport: "http" | "stdio";
     endpoint?: string;

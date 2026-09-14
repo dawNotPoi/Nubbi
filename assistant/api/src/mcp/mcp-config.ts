@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
@@ -10,7 +11,8 @@ const idSchema = z.string().regex(
 const stringMapSchema = z.record(z.string()).default({});
 
 export const mcpServerSchema = z.object({
-  id: idSchema,
+  // 创建时可省略，由后端根据名称生成；更新时必填且不可变更。
+  id: idSchema.optional(),
   name: z.string().trim().min(1, "名称不能为空").max(64),
   enabled: z.boolean().default(true),
   // http：通过 Streamable HTTP 连接远端；stdio：由本进程拉起子进程通信。
@@ -19,6 +21,8 @@ export const mcpServerSchema = z.object({
   headers: stringMapSchema,
   command: z.string().trim().min(1, "请输入启动命令").optional(),
   args: z.array(z.string()).default([]),
+  // stdio 子进程的可选工作目录，缺省时继承 Assistant 进程目录。
+  cwd: z.string().trim().min(1).optional(),
   env: stringMapSchema,
 }).superRefine((server, context) => {
   if (server.transport === "http" && !server.url) {
@@ -98,18 +102,43 @@ const mutateServers = async <T>(
 };
 
 /**
- * 新建一个 MCP 服务配置。
- * @param input 服务配置，ID 必须唯一。
- * @returns 已保存的服务配置；ID 已存在时抛出异常。
+ * 把服务名称转成小写 slug：非字母数字字符替换为连字符并压缩。
+ * @param name 服务名称（可能为中文）。
+ * @returns slug 化的名称片段；无可保留字符时返回空字符串。
+ */
+const slugify = (name: string): string =>
+  name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+
+/**
+ * 生成唯一服务 ID：优先用名称 slug，冲突或为空时追加短随机后缀。
+ * @param name 服务名称。
+ * @param existing 已存在的服务 ID 集合，用于避让。
+ * @returns 满足 ID 规则且不与现有 ID 冲突的标识。
+ */
+const generateServerId = (name: string, existing: Set<string>): string => {
+  const base = slugify(name).slice(0, 24) || "mcp";
+  if (!existing.has(base)) return base;
+  return base + "-" + randomUUID().slice(0, 6);
+};
+
+/**
+ * 新建一个 MCP 服务配置；未提供 ID 时按名称自动生成。
+ * @param input 服务配置，ID 可省略。
+ * @returns 已保存的服务配置（含生成的 ID）；ID 冲突时抛出异常。
  */
 export const createMcpServer = async (
   input: McpServerConfig,
 ): Promise<McpServerConfig> => mutateServers(async (servers) => {
-  if (servers.some((server) => server.id === input.id)) {
-    throw new Error(`MCP Server ID "${input.id}" 已存在`);
+  const id = input.id ?? generateServerId(
+    input.name,
+    new Set(servers.flatMap((server) => server.id ? [server.id] : [])),
+  );
+  if (servers.some((server) => server.id === id)) {
+    throw new Error('MCP Server ID "' + id + '" 已存在');
   }
-  await writeMcpServers([...servers, input]);
-  return input;
+  const saved = { ...input, id };
+  await writeMcpServers([...servers, saved]);
+  return saved;
 });
 
 /**

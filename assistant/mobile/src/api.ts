@@ -230,7 +230,7 @@ export const updateMcpServer = (
   baseUrl: string,
   token: string,
   server: McpServerConfig,
-): Promise<McpServerConfig> => configRequest(baseUrl, token, `/api/mcp/servers/${server.id}`, {
+): Promise<McpServerConfig> => configRequest(baseUrl, token, `/api/mcp/servers/${server.id ?? ""}`, {
   method: "PUT",
   body: JSON.stringify(server),
 });

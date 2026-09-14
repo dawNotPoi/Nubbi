@@ -60,6 +60,8 @@ const createTransport = (server: McpServerConfig): Transport => {
       command: expandEnv(server.command ?? ""),
       args: server.args.map((arg) => expandEnv(arg)),
       env: expandRecord(server.env),
+      // 可选工作目录：缺省时继承 Assistant 进程的 cwd。
+      cwd: server.cwd ? expandEnv(server.cwd) : undefined,
     });
   }
   return new StreamableHTTPClientTransport(new URL(expandEnv(server.url ?? "")), {
@@ -109,7 +111,8 @@ const discoverServerTools = async (server: McpServerConfig): Promise<McpTool[]> 
   try {
     const result = await client.listTools(undefined, { timeout: 10_000 });
     return result.tools.map((tool) => {
-      const modelName = safeName(server.id, tool.name);
+      // 配置中的 id 保存后必有值，这里兜底避免 undefined 污染工具名。
+      const modelName = safeName(server.id ?? "mcp", tool.name);
       return {
         modelName,
         server,

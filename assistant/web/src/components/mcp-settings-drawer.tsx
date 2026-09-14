@@ -8,7 +8,7 @@ import {
   updateMcpServer,
 } from "../api";
 import { cn } from "../lib/utils";
-import type { McpServerConfig } from "../types";
+import type { McpConnectionTest, McpServerConfig } from "../types";
 import { McpServerForm } from "./mcp-server-form";
 import { SettingsContent } from "./settings-content";
 import { Button } from "./ui/button";
@@ -99,18 +99,17 @@ export const McpSettingsDrawer = ({
   };
 
   /**
-   * 测试连接并返回结果文案。
+   * 测试连接并返回结构化结果（含工具清单）。
    * @param value 待测试的服务配置。
-   * @returns 连接结果提示文案。
+   * @returns 连接测试结果；失败时抛出异常。
    */
-  const test = async (value: McpServerConfig): Promise<string> => {
+  const test = async (value: McpServerConfig): Promise<McpConnectionTest> => {
     setLoading(true);
     setError(null);
     try {
       const result = await testMcpServer(token, value);
-      const message = `连接成功，发现 ${result.toolCount} 个工具`;
-      setNotice(`${value.name}：${message}`);
-      return message;
+      setNotice(value.name + "：连接成功，发现 " + result.toolCount + " 个工具");
+      return result;
     } finally {
       setLoading(false);
     }
@@ -142,7 +141,7 @@ export const McpSettingsDrawer = ({
     if (!window.confirm(`删除 MCP Server「${server.name}」？`)) return;
     setLoading(true);
     try {
-      await deleteMcpServer(token, server.id);
+      await deleteMcpServer(token, server.id ?? "");
       await load(token);
       setNotice("MCP 配置已删除");
     } catch (caught) {

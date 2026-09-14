@@ -1,80 +1,43 @@
-import { FlaskConical, Save, X } from "lucide-react";
+import { CheckCircle2, FlaskConical, Save, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { McpServerConfig } from "../types";
-import { KeyValueEditor } from "./key-value-editor";
-import {
-  pairsToRecord,
-  recordToPairs,
-  type KeyValuePair,
-} from "./mcp-form-utils";
+import type { McpConnectionTest, McpServerConfig } from "../types";
 import { Button } from "./ui/button";
-
-// 表单草稿：请求头用键值对数组承载，便于编辑与增删。
-type Draft = {
-  id: string;
-  name: string;
-  enabled: boolean;
-  url: string;
-  headers: KeyValuePair[];
-};
+import { HttpFields, StdioFields } from "./mcp-server-fields";
+import {
+  emptyDraft,
+  toConfig,
+  toDraft,
+  type McpDraft,
+} from "./mcp-form-utils";
 
 /**
- * 生成空的表单草稿。
- * @returns 全空的 MCP 表单草稿。
+ * 传输类型切换按钮。
+ * @param props.active 当前是否激活。
+ * @param props.label 按钮文案。
+ * @param props.onClick 点击回调。
+ * @returns 传输类型按钮。
  */
-const emptyDraft = (): Draft => ({
-  id: "",
-  name: "",
-  enabled: true,
-  url: "",
-  headers: [],
-});
-
-/**
- * 服务端配置 → 表单草稿（headers 展开为数组）。
- * @param server 服务端保存的 MCP 配置，可空。
- * @returns 可用于表单编辑的草稿。
- */
-const toDraft = (server: McpServerConfig | null): Draft => server
-  ? { ...server, headers: recordToPairs(server.headers) }
-  : emptyDraft();
-
-/**
- * 表单草稿 → 服务端配置，做基础校验并过滤空请求头。
- * @param draft 表单编辑中的草稿。
- * @returns 校验通过的服务端配置；必填缺失或格式非法时抛出异常。
- */
-const toConfig = (draft: Draft): McpServerConfig => {
-  const id = draft.id.trim();
-  const name = draft.name.trim();
-  const url = draft.url.trim();
-  if (!id || !name) throw new Error("请填写名称和 ID");
-  if (!/^[a-z0-9-]+$/.test(id)) {
-    throw new Error("ID 只能包含小写字母、数字和连字符");
-  }
-  if (!url) throw new Error("请填写 MCP HTTP URL");
-  // URL 必须为 http/https，用 URL 构造函数做完整校验。
-  try {
-    const parsed = new URL(url);
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-      throw new Error();
+const TransportButton = ({ active, label, onClick }: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) => (
+  <button
+    className={
+      "h-9 rounded-lg border px-3 text-sm font-medium transition " +
+      (active
+        ? "border-primary bg-primary/10 text-primary"
+        : "border-border text-muted-foreground hover:bg-muted")
     }
-  } catch {
-    throw new Error("MCP URL 必须使用 http:// 或 https://");
-  }
-  return {
-    id,
-    name,
-    enabled: draft.enabled,
-    url,
-    headers: pairsToRecord(draft.headers),
-  };
-};
-
-const inputClass = "h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15";
+    onClick={onClick}
+    type="button"
+  >
+    {label}
+  </button>
+);
 
 /**
- * MCP 服务新增/编辑表单。
+ * MCP 服务新增/编辑表单：支持 http（URL + 请求头）与 stdio（命令 + 参数 + 环境变量）。
  * @param props.server 待编辑的服务配置，null 表示新增。
  * @param props.busy 是否处于加载中。
  * @param props.onCancel 取消回调。
@@ -82,6 +45,8 @@ const inputClass = "h-10 w-full rounded-lg border bg-background px-3 text-sm out
  * @param props.onTest 测试回调，返回提示文案。
  * @returns MCP 编辑表单视图。
  */
+const inputClass = "h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15";
+
 export const McpServerForm = ({
   server,
   busy,
@@ -93,14 +58,16 @@ export const McpServerForm = ({
   busy: boolean;
   onCancel: () => void;
   onSave: (value: McpServerConfig) => Promise<void>;
-  onTest: (value: McpServerConfig) => Promise<string>;
+  onTest: (value: McpServerConfig) => Promise<McpConnectionTest>;
 }) => {
-  const [draft, setDraft] = useState<Draft>(() => toDraft(server));
+  const [draft, setDraft] = useState<McpDraft>(() => toDraft(server));
   const [message, setMessage] = useState<string | null>(null);
+  const [testResult, setTestResult] = useState<McpConnectionTest | null>(null);
 
   useEffect(() => {
     setDraft(toDraft(server));
     setMessage(null);
+    setTestResult(null);
   }, [server]);
 
   /**
@@ -113,8 +80,9 @@ export const McpServerForm = ({
       setMessage(null);
       const value = toConfig(draft);
       if (action === "save") await onSave(value);
-      else setMessage(await onTest(value));
+      else setTestResult(await onTest(value));
     } catch (error) {
+      setTestResult(null);
       setMessage(error instanceof Error ? error.message : "操作失败");
     }
   };
@@ -126,24 +94,57 @@ export const McpServerForm = ({
           名称
           <input className={inputClass} onChange={(event) => setDraft({ ...draft, name: event.target.value })} value={draft.name} />
         </label>
-        <label className="space-y-1.5 text-sm font-medium">
-          ID
-          <input className={inputClass} disabled={Boolean(server)} onChange={(event) => setDraft({ ...draft, id: event.target.value.toLowerCase() })} value={draft.id} />
-        </label>
+        {draft.id ? (
+          <div className="space-y-1.5 text-sm font-medium">
+            ID
+            <input className={inputClass + " cursor-not-allowed bg-muted"} disabled readOnly value={draft.id} />
+          </div>
+        ) : null}
       </div>
 
-      <label className="block space-y-1.5 text-sm font-medium">
-        MCP HTTP URL
-        <input className={inputClass} onChange={(event) => setDraft({ ...draft, url: event.target.value })} placeholder="https://example.com/mcp" value={draft.url} />
-      </label>
-      <KeyValueEditor label="请求头" onChange={(headers) => setDraft({ ...draft, headers })} pairs={draft.headers} />
+      <div className="space-y-1.5">
+        <span className="text-sm font-medium">传输方式</span>
+        <div className="grid grid-cols-2 gap-2">
+          <TransportButton active={draft.transport === "http"} label="HTTP（远端服务）" onClick={() => { setTestResult(null); setDraft({ ...draft, transport: "http" }); }} />
+          <TransportButton active={draft.transport === "stdio"} label="STDIO（本地命令）" onClick={() => { setTestResult(null); setDraft({ ...draft, transport: "stdio" }); }} />
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {draft.transport === "stdio"
+            ? "由 Assistant 进程拉起本地命令作为 MCP 服务，无需手动开启服务；命令与环境变量支持 ${ENV_NAME} 展开。"
+            : "连接远端 Streamable HTTP MCP 服务；请求头支持 ${ENV_NAME} 展开。"}
+        </p>
+      </div>
+
+      {draft.transport === "http"
+        ? <HttpFields draft={draft} onChange={setDraft} />
+        : <StdioFields draft={draft} onChange={setDraft} />}
 
       <label className="flex min-h-10 items-center gap-3 text-sm font-medium">
         <input checked={draft.enabled} className="size-4 accent-primary" onChange={(event) => setDraft({ ...draft, enabled: event.target.checked })} type="checkbox" />
         启用此 Server
       </label>
 
-      {message ? <p className="rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">{message}</p> : null}
+      {testResult ? (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+          <p className="flex items-center gap-1.5 text-sm font-medium text-emerald-700">
+            <CheckCircle2 className="size-4" />
+            连接成功，发现 {testResult.toolCount} 个工具
+          </p>
+          {testResult.tools.length > 0 ? (
+            <ul className="mt-2 max-h-48 space-y-1 overflow-auto">
+              {testResult.tools.map((tool) => (
+                <li className="rounded bg-white/70 px-2 py-1" key={tool.name}>
+                  <p className="break-all font-mono text-xs font-medium">{tool.name}</p>
+                  {tool.description ? (
+                    <p className="mt-0.5 line-clamp-2 break-words text-xs text-muted-foreground">{tool.description}</p>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
+      {message ? <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{message}</p> : null}
 
       <div className="grid grid-cols-3 gap-2 border-t pt-4">
         <Button disabled={busy} onClick={onCancel} type="button" variant="outline"><X />取消</Button>

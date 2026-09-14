@@ -4,7 +4,7 @@ import { Alert, Text, View } from "react-native";
 import { createMcpServer, deleteMcpServer, listMcpServers, testMcpServer, updateMcpServer } from "../../api";
 import { Button, IconButton, Switch } from "../../components/controls";
 import { colors } from "../../theme";
-import type { McpServerConfig } from "../../types";
+import type { McpConnectionTest, McpServerConfig } from "../../types";
 import { McpForm } from "./mcp-form";
 import { Notice } from "./notice";
 import { settingsStyles as styles } from "./styles";
@@ -62,16 +62,17 @@ export const McpPanel = ({ baseUrl, token }: { baseUrl: string; token: string })
   };
 
   /**
-   * 测试连接并展示发现的工具数量。
+   * 测试连接并返回结构化结果（含工具清单）。
    * @param server 待测试的服务配置。
-   * @returns 测试完成后的 Promise。
+   * @returns 连接测试结果；失败时抛出异常。
    */
-  const test = async (server: McpServerConfig): Promise<void> => {
+  const test = async (server: McpServerConfig): Promise<McpConnectionTest> => {
     setBusy(true);
     try {
       const result = await testMcpServer(baseUrl, token, server);
       setDanger(false);
       setMessage(`连接成功，发现 ${result.toolCount} 个工具`);
+      return result;
     } finally {
       setBusy(false);
     }
@@ -103,7 +104,7 @@ export const McpPanel = ({ baseUrl, token }: { baseUrl: string; token: string })
   const remove = (server: McpServerConfig): void => {
     Alert.alert("删除 MCP", `确认删除“${server.name}”？`, [
       { text: "取消", style: "cancel" },
-      { text: "删除", style: "destructive", onPress: () => void deleteMcpServer(baseUrl, token, server.id)
+      { text: "删除", style: "destructive", onPress: () => void deleteMcpServer(baseUrl, token, server.id ?? "")
         .then(load)
         .then(() => setMessage("MCP 配置已删除"))
         .catch((caught: unknown) => {
@@ -122,7 +123,7 @@ export const McpPanel = ({ baseUrl, token }: { baseUrl: string; token: string })
       <Button loading={busy && !servers.length} onPress={() => setEditing(null)}>新增 HTTP MCP</Button>
       <Notice danger={danger} message={message} />
       {servers.map((server) => (
-        <View key={server.id} style={styles.serverItem}>
+        <View key={server.id ?? server.name} style={styles.serverItem}>
           <View style={styles.serverTopRow}>
             <View style={styles.flex}>
               <View style={styles.serverNameRow}>

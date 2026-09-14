@@ -40,7 +40,8 @@ export type Message = {
 export type Conversation = ConversationSummary & { messages: Message[] };
 
 export type McpServerConfig = {
-  id: string;
+  // 新增时由后端按名称生成，保存后必有值。
+  id?: string;
   name: string;
   enabled: boolean;
   // http：远端 Streamable HTTP 地址；stdio：本地启动命令。
@@ -49,6 +50,8 @@ export type McpServerConfig = {
   headers: Record<string, string>;
   command?: string;
   args?: string[];
+  // stdio 子进程可选工作目录。
+  cwd?: string;
   env: Record<string, string>;
 };
 

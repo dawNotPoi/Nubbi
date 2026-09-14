@@ -4,7 +4,8 @@ import { Pressable, Text, View } from "react-native";
 import { Button, Field, IconButton, Switch } from "../../components/controls";
 import { colors } from "../../theme";
 import type { McpServerConfig } from "../../types";
-import { fromMcpDraft, toMcpDraft, type HeaderDraft } from "./mcp-draft";
+import { fromMcpDraft, toMcpDraft, type HeaderDraft, type McpDraft } from "./mcp-draft";
+import type { McpConnectionTest } from "../../types";
 import { Notice } from "./notice";
 import { settingsStyles as styles } from "./styles";
 
@@ -28,10 +29,11 @@ export const McpForm = ({
   busy: boolean;
   onBack: () => void;
   onSave: (server: McpServerConfig) => Promise<void>;
-  onTest: (server: McpServerConfig) => Promise<void>;
+  onTest: (server: McpServerConfig) => Promise<McpConnectionTest>;
 }) => {
   const [draft, setDraft] = useState(() => toMcpDraft(server));
   const [message, setMessage] = useState("");
+  const [testResult, setTestResult] = useState<McpConnectionTest | null>(null);
 
   /**
    * 执行保存或测试：先校验草稿，再调用对应回调。
@@ -43,23 +45,34 @@ export const McpForm = ({
       setMessage("");
       const value = fromMcpDraft(draft);
       if (action === "save") await onSave(value);
-      else await onTest(value);
+      else setTestResult(await onTest(value));
     } catch (caught) {
+      setTestResult(null);
       setMessage(caught instanceof Error ? caught.message : "操作失败");
     }
   };
 
   /**
-   * 更新指定索引请求头的字段。
-   * @param index 请求头在草稿数组中的索引。
+   * 更新指定索引键值对（请求头或环境变量）的字段。
+   * @param key 目标字段名（headers 或 env）。
+   * @param index 键值对在数组中的索引。
    * @param patch 要合并的字段更新。
    * @returns 无返回值。
    */
-  const updateHeader = (index: number, patch: Partial<HeaderDraft>): void => {
+  const updatePairs = (key: "headers" | "env", index: number, patch: Partial<HeaderDraft>): void => {
     setDraft({
       ...draft,
-      headers: draft.headers.map((item, candidate) => candidate === index ? { ...item, ...patch } : item),
+      [key]: draft[key].map((item, candidate) => candidate === index ? { ...item, ...patch } : item),
     });
+  };
+
+  /**
+   * 新增一条键值对（请求头或环境变量）。
+   * @param key 目标字段名（headers 或 env）。
+   * @returns 无返回值。
+   */
+  const addPair = (key: "headers" | "env"): void => {
+    setDraft({ ...draft, [key]: [...draft[key], { key: "", value: "" }] });
   };
 
   return (
@@ -69,25 +82,76 @@ export const McpForm = ({
         <Text style={styles.backText}>{server ? "编辑 MCP" : "新增 MCP"}</Text>
       </Pressable>
       <Field label="名称" onChangeText={(name) => setDraft({ ...draft, name })} value={draft.name} />
-      <Field autoCapitalize="none" autoCorrect={false} editable={!server} label="ID" onChangeText={(id) => setDraft({ ...draft, id: id.toLowerCase() })} value={draft.id} />
-      <Field autoCapitalize="none" autoCorrect={false} keyboardType="url" label="MCP HTTP URL" onChangeText={(url) => setDraft({ ...draft, url })} placeholder="https://example.com/mcp" value={draft.url} />
-      <View style={styles.headersTitleRow}>
-        <Text style={styles.fieldLabel}>请求头</Text>
-        <IconButton icon={<Plus color={colors.primary} size={20} />} label="添加请求头" onPress={() => setDraft({ ...draft, headers: [...draft.headers, { key: "", value: "" }] })} />
+      {draft.id ? <Field editable={false} label="ID" value={draft.id} /> : null}
+      <Text style={styles.fieldLabel}>传输方式</Text>
+      <View style={styles.transportRow}>
+        <Pressable
+          style={[styles.transportButton, draft.transport === "http" && styles.transportButtonActive]}
+          onPress={() => setDraft({ ...draft, transport: "http" })}
+        >
+          <Text style={[styles.transportText, draft.transport === "http" && styles.transportTextActive]}>HTTP（远端服务）</Text>
+        </Pressable>
+        <Pressable
+          style={[styles.transportButton, draft.transport === "stdio" && styles.transportButtonActive]}
+          onPress={() => setDraft({ ...draft, transport: "stdio" })}
+        >
+          <Text style={[styles.transportText, draft.transport === "stdio" && styles.transportTextActive]}>STDIO（本地命令）</Text>
+        </Pressable>
       </View>
-      {draft.headers.map((header, index) => (
-        <View key={index} style={styles.headerEditor}>
-          <View style={styles.headerFields}>
-            <Field label="名称" onChangeText={(key) => updateHeader(index, { key })} value={header.key} />
-            <Field autoCapitalize="none" autoCorrect={false} label="值" onChangeText={(value) => updateHeader(index, { value })} placeholder="Bearer token 或 ${ENV_NAME}" value={header.value} />
+      {draft.transport === "http" ? (
+        <>
+          <Field autoCapitalize="none" autoCorrect={false} keyboardType="url" label="MCP HTTP URL" onChangeText={(url) => setDraft({ ...draft, url })} placeholder="https://example.com/mcp" value={draft.url} />
+          <View style={styles.headersTitleRow}>
+            <Text style={styles.fieldLabel}>请求头</Text>
+            <IconButton icon={<Plus color={colors.primary} size={20} />} label="添加请求头" onPress={() => addPair("headers")} />
           </View>
-          <IconButton icon={<Trash2 color={colors.danger} size={18} />} label="删除请求头" onPress={() => setDraft({ ...draft, headers: draft.headers.filter((_, candidate) => candidate !== index) })} />
-        </View>
-      ))}
+          {draft.headers.map((header, index) => (
+            <View key={index} style={styles.headerEditor}>
+              <View style={styles.headerFields}>
+                <Field label="名称" onChangeText={(key) => updatePairs("headers", index, { key })} value={header.key} />
+                <Field autoCapitalize="none" autoCorrect={false} label="值" onChangeText={(value) => updatePairs("headers", index, { value })} placeholder="Bearer token 或 \${ENV_NAME}" value={header.value} />
+              </View>
+              <IconButton icon={<Trash2 color={colors.danger} size={18} />} label="删除请求头" onPress={() => setDraft({ ...draft, headers: draft.headers.filter((_, candidate) => candidate !== index) })} />
+            </View>
+          ))}
+        </>
+      ) : (
+        <>
+          <Field autoCapitalize="none" autoCorrect={false} label="启动命令" onChangeText={(command) => setDraft({ ...draft, command })} placeholder="node" value={draft.command ?? ""} />
+          <Field autoCapitalize="none" autoCorrect={false} label="启动参数（每行一个）" multiline onChangeText={(argsText) => setDraft({ ...draft, argsText })} placeholder="/path/to/mcp-server/dist/index.js" value={draft.argsText} />
+          <Field autoCapitalize="none" autoCorrect={false} label="工作目录（可选）" onChangeText={(cwd) => setDraft({ ...draft, cwd })} placeholder="缺省继承 Assistant 进程目录" value={draft.cwd} />
+          <View style={styles.headersTitleRow}>
+            <Text style={styles.fieldLabel}>环境变量</Text>
+            <IconButton icon={<Plus color={colors.primary} size={20} />} label="添加环境变量" onPress={() => addPair("env")} />
+          </View>
+          {draft.env.map((item, index) => (
+            <View key={index} style={styles.headerEditor}>
+              <View style={styles.headerFields}>
+                <Field label="名称" onChangeText={(key) => updatePairs("env", index, { key })} value={item.key} />
+                <Field autoCapitalize="none" autoCorrect={false} label="值" onChangeText={(value) => updatePairs("env", index, { value })} placeholder="值或 \${ENV_NAME}" value={item.value} />
+              </View>
+              <IconButton icon={<Trash2 color={colors.danger} size={18} />} label="删除环境变量" onPress={() => setDraft({ ...draft, env: draft.env.filter((_, candidate) => candidate !== index) })} />
+            </View>
+          ))}
+        </>
+      )}
       <View style={styles.switchRow}>
         <Text style={styles.itemTitle}>启用此 Server</Text>
         <Switch onValueChange={(enabled) => setDraft({ ...draft, enabled })} value={draft.enabled} />
       </View>
+      {testResult ? (
+        <View style={styles.testResultBox}>
+          <Text style={styles.testResultTitle}>连接成功，发现 {testResult.toolCount} 个工具</Text>
+          {testResult.tools.map((tool) => (
+            <View key={tool.name} style={styles.testResultItem}>
+              <Text style={styles.testResultName}>{tool.name}</Text>
+              {tool.description ? (
+                <Text numberOfLines={2} style={styles.testResultDesc}>{tool.description}</Text>
+              ) : null}
+            </View>
+          ))}
+        </View>
+      ) : null}
       <Notice danger message={message} />
       <View style={styles.actionsRow}>
         <View style={styles.flex}><Button loading={busy} onPress={() => void run("test")} tone="secondary">测试连接</Button></View>
