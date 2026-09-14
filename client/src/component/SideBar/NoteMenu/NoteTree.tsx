@@ -4,6 +4,7 @@ import {
   SidebarTreeItem,
   SidebarTreeState,
 } from "@/component/SideBar/components";
+import { normalizeNoteTitle } from "@/features/note/model/hierarchy";
 import {
   deleteSingleNoteAtom,
   expandedNodesAtom,
@@ -13,8 +14,6 @@ import { useAtom, useAtomValue } from "jotai";
 import { Plus, Trash2 } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { WrittingModal } from "./WritingModal";
-
-const DEFAULT_TITLE = "Untitled";
 
 type NoteTreeProps = {
   notes: Note[];
@@ -143,7 +142,7 @@ function NoteTreeNode({ note, owner, depth }: NoteTreeNodeProps) {
         onToggle={() => {
           setOpen((value) => !value);
         }}
-        title={note.title || DEFAULT_TITLE}
+        title={normalizeNoteTitle(note.title)}
         to={`/note/${note._id}`}
       />
       {open ? (

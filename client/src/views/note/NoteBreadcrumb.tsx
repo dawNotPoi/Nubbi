@@ -1,10 +1,9 @@
 import { NotePathItem } from "@/api/note";
+import { normalizeNoteTitle } from "@/features/note/model/hierarchy";
 import { routes } from "@/utils/routes";
 import clsx from "clsx";
 import { Fragment, ReactNode, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-
-const DEFAULT_TITLE = "Untitled";
 
 export type NoteBreadcrumbItem = NotePathItem;
 
@@ -31,11 +30,6 @@ type NoteBreadcrumbProps = {
   className?: string;
   renderCollapsed?: (items: NoteBreadcrumbItem[]) => ReactNode;
   onSelect?: (item: NoteBreadcrumbItem) => void;
-};
-
-const normalizeTitle = (title?: string) => {
-  const trimmedTitle = title?.trim();
-  return trimmedTitle || DEFAULT_TITLE;
 };
 
 export const getNoteBreadcrumbItems = (
@@ -112,7 +106,7 @@ export default function NoteBreadcrumb({
             <span
               className="shrink-0 rounded-md px-1.5 py-1 text-neutral-400"
               title={displayItem.hiddenItems
-                .map((item) => normalizeTitle(item.title))
+                .map((item) => normalizeNoteTitle(item.title))
                 .join(" / ")}
             >
               {renderCollapsed?.(displayItem.hiddenItems) ?? "..."}
@@ -120,9 +114,9 @@ export default function NoteBreadcrumb({
           ) : displayItem.current ? (
             <span
               className="min-w-0 truncate rounded-md px-1.5 py-1 text-neutral-600"
-              title={normalizeTitle(displayItem.item.title)}
+              title={normalizeNoteTitle(displayItem.item.title)}
             >
-              {normalizeTitle(displayItem.item.title)}
+              {normalizeNoteTitle(displayItem.item.title)}
             </span>
           ) : (
             <button
@@ -130,10 +124,10 @@ export default function NoteBreadcrumb({
               onClick={() => {
                 selectItem(displayItem.item);
               }}
-              title={normalizeTitle(displayItem.item.title)}
+              title={normalizeNoteTitle(displayItem.item.title)}
               type="button"
             >
-              {normalizeTitle(displayItem.item.title)}
+              {normalizeNoteTitle(displayItem.item.title)}
             </button>
           )}
         </Fragment>

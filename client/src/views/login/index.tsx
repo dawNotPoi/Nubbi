@@ -1,4 +1,4 @@
-import { AuthCodeForm } from "@/components/auth/AuthCodeForm";
+import { AuthCodeForm } from "@/component/auth/AuthCodeForm";
 import { useAuth } from "@/hooks/useAuth";
 import {
   getAuthCallbackErrorMessage,

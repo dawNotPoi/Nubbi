@@ -49,12 +49,14 @@ export const useNoteLibraryActions = ({
   const createRootNote = async (note?: Partial<NoteWithContent>) => {
     if (!owner) return;
 
+    const createdAt = new Date().toISOString();
     const draft = newNote({
+      createdAt,
       parentId: null,
+      updatedAt: createdAt,
       ...note,
     });
     await createNote({ note: draft, owner });
-    navigate(routes.note(draft._id));
   };
 
   const confirmDelete = (notes: Note[]) => {

@@ -87,7 +87,7 @@ export function NoteLibraryTable({
           <>
             <div className="flex min-w-0 items-center gap-2">
               <FileText className="size-4 shrink-0" strokeWidth={1.9} />
-              <span className="truncate">Page name</span>
+              <span className="truncate">Note name</span>
             </div>
             <div className="flex min-w-0 items-center gap-2">
               <Clock className="size-4 shrink-0" strokeWidth={1.9} />
@@ -109,7 +109,11 @@ export function NoteLibraryTable({
         <div className="flex flex-col items-center justify-center gap-3 py-16">
           <Empty description={emptyDescription} />
           {!filterText.trim() ? (
-            <Button icon={<Plus className="size-4" />} onClick={onCreate} type="primary">
+            <Button
+              icon={<Plus className="size-4" />}
+              onClick={onCreate}
+              type="primary"
+            >
               新页面
             </Button>
           ) : null}
