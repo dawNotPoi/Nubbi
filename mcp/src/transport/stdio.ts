@@ -1,8 +1,8 @@
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { readStdioConfig } from "./config.js";
-import { isDirectRun, reportFatalError } from "./main-utils.js";
-import { createNubbiMcpServer } from "./server.js";
-import { NubbiApiClient } from "./services/api-client.js";
+import { readStdioConfig } from "../config.js";
+import { isDirectRun, reportFatalError } from "../utils.js";
+import { createNubbiMcpServer } from "../server.js";
+import { NubbiApiClient } from "../client/api-client.js";
 
 export const runStdio = async (): Promise<void> => {
   const config = readStdioConfig();

@@ -1,6 +1,6 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { ApiRequestOptions, HttpMethod, NubbiApi } from "../types.js";
-import { toolError, toolSuccess } from "./response.js";
+import { toolError, toolSuccess } from "../utils/response.js";
 
 export const runTool = async (
   api: NubbiApi,

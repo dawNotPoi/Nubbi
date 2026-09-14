@@ -26,6 +26,15 @@ Returns note metadata plus content/contentRevision and segment pagination fields
 Example: {"note_id":"665c8d7e6f00112233445566","content_offset":0,"content_limit":20000}.
 On 404 list/search again; do not guess IDs or revisions.`,
 
+  getBatch: `Read multiple visible Nubbi notes in one batch, each with metadata, ancestor path, content revision, and a bounded Markdown segment.
+
+Prefer this over repeated nubbi_get_note calls when you already know several note_ids from list/search and need their contents together. Missing or inaccessible IDs are reported separately.
+
+Args: note_ids (1-20), content_limit 1-20000.
+Returns structuredContent with {items:[...], missingIds:[...]}; each item has content/contentRevision and segment pagination fields.
+Example: {"note_ids":["665c8d7e6f00112233445566","665c8d7e6f00112233445577"],"content_limit":20000}.
+For longer notes use nubbi_get_note with content_offset to read later segments.`,
+
   trash: `List the authenticated user's soft-deleted Nubbi notes without restoring or permanently deleting anything.
 
 Use this to find note_id and deletedAt before nubbi_restore_note. Results indicate source and whether MCP restoration is allowed; user-authored notes remain read-only.

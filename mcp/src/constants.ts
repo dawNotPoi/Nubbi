@@ -4,6 +4,7 @@ export const CHARACTER_LIMIT = 25_000;
 export const STRUCTURED_DATA_LIMIT = 20_000;
 export const DEFAULT_PAGE_SIZE = 20;
 export const MAX_PAGE_SIZE = 50;
+export const MAX_BATCH_SIZE = 20;
 export const DEFAULT_CONTENT_LIMIT = 20_000;
 export const MAX_CONTENT_LIMIT = 20_000;
 export const API_TIMEOUT_MS = 30_000;
@@ -13,6 +14,7 @@ export const TOOL_NAMES = [
   "nubbi_list_notes",
   "nubbi_search_notes",
   "nubbi_get_note",
+  "nubbi_get_notes",
   "nubbi_create_note",
   "nubbi_edit_note_content",
   "nubbi_update_note_properties",

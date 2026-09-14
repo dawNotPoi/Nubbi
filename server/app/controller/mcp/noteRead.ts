@@ -159,6 +159,66 @@ export const getMcpNote = async (
   };
 };
 
+/** 批量读取笔记详情：限制单次数量，返回成功与失败分离的结果 */
+export const getMcpNotes = async (
+  userId: string,
+  input: {
+    noteIds: string[];
+    contentLimit: number;
+  },
+): Promise<{
+  items: McpTypes.McpNoteDetailResult[];
+  missingIds: string[];
+}> => {
+  const uniqueIds = Array.from(new Set(input.noteIds));
+  const items = await Note.find({
+    _id: { $in: uniqueIds },
+    userId,
+    deletedAt: null,
+  })
+    .select("-password -cover")
+    .lean();
+
+  const foundById = new Map(items.map((item) => [String(item._id), item]));
+  const results = await Promise.all(
+    uniqueIds.map(async (noteId) => {
+      const item = foundById.get(noteId);
+      if (!item) return null;
+
+      const content = typeof item.content === "string" ? item.content : "";
+      const chunk = content.slice(0, input.contentLimit);
+      const hasMoreContent = chunk.length < content.length;
+      const pathInfo = await getNotePath(noteId, userId);
+      const metaResult = fitMeta(item.meta);
+
+      return {
+        ...serializeNote(item),
+        ...metaResult,
+        ancestors: pathInfo.ancestors,
+        path: truncateText(
+          [...pathInfo.ancestors.map((entry) => entry.title), item.title]
+            .filter(Boolean)
+            .join("/"),
+          2_000,
+        ),
+        content: chunk,
+        contentOffset: 0,
+        contentLength: chunk.length,
+        totalContentLength: content.length,
+        hasMoreContent,
+        nextContentOffset: hasMoreContent ? chunk.length : null,
+      } as McpTypes.McpNoteDetailResult;
+    }),
+  );
+
+  const found = results.filter(
+    (result): result is McpTypes.McpNoteDetailResult => result !== null,
+  );
+  const missingIds = uniqueIds.filter((noteId) => !foundById.has(noteId));
+
+  return { items: found, missingIds };
+};
+
 /** 分页查询回收站笔记，标注可恢复状态 */
 export const listMcpTrash = async (
   userId: string,

@@ -1,5 +1,9 @@
 import * as z from "zod/v4";
-import { DEFAULT_CONTENT_LIMIT, MAX_CONTENT_LIMIT } from "../constants.js";
+import {
+  DEFAULT_CONTENT_LIMIT,
+  MAX_BATCH_SIZE,
+  MAX_CONTENT_LIMIT,
+} from "../constants.js";
 import {
   LimitSchema,
   NoteIdSchema,
@@ -60,6 +64,24 @@ export const GetNoteInputSchema = z
       .max(MAX_CONTENT_LIMIT)
       .default(DEFAULT_CONTENT_LIMIT)
       .describe("Markdown characters to return, up to 20000"),
+  })
+  .strict();
+
+/** 批量读取多篇笔记的输入 schema */
+export const GetNotesInputSchema = z
+  .object({
+    note_ids: z
+      .array(NoteIdSchema)
+      .min(1)
+      .max(MAX_BATCH_SIZE)
+      .describe("Note IDs to read in one batch, up to 20"),
+    content_limit: z
+      .number()
+      .int()
+      .min(1)
+      .max(MAX_CONTENT_LIMIT)
+      .default(DEFAULT_CONTENT_LIMIT)
+      .describe("Markdown characters to return per note, up to 20000"),
   })
   .strict();
 

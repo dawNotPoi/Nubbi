@@ -2,11 +2,11 @@ import { createServer, type Server } from "node:http";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { hostHeaderValidation } from "@modelcontextprotocol/sdk/server/middleware/hostHeaderValidation.js";
 import express, { type Express, type NextFunction, type Request, type Response } from "express";
-import { readHttpConfig } from "./config.js";
-import { isDirectRun, reportFatalError } from "./main-utils.js";
-import { createNubbiMcpServer } from "./server.js";
-import { NubbiApiClient, NubbiApiError } from "./services/api-client.js";
-import type { HttpRuntimeConfig } from "./types.js";
+import { readHttpConfig } from "../config.js";
+import { isDirectRun, reportFatalError } from "../utils.js";
+import { createNubbiMcpServer } from "../server.js";
+import { NubbiApiClient, NubbiApiError } from "../client/api-client.js";
+import type { HttpRuntimeConfig } from "../types.js";
 
 export const extractBearerToken = (header: string | undefined): string | null => {
   const match = /^Bearer\s+(nb_[A-Za-z0-9._~-]+)$/i.exec(header ?? "");

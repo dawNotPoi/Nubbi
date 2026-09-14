@@ -44,4 +44,5 @@ export const MCP_LIMITS = {
   maxPageSize: 50,
   contentChunkSize: 20_000,
   maxResponseChars: 25_000,
+  maxBatchSize: 20,
 } as const;

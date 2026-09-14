@@ -1,7 +1,7 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { CHARACTER_LIMIT, STRUCTURED_DATA_LIMIT } from "../constants.js";
-import { NubbiApiError } from "./api-client.js";
-import { summarizeNote } from "./summaries.js";
+import { NubbiApiError } from "../client/api-client.js";
+import { summarizeNote } from "../services/summaries.js";
 
 interface LimitedData {
   data: unknown;
