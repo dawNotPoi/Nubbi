@@ -1,11 +1,11 @@
 # 工作流
 
 ```
-沟通方案 → 更新 PRD → 编写代码 → review → 更新 changes → commit
+沟通方案 → 更新 PRD → 编写代码 → review → （用户要求时）更新 changes → commit
 ```
 
-无论是否立即 commit，每次完成代码、文档、配置或脚本变更后，都必须更新 `docs/changes/YYYY-MM-DD.md`。commit 前只做最终确认，不把 changes 记录延后到提交阶段。
-用户要求 commit 时，agent 必须自动暂存当天 changes 文件，并把 changes 和本次变更放进同一个 commit。
+无论是否立即 commit，只有用户要求更新 changes 或 commit 时才更新 `docs/changes/YYYY-MM-DD.md`。
+用户要求 commit 时，agent 必须：①更新 changes → ②展示暂存区统计 → ③询问是否将相关改动加入暂存区 → ④让用户确认是否提交。
 
 ## 第一步：沟通 & 更新 PRD
 
@@ -30,7 +30,7 @@
 代码改动完成后，agent 直接审查当前 diff；不需要专门的 review 脚本。
 详细审查清单见 `.agent/skills/review.md`。
 
-## 第四步：更新 changes（每次变更必做）
+## 第四步：更新 changes（用户要求时执行）
 
 在 `docs/changes/YYYY-MM-DD.md` 中追加本次变更记录：
 
@@ -50,11 +50,14 @@
 - commit 后回填记录时，可将 `未提交` 替换为真实 hash
 - 文件不存在时按 `docs/changes/_TEMPLATE.md` 新建
 - changes 文件自身的 commit 不需要在 changes 里再记录
-- 用户要求 commit 时，自动暂存 `docs/changes/YYYY-MM-DD.md`，并随本次变更一起提交
+- 用户要求 commit 时，将当天 changes 文件随本次变更一起暂存和提交
 
-## 第五步：commit
+## 第五步：commit（用户要求时执行）
 
-- 确认 changes 已更新后再执行 `git commit`
-- commit 前自动暂存当天 changes 文件
+1. **更新 changes**：确保 `docs/changes/YYYY-MM-DD.md` 已覆盖本次变更
+2. **展示暂存区统计**：执行 `git status`，列出所有改动文件，区分已暂存和未暂存
+3. **询问是否加入暂存区**：询问用户需要将哪些未暂存的改动 `git add`
+4. **让用户确认提交**：展示完整的 commit message，**让用户最终确认**后再执行 `git commit`
+
 - commit 格式见 `.agent/rules/core.md` 中的「提交规范」
 - **commit 由用户决定**，除非用户明确说"commit"，否则不主动提交

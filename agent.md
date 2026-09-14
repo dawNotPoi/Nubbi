@@ -5,8 +5,8 @@
 
 ## 必读
 
-1. 每次完成代码、文档、配置或脚本变更后，必须同步更新 `docs/changes/YYYY-MM-DD.md`。
-2. 用户要求 commit 时，先更新 changes，再自动暂存 `docs/changes/YYYY-MM-DD.md`，并把 changes 和本次变更放进同一个 commit。
+1. 只有用户要求更新 changes 或 commit 时才更新 `docs/changes/YYYY-MM-DD.md`，其他时候不自动更新。
+2. 用户要求 commit 时：①更新 changes → ②展示暂存区统计 → ③询问是否将相关改动加入暂存区 → ④让用户确认是否提交。
 3. commit 由用户决定，不主动提交。
 
 ## 技术栈
@@ -35,7 +35,7 @@
 ## 工作流
 
 ```
-沟通方案 → 更新 PRD → 编写代码 → review → 更新 changes → commit
+沟通方案 → 更新 PRD → 编写代码 → review → （用户要求时）更新 changes → commit
 ```
 
 详细步骤见 `.agent/skills/workflow.md`，审查流程见 `.agent/skills/review.md`。
@@ -54,8 +54,8 @@
 
 ### 提交
 - 格式：`<type>(<scope>): <subject>` — type/scope 用英文，subject 用中文
-- 每次变更后必更新 `docs/changes/YYYY-MM-DD.md`，提交前再次确认
-- 用户要求 commit 时，必须自动暂存当天 changes 文件，并随本次变更一起提交
+- 只有用户要求更新 changes 或 commit 时才更新 `docs/changes/YYYY-MM-DD.md`
+- 用户要求 commit 时：①更新 changes → ②展示暂存区统计 → ③询问是否将相关改动加入暂存区 → ④让用户确认是否提交
 - commit 由用户决定，不主动提交
 
 完整规则见 `.agent/rules/core.md`。
