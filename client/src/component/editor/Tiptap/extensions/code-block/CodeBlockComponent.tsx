@@ -23,10 +23,9 @@ const CodeBlockComponent: React.FC<NodeViewProps> = ({
   const options = extension.options as CodeBlockOptions;
   const isEditable = editor.isEditable;
   const source = node.textContent;
+  const isMermaid = selectedLanguage === "mermaid";
   const shouldShowMermaidSource =
-    selectedLanguage !== "mermaid" ||
-    isEditable ||
-    !!options.showMermaidSourceWhenReadOnly;
+    !isMermaid || isEditable || !!options.showMermaidSourceWhenReadOnly;
 
   const handleLanguageChange = useCallback(
     (newLanguage: string) => {
@@ -86,7 +85,10 @@ const CodeBlockComponent: React.FC<NodeViewProps> = ({
             </span>
           )}
           <button
+            type="button"
+            aria-label="复制代码"
             className="codeToolbarButton flex size-[28px] items-center justify-center overflow-hidden rounded-md p-1"
+            onMouseDown={(event) => event.preventDefault()}
             onClick={handleCopy}
           >
             <Copy size={16} />
@@ -102,9 +104,12 @@ const CodeBlockComponent: React.FC<NodeViewProps> = ({
           <NodeViewContent />
         </div>
       )}
-      {selectedLanguage === "mermaid" ? (
+      {isMermaid ? (
         <div className="px-4 pt-3">
-          <MermaidPreview source={source} />
+          <MermaidPreview
+            source={source}
+            fallback={shouldShowMermaidSource ? null : source}
+          />
         </div>
       ) : null}
     </NodeViewWrapper>

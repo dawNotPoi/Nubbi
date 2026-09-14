@@ -8,7 +8,7 @@ const loadMermaid = async () => {
   if (!mermaidInitialized) {
     mermaid.initialize({
       startOnLoad: false,
-      securityLevel: "loose",
+      securityLevel: "strict",
       theme: "default",
     });
     mermaidInitialized = true;
@@ -17,7 +17,12 @@ const loadMermaid = async () => {
   return mermaid;
 };
 
-const MermaidPreview = ({ source }: { source: string }) => {
+interface MermaidPreviewProps {
+  fallback?: string | null;
+  source: string;
+}
+
+const MermaidPreview = ({ fallback, source }: MermaidPreviewProps) => {
   const [svg, setSvg] = useState("");
 
   useEffect(() => {
@@ -72,7 +77,11 @@ const MermaidPreview = ({ source }: { source: string }) => {
   }, [source]);
 
   if (!svg) {
-    return null;
+    return fallback ? (
+      <pre className="blockCodeContent overflow-x-auto rounded-lg border border-stone-200 bg-stone-50 p-4">
+        {fallback}
+      </pre>
+    ) : null;
   }
 
   return (
