@@ -153,9 +153,8 @@ if [ ! -f ".env" ]; then
   exit 1
 fi
 
-if [ ! -f "client/dist/index.html" ]; then
-  printf '[docker-deploy] missing client/dist/index.html\n' >&2
-  printf '[docker-deploy] build the client before deploying: pnpm --filter nubbi-client build\n' >&2
+if [ ! -f "client/Dockerfile" ]; then
+  printf '[docker-deploy] missing client/Dockerfile\n' >&2
   exit 1
 fi
 
