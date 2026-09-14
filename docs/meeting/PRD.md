@@ -20,6 +20,7 @@
   duration:  number        // 时长（分钟）
   password:  string        // 入会密码
   endedAt:   Date | null   // 结束时间（过期自动结束）
+  status:    'unreviewd' | 'approved' | 'rejected'
   createdAt: Date
   updatedAt: Date
 }
@@ -48,13 +49,16 @@
 |------|------|------|
 | POST | `/meeting/create` | 创建会议。body: `{ title, startTime, duration, password? }` |
 | GET | `/meeting/findMyMeeting` | 我的会议列表 |
-| POST | `/meeting/findByPage` | 分页查询。body: `{ page, pageSize }` |
+| GET | `/meeting/list` | 鉴权后的规范化分页查询。query: `{ limit?, offset? }` |
+| POST | `/meeting/findByPage` | 鉴权后的旧版分页查询，暂作为兼容入口；仅允许标量白名单筛选 |
 | GET | `/meeting/findAllMeeting` | 所有会议 |
-| GET | `/meeting/findById` | 按 ID 查询。query: `meetingId` |
-| DELETE | `/meeting/delete` | 删除会议。query: `meetingId` |
+| GET | `/meeting/findById` | 按 ID 查询。query: `id` |
+| DELETE | `/meeting/delete` | 鉴权后删除会议。query: `_id` |
 | POST | `/meeting/vetMeeting` | 审核会议（approve/reject） |
-| POST | `/meeting/validateAccess` | 验证入会密码。body: `{ meetingId, password }` |
-| GET | `/meeting/comments` | 获取评论。query: `meetingId` |
+| POST | `/meeting/validateAccess` | 验证入会密码。body: `{ id, password }` |
+| GET | `/meeting/comments` | 获取评论。query: `id` |
+
+内部列表接口统一采用 `limit/offset`：`limit` 默认 20、范围 1–50，`offset` 默认 0；响应 `data` 为 `{ items, total, count, limit, offset, hasMore, nextOffset }`。会议读取 DTO 不返回明文 `password`，只返回 `hasPassword`；旧 `/meeting/findByPage` 暂保留原分页包裹结构作为兼容入口。
 
 ---
 

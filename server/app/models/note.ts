@@ -109,5 +109,6 @@ noteSchema.index({ userId: 1, status: 1 });
 noteSchema.index({ userId: 1, updatedAt: -1 });
 noteSchema.index({ userId: 1, tags: 1 });
 noteSchema.index({ published: 1, updatedAt: -1 });
+noteSchema.index({ userId: 1, deletedAt: -1, _id: -1 });
 
 export default mongoose.model("Note", noteSchema);

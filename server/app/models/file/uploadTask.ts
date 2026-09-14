@@ -14,6 +14,10 @@ const UploadTaskSchema = new Schema(
     uploadedChunks: { type: [Number], default: [] },
     // 存储分片的临时目录，建议使用 /temp/{hash}/
     tempDir: { type: String, required: true },
+    storagePath: { type: String },
+    cleanupToken: { type: String },
+    mergeToken: { type: String },
+    mergeLeaseExpiresAt: { type: Date },
     status: {
       type: String,
       enum: ["uploading", "merging", "completed", "failed"],
@@ -31,6 +35,4 @@ UploadTaskSchema.index(
   { ownerId: 1, fileHash: 1, totalSize: 1 },
   { unique: true },
 );
-UploadTaskSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
-
 export const UploadTask = model("UploadTask", UploadTaskSchema);

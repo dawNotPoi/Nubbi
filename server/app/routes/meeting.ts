@@ -1,103 +1,32 @@
 // 业务路由同时接受 session/JWT 与长期 API token
+import { paginationQuerySchema } from "@/common/pagination";
+import {
+  listMeetingsController,
+  listMeetingsLegacyController,
+} from "@/controller/meeting-list";
 import { requireAuthWithApiKey as requireAuth } from "@/middleware/session";
+import {
+  autoEndExpiredMeeting,
+  autoEndExpiredMeetings,
+} from "@/services/meeting/lifecycle";
 import express from "express";
 import { asyncHandler } from "../middleware/common";
+import { validate, validateQuery } from "../middleware/validator";
 import meetingComment from "../models/meetingComment";
 import meeting from "../models/meeting";
+import { serializeMeetingListItem } from "../services/meeting/listDto";
+import {
+  legacyMeetingPageSchema,
+  vetMeetingSchema,
+} from "../services/meeting/schemas";
 import { successResponse } from "./utils";
 const router = express.Router();
-
-const getMeetingEndTimestamp = (item: {
-  startTime?: string | number | Date | null;
-  createdAt?: string | number | Date | null;
-  duration?: number | null;
-}) => {
-  const startTime = item.startTime || item.createdAt;
-  if (!startTime || !item.duration) return null;
-
-  const start = new Date(startTime).getTime();
-  if (Number.isNaN(start)) return null;
-
-  return start + item.duration * 60 * 1000;
-};
-
-const isMeetingExpired = (item: {
-  startTime?: string | number | Date | null;
-  createdAt?: string | number | Date | null;
-  duration?: number | null;
-  endedAt?: string | number | Date | null;
-}) => {
-  if (item.endedAt) return false;
-
-  const endTimestamp = getMeetingEndTimestamp(item);
-  return endTimestamp !== null && Date.now() >= endTimestamp;
-};
-
-const autoEndExpiredMeetings = async <T extends Array<any>>(meetings: T) => {
-  const now = new Date();
-  const expiredIds = meetings
-    .filter((item) => isMeetingExpired(item))
-    .map((item) => String(item._id));
-
-  if (expiredIds.length > 0) {
-    await meeting.updateMany(
-      {
-        _id: { $in: expiredIds },
-        endedAt: null,
-      },
-      {
-        $set: {
-          endedAt: now,
-        },
-      },
-    );
-  }
-
-  return meetings.map((item) => {
-    if (!expiredIds.includes(String(item._id))) {
-      return item;
-    }
-
-    const plain =
-      typeof item.toObject === "function" ? item.toObject() : { ...item };
-
-    return {
-      ...plain,
-      endedAt: plain.endedAt || now,
-    };
-  }) as T;
-};
-
-const autoEndExpiredMeeting = async (item: any) => {
-  if (!item || !isMeetingExpired(item)) {
-    return item;
-  }
-
-  const now = new Date();
-  await meeting.updateOne(
-    {
-      _id: item._id,
-      endedAt: null,
-    },
-    {
-      $set: {
-        endedAt: now,
-      },
-    },
-  );
-
-  const plain = typeof item.toObject === "function" ? item.toObject() : { ...item };
-  return {
-    ...plain,
-    endedAt: plain.endedAt || now,
-  };
-};
 
 router.post(
   "/create",
   requireAuth,
   asyncHandler(async (req, res) => {
-    const hostId = (req as any).user.id;
+    const hostId = req.user!.id;
     const { title, startTime, duration, password } = req.body;
     const result = await meeting.create({
       title,
@@ -114,42 +43,33 @@ router.get(
   "/findMyMeeting",
   requireAuth,
   asyncHandler(async (req, res) => {
-    const hostId = (req as any).user.id;
+    const hostId = req.user!.id;
     const result = await meeting.find({
       hostId: hostId,
     });
-    successResponse(res, await autoEndExpiredMeetings(result));
+    const normalized = await autoEndExpiredMeetings(result);
+    successResponse(res, normalized.map(serializeMeetingListItem));
   })
+);
+
+router.get(
+  "/list",
+  requireAuth,
+  validateQuery(paginationQuerySchema),
+  asyncHandler(listMeetingsController),
 );
 
 router.post(
   "/findByPage",
-  asyncHandler(async (req, res) => {
-    const { page = 1, pageSize = 10, ...query } = req.body;
-    const skip = (page - 1) * pageSize;
-    const total = await meeting.countDocuments(query);
-    const result = await meeting
-      .find({
-        ...query,
-      })
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(pageSize);
-
-    successResponse(res, {
-      data: await autoEndExpiredMeetings(result),
-      pagination: {
-        total,
-        page: Number(page),
-        pageSize: Number(pageSize),
-        totalPages: Math.ceil(total / pageSize),
-      },
-    });
-  })
+  requireAuth,
+  validate(legacyMeetingPageSchema),
+  asyncHandler(listMeetingsLegacyController),
 );
 
 router.post(
   "/vetMeeting",
+  requireAuth,
+  validate(vetMeetingSchema),
   asyncHandler(async (req, res) => {
     const { id, status } = req.body;
     try {
@@ -167,12 +87,14 @@ router.get(
   "/findAllMeeting",
   asyncHandler(async (req, res) => {
     const result = await meeting.find().sort({ createdAt: -1 });
-    successResponse(res, await autoEndExpiredMeetings(result));
+    const normalized = await autoEndExpiredMeetings(result);
+    successResponse(res, normalized.map(serializeMeetingListItem));
   })
 );
 
 router.delete(
   "/delete",
+  requireAuth,
   asyncHandler(async (req, res) => {
     const { _id } = req.query;
     if (!_id) {
@@ -187,7 +109,7 @@ router.delete(
       throw error;
     }
     await meetingComment.deleteMany({ roomId: String(_id) });
-    successResponse(res, result);
+    successResponse(res, serializeMeetingListItem(result));
   })
 );
 
@@ -200,7 +122,8 @@ router.get(
       successResponse(res, null);
       return;
     }
-    successResponse(res, await autoEndExpiredMeeting(result));
+    const normalized = await autoEndExpiredMeeting(result);
+    successResponse(res, serializeMeetingListItem(normalized));
   })
 );
 

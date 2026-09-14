@@ -24,19 +24,28 @@ export const getTaskTempDir = (uploadId: string) =>
 const getOwnerStorageKey = (ownerId: string) =>
   crypto.createHash("sha256").update(ownerId).digest("hex").slice(0, 24);
 
-const getFinalPath = (
+export const getUploadOwnerDirectory = (ownerId: string) =>
+  path.join(UPLOAD_FINAL_DIR, getOwnerStorageKey(ownerId));
+
+export const getUploadFinalPath = (
   ownerId: string,
   fileHash: string,
   totalSize: number,
   fileName: string,
-) => {
-  const ownerDir = path.join(UPLOAD_FINAL_DIR, getOwnerStorageKey(ownerId));
+): string => {
+  const ownerDir = getUploadOwnerDirectory(ownerId);
   const extension = path.extname(fileName).slice(0, 24);
-  return {
-    ownerDir,
-    finalPath: path.join(ownerDir, `${fileHash}-${totalSize}${extension}`),
-  };
+  return path.join(ownerDir, `${fileHash}-${totalSize}${extension}`);
 };
+
+export const getUploadStagingPath = (
+  ownerId: string,
+  uploadId: string,
+  mergeToken?: string | null,
+) => path.join(
+  getUploadOwnerDirectory(ownerId),
+  `.${uploadId}${mergeToken ? `-${mergeToken}` : ""}.part`,
+);
 
 type MergeTask = {
   _id: unknown;
@@ -48,6 +57,7 @@ type MergeTask = {
   totalChunks: number;
   tempDir: string;
   uploadedChunks: number[];
+  mergeToken?: string | null;
 };
 
 export const mergeTaskChunks = async (task: MergeTask) => {
@@ -64,12 +74,13 @@ export const mergeTaskChunks = async (task: MergeTask) => {
     throw new FileUploadError(400, "CHUNKS_INCOMPLETE", "上传分片不完整");
   }
 
-  const { ownerDir, finalPath } = getFinalPath(
+  const finalPath = getUploadFinalPath(
     task.ownerId,
     task.fileHash,
     task.totalSize,
     task.fileName,
   );
+  const ownerDir = path.dirname(finalPath);
   await fse.ensureDir(ownerDir);
 
   if (await fse.pathExists(finalPath)) {
@@ -78,7 +89,11 @@ export const mergeTaskChunks = async (task: MergeTask) => {
     throw new FileUploadError(409, "FILE_CONFLICT", "目标文件状态异常");
   }
 
-  const stagingPath = path.join(ownerDir, `.${String(task._id)}.part`);
+  const stagingPath = getUploadStagingPath(
+    task.ownerId,
+    String(task._id),
+    task.mergeToken,
+  );
   await fse.ensureFile(stagingPath);
   await fse.truncate(stagingPath, 0);
 

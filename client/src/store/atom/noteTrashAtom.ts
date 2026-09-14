@@ -14,15 +14,19 @@ export const trashNoteAtom = atomWithQuery(() => ({
   queryKey: trashQueryKey,
   queryFn: async () => {
     const notesById = new Map<string, Note>();
-    const pageSize = 500;
+    const pageSize = 50;
     let offset = 0;
 
     while (true) {
-      const response = await getTrashNotes(pageSize, offset);
-      const page = response.data || [];
-      page.forEach((note) => notesById.set(note._id, note));
-      if (page.length < pageSize) return [...notesById.values()];
-      offset += page.length;
+      const response = await getTrashNotes({ limit: pageSize, offset });
+      const page = response.data;
+      page.items.forEach((note) => notesById.set(note._id, note));
+
+      if (!page.hasMore) return [...notesById.values()];
+      if (page.nextOffset === null || page.nextOffset <= offset) {
+        throw new Error("Invalid trash pagination response");
+      }
+      offset = page.nextOffset;
     }
   },
 }));

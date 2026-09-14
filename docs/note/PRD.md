@@ -274,9 +274,9 @@ z.object({
     └─ 有 → 不变
 ```
 
-### 查询端点：不变
+### 查询端点
 
-所有查询端点保持不变，只是返回的字段集合更新（新增 status/published/tags/author/hasChildren，移除 children/watched/like）。
+常规查询端点保持原有调用方式；`GET /note/trash` 统一改用 `limit/offset`，返回 `{ items, total, count, limit, offset, hasMore, nextOffset }`。其余查询返回的字段集合更新（新增 status/published/tags/author/hasChildren，移除 children/watched/like）。
 
 ---
 
@@ -577,7 +577,7 @@ await Note.updateMany({}, { $set: { date: null } });
 - Agent 子树含普通用户后代时，移动、删除和恢复整棵子树均拒绝，避免越权级联。
 - MCP 正文写入使用 `contentRevision`；属性和结构写入使用 `updatedAt` 做冲突检测。
 - 树结构变更按用户获取 Mongo 租约锁；并发结构写在 2 秒内无法取得锁时返回 409，客户端应刷新后重试。
-- 人工回收站通过 `limit/offset` 分页读取，客户端合并完整结果后再判断父子层级，避免截断导致错误启用子节点恢复。
+- 人工回收站通过 `GET /note/trash` 的统一 `limit/offset` 契约分页读取；响应为 `{ items, total, count, limit, offset, hasMore, nextOffset }`。客户端依赖 `hasMore/nextOffset` 合并完整结果后再判断父子层级，避免截断导致错误启用子节点恢复。
 
 ### 回收站页面
 

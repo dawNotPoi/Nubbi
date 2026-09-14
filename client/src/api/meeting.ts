@@ -1,4 +1,5 @@
 import request, { Get } from "./request";
+import type { PaginatedResult, PaginationParams } from "./pagination";
 export interface MeetingType {
   _id: string;
   title: string;
@@ -7,6 +8,7 @@ export interface MeetingType {
   createdAt: Date;
   duration: number;
   password?: string;
+  hasPassword?: boolean;
   endedAt?: string | Date | null;
   status?: "unreviewd" | "approved" | "rejected";
 }
@@ -47,6 +49,10 @@ export async function deleteMeeting(_id: string) {
 
 export async function getAllMeeting() {
   return Get<MeetingType[]>("meeting/findAllMeeting");
+}
+
+export async function getMeetingList(pagination: PaginationParams = {}) {
+  return Get<PaginatedResult<MeetingType>>("meeting/list", pagination);
 }
 
 export async function vetMeeting(id: string, status: "approved" | "rejected") {

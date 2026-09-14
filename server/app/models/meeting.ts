@@ -25,10 +25,18 @@ const meetingSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    status: {
+      type: String,
+      enum: ["unreviewd", "approved", "rejected"],
+      default: "approved",
+    },
   },
   {
     timestamps: true,
   }
 );
+
+meetingSchema.index({ createdAt: -1, _id: -1 });
+meetingSchema.index({ status: 1, createdAt: -1, _id: -1 });
 
 export default mongoose.model("Meeting", meetingSchema, "meeting");

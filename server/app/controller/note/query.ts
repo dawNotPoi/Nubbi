@@ -1,8 +1,13 @@
+import {
+  buildPaginationResult,
+  type PaginationInput,
+} from "@/common/pagination";
 import note from "@/models/note";
 
 const DEFAULT_TITLE = "Untitled";
 const QUERY_LIMIT = 500;
 const ACTIVE_NOTE_FILTER = { deletedAt: null };
+const NOTE_LIST_PROJECTION = "-content";
 
 const escapeRegExp = (value: string) =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -82,7 +87,8 @@ export const getAllChildren = async (
   const children = await note
     .find({ parentId, userId, ...ACTIVE_NOTE_FILTER })
     .sort({ createdAt: -1 })
-    .limit(QUERY_LIMIT);
+    .limit(QUERY_LIMIT)
+    .select(NOTE_LIST_PROJECTION);
   const allChildren: any[] = [];
 
   for (const child of children) {
@@ -125,7 +131,8 @@ export const findNotesByTags = async (userId: string, tags: string[]) => {
       ...ACTIVE_NOTE_FILTER,
     })
     .sort({ createdAt: -1 })
-    .limit(QUERY_LIMIT);
+    .limit(QUERY_LIMIT)
+    .select(NOTE_LIST_PROJECTION);
 };
 
 export const findNotesByFilter = async (userId: string, filter: NoteFilter) => {
@@ -140,7 +147,8 @@ export const findNotesByFilter = async (userId: string, filter: NoteFilter) => {
       ...ACTIVE_NOTE_FILTER,
     })
     .sort({ createdAt: -1 })
-    .limit(QUERY_LIMIT);
+    .limit(QUERY_LIMIT)
+    .select(NOTE_LIST_PROJECTION);
 };
 
 export const findNotesByStatus = async (userId: string, status: string) => {
@@ -207,7 +215,8 @@ export const getNotes = async (userId: string) => {
       hasChildren: false,
       ...ACTIVE_NOTE_FILTER,
     })
-    .limit(QUERY_LIMIT);
+    .limit(QUERY_LIMIT)
+    .select(NOTE_LIST_PROJECTION);
 };
 
 export const getRecentNotes = async (userId: string) => {
@@ -218,22 +227,26 @@ export const getRecentNotes = async (userId: string) => {
       ...ACTIVE_NOTE_FILTER,
     })
     .sort({ updatedAt: -1 })
-    .limit(QUERY_LIMIT);
+    .limit(QUERY_LIMIT)
+    .select(NOTE_LIST_PROJECTION);
 };
 
 export const getTrashNotes = async (
   userId: string,
-  options: { limit?: number; offset?: number } = {},
+  pagination: PaginationInput,
 ) => {
-  return await note
-    .find({
-      userId,
-      deletedAt: { $ne: null },
-    })
-    .sort({ deletedAt: -1, _id: -1 })
-    .skip(options.offset ?? 0)
-    .limit(options.limit ?? QUERY_LIMIT)
-    .select("-content");
+  const filter = { userId, deletedAt: { $ne: null } };
+  const [items, total] = await Promise.all([
+    note
+      .find(filter)
+      .sort({ deletedAt: -1, _id: -1 })
+      .skip(pagination.offset)
+      .limit(pagination.limit)
+      .select("-content"),
+    note.countDocuments(filter),
+  ]);
+
+  return buildPaginationResult(items, total, pagination);
 };
 
 export const validateNoteUser = async (
@@ -315,6 +328,7 @@ export const searchNotes = async (userId: string, title: string) => {
       ...ACTIVE_NOTE_FILTER,
     })
     .limit(QUERY_LIMIT)
+    .select(NOTE_LIST_PROJECTION)
     .lean();
 
   const noteCache = new Map<string, { title: string; parentId?: string | null }>();

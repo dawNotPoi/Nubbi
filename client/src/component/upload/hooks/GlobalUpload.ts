@@ -1,4 +1,5 @@
 import { queryClient } from "@/AppProvider";
+import { fileDirectoryQueryKey } from "@/api/file";
 import {
   type UploadTask,
   uploadTaskAtomFamily,
@@ -19,7 +20,9 @@ export const useGlobalUpload = () => {
 
   const removeRestoredPlaceholder = (file: File) => {
     const ids = store.get(uploadTasksAtom);
-    let restoredFolderId: string | undefined;
+    let restoredTarget: { matched: boolean; folderId?: string } = {
+      matched: false,
+    };
     ids.forEach((id) => {
       const task = store.get(uploadTaskAtomFamily(id));
       if (
@@ -27,14 +30,16 @@ export const useGlobalUpload = () => {
         task.name === file.name &&
         task.size === file.size
       ) {
-        restoredFolderId ??= task.folderId;
+        if (!restoredTarget.matched) {
+          restoredTarget = { matched: true, folderId: task.folderId };
+        }
         store.set(uploadTasksAtom, (items) =>
           items.filter((item) => item !== id),
         );
         uploadTaskAtomFamily.remove(id);
       }
     });
-    return restoredFolderId;
+    return restoredTarget;
   };
 
   const createUploadTask = (file: File, folderId?: string) => {
@@ -47,8 +52,10 @@ export const useGlobalUpload = () => {
       return;
     }
 
-    const restoredFolderId = removeRestoredPlaceholder(file);
-    const targetFolderId = restoredFolderId ?? folderId;
+    const restoredTarget = removeRestoredPlaceholder(file);
+    const targetFolderId = restoredTarget.matched
+      ? restoredTarget.folderId
+      : folderId;
     const hasDuplicate = store.get(uploadTasksAtom).some((id) => {
       const task = store.get(uploadTaskAtomFamily(id));
       return Boolean(
@@ -87,7 +94,7 @@ export const useGlobalUpload = () => {
       },
       onFinish: () => {
         void queryClient.invalidateQueries({
-          queryKey: ["files", targetFolderId ?? "root"],
+          queryKey: fileDirectoryQueryKey(targetFolderId),
         });
         void message.success(`${file.name} 上传完成`);
       },

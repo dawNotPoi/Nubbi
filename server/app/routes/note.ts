@@ -1,3 +1,4 @@
+import { paginationQuerySchema } from "@/common/pagination";
 import { getUser } from "@/lib/authUser";
 import { requireNotePermission } from "@/middleware/session";
 import express from "express";
@@ -34,10 +35,6 @@ const objectIdSchema = z
   .string()
   .regex(/^[a-fA-F0-9]{24}$/, "Invalid ObjectId");
 const noteStatusSchema = z.enum(["inbox", "active", "archived"]);
-const trashQuerySchema = z.object({
-  limit: z.coerce.number().int().min(1).max(500).default(500),
-  offset: z.coerce.number().int().nonnegative().default(0),
-});
 const metaEntrySchema = z.object({
   key: z.string().min(1),
   value: z.any(),
@@ -299,10 +296,10 @@ router.get(
 router.get(
   "/trash",
   requireNotePermission("read"),
-  validateQuery(trashQuerySchema),
+  validateQuery(paginationQuerySchema),
   asyncHandler(async (req, res) => {
     const owner = await getUser(req);
-    const input = trashQuerySchema.parse(req.query);
+    const input = paginationQuerySchema.parse(req.query);
     const result = await getTrashNotes(owner.id, input);
     successResponse(res, result, "query success");
   }),

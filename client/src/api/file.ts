@@ -1,300 +1,146 @@
-import { getApiBaseUrl } from "@/utils/env";
-import request, { authorizedFetch, requestWithNoJson } from "./request";
+import request, { Get } from "./request";
+import type { PaginatedResult } from "./pagination";
 
-const baseUrl = getApiBaseUrl();
-
-const resolveApiUrl = (url: string) =>
-  url.startsWith("http")
-    ? url
-    : `${baseUrl}${url.startsWith("/") ? "" : "/"}${url}`;
-
-const readFileResponseError = async (response: Response, fallback: string) => {
-  try {
-    const contentType = response.headers.get("content-type") || "";
-
-    if (contentType.includes("application/json")) {
-      const result = (await response.json()) as {
-        message?: unknown;
-        error?: unknown;
-      };
-
-      if (typeof result.message === "string" && result.message.trim()) {
-        return result.message;
-      }
-
-      if (typeof result.error === "string" && result.error.trim()) {
-        return result.error;
-      }
-    }
-
-    const text = await response.text();
-    return text.trim() || fallback;
-  } catch {
-    return fallback;
-  }
-};
+export type FileItemKind = "file" | "folder";
+export type FileCategory =
+  | "all"
+  | "folder"
+  | "document"
+  | "image"
+  | "video"
+  | "audio"
+  | "archive"
+  | "other";
+export type FileSortBy = "name" | "updatedAt";
+export type FileSortOrder = "asc" | "desc";
 
 export interface FolderRecord {
   _id: string;
   name: string;
   parentId?: string | null;
-  ownerId?: string;
-  createdAt?: string;
-  updatedAt?: string;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 }
 
 export interface FileRecord {
   _id: string;
   name: string;
+  extension?: string;
+  mimeType?: string;
   size?: number | string;
-  type?: string;
-  updatedAt?: string;
-  createdAt?: string;
+  folderId?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 }
 
-export interface FileListData {
-  folders: FolderRecord[];
-  files: FileRecord[];
+export interface FileFolderItem {
+  _id: string;
+  kind: "folder";
+  name: string;
+  parentId: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
 }
 
-export interface InitUploadInstantData {
-  needUpload: false;
-  file: FileRecord;
+export interface FileEntryItem {
+  _id: string;
+  kind: "file";
+  name: string;
+  extension: string;
+  mimeType: string;
+  size: number;
+  folderId: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
 }
 
-export interface InitUploadPendingData {
-  needUpload: true;
-  status: "uploading" | "merging" | "failed";
-  uploadId: string;
-  uploadedChunks: number[];
-  expiresAt: string;
+export type FileListItem =
+  | FileFolderItem
+  | FileEntryItem;
+
+export interface FileBreadcrumb {
+  _id: string | null;
+  name: string;
 }
 
-export type InitUploadTaskData = InitUploadInstantData | InitUploadPendingData;
+export interface FileListData extends PaginatedResult<FileListItem> {
+  breadcrumbs: FileBreadcrumb[];
+}
 
-export const listFiles = async (parentId?: string) => {
-  return request<FileListData>("file/list", { parentId });
+export interface FileListParams extends Record<string, unknown> {
+  parentId?: string;
+  limit?: number;
+  offset?: number;
+  query?: string;
+  category?: FileCategory;
+  sortBy?: FileSortBy;
+  sortOrder?: FileSortOrder;
+}
+
+export type FileTarget = { id: string; kind: FileItemKind };
+
+export interface BatchMoveResult {
+  moved: Array<FileTarget & { targetFolderId: string | null }>;
+  skipped: Array<FileTarget & { reason: string }>;
+  failed: Array<FileTarget & { reason: string }>;
+}
+
+export const FILE_LIST_QUERY_KEY = "file-list";
+export const fileDirectoryQueryKey = (parentId?: string | null) =>
+  [FILE_LIST_QUERY_KEY, parentId ?? "root"] as const;
+
+export const listFiles = async (params: FileListParams = {}) => {
+  const response = await Get<FileListData>("/file/list", params);
+  if (response.code !== 1) {
+    throw new Error(response.message || "文件列表加载失败");
+  }
+  return response;
 };
 
-export const createFloder = async (name?: string, parentId?: string) => {
-  return request<FolderRecord>("file/createfolder", { parentId, name });
-};
+export const createFloder = (name?: string, parentId?: string) =>
+  request<FolderRecord>("/file/createfolder", { parentId, name });
 
-export const getAllFolders = async () => {
-  return request<FolderRecord[]>("file/folders", undefined, "get");
-};
+export const getAllFolders = () =>
+  request<FolderRecord[]>("/file/folders", undefined, "get");
 
-export async function deleteFile(
+export const deleteFile = (
   _id: string,
-  kind: "file" | "folder" = "file",
-) {
-  return request("file/delete", { fileId: _id, kind }, "post");
-}
+  kind: FileItemKind = "file",
+) => request("/file/delete", { fileId: _id, kind }, "post");
 
-export async function deleteFilesBatch(fileIds: string[]) {
-  return request<{
+export const deleteTargetsBatch = (targets: FileTarget[]) =>
+  request<{
     deletedCount: number;
     deletedFileCount: number;
     deletedFolderCount: number;
     deletedIds: string[];
     missingFileIds: string[];
     missingFolderIds: string[];
-  }>(
-    "file/delete-batch",
-    {
-      targets: fileIds.map((id) => ({ id, kind: "file" as const })),
-    },
-    "post",
-  );
-}
+  }>("/file/delete-batch", { targets }, "post");
 
-export async function deleteTargetsBatch(
-  targets: Array<{ id: string; kind: "file" | "folder" }>,
-) {
-  return request<{
-    deletedCount: number;
-    deletedFileCount: number;
-    deletedFolderCount: number;
-    deletedIds: string[];
-    missingFileIds: string[];
-    missingFolderIds: string[];
-  }>("file/delete-batch", { targets }, "post");
-}
+export const deleteFilesBatch = (fileIds: string[]) =>
+  deleteTargetsBatch(fileIds.map((id) => ({ id, kind: "file" })));
 
-export async function renameFile(
+export const renameFile = (
   _id: string,
   name: string,
-  kind: "file" | "folder" = "file",
-) {
-  return request("file/rename", { _id, name, kind });
-}
+  kind: FileItemKind = "file",
+) => request("/file/rename", { _id, name, kind });
 
-export async function moveFileItem(
+export const moveFileItem = (
   _id: string,
-  targetFolderId: string,
-  kind: "file" | "folder",
-) {
-  return request("file/move", { _id, targetFolderId, kind });
-}
+  targetFolderId: string | null,
+  kind: FileItemKind,
+) => request("/file/move", { _id, targetFolderId, kind });
 
-export const initUploadTask = async (param: {
-  fileName: string;
-  fileHash: string;
-  totalSize: number;
-  chunkSize: number;
-  totalChunks: number;
-  folderId?: string;
-  mimeType?: string;
-}) => {
-  return request<InitUploadTaskData>("file/init", param);
-};
+export const moveFileItemsBatch = (
+  targets: FileTarget[],
+  targetFolderId: string | null,
+) => request<BatchMoveResult>(
+  "/file/move-batch",
+  { targets, targetFolderId },
+  "post",
+);
 
-export const uploadChunk = async (formdata: FormData, signal?: AbortSignal) => {
-  return requestWithNoJson("/file/uploadchunk", formdata, "post", { signal });
-};
-
-export const mergeChunk = async (uploadId: string) => {
-  return request<FileRecord>("/file/merge", { uploadId });
-};
-
-export interface UploadTaskStatusData {
-  uploadId: string;
-  fileName: string;
-  totalSize: number;
-  folderId?: string | null;
-  uploadedChunks: number[];
-  totalChunks: number;
-  chunkSize: number;
-  status: "uploading" | "merging" | "completed" | "failed";
-  error?: string | null;
-  expiresAt: string;
-  file?: FileRecord | null;
-}
-
-export const getUploadTaskStatus = async (uploadId: string) =>
-  request<UploadTaskStatusData>(`/file/upload/${encodeURIComponent(uploadId)}`, undefined, "get");
-
-export const cancelUploadTask = async (uploadId: string) =>
-  request<{ cancelled: boolean }>(
-    `/file/upload/${encodeURIComponent(uploadId)}`,
-    undefined,
-    "delete",
-  );
-
-export const imgToGitCloud = async (file: File): Promise<string> => {
-  const formData = new FormData();
-  formData.append("file", file);
-
-  const response = await requestWithNoJson<{ url: string }>("/image/github", formData);
-
-  if (response.code !== 1 || !response.data?.url) {
-    throw new Error(response.message || "GitHub 图床上传失败");
-  }
-
-  return response.data.url;
-};
-
-export const fetchFileDownloadBlob = async (fileId: string) => {
-  const response = await authorizedFetch(
-    `/file/download/${encodeURIComponent(fileId)}`,
-    { method: "GET" },
-  );
-
-  if (!response.ok) {
-    const message = await readFileResponseError(
-      response,
-      `文件下载失败: ${response.status}`,
-    );
-    throw new Error(message);
-  }
-
-  return {
-    blob: await response.blob(),
-    contentType: response.headers.get("content-type") || "",
-  };
-};
-
-export const getFilePreviewUrl = (fileId: string) => {
-  return `${baseUrl}/file/preview/${fileId}`;
-};
-
-export const fetchFilePreviewBlob = async (fileId: string) => {
-  const response = await authorizedFetch(`/file/preview/${fileId}`);
-
-  if (!response.ok) {
-    throw new Error(`文件预览加载失败: ${response.status}`);
-  }
-
-  const blob = await response.blob();
-
-  return {
-    blob,
-    contentType: response.headers.get("content-type") || blob.type || "",
-  };
-};
-
-export const fetchFilePreviewStreamUrl = async (fileId: string) => {
-  const response = await authorizedFetch(
-    `/file/preview-url/${encodeURIComponent(fileId)}`,
-    { method: "GET" },
-  );
-
-  if (!response.ok) {
-    throw new Error(`文件流式预览地址获取失败: ${response.status}`);
-  }
-
-  const result = (await response.json()) as {
-    code: 0 | 1;
-    data?: {
-      url?: string;
-      expiresAt?: number;
-    };
-    message?: string;
-  };
-
-  if (result.code !== 1 || !result.data?.url || !result.data.expiresAt) {
-    throw new Error(result.message || "文件流式预览地址获取失败");
-  }
-
-  return {
-    url: resolveApiUrl(result.data.url),
-    expiresAt: result.data.expiresAt,
-  };
-};
-
-export const updateUserAvatar = async (imageUrl: string) => {
-  return request<{ image: string }>("/auth/avatar/update", { imageUrl });
-};
-
-export const fetchFileShareDownloadUrl = async (fileId: string) => {
-  const response = await authorizedFetch(
-    `/file/share-url/${encodeURIComponent(fileId)}`,
-    { method: "GET" },
-  );
-
-  if (!response.ok) {
-    const message = await readFileResponseError(
-      response,
-      `文件分享链接获取失败: ${response.status}`,
-    );
-    throw new Error(message);
-  }
-
-  const result = (await response.json()) as {
-    code: 0 | 1;
-    data?: {
-      url?: string;
-      expiresAt?: number;
-    };
-    message?: string;
-  };
-
-  if (result.code !== 1 || !result.data?.url || !result.data.expiresAt) {
-    throw new Error(result.message || "文件分享链接获取失败");
-  }
-
-  return {
-    url: resolveApiUrl(result.data.url),
-    expiresAt: result.data.expiresAt,
-  };
-};
+export * from "./fileAccess";
+export * from "./fileUpload";

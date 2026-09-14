@@ -15,6 +15,8 @@ const getMeetingAccessKey = (roomId: string) => `meeting-access:${roomId}`;
 const isMeetingEnded = (meeting: MeetingType) =>
   Boolean(meeting.endedAt) ||
   Date.now() >= new Date(meeting.startTime).getTime() + meeting.duration * 60 * 1000;
+const meetingRequiresPassword = (meeting: MeetingType) =>
+  meeting.hasPassword ?? Boolean(meeting.password);
 
 const MeetingAccessGuard = () => {
   const { roomId = "" } = useParams();
@@ -71,7 +73,7 @@ const MeetingAccessGuard = () => {
           return;
         }
 
-        if (!nextMeeting.password) {
+        if (!meetingRequiresPassword(nextMeeting)) {
           window.sessionStorage.setItem(accessKey, "granted");
           setGranted(true);
         }
@@ -106,7 +108,7 @@ const MeetingAccessGuard = () => {
       return;
     }
 
-    if (!meeting.password) {
+    if (!meetingRequiresPassword(meeting)) {
       window.sessionStorage.setItem(accessKey, "granted");
       setGranted(true);
       return;
@@ -252,12 +254,12 @@ const MeetingAccessGuard = () => {
               <Input.Password
                 prefix={<Lock className="size-4 text-slate-400" />}
                 placeholder={
-                  meeting.password
+                  meetingRequiresPassword(meeting)
                     ? "请输入会议密码"
                     : "该会议无密码，可直接进入"
                 }
                 value={password}
-                disabled={!meeting.password}
+                disabled={!meetingRequiresPassword(meeting)}
                 onChange={(event) => setPassword(event.target.value)}
                 onPressEnter={handleSubmitPassword}
               />
@@ -279,7 +281,7 @@ const MeetingAccessGuard = () => {
                 loading={submitting}
                 onClick={handleSubmitPassword}
               >
-                {meeting.password ? "验证并进入" : "直接进入会议室"}
+                {meetingRequiresPassword(meeting) ? "验证并进入" : "直接进入会议室"}
               </Button>
             </div>
           </>

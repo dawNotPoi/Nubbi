@@ -1,16 +1,25 @@
 import logger from "@/common/logger";
 import { File } from "@/models/file/file";
 import { UploadTask } from "@/models/file/uploadTask";
+import { withFileFolderStructureLock } from "@/services/fileManagement/structureLock";
 import fse from "fs-extra";
 import path from "path";
 import { fileUploadConfig, MEBIBYTE } from "./config";
+import {
+  FILE_UPLOAD_INDEX_KEYS,
+  FILE_UPLOAD_INDEX_OPTIONS,
+  UPLOAD_EXPIRY_INDEX_KEYS,
+  UPLOAD_EXPIRY_INDEX_OPTIONS,
+} from "./indexSpecs";
 import {
   ensureUploadDirectories,
   MULTER_TEMP_DIR,
   UPLOAD_TEMP_DIR,
 } from "./storage";
+import { cleanupExpiredUploadTaskUnlocked } from "./expiredTask";
 
 let preparePromise: Promise<void> | null = null;
+let maintenancePromise: Promise<void> | null = null;
 
 const migrateNumericFields = async () => {
   await File.collection.updateMany(
@@ -71,17 +80,24 @@ const ensureIndexes = async () => {
   await UploadTask.collection.dropIndex("createdAt_1").catch(() => undefined);
   await UploadTask.collection.dropIndex("owner_hash_size_unique").catch(() => undefined);
   await UploadTask.collection.dropIndex("upload_expiry").catch(() => undefined);
+  await UploadTask.collection.dropIndex("expiresAt_1").catch(() => undefined);
+  await UploadTask.collection.dropIndex("upload_expiry_scan").catch(() => undefined);
   await File.collection.dropIndex("owner_hash_size_status").catch(() => undefined);
+  await File.collection.dropIndex("ownerId_1_uploadId_1").catch(() => undefined);
   await Promise.all([
     UploadTask.collection.createIndex(
       { ownerId: 1, fileHash: 1, totalSize: 1 },
       { unique: true },
     ),
     UploadTask.collection.createIndex(
-      { expiresAt: 1 },
-      { expireAfterSeconds: 0 },
+      UPLOAD_EXPIRY_INDEX_KEYS,
+      UPLOAD_EXPIRY_INDEX_OPTIONS,
     ),
     File.collection.createIndex({ ownerId: 1, hash: 1, size: 1, status: 1 }),
+    File.collection.createIndex(
+      FILE_UPLOAD_INDEX_KEYS,
+      FILE_UPLOAD_INDEX_OPTIONS,
+    ),
   ]);
 };
 
@@ -114,11 +130,28 @@ export const cleanupExpiredUploads = async () => {
   await prepareFileUploadInfrastructure();
   const now = new Date();
   const expired = await UploadTask.find({ expiresAt: { $lte: now } })
-    .select("tempDir")
+    .select("ownerId")
     .lean();
-  await Promise.all(expired.map((task) => fse.remove(task.tempDir)));
-  if (expired.length > 0) {
-    await UploadTask.deleteMany({ _id: { $in: expired.map((task) => task._id) } });
+  const tasksByOwner = new Map<string, string[]>();
+  expired.forEach((task) => {
+    const ids = tasksByOwner.get(task.ownerId) ?? [];
+    ids.push(String(task._id));
+    tasksByOwner.set(task.ownerId, ids);
+  });
+  for (const [ownerId, uploadIds] of tasksByOwner) {
+    await withFileFolderStructureLock(ownerId, async () => {
+      for (const uploadId of uploadIds) {
+        await cleanupExpiredUploadTaskUnlocked(ownerId, uploadId, now)
+          .catch((error) => {
+            logger.warn("过期上传任务清理失败，将在下次维护时重试", {
+              uploadId,
+              error,
+            });
+          });
+      }
+    }).catch((error) => {
+      logger.warn("过期上传任务清理锁获取失败", { ownerId, error });
+    });
   }
 
   const active = await UploadTask.find({ status: { $ne: "completed" } })
@@ -130,12 +163,19 @@ export const cleanupExpiredUploads = async () => {
   await removeStaleEntries(MULTER_TEMP_DIR, new Set(), Date.now() - 60 * 60 * 1000);
 };
 
-export const startFileUploadMaintenance = async () => {
-  await cleanupExpiredUploads();
+const runFileUploadMaintenance = async () => {
+  await cleanupExpiredUploads().catch((error) => {
+    logger.error("首次上传维护执行失败", { error });
+  });
   const timer = setInterval(() => {
     void cleanupExpiredUploads().catch((error) => {
       logger.error("上传临时文件清理失败", { error });
     });
   }, 60 * 60 * 1000);
   timer.unref();
+};
+
+export const startFileUploadMaintenance = () => {
+  maintenancePromise ??= runFileUploadMaintenance();
+  return maintenancePromise;
 };

@@ -1,7 +1,33 @@
-import { createMeeting, getAllMeeting, getMeeting, MeetingType } from "@/api/meeting";
+import {
+  createMeeting,
+  getMeeting,
+  getMeetingList,
+  type MeetingType,
+} from "@/api/meeting";
 import { queryClient } from "@/AppProvider";
 
 import { atomWithMutation, atomWithQuery } from "jotai-tanstack-query";
+
+const getAllMeetingPages = async () => {
+  const meetingsById = new Map<string, MeetingType>();
+  const limit = 50;
+  let offset = 0;
+
+  while (true) {
+    const response = await getMeetingList({ limit, offset });
+    if (response.code === 0) {
+      throw new Error(response.message || "Failed to load meetings");
+    }
+
+    const page = response.data;
+    page.items.forEach((meeting) => meetingsById.set(meeting._id, meeting));
+    if (!page.hasMore) return [...meetingsById.values()];
+    if (page.nextOffset === null || page.nextOffset <= offset) {
+      throw new Error("Invalid meeting pagination response");
+    }
+    offset = page.nextOffset;
+  }
+};
 
 export const MeetingAtom = atomWithQuery(
   () => ({
@@ -17,10 +43,7 @@ export const MeetingAtom = atomWithQuery(
 export const AllMeetingAtom = atomWithQuery(
   () => ({
     queryKey: ["allMeeting"],
-    queryFn: async () => {
-      const response = await getAllMeeting();
-      return response.data || [];
-    },
+    queryFn: getAllMeetingPages,
   }),
   () => queryClient
 );

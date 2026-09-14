@@ -2,7 +2,7 @@
   fetchFilePreviewBlob,
   fetchFilePreviewStreamUrl,
 } from "@/api/file";
-import type { FileTableRow } from "@/views/file-manage/components/FileListTable/fileIcons";
+import type { FileListItem as FileTableRow } from "@/api/file";
 import { Button, Modal, Spin, Tabs } from "antd";
 import JSZip from "jszip";
 import { FileText, FileWarning, Presentation, Table2 } from "lucide-react";

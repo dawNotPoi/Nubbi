@@ -39,10 +39,14 @@ import requireAuth from "@/middleware/session";
 import Note from "@/models/note";
 import { File } from "@/models/file/file";
 import { Folder } from "@/models/file/folder";
-import { deleteUserUploadTasks } from "@/services/fileUpload/taskLifecycle";
+import { withFileFolderStructureLock } from "@/services/fileManagement/structureLock";
+import { deleteUserUploadTasksUnlocked } from "@/services/fileUpload/taskLifecycle";
+import {
+  enqueueStorageCleanup,
+  processStorageCleanupUnlocked,
+} from "@/services/storageCleanupQueue";
 import MeetingComment from "@/models/meetingComment";
 import express from "express";
-import fse from "fs-extra";
 import { ObjectId } from "mongodb";
 import { asyncHandler } from "../middleware/common";
 import { successResponse } from "./utils";
@@ -75,24 +79,6 @@ const getExistingEmailData = (user: unknown) => {
   };
 };
 
-const removeOrphanedStorageFiles = async (storagePaths: string[]) => {
-  const uniquePaths = [...new Set(storagePaths.filter(Boolean))];
-
-  await Promise.all(
-    uniquePaths.map(async (storagePath) => {
-      const remainingReferences = await File.countDocuments({ storagePath });
-
-      if (remainingReferences > 0) {
-        return;
-      }
-
-      if (await fse.pathExists(storagePath)) {
-        await fse.remove(storagePath);
-      }
-    }),
-  );
-};
-
 const deleteUserAccountData = async ({
   userId,
   email,
@@ -107,18 +93,24 @@ const deleteUserAccountData = async ({
   }
 
   const normalizedEmail = email.trim().toLowerCase();
-  const userFiles = await File.find({ ownerId: userId })
-    .select("storagePath")
-    .lean();
-  const storagePaths = userFiles.map((file) => file.storagePath);
+  await withFileFolderStructureLock(userId, async () => {
+    const userFiles = await File.find({ ownerId: userId })
+      .select("storagePath")
+      .lean();
+    const paths = userFiles.map((file) => file.storagePath);
+    await enqueueStorageCleanup(userId, paths);
+    await deleteUserUploadTasksUnlocked(userId);
+    await Promise.all([
+      Folder.deleteMany({ ownerId: userId }),
+      File.deleteMany({ ownerId: userId }),
+    ]);
+    await processStorageCleanupUnlocked(userId, paths);
+  });
 
   await mongoDb.collection("apikey").deleteMany({ userId });
-  await deleteUserUploadTasks(userId);
 
   await Promise.all([
     Note.deleteMany({ userId }),
-    Folder.deleteMany({ ownerId: userId }),
-    File.deleteMany({ ownerId: userId }),
     MeetingComment.deleteMany({ userId }),
     mongoDb.collection("session").deleteMany({ userId }),
     mongoDb.collection("account").deleteMany({ userId }),
@@ -145,7 +137,6 @@ const deleteUserAccountData = async ({
   await mongoDb.collection<AuthUserDocument>("user").deleteOne({
     $or: userDeleteFilters,
   });
-  await removeOrphanedStorageFiles(storagePaths);
 };
 
 const findAuthUserByEmail = async (email: string) => {
