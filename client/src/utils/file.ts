@@ -250,6 +250,12 @@ export class Uploader {
     this.uploadStartedAt = performance.now();
     this.uploadedBytes = 0;
     this.uploadSpeed = 0;
+    for (const chunk of this.chunks) {
+      if (chunk.status === ChunkStatus.fail) {
+        chunk.status = ChunkStatus.pending;
+        chunk.retries = 0;
+      }
+    }
     this.emitChange();
     void this.start();
   }
