@@ -1,5 +1,5 @@
-import { Editor } from "@tiptap/core";
-import { SuggestionKeyDownProps } from "@tiptap/suggestion";
+import type { Editor, Range } from "@tiptap/core";
+import type { SuggestionKeyDownProps } from "@tiptap/suggestion";
 import clsx from "clsx";
 import {
   forwardRef,
@@ -8,17 +8,8 @@ import {
   useRef,
   useState,
 } from "react";
+import type { SuggestionItem } from "./suggestions";
 
-// 1. 单个命令项的类型
-export interface SuggestionItem {
-  title: string;
-  description?: string;
-  icon?: React.ReactNode;
-  // 这里的 props 包含 editor, range (虽然你现在不需要删除 range，但保留以备不时之需)
-  command: (props: { editor: Editor; range: Range }) => void;
-}
-
-// 2. 传递给 SuggestionList 组件的 Props
 export interface SuggestionListProps {
   items: SuggestionItem[];
   editor: Editor;
@@ -26,7 +17,6 @@ export interface SuggestionListProps {
   query: string;
 }
 
-// 3. 暴露给外部（如 Suggestion 插件）调用的句柄类型
 export interface SuggestionListRef {
   onKeyDown: (props: SuggestionKeyDownProps) => boolean;
 }

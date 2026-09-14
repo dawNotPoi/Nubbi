@@ -1,17 +1,21 @@
 import { Extension } from "@tiptap/core";
 import { PluginKey } from "@tiptap/pm/state";
 import { ReactRenderer } from "@tiptap/react";
-import Suggestion, {
-  exitSuggestion,
+import Suggestion, { exitSuggestion } from "@tiptap/suggestion";
+import type {
+  SuggestionKeyDownProps,
   SuggestionOptions,
+  SuggestionProps,
 } from "@tiptap/suggestion";
-import { SuggestionListRef } from "./SuggestionList";
+import type { SuggestionListRef } from "./SuggestionList";
 import SuggestionPopover from "./SuggestionPopover";
 import { getSuggestions } from "./suggestions";
+import type { SuggestionItem } from "./suggestions";
 
 const slashCommandPluginKey = new PluginKey("slashCommand");
+type SlashSuggestionProps = SuggestionProps<SuggestionItem>;
 
-const suggestion: Omit<SuggestionOptions, "editor"> = {
+const suggestion: Omit<SuggestionOptions<SuggestionItem>, "editor"> = {
   char: "/",
   pluginKey: slashCommandPluginKey,
   allowedPrefixes: null,
@@ -22,14 +26,14 @@ const suggestion: Omit<SuggestionOptions, "editor"> = {
   render: () => {
     let component: ReactRenderer<SuggestionListRef> | null = null;
 
-    const withPopoverProps = (props: any) => ({
+    const withPopoverProps = (props: SlashSuggestionProps) => ({
       ...props,
       onClickOutside: () => {
         exitSuggestion(props.editor.view, slashCommandPluginKey);
       },
     });
 
-    const ensureComponent = (props: any) => {
+    const ensureComponent = (props: SlashSuggestionProps) => {
       if (component) {
         component.updateProps(withPopoverProps(props));
         return;
@@ -47,15 +51,15 @@ const suggestion: Omit<SuggestionOptions, "editor"> = {
     };
 
     return {
-      onStart: (props: any) => {
+      onStart: (props: SlashSuggestionProps) => {
         ensureComponent(props);
       },
 
-      onUpdate: (props: any) => {
+      onUpdate: (props: SlashSuggestionProps) => {
         ensureComponent(props);
       },
 
-      onKeyDown: (props: any) => {
+      onKeyDown: (props: SuggestionKeyDownProps) => {
         if (props.event.key === "Escape") {
           destroyComponent();
           return false;
