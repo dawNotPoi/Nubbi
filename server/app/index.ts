@@ -38,6 +38,7 @@ const corsOptions = {
   allowedHeaders: ["Content-Type", "Authorization", "Range"], // 允许的请求头
   exposedHeaders: [
     "set-auth-token",
+    "set-auth-jwt",
     "Accept-Ranges",
     "Content-Length",
     "Content-Range",

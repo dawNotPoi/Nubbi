@@ -1,7 +1,6 @@
 import {
-  getAccessToken,
+  ensureJwt,
   handleUnauthorized,
-  restoreAuthSession,
 } from "@/utils/auth";
 import { getApiBaseUrl } from "@/utils/env";
 
@@ -18,17 +17,9 @@ const resolveApiUrl = (url: string) => {
   return `${baseUrl}${pathUrl}`;
 };
 
-const ensureAccessToken = async () => {
-  const existingToken = getAccessToken();
-  if (existingToken) return existingToken;
-
-  await restoreAuthSession();
-  return getAccessToken();
-};
-
 const withAuthHeaders = async (headers?: HeadersInit) => {
   const nextHeaders = new Headers(headers);
-  const token = await ensureAccessToken();
+  const token = await ensureJwt();
 
   if (token) {
     nextHeaders.set("Authorization", `Bearer ${token}`);

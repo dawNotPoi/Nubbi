@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
-import { bearer } from "better-auth/plugins";
+import { bearer, jwt } from "better-auth/plugins";
 import { AsyncLocalStorage } from "async_hooks";
 import log from "@/common/chalk";
 import { db } from "./db";
@@ -143,10 +143,17 @@ export const auth = betterAuth({
     allowMultipleProviders: true,
   },
   session: {
-    expiresIn: 60 * 60 * 24 * 7,
-    updateAge: 60 * 60 * 24,
+    expiresIn: 60 * 60 * 24 * 30,
+    updateAge: 60 * 60 * 24 * 7,
   },
-  plugins: [bearer()],
+  plugins: [
+    bearer(),
+    jwt({
+      jwt: {
+        expirationTime: "15m",
+      },
+    }),
+  ],
 });
 
 export const signUpVerifiedEmailWithPassword = async ({

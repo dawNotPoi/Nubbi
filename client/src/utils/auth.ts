@@ -8,6 +8,8 @@ const authBaseUrl = getAuthBaseUrl();
 
 type AuthRuntimeState = {
   accessToken: string | null;
+  jwtToken: string | null;
+  jwtExpiresAt: number | null;
   initialized: boolean;
 };
 
@@ -26,6 +28,8 @@ const runtimeListeners = new Set<() => void>();
 
 let runtimeState: AuthRuntimeState = {
   accessToken: null,
+  jwtToken: null,
+  jwtExpiresAt: null,
   initialized: false,
 };
 
@@ -69,11 +73,11 @@ export const clearAccessToken = () => {
   setAccessToken(null);
 };
 
-const getAuthorizedJsonHeaders = () => {
+const getAuthorizedJsonHeaders = async () => {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
-  const token = getAccessToken();
+  const token = await ensureJwt();
 
   if (token) {
     headers.Authorization = `Bearer ${token}`;
@@ -86,6 +90,32 @@ const extractBearerToken = (headers?: Headers) => {
   const token = headers?.get("set-auth-token");
   if (!token) return null;
   return token;
+};
+
+const parseJwtExpiry = (token: string): number | null => {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+    const payload = JSON.parse(atob(padded)) as { exp?: number };
+    return typeof payload.exp === "number" ? payload.exp * 1000 : null;
+  } catch {
+    return null;
+  }
+};
+
+const setJwtToken = (token: string | null) => {
+  const jwtExpiresAt = token ? parseJwtExpiry(token) : null;
+  setRuntimeState({ jwtToken: token, jwtExpiresAt });
+};
+
+export const getJwtToken = () => runtimeState.jwtToken;
+
+const isJwtFresh = (): boolean => {
+  const { jwtToken, jwtExpiresAt } = runtimeState;
+  if (!jwtToken || !jwtExpiresAt) return false;
+  return jwtExpiresAt - Date.now() > 2 * 60 * 1000;
 };
 
 const getErrorCode = (error: unknown) => {
@@ -169,6 +199,10 @@ export const authClient = createAuthClient({
       if (token) {
         setAccessToken(token);
       }
+      const jwtToken = context.response.headers.get("set-auth-jwt");
+      if (jwtToken) {
+        setJwtToken(jwtToken);
+      }
     },
   },
 });
@@ -208,6 +242,22 @@ export const restoreAuthSession = async (): Promise<boolean> => {
 
 export const clearAuthState = () => {
   clearAccessToken();
+  setRuntimeState({ jwtToken: null, jwtExpiresAt: null });
+};
+
+// 获取用于 API 调用的 token：优先返回新鲜的 JWT，若已过期或不存在则先调
+// getSession() 触发 jwt 插件 hook 刷新，最终 fallback 到 session token
+export const ensureJwt = async (): Promise<string | null> => {
+  if (!runtimeState.accessToken) {
+    await restoreAuthSession();
+    return runtimeState.jwtToken ?? runtimeState.accessToken;
+  }
+
+  if (!isJwtFresh()) {
+    await restoreAuthSession();
+  }
+
+  return runtimeState.jwtToken ?? runtimeState.accessToken;
 };
 
 export const redirectToLogin = () => {
@@ -735,7 +785,7 @@ export const sendAccountDeletionCode = async (): Promise<
   try {
     const response = await fetch(`${baseUrl}/auth/account/delete/send-code`, {
       method: "POST",
-      headers: getAuthorizedJsonHeaders(),
+      headers: await getAuthorizedJsonHeaders(),
       body: JSON.stringify({}),
     });
 
@@ -782,7 +832,7 @@ export const deleteAccountWithCode = async (
   try {
     const response = await fetch(`${baseUrl}/auth/account/delete/confirm`, {
       method: "POST",
-      headers: getAuthorizedJsonHeaders(),
+      headers: await getAuthorizedJsonHeaders(),
       body: JSON.stringify({
         code,
         confirmed: true,
