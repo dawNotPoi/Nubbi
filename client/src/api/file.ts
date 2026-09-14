@@ -145,8 +145,8 @@ export const initUploadTask = async (param: {
   return request<InitUploadTaskData>("file/init", param);
 };
 
-export const uploadChunk = async (formdata: FormData) => {
-  return requestWithNoJson("/file/uploadchunk", formdata);
+export const uploadChunk = async (formdata: FormData, signal?: AbortSignal) => {
+  return requestWithNoJson("/file/uploadchunk", formdata, "post", { signal });
 };
 
 export const mergeChunk = async (uploadId: string) => {

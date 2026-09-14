@@ -42,6 +42,7 @@ export class Uploader {
   private hash = "";
   private name = "";
   private size: number;
+  private abortController = new AbortController();
   public progress = 0;
   private uploadId: string | null = null;
   private totalChunksSize = 0;
@@ -190,7 +191,7 @@ export class Uploader {
       chunk.status = ChunkStatus.uploading;
 
       try {
-        await uploadChunk(chunk.formData!);
+        await uploadChunk(chunk.formData!, this.abortController.signal);
         chunk.status = ChunkStatus.success;
         this.finishedCount++;
         this.updateUploadSpeed(chunk.file.size);
@@ -209,6 +210,11 @@ export class Uploader {
           return;
         }
       } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          chunk.status = ChunkStatus.pending;
+          return;
+        }
+
         chunk.retries++;
 
         if (chunk.retries >= 3) {
@@ -234,6 +240,8 @@ export class Uploader {
   pause() {
     this.status = UploadStatus.paused;
     this.uploadSpeed = 0;
+    this.abortController.abort();
+    this.abortController = new AbortController();
     this.emitChange();
   }
 
