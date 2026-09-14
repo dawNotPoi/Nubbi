@@ -1,14 +1,20 @@
-import type { ReactNode } from "react";
 import {
-  ActivityIndicator,
+  Button as ExpoButton,
+  Checkbox as ExpoCheckbox,
+  Host,
+  Switch as ExpoSwitch,
+  TextInput as ExpoTextInput,
+  useNativeState,
+  type TextInputProps as ExpoTextInputProps,
+} from "@expo/ui";
+import { useEffect, type ReactNode } from "react";
+import {
   Pressable,
   StyleSheet,
-  Text,
-  TextInput,
   type PressableProps,
   type StyleProp,
-  type TextInputProps,
   type ViewStyle,
+  Text,
   View,
 } from "react-native";
 import { colors } from "../theme";
@@ -38,47 +44,80 @@ export const Button = ({
   children,
   loading,
   tone = "primary",
-  ...props
-}: PressableProps & {
-  children: ReactNode;
+  disabled,
+  onPress,
+}: {
+  children: string;
   loading?: boolean;
+  disabled?: boolean;
+  onPress: () => void;
   tone?: "primary" | "secondary" | "danger";
 }) => (
-  <Pressable
-    accessibilityRole="button"
-    disabled={loading || props.disabled}
-    style={({ pressed }) => [
-      styles.button,
-      tone === "primary" && styles.primaryButton,
-      tone === "secondary" && styles.secondaryButton,
-      tone === "danger" && styles.dangerButton,
-      (loading || props.disabled) && styles.disabled,
-      pressed && styles.pressed,
-    ]}
-    {...props}
+  <Host
+    colorScheme="light"
+    matchContents={{ vertical: true }}
+    seedColor={tone === "danger" ? colors.danger : colors.primary}
+    style={styles.controlHost}
   >
-    {loading ? <ActivityIndicator color={tone === "secondary" ? colors.primary : colors.surface} /> : (
-      <Text style={[styles.buttonText, tone === "secondary" && styles.secondaryButtonText]}>
-        {children}
-      </Text>
-    )}
-  </Pressable>
+    <ExpoButton
+      disabled={loading || disabled}
+      label={loading ? "处理中..." : children}
+      onPress={onPress}
+      style={styles.nativeButton}
+      variant={tone === "secondary" ? "outlined" : "filled"}
+    />
+  </Host>
 );
 
-export const Field = ({
-  label,
-  multiline,
-  ...props
-}: TextInputProps & { label: string }) => (
-  <View style={styles.field}>
-    <Text style={styles.label}>{label}</Text>
-    <TextInput
-      placeholderTextColor={colors.muted}
-      style={[styles.input, multiline && styles.textarea]}
-      multiline={multiline}
-      {...props}
-    />
-  </View>
+type FieldProps = Omit<ExpoTextInputProps, "value" | "style" | "textStyle"> & {
+  label: string;
+  value?: string;
+};
+
+export const Field = ({ label, value = "", multiline, ...props }: FieldProps) => {
+  const nativeValue = useNativeState(value);
+
+  useEffect(() => {
+    if (nativeValue.value !== value) nativeValue.value = value;
+  }, [nativeValue, value]);
+
+  return (
+    <View style={styles.field}>
+      <Text style={styles.label}>{label}</Text>
+      <Host colorScheme="light" matchContents={{ vertical: true }} seedColor={colors.primary} style={styles.controlHost}>
+        <ExpoTextInput
+          multiline={multiline}
+          numberOfLines={multiline ? 5 : 1}
+          placeholderTextColor={colors.muted}
+          style={multiline ? styles.nativeTextarea : styles.nativeInput}
+          textStyle={styles.nativeInputText}
+          value={nativeValue}
+          {...props}
+        />
+      </Host>
+    </View>
+  );
+};
+
+export const Switch = ({ disabled, onValueChange, value }: {
+  disabled?: boolean;
+  onValueChange: (value: boolean) => void;
+  value: boolean;
+}) => (
+  <Host colorScheme="light" matchContents seedColor={colors.primary}>
+    <ExpoSwitch disabled={disabled} onValueChange={onValueChange} value={value} />
+  </Host>
+);
+
+export const Checkbox = ({ disabled, label, onValueChange, value }: {
+  disabled?: boolean;
+  label: string;
+  onValueChange: (value: boolean) => void;
+  value: boolean;
+}) => (
+  <Host colorScheme="light" matchContents seedColor={colors.primary}>
+    <ExpoCheckbox disabled={disabled} label={label} onValueChange={onValueChange} value={value} />
+  </Host>
 );
 
 const styles = StyleSheet.create({
@@ -90,31 +129,29 @@ const styles = StyleSheet.create({
     width: 42,
   },
   pressed: { opacity: 0.62 },
-  button: {
-    alignItems: "center",
-    borderRadius: 6,
-    height: 46,
-    justifyContent: "center",
-    paddingHorizontal: 16,
-  },
-  primaryButton: { backgroundColor: colors.primary },
-  secondaryButton: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
-  dangerButton: { backgroundColor: colors.danger },
-  disabled: { opacity: 0.45 },
-  buttonText: { color: colors.surface, fontSize: 15, fontWeight: "600" },
-  secondaryButtonText: { color: colors.primary },
+  controlHost: { width: "100%" },
+  nativeButton: { borderRadius: 6, height: 46, width: "100%" },
   field: { gap: 7 },
   label: { color: colors.text, fontSize: 14, fontWeight: "600" },
-  input: {
+  nativeInput: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
     borderRadius: 6,
     borderWidth: 1,
-    color: colors.text,
-    fontSize: 15,
-    minHeight: 46,
+    height: 46,
     paddingHorizontal: 12,
     paddingVertical: 10,
+    width: "100%",
   },
-  textarea: { minHeight: 108, textAlignVertical: "top" },
+  nativeTextarea: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 6,
+    borderWidth: 1,
+    height: 108,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    width: "100%",
+  },
+  nativeInputText: { color: colors.text, fontSize: 15 },
 });

@@ -1,15 +1,15 @@
 # Nubbi Assistant
 
-Nubbi Assistant 是一个以手机 App 为主要入口的个人 AI 助手。手机端使用 Expo + React Native，服务端负责会话、模型调用、本地 Skill、远程 HTTP MCP 和逐次工具审批。
+Nubbi Assistant 是一个以手机 App 为主要入口的个人 AI 助手。手机端使用 Expo + React Native，服务端负责会话、模型调用、本地 Skill、远程 HTTP MCP 和按工具语义执行的审批策略。
 
 ## 项目结构
 
 - `mobile`：Android/iOS 客户端（Expo + React Native）
 - `web`：桌面浏览器备用客户端
-- `api`：Express API、LangGraph Agent 编排、Codex App Server 和 MCP 调用
+- `api`：NestJS + Fastify API、LangGraph Agent 编排、Codex App Server 和 MCP 调用
 - `config`：服务端模型与 MCP 运行配置
 - `skills`：本地 Agent Skill
-- `data`：本地会话与独立 Codex 登录数据
+- `data`：独立 Codex 登录数据；会话和 Run 事件存储在 MongoDB
 
 ## 启动服务
 
@@ -22,7 +22,7 @@ pnpm install
 pnpm dev:assistant
 ```
 
-在 `assistant/.env` 中设置 `CONFIG_ADMIN_TOKEN`。它只用于保护模型登录与 MCP 管理接口，不是模型 API Key。
+在 `assistant/.env` 中设置 MongoDB 和 `CONFIG_ADMIN_TOKEN`。`MONGO_URI` 可以与 Nubbi Server 使用相同地址；本地仓库运行且未填写时，API 会读取 `server/.env` 中的 `MONGO_URI` 作为回退。Assistant 始终通过 `ASSISTANT_MONGO_DB_NAME` 使用独立数据库，默认是 `NubbiAssistant`。`CONFIG_ADMIN_TOKEN` 只用于保护模型登录与 MCP 管理接口，不是模型 API Key。
 
 - Web：`http://localhost:5174`
 - API：`http://localhost:8787`
@@ -76,7 +76,22 @@ MCP 请求始终由 Assistant API 发出，不是由手机或外部模型公司�
 
 ## 工具审批
 
-OpenAI-compatible 与 ChatGPT 订阅模式调用 MCP 前都会向当前客户端发送一次性审批事件。用户可以查看 Server、工具名和参数，选择“允许一次”或“拒绝”。只有批准后，Assistant API 才会请求 MCP；审批不会被永久记住，超时或停止生成会自动拒绝。
+OpenAI-compatible 与 ChatGPT 订阅模式共用 Tool Gateway。MCP 声明 `readOnlyHint=true` 且不具有破坏性的工具会自动执行；创建、修改、破坏性工具以及缺少 annotations 的工具会向当前客户端发送一次性审批事件。用户可以查看 Server、工具名和参数，选择“允许一次”或“拒绝”。审批不会被永久记住，超时或停止生成会自动拒绝。
+
+## Agent Runtime
+
+每条用户消息会创建一个带 `runId` 的 RuntimeSession。Session 为 LangGraph 和 Codex App Server 提供相同的上下文、Skill、MCP 工具、审批和事件协议。同一对话只运行一个任务，不同对话可以并发。
+
+语义事件保存在 Assistant 独立 MongoDB 数据库的 `run_events` 集合，最终消息和对话保存在 `conversations` 集合。开发阶段不迁移旧的本地 JSON/JSONL 数据。可以通过以下接口查看运行记录：
+
+- `GET /api/conversations/:id/runs`
+- `GET /api/runs/:runId/events`
+
+生成任务通过 `POST /api/conversations/:id/generations/stop` 按对话停止，不提供全局停止接口。
+
+实时文本增量不会写入 Run 日志，MCP URL、Header、Token 和模型密钥也不会进入事件或模型上下文。
+
+内置 `conversation-summary` Skill 可将当前对话整理为固定结构的 Markdown。用户要求落地时，Agent 会从全部已启用 MCP 中自行选择合适的文档工具；它不绑定 Nubbi，也没有独立预览页面。写入动作仍需按 Tool Gateway 策略审批。
 
 ## 构建安装包
 

@@ -1,6 +1,8 @@
 import { cancelThreadApprovals } from "../approvals.js";
-import { discoverMcpTools, type McpTool } from "../mcp.js";
+import type { McpTool } from "../mcp.js";
 import type { StoredModelConfig } from "../model-config.js";
+import { renderCodexBootstrap } from "../runtime/context-builder.js";
+import type { ProviderExecutorInput } from "../runtime/provider-executor.js";
 import { setCodexThreadId } from "../store.js";
 import type { AgentEvent, MessagePart } from "../types.js";
 import { readCodexAccount } from "./account.js";
@@ -30,7 +32,7 @@ const startThread = async (
     sandbox: "read-only",
     developerInstructions: [
       modelConfig.systemPrompt,
-      "你是 Nubbi Assistant。按需使用已安装 Skill；调用外部工具时只使用提供的动态工具，不使用命令执行、文件变更或网络搜索工具。",
+      "你是 Nubbi Assistant。按需使用已安装 Skill；调用外部能力时只使用提供的动态工具，不使用命令执行、文件变更或网络搜索工具。",
     ].filter(Boolean).join("\n\n"),
     dynamicTools: toDynamicTools(tools),
   });
@@ -41,7 +43,7 @@ const resolveThread = async (
   currentId: string | undefined,
   modelConfig: StoredModelConfig,
   tools: McpTool[],
-): Promise<string> => {
+): Promise<{ threadId: string; isNew: boolean }> => {
   if (currentId) {
     try {
       await codexClient.request<ThreadResponse>("thread/resume", {
@@ -52,12 +54,12 @@ const resolveThread = async (
         approvalsReviewer: "user",
         sandbox: "read-only",
       });
-      return currentId;
+      return { threadId: currentId, isNew: false };
     } catch {
-      // 本地 Codex 数据被清理后，自动创建新线程恢复可用性。
+      // 本地 Codex 数据被清理后，通过新线程恢复可用性。
     }
   }
-  return startThread(modelConfig, tools);
+  return { threadId: await startThread(modelConfig, tools), isNew: true };
 };
 
 const waitForTurn = (
@@ -97,33 +99,25 @@ const waitForTurn = (
   return { promise, cancel };
 };
 
-export const runCodex = async (input: {
-  conversationId: string;
-  content: string;
-  codexThreadId?: string;
-  modelConfig: StoredModelConfig;
-  signal: AbortSignal;
-  emit: (event: AgentEvent) => void;
-}): Promise<MessagePart[]> => {
+export const runCodex = async (input: ProviderExecutorInput): Promise<MessagePart[]> => {
   installDynamicToolHandler();
   const account = await readCodexAccount();
   if (account.account?.type !== "chatgpt") {
     throw new Error("请先在模型设置中登录 ChatGPT");
   }
-  const tools = await discoverMcpTools();
-  const threadId = await resolveThread(input.codexThreadId, input.modelConfig, tools);
+  const resolved = await resolveThread(input.codexThreadId, input.modelConfig, input.tools);
+  const threadId = resolved.threadId;
   if (threadId !== input.codexThreadId) {
     await setCodexThreadId(input.conversationId, threadId);
   }
   const parts: MessagePart[] = [];
-  registerDynamicToolContext(threadId, tools, parts, input.emit);
+  registerDynamicToolContext(threadId, input.gateway, parts);
   let turnId: string | null = null;
   const completion = waitForTurn(threadId, input.signal, input.emit);
   const interrupt = () => {
-    cancelThreadApprovals(threadId);
+    cancelThreadApprovals(input.runId);
     if (turnId) {
-      void codexClient.request("turn/interrupt", { threadId, turnId })
-        .catch(() => undefined);
+      void codexClient.request("turn/interrupt", { threadId, turnId }).catch(() => undefined);
     }
   };
   input.signal.addEventListener("abort", interrupt, { once: true });
@@ -131,7 +125,13 @@ export const runCodex = async (input: {
     try {
       const response = await codexClient.request<TurnResponse>("turn/start", {
         threadId,
-        input: [{ type: "text", text: input.content, text_elements: [] }],
+        input: [{
+          type: "text",
+          text: resolved.isNew
+            ? renderCodexBootstrap(input.context, input.currentMessageId, input.content)
+            : input.content,
+          text_elements: [],
+        }],
       });
       turnId = response.turn.id;
       if (input.signal.aborted) interrupt();
@@ -141,12 +141,12 @@ export const runCodex = async (input: {
     } catch (error) {
       completion.cancel();
       await completion.promise.catch(() => undefined);
-      if (!input.signal.aborted) cancelThreadApprovals(threadId);
+      if (!input.signal.aborted) cancelThreadApprovals(input.runId);
       throw error;
     }
   } finally {
     input.signal.removeEventListener("abort", interrupt);
-    cancelThreadApprovals(threadId);
+    cancelThreadApprovals(input.runId);
     removeDynamicToolContext(threadId);
   }
 };

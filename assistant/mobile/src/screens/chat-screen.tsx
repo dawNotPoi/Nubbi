@@ -5,12 +5,12 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { IconButton } from "../components/controls";
 import { colors } from "../theme";
 import { HistoryModal } from "./chat/history-modal";

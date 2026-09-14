@@ -3,11 +3,11 @@ import { useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { testApiConnection } from "../api";
 import { Button, Field } from "../components/controls";
 import { normalizeApiUrl, saveApiUrl } from "../storage";

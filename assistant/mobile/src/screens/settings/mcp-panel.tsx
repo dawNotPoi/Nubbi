@@ -1,8 +1,8 @@
 import { FlaskConical, Pencil, Trash2 } from "lucide-react-native";
 import { useCallback, useEffect, useState } from "react";
-import { Alert, Switch, Text, View } from "react-native";
+import { Alert, Text, View } from "react-native";
 import { createMcpServer, deleteMcpServer, listMcpServers, testMcpServer, updateMcpServer } from "../../api";
-import { Button, IconButton } from "../../components/controls";
+import { Button, IconButton, Switch } from "../../components/controls";
 import { colors } from "../../theme";
 import type { McpServerConfig } from "../../types";
 import { McpForm } from "./mcp-form";
@@ -100,7 +100,7 @@ export const McpPanel = ({ baseUrl, token }: { baseUrl: string; token: string })
               </View>
               <Text numberOfLines={1} style={styles.serverUrl}>{server.url}</Text>
             </View>
-            <Switch disabled={busy} onValueChange={() => void toggle(server)} thumbColor={colors.surface} trackColor={{ false: colors.border, true: colors.primary }} value={server.enabled} />
+            <Switch disabled={busy} onValueChange={() => void toggle(server)} value={server.enabled} />
           </View>
           <View style={styles.serverActions}>
             <IconButton icon={<FlaskConical color={colors.primary} size={18} />} label={`测试 ${server.name}`} onPress={() => void test(server).catch((caught: unknown) => { setDanger(true); setMessage(caught instanceof Error ? caught.message : "测试失败"); })} />

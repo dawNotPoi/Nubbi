@@ -5,7 +5,6 @@ import {
 } from "@langchain/langgraph";
 import type { StoredModelConfig } from "../model-config.js";
 import { requestModel } from "../model.js";
-import type { McpTool } from "../mcp.js";
 import type { Skill } from "../skills.js";
 import type {
   AgentEvent,
@@ -13,16 +12,16 @@ import type {
   ModelTool,
 } from "../types.js";
 import { AgentState, type AgentStateValue } from "./agent-state.js";
-import { executeToolCall } from "./tool-executor.js";
+import type { ToolGateway } from "../runtime/tool-gateway.js";
+import { executeToolCalls } from "./tool-executor.js";
 
 const maxTurns = 8;
 const limitText = "已达到最大执行轮数，请缩小问题范围后重试。";
 
 export type AgentGraphContext = {
-  conversationId: string;
   skills: Skill[];
-  mcpTools: McpTool[];
   modelTools: ModelTool[];
+  gateway: ToolGateway;
   modelConfig: StoredModelConfig;
   signal: AbortSignal;
   emit: (event: AgentEvent) => void;
@@ -67,13 +66,15 @@ const createToolNode = (context: AgentGraphContext) => async (
   const activeSkills = new Set(state.activeSkills);
   const instructions: string[] = [];
 
-  for (const call of state.pendingToolCalls) {
-    context.signal.throwIfAborted();
-    const result = await executeToolCall(call, { ...context, activeSkills });
+  context.signal.throwIfAborted();
+  const results = await executeToolCalls(state.pendingToolCalls, { ...context, activeSkills });
+  results.forEach((result, index) => {
+    const call = state.pendingToolCalls[index];
+    if (!call) return;
     messages.push({ role: "tool", tool_call_id: call.id, content: result.content });
     parts.push(...result.parts);
     if (result.instruction) instructions.push(result.instruction);
-  }
+  });
   instructions.forEach((content) => messages.push({ role: "system", content }));
   return {
     messages,

@@ -12,7 +12,8 @@
 
 | 层级     | 技术                                                   |
 | -------- | ------------------------------------------------------ |
-| 服务端   | Express 4.x + Mongoose 8.x + Zod 3.x + Better-Auth 1.x |
+| 主服务端 | Express 4.x + Mongoose 8.x + Zod 3.x + Better-Auth 1.x |
+| Assistant API | NestJS 11.x + Fastify 5.x + Mongoose 8.x + Zod 3.x |
 | 客户端   | React 18.x + Ant Design 5.x + Tailwind 3.x + Vite 5.x  |
 | 状态管理 | TanStack Query（服务端状态）+ Jotai（UI 状态）         |
 

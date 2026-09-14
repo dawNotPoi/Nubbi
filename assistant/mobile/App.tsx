@@ -1,6 +1,7 @@
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Modal, SafeAreaView, StyleSheet } from "react-native";
+import { ActivityIndicator, Modal, StyleSheet } from "react-native";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { ChatScreen } from "./src/screens/chat-screen";
 import { ConnectionScreen } from "./src/screens/connection-screen";
 import { SettingsScreen } from "./src/screens/settings-screen";
@@ -8,6 +9,14 @@ import { readApiUrl } from "./src/storage";
 import { colors } from "./src/theme";
 
 export default function App() {
+  return (
+    <SafeAreaProvider>
+      <AppContent />
+    </SafeAreaProvider>
+  );
+}
+
+function AppContent() {
   const [baseUrl, setBaseUrl] = useState<string | null>(null);
   const [editingConnection, setEditingConnection] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);

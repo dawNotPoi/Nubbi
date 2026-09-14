@@ -142,8 +142,8 @@ export const useChat = () => {
   const stop = useCallback(async () => {
     abortRef.current?.abort();
     setApproval(null);
-    await stopGeneration().catch(() => undefined);
-  }, []);
+    if (current) await stopGeneration(current.id).catch(() => undefined);
+  }, [current]);
 
   const decideApproval = useCallback(async (approved: boolean) => {
     if (!approval) return;

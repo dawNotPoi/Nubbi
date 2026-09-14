@@ -1,7 +1,5 @@
-import { Check } from "lucide-react-native";
-import { Pressable, Text, View } from "react-native";
-import { Button, Field } from "../../components/controls";
-import { colors } from "../../theme";
+import { Text, View } from "react-native";
+import { Button, Checkbox, Field } from "../../components/controls";
 import type { CodexAccount, DeviceLogin, ModelConfig } from "../../types";
 import { settingsStyles as styles } from "./styles";
 
@@ -53,12 +51,11 @@ export const ModelProviderFields = ({
           value={apiKey}
         />
         {config.apiKeyConfigured ? (
-          <Pressable style={styles.checkRow} onPress={() => setClearApiKey(!clearApiKey)}>
-            <View style={[styles.checkbox, clearApiKey && styles.checkboxActive]}>
-              {clearApiKey ? <Check color={colors.surface} size={14} /> : null}
-            </View>
-            <Text style={styles.checkText}>清除服务端已保存的 API Key</Text>
-          </Pressable>
+          <Checkbox
+            label="清除服务端已保存的 API Key"
+            onValueChange={setClearApiKey}
+            value={clearApiKey}
+          />
         ) : null}
       </>
     );

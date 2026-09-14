@@ -11,10 +11,12 @@ export type MessagePart =
     }
   | {
       type: "tool";
+      callId?: string;
       server: string;
       tool: string;
       arguments: Record<string, unknown>;
       result: string;
+      success?: boolean;
     }
   | { type: "error"; message: string };
 
@@ -62,26 +64,11 @@ export type ModelToolCall = {
   arguments: Record<string, unknown>;
 };
 
-export type AgentEvent =
-  | { type: "skill-active"; name: string; description: string }
-  | {
-      type: "tool-start";
-      server: string;
-      tool: string;
-      arguments: Record<string, unknown>;
-    }
-  | { type: "tool-result"; server: string; tool: string; result: string }
-  | {
-      type: "approval-request";
-      approvalId: string;
-      server: string;
-      tool: string;
-      arguments: Record<string, unknown>;
-      expiresAt: string;
-    }
-  | {
-      type: "approval-resolved";
-      approvalId: string;
-      approved: boolean;
-    }
-  | { type: "text-delta"; text: string };
+export type {
+  AgentEvent,
+  RunStatus,
+  RunSummary,
+  RuntimeEvent,
+  RuntimeEventMeta,
+  RuntimeEventPayload,
+} from "./runtime/events.js";

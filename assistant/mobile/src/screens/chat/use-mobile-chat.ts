@@ -134,7 +134,7 @@ export const useMobileChat = (baseUrl: string): MobileChatState => {
   const stop = async (): Promise<void> => {
     abortRef.current?.abort();
     setApproval(null);
-    await stopGeneration(baseUrl).catch(() => undefined);
+    if (current) await stopGeneration(baseUrl, current.id).catch(() => undefined);
     setGenerating(false);
   };
 

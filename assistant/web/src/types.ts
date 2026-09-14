@@ -18,10 +18,12 @@ export type MessagePart =
     }
   | {
       type: "tool";
+      callId?: string;
       server: string;
       tool: string;
       arguments: Record<string, unknown>;
       result: string;
+      success?: boolean;
       status?: "running" | "done";
     }
   | { type: "error"; message: string };
@@ -96,18 +98,32 @@ export type ModelConfigInput = Omit<ModelConfig, "apiKeyConfigured"> & {
   clearApiKey?: boolean;
 };
 
-export type StreamEvent =
+export type StreamEvent = (
   | { type: "message-start"; conversationId: string }
   | { type: "skill-active"; name: string; description: string }
   | {
       type: "tool-start";
+      callId?: string;
       server: string;
       tool: string;
       arguments: Record<string, unknown>;
     }
-  | { type: "tool-result"; server: string; tool: string; result: string }
+  | { type: "tool-result"; callId?: string; server: string; tool: string; result: string; success?: boolean }
   | ApprovalRequest
   | { type: "approval-resolved"; approvalId: string; approved: boolean }
   | { type: "text-delta"; text: string }
+  | { type: "run-started"; provider: "openai-compatible" | "codex-subscription" }
+  | { type: "assistant-message"; messageId: string }
+  | { type: "run-completed"; messageId: string }
+  | { type: "run-failed"; messageId: string; message: string; cancelled: boolean }
   | { type: "error"; message: string }
-  | { type: "done"; message: Message };
+  | { type: "done"; message: Message }
+) & {
+  eventId?: string;
+  runId?: string;
+  conversationId?: string;
+  sequence?: number;
+  timestamp?: string;
+  agentId?: string;
+  parentRunId?: string;
+};

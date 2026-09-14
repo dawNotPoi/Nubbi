@@ -1,5 +1,6 @@
 import { MessageSquarePlus, Trash2, X } from "lucide-react-native";
-import { FlatList, Modal, Pressable, SafeAreaView, Text, View } from "react-native";
+import { FlatList, Modal, Pressable, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { IconButton } from "../../components/controls";
 import { colors } from "../../theme";
 import type { ConversationSummary } from "../../types";

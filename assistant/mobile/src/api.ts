@@ -56,8 +56,8 @@ export const createConversation = (baseUrl: string): Promise<Conversation> =>
   request(baseUrl, "/api/conversations", { method: "POST" });
 export const deleteConversation = (baseUrl: string, id: string): Promise<void> =>
   request(baseUrl, `/api/conversations/${id}`, { method: "DELETE" });
-export const stopGeneration = (baseUrl: string): Promise<void> =>
-  request(baseUrl, "/api/generations/stop", { method: "POST" });
+export const stopGeneration = (baseUrl: string, conversationId: string): Promise<void> =>
+  request(baseUrl, `/api/conversations/${conversationId}/generations/stop`, { method: "POST" });
 export const resolveApproval = (baseUrl: string, id: string, approved: boolean): Promise<void> =>
   request(baseUrl, `/api/approvals/${id}`, { method: "POST", body: JSON.stringify({ approved }) });
 

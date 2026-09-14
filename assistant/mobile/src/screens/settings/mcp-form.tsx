@@ -1,7 +1,7 @@
 import { ChevronLeft, Plus, Trash2 } from "lucide-react-native";
 import { useState } from "react";
-import { Pressable, Switch, Text, View } from "react-native";
-import { Button, Field, IconButton } from "../../components/controls";
+import { Pressable, Text, View } from "react-native";
+import { Button, Field, IconButton, Switch } from "../../components/controls";
 import { colors } from "../../theme";
 import type { McpServerConfig } from "../../types";
 import { fromMcpDraft, toMcpDraft, type HeaderDraft } from "./mcp-draft";
@@ -66,7 +66,7 @@ export const McpForm = ({
       ))}
       <View style={styles.switchRow}>
         <Text style={styles.itemTitle}>启用此 Server</Text>
-        <Switch onValueChange={(enabled) => setDraft({ ...draft, enabled })} thumbColor={colors.surface} trackColor={{ false: colors.border, true: colors.primary }} value={draft.enabled} />
+        <Switch onValueChange={(enabled) => setDraft({ ...draft, enabled })} value={draft.enabled} />
       </View>
       <Notice danger message={message} />
       <View style={styles.actionsRow}>

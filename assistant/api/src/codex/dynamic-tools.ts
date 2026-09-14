@@ -1,6 +1,6 @@
-import { requestApproval } from "../approvals.js";
-import { callMcpTool, type McpTool } from "../mcp.js";
-import type { AgentEvent, MessagePart } from "../types.js";
+import type { McpTool } from "../mcp.js";
+import type { MessagePart } from "../types.js";
+import type { ToolGateway } from "../runtime/tool-gateway.js";
 import { codexClient } from "./client.js";
 import {
   isRecord,
@@ -11,9 +11,8 @@ import {
 } from "./protocol.js";
 
 type RunContext = {
-  emit: (event: AgentEvent) => void;
   parts: MessagePart[];
-  tools: Map<string, McpTool>;
+  gateway: ToolGateway;
 };
 
 const contexts = new Map<string, RunContext>();
@@ -39,70 +38,17 @@ const handleDynamicTool = async (params: unknown): Promise<DynamicToolCallRespon
   const call = parseToolCall(params);
   if (!call) throw new Error("Codex 动态工具参数无效");
   const context = contexts.get(call.threadId);
-  const tool = context?.tools.get(call.tool);
-  if (!context || !tool) throw new Error(`工具 ${call.tool} 不可用`);
-  const argumentsValue = isRecord(call.arguments) ? call.arguments : {};
-  const approval = await requestApproval({
-    threadId: call.threadId,
-    server: tool.server.name,
-    tool: tool.originalName,
-    arguments: argumentsValue,
-    emit: context.emit,
+  if (!context) throw new Error(`工具 ${call.tool} 当前不可用`);
+  const result = await context.gateway.execute({
+    id: call.callId,
+    name: call.tool,
+    arguments: isRecord(call.arguments) ? call.arguments : {},
   });
-  context.parts.push({
-    type: "approval",
-    approvalId: approval.approvalId,
-    server: tool.server.name,
-    tool: tool.originalName,
-    arguments: argumentsValue,
-    approved: approval.approved,
-  });
-  if (!approval.approved) {
-    return {
-      contentItems: [{ type: "inputText", text: "用户拒绝了这次工具调用。" }],
-      success: false,
-    };
-  }
-  context.emit({
-    type: "tool-start",
-    server: tool.server.name,
-    tool: tool.originalName,
-    arguments: argumentsValue,
-  });
-  try {
-    const result = await callMcpTool(tool, argumentsValue);
-    const clipped = result.slice(0, 2_000);
-    context.parts.push({
-      type: "tool",
-      server: tool.server.name,
-      tool: tool.originalName,
-      arguments: argumentsValue,
-      result: clipped,
-    });
-    context.emit({
-      type: "tool-result",
-      server: tool.server.name,
-      tool: tool.originalName,
-      result: clipped,
-    });
-    return { contentItems: [{ type: "inputText", text: result }], success: true };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "MCP 工具执行失败";
-    context.parts.push({
-      type: "tool",
-      server: tool.server.name,
-      tool: tool.originalName,
-      arguments: argumentsValue,
-      result: message,
-    });
-    context.emit({
-      type: "tool-result",
-      server: tool.server.name,
-      tool: tool.originalName,
-      result: message,
-    });
-    return { contentItems: [{ type: "inputText", text: message }], success: false };
-  }
+  context.parts.push(...result.parts);
+  return {
+    contentItems: [{ type: "inputText", text: result.content }],
+    success: result.success,
+  };
 };
 
 export const installDynamicToolHandler = (): void => {
@@ -123,15 +69,10 @@ export const toDynamicTools = (tools: McpTool[]): DynamicToolSpec[] => tools.map
 
 export const registerDynamicToolContext = (
   threadId: string,
-  tools: McpTool[],
+  gateway: ToolGateway,
   parts: MessagePart[],
-  emit: (event: AgentEvent) => void,
 ): void => {
-  contexts.set(threadId, {
-    emit,
-    parts,
-    tools: new Map(tools.map((tool) => [tool.modelName, tool])),
-  });
+  contexts.set(threadId, { gateway, parts });
 };
 
 export const removeDynamicToolContext = (threadId: string): void => {

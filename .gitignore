@@ -20,6 +20,7 @@ server/storage
 assistant/config/mcp.json
 assistant/config/model.json
 assistant/data/*.json
+assistant/data/*.jsonl
 assistant/data/codex/
 /data/codex/
 assistant/mobile/.expo/

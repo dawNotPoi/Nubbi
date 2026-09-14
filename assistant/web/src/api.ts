@@ -47,8 +47,8 @@ export const createConversation = (): Promise<Conversation> =>
 export const deleteConversation = (id: string): Promise<void> =>
   request(`/api/conversations/${id}`, { method: "DELETE" });
 
-export const stopGeneration = (): Promise<void> =>
-  request("/api/generations/stop", { method: "POST" });
+export const stopGeneration = (conversationId: string): Promise<void> =>
+  request(`/api/conversations/${conversationId}/generations/stop`, { method: "POST" });
 export const resolveApproval = (id: string, approved: boolean): Promise<void> =>
   request(`/api/approvals/${id}`, {
     method: "POST",

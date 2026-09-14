@@ -24,6 +24,7 @@
 - [ ] commit message 格式和 changes 暂存由 hook 自动校验，无需手动检查
 
 ### 技术栈约束
-- [ ] 服务端：Express 4.x + Mongoose 8.x + Zod 3.x + Better-Auth 1.x
+- [ ] 主服务端：Express 4.x + Mongoose 8.x + Zod 3.x + Better-Auth 1.x
+- [ ] Assistant API：NestJS 11.x + Fastify 5.x + Mongoose 8.x + Zod 3.x
 - [ ] 客户端：React 18.x + Ant Design 5.x + Tailwind 3.x + Vite 5.x
 - [ ] 未引入重量级框架替代品（见 `.agent/rules/core.md` 禁止项）

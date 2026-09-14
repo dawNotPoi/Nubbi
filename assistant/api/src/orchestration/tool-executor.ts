@@ -1,19 +1,13 @@
-import { requestApproval } from "../approvals.js";
-import { callMcpTool, type McpTool } from "../mcp.js";
 import { loadSkill, type Skill } from "../skills.js";
-import type {
-  AgentEvent,
-  MessagePart,
-  ModelToolCall,
-} from "../types.js";
+import type { AgentEvent, MessagePart, ModelToolCall } from "../types.js";
+import type { ToolGateway } from "../runtime/tool-gateway.js";
 
 export const skillToolName = "assistant_activate_skill";
 
 type ToolExecutionContext = {
-  conversationId: string;
   skills: Skill[];
-  mcpTools: McpTool[];
   activeSkills: Set<string>;
+  gateway: ToolGateway;
   emit: (event: AgentEvent) => void;
 };
 
@@ -49,70 +43,15 @@ const activateSkill = async (
   };
 };
 
-const executeMcpTool = async (
-  call: ModelToolCall,
-  tool: McpTool,
+export const executeToolCalls = async (
+  calls: ModelToolCall[],
   context: ToolExecutionContext,
-): Promise<ToolExecutionResult> => {
-  const approval = await requestApproval({
-    threadId: context.conversationId,
-    server: tool.server.name,
-    tool: tool.originalName,
-    arguments: call.arguments,
-    emit: context.emit,
-  });
-  const approvalPart: MessagePart = {
-    type: "approval",
-    approvalId: approval.approvalId,
-    server: tool.server.name,
-    tool: tool.originalName,
-    arguments: call.arguments,
-    approved: approval.approved,
-  };
-  if (!approval.approved) {
-    return { content: "用户拒绝了这次工具调用。", parts: [approvalPart] };
-  }
-
-  context.emit({
-    type: "tool-start",
-    server: tool.server.name,
-    tool: tool.originalName,
-    arguments: call.arguments,
-  });
-  let content: string;
-  try {
-    content = await callMcpTool(tool, call.arguments);
-  } catch (error) {
-    content = error instanceof Error ? `工具执行失败：${error.message}` : "工具执行失败";
-  }
-  const clipped = content.slice(0, 2_000);
-  context.emit({
-    type: "tool-result",
-    server: tool.server.name,
-    tool: tool.originalName,
-    result: clipped,
-  });
-  return {
-    content,
-    parts: [
-      approvalPart,
-      {
-        type: "tool",
-        server: tool.server.name,
-        tool: tool.originalName,
-        arguments: call.arguments,
-        result: clipped,
-      },
-    ],
-  };
-};
-
-export const executeToolCall = async (
-  call: ModelToolCall,
-  context: ToolExecutionContext,
-): Promise<ToolExecutionResult> => {
-  if (call.name === skillToolName) return activateSkill(call, context);
-  const tool = context.mcpTools.find((item) => item.modelName === call.name);
-  if (!tool) return { content: `未知工具：${call.name}`, parts: [] };
-  return executeMcpTool(call, tool, context);
+): Promise<ToolExecutionResult[]> => {
+  let skillQueue = Promise.resolve();
+  return Promise.all(calls.map((call) => {
+    if (call.name !== skillToolName) return context.gateway.execute(call);
+    const result = skillQueue.then(() => activateSkill(call, context));
+    skillQueue = result.then(() => undefined, () => undefined);
+    return result;
+  }));
 };

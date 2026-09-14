@@ -9,7 +9,15 @@ export type McpTool = {
   modelName: string;
   server: McpServerConfig;
   originalName: string;
+  annotations?: {
+    readOnlyHint?: boolean;
+    destructiveHint?: boolean;
+    idempotentHint?: boolean;
+    openWorldHint?: boolean;
+  };
 };
+
+export type McpCallResult = { content: string; success: boolean };
 
 export type McpConnectionTest = {
   serverName: string;
@@ -34,13 +42,13 @@ const createTransport = (server: McpServerConfig): Transport => {
   });
 };
 
-const connect = async (server: McpServerConfig): Promise<Client> => {
+const connect = async (server: McpServerConfig, signal?: AbortSignal): Promise<Client> => {
   const client = new Client({
     name: "personal-ai-assistant",
     version: "0.1.0",
   });
   try {
-    await client.connect(createTransport(server), { timeout: 10_000 });
+    await client.connect(createTransport(server), { timeout: 10_000, signal });
     return client;
   } catch (error) {
     await client.close().catch(() => undefined);
@@ -63,6 +71,7 @@ const discoverServerTools = async (server: McpServerConfig): Promise<McpTool[]> 
         modelName,
         server,
         originalName: tool.name,
+        annotations: tool.annotations,
         modelTool: {
           type: "function" as const,
           function: {
@@ -109,15 +118,19 @@ export const testMcpServer = async (
 export const callMcpTool = async (
   tool: McpTool,
   argumentsValue: Record<string, unknown>,
-): Promise<string> => {
-  const client = await connect(tool.server);
+  signal?: AbortSignal,
+): Promise<McpCallResult> => {
+  const client = await connect(tool.server, signal);
   try {
     const result = await client.callTool(
       { name: tool.originalName, arguments: argumentsValue },
       undefined,
-      { timeout: 30_000 },
+      { timeout: 30_000, signal },
     );
-    return JSON.stringify(result, null, 2).slice(0, 30_000);
+    return {
+      content: JSON.stringify(result, null, 2).slice(0, 30_000),
+      success: result.isError !== true,
+    };
   } finally {
     await client.close();
   }

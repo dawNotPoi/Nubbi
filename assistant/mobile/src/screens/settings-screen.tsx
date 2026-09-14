@@ -1,6 +1,7 @@
 import { FlaskConical, KeyRound, Server, X } from "lucide-react-native";
 import { useEffect, useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { getModelConfig } from "../api";
 import { Button, Field, IconButton } from "../components/controls";
 import { readConfigToken, saveConfigToken } from "../storage";

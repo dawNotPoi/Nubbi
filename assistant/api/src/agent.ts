@@ -1,14 +1,8 @@
-import { discoverMcpTools } from "./mcp.js";
-import { readModelConfig } from "./model-config.js";
 import { createAgentGraph } from "./orchestration/agent-graph.js";
 import { skillToolName } from "./orchestration/tool-executor.js";
-import { listSkills, type Skill } from "./skills.js";
-import type {
-  AgentEvent,
-  MessagePart,
-  ModelMessage,
-  ModelTool,
-} from "./types.js";
+import type { Skill } from "./skills.js";
+import type { MessagePart, ModelMessage, ModelTool } from "./types.js";
+import type { ProviderExecutorInput } from "./runtime/provider-executor.js";
 
 const skillTool = (skills: Skill[]): ModelTool => ({
   type: "function",
@@ -31,36 +25,23 @@ const systemPrompt = (skills: Skill[], configuredPrompt: string): string => [
     : "当前没有可用 Skill。",
 ].join("\n\n");
 
-export const runAgent = async ({
-  conversationId,
-  history,
-  signal,
-  emit,
-}: {
-  conversationId: string;
-  history: Array<{ role: "user" | "assistant"; content: string }>;
-  signal: AbortSignal;
-  emit: (event: AgentEvent) => void;
-}): Promise<MessagePart[]> => {
-  const [skills, mcpTools, modelConfig] = await Promise.all([
-    listSkills(),
-    discoverMcpTools(),
-    readModelConfig(),
-  ]);
-  const modelTools = mcpTools.map((tool) => tool.modelTool);
-  if (skills.length) modelTools.push(skillTool(skills));
+export const runAgent = async (input: ProviderExecutorInput): Promise<MessagePart[]> => {
+  const modelTools = input.tools.map((tool) => tool.modelTool);
+  if (input.skills.length) modelTools.push(skillTool(input.skills));
   const messages: ModelMessage[] = [
-    { role: "system", content: systemPrompt(skills, modelConfig.systemPrompt) },
-    ...history,
+    { role: "system", content: systemPrompt(input.skills, input.modelConfig.systemPrompt) },
+    ...input.context.messages.map((message) => ({
+      role: message.role,
+      content: message.content,
+    })),
   ];
   const graph = createAgentGraph({
-    conversationId,
-    skills,
-    mcpTools,
+    skills: input.skills,
     modelTools,
-    modelConfig,
-    signal,
-    emit,
+    gateway: input.gateway,
+    modelConfig: input.modelConfig,
+    signal: input.signal,
+    emit: input.emit,
   });
   const result = await graph.invoke({
     messages,
@@ -68,6 +49,6 @@ export const runAgent = async ({
     parts: [],
     activeSkills: [],
     turn: 0,
-  }, { signal });
+  }, { signal: input.signal });
   return result.parts;
 };
