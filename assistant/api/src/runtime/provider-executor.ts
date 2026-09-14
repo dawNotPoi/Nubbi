@@ -20,6 +20,8 @@ export type ProviderExecutorInput = {
   gateway: ToolGateway;
   signal: AbortSignal;
   emit: (event: AgentEvent) => void;
+  // 当前 Run 的用量累计对象（引用），执行器逐轮累加，供内置统计工具实时读取。
+  runUsage?: ModelUsage;
 };
 
 /** Provider 执行结果：最终助手消息 parts 与累计 token 用量。 */

@@ -4,6 +4,7 @@ import { discoverMcpTools } from "../mcp/mcp.js";
 import { readModelConfig, DEFAULT_CONTEXT_WINDOW } from "../model/model-config.js";
 import { listSkills } from "../orchestration/skills.js";
 import { appendMessage, accumulateTokenUsage, getConversation } from "../models/store.js";
+import type { ModelUsage } from "../model/model.js";
 import type { Message, RuntimeEvent } from "../types.js";
 import { codexExecutor } from "./codex-executor.js";
 import { buildAgentContext } from "./context-builder.js";
@@ -99,12 +100,22 @@ export class RuntimeSession {
         });
         const emit = (event: Parameters<typeof emitter.emit>[0]) =>
           emitter.emit(event);
+        // 当前 Run 的用量累计对象：执行器逐轮累加，内置统计工具实时读取。
+        const runUsage: ModelUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
         // ToolGateway 拦截模型的工具调用：执行本地工具并校验审批，是安全边界所在。
         const gateway = new ToolGateway({
           runId,
           tools,
           emit,
           signal: controller.signal,
+          // 会话缓存统计 = 对话已持久化累计 + 当前 Run 实时累计。
+          sessionStats: async () => {
+            const saved = (await getConversation(input.conversationId))?.tokenUsage;
+            return {
+              hitTokens: (saved?.promptCacheHitTokens ?? 0) + (runUsage.promptCacheHitTokens ?? 0),
+              missTokens: (saved?.promptCacheMissTokens ?? 0) + (runUsage.promptCacheMissTokens ?? 0),
+            };
+          },
         });
         // 按模型供应商选择执行器：Codex 走订阅会话，其余走 OpenAI 兼容接口。
         const executor =
@@ -125,19 +136,22 @@ export class RuntimeSession {
             gateway,
             signal: controller.signal,
             emit,
+            runUsage,
           });
           const message = await appendMessage(
             input.conversationId,
             "assistant",
             result.parts,
           );
-          // 推送并落库本轮累计的 token 用量，供前端 /status 展示。
+          // 推送并落库本轮累计的 token 用量（含缓存统计），供前端 /status 展示。
           if (result.usage) {
             emitter.emit({
               type: "token-usage",
               promptTokens: result.usage.promptTokens,
               completionTokens: result.usage.completionTokens,
               totalTokens: result.usage.totalTokens,
+              promptCacheHitTokens: result.usage.promptCacheHitTokens,
+              promptCacheMissTokens: result.usage.promptCacheMissTokens,
             });
             await accumulateTokenUsage(input.conversationId, result.usage);
           }

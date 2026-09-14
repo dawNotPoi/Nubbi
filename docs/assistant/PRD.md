@@ -185,6 +185,8 @@ ContextBuilder 将已保存的消息转换成 Provider 无关上下文，保留�
 
 Tool Gateway 是所有外部工具调用的唯一执行入口，统一负责工具查找、JSON Schema 参数校验、审批策略、调用、结果标准化和事件记录。
 
+内置只读工具 `assistant_session_cache_stats`：模型可在对话中查询当前会话的 prompt 缓存命中率。数据来自模型 API usage 的 `prompt_cache_hit_tokens` / `prompt_cache_miss_tokens`（如 DeepSeek），按对话累计持久化；返回 `{ hit_tokens, miss_tokens, hit_rate }`，`hit_rate` 为 0~1 浮点数。Provider 未返回缓存字段或 Codex 订阅模式（暂不采集 usage）时命中率返回 0。
+
 - `readOnlyHint=true` 的工具可自动执行。
 - 创建、修改、破坏性工具逐次审批。
 - annotations 缺失或互相冲突时按写操作审批。

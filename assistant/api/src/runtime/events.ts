@@ -59,6 +59,8 @@ export type RuntimeEventPayload = AgentEvent
       promptTokens: number;
       completionTokens: number;
       totalTokens: number;
+      promptCacheHitTokens?: number;
+      promptCacheMissTokens?: number;
     }
   | { type: "assistant-message"; messageId: string }
   | { type: "run-completed"; messageId: string }

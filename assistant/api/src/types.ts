@@ -50,6 +50,10 @@ export type TokenUsage = {
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
+  // prompt 缓存命中的 token 数（Provider 未返回时缺失）。
+  promptCacheHitTokens?: number;
+  // prompt 缓存未命中的 token 数（Provider 未返回时缺失）。
+  promptCacheMissTokens?: number;
 };
 
 /** 传给模型的 function 工具定义（OpenAI function calling 格式）。 */
