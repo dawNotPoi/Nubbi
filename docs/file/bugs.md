@@ -21,7 +21,7 @@
 
 ## P1 — 高优先级
 
-### BUG-002 刷新页面后进行中的上传任务全部丢失
+### BUG-002 ~~刷新页面后进行中的上传任务全部丢失~~ ✅ 已修复
 
 **位置**：`client/src/store/atom/FileAtom.ts`
 
@@ -31,7 +31,7 @@
 
 ---
 
-### BUG-003 上传文件始终落到根目录，忽略当前所在文件夹
+### BUG-003 ~~上传文件始终落到根目录，忽略当前所在文件夹~~ ✅ 已修复
 
 **位置**：`client/src/utils/file.ts` `upload()` / `client/src/component/upload/hooks/GlobalUpload.ts`
 
@@ -43,7 +43,7 @@
 
 ---
 
-### BUG-004 多文件并发上传时连接数失控
+### BUG-004 ~~多文件并发上传时连接数失控~~ ✅ 已修复
 
 **位置**：`client/src/utils/file.ts`
 

@@ -32,6 +32,29 @@ type HashWorkerMessage = {
 
 const HASH_PERCENTAGE = 10;
 
+// Global concurrency pool — all Uploader instances share 6 chunk upload slots.
+// This prevents N concurrent files from opening N×6 connections simultaneously.
+const uploadPool = (() => {
+  let slots = 6;
+  const queue: Array<() => void> = [];
+  return {
+    acquire(): Promise<void> {
+      if (slots > 0) {
+        slots--;
+        return Promise.resolve();
+      }
+      return new Promise<void>((resolve) => queue.push(resolve));
+    },
+    release() {
+      if (queue.length > 0) {
+        queue.shift()!();
+      } else {
+        slots++;
+      }
+    },
+  };
+})();
+
 export class Uploader {
   private file: File;
   private chunks: Chunk[] = [];
@@ -42,6 +65,7 @@ export class Uploader {
   private hash = "";
   private name = "";
   private size: number;
+  private folderId?: string;
   private abortController = new AbortController();
   public progress = 0;
   private uploadId: string | null = null;
@@ -56,17 +80,17 @@ export class Uploader {
   ) => void;
   private onFinish?: () => void;
 
+  private static readonly SESSIONS_KEY = "nubbi_upload_sessions";
+
   constructor(options: {
     file: File;
-    onChange?: (
-      status: UploadStatus,
-      progress: number,
-      speed: number,
-    ) => void;
+    folderId?: string;
+    onChange?: (status: UploadStatus, progress: number, speed: number) => void;
     onFinish?: () => void;
   }) {
     this.file = options.file;
     this.name = options.file.name;
+    this.folderId = options.folderId;
     this.onChange = options.onChange;
     this.onFinish = options.onFinish;
     this.size = Uploader.chunkSizeMB(options.file.size);
@@ -81,6 +105,39 @@ export class Uploader {
     if (fileSize >= MB100) return 10;
     return 5;
   }
+
+  // --- Session persistence (BUG-002) ---
+
+  static getPendingSessions(): { name: string }[] {
+    try {
+      return JSON.parse(
+        sessionStorage.getItem(Uploader.SESSIONS_KEY) ?? "[]",
+      ) as { name: string }[];
+    } catch {
+      return [];
+    }
+  }
+
+  private saveSession() {
+    const sessions = Uploader.getPendingSessions();
+    if (!sessions.some((s) => s.name === this.name)) {
+      sessions.push({ name: this.name });
+      sessionStorage.setItem(Uploader.SESSIONS_KEY, JSON.stringify(sessions));
+    }
+  }
+
+  private clearSession() {
+    const sessions = Uploader.getPendingSessions().filter(
+      (s) => s.name !== this.name,
+    );
+    if (sessions.length === 0) {
+      sessionStorage.removeItem(Uploader.SESSIONS_KEY);
+    } else {
+      sessionStorage.setItem(Uploader.SESSIONS_KEY, JSON.stringify(sessions));
+    }
+  }
+
+  // --- Core upload logic ---
 
   private fail(error?: unknown) {
     if (error) {
@@ -99,9 +156,7 @@ export class Uploader {
     if (!this.uploadStartedAt) {
       this.uploadStartedAt = performance.now();
     }
-
     this.uploadedBytes += chunkSize;
-
     const elapsedSeconds = Math.max(
       (performance.now() - this.uploadStartedAt) / 1000,
       0.001,
@@ -111,7 +166,6 @@ export class Uploader {
 
   private getProgressFromFinishedChunks(finishedCount: number) {
     const uploadPercentage = 100 - HASH_PERCENTAGE;
-
     return (
       HASH_PERCENTAGE +
       Math.round((finishedCount / this.totalChunksSize) * uploadPercentage)
@@ -190,8 +244,19 @@ export class Uploader {
 
       chunk.status = ChunkStatus.uploading;
 
+      // Capture signal before acquiring pool slot:
+      // if pause() fires while we wait, the old (now-aborted) signal is preserved
+      // and fetch will reject immediately with AbortError when we eventually get the slot.
+      const signal = this.abortController.signal;
+      await uploadPool.acquire();
+
       try {
-        await uploadChunk(chunk.formData!, this.abortController.signal);
+        if (stopped || this.status !== UploadStatus.uploading) {
+          chunk.status = ChunkStatus.pending;
+          return;
+        }
+
+        await uploadChunk(chunk.formData!, signal);
         chunk.status = ChunkStatus.success;
         this.finishedCount++;
         this.updateUploadSpeed(chunk.file.size);
@@ -204,6 +269,7 @@ export class Uploader {
           this.status = UploadStatus.success;
           this.progress = 100;
           this.uploadSpeed = 0;
+          this.clearSession();
           this.emitChange();
           this.onFinish?.();
           stopped = true;
@@ -226,6 +292,7 @@ export class Uploader {
 
         chunk.status = ChunkStatus.pending;
       } finally {
+        uploadPool.release();
         if (!stopped && this.status === UploadStatus.uploading) {
           void uploadNext();
         }
@@ -274,6 +341,7 @@ export class Uploader {
         fileHash: this.hash,
         totalSize: String(this.file.size),
         totalChunksSize: String(this.totalChunksSize),
+        folderId: this.folderId,
       });
 
       if (data?.needUpload === false) {
@@ -290,6 +358,8 @@ export class Uploader {
       }
 
       this.uploadId = data.uploadId;
+      this.saveSession();
+
       this.finishedCount = data.uploadedChunks.length;
       this.progress = this.getProgressFromFinishedChunks(this.finishedCount);
       this.emitChange();
@@ -315,6 +385,7 @@ export class Uploader {
         this.status = UploadStatus.success;
         this.progress = 100;
         this.uploadSpeed = 0;
+        this.clearSession();
         this.emitChange();
         this.onFinish?.();
         return;

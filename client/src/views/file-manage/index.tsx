@@ -604,7 +604,7 @@ const FileManager = () => {
         </Button>
         <UploadButton
           onFileSelect={(file) => {
-            createUploadTask(file);
+            createUploadTask(file, folderId);
             setOpen(true);
           }}
         />

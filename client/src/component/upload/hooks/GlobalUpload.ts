@@ -11,12 +11,25 @@ import {
 } from "../../../store/atom/FileAtom";
 import { Uploader, UploadStatus } from "../../../utils/file";
 
-//管理上传任务状态钩子
 export const useGlobalUpload = () => {
   const setUploadTasks = useSetAtom(uploadTasksAtom);
   const store = useStore();
   const hasActiveUpload = useAtomValue(hasActiveUploadAtom);
 
+  // Notify about uploads interrupted by a page refresh (BUG-002)
+  useEffect(() => {
+    const sessions = Uploader.getPendingSessions();
+    if (sessions.length === 0) return;
+    const names = sessions.map((s) => `"${s.name}"`).join("、");
+    void message.warning(
+      sessions.length === 1
+        ? `${names} 上次上传中断，重新选择该文件可从断点续传`
+        : `发现 ${sessions.length} 个中断的上传，重新选择文件可续传：${names}`,
+      8,
+    );
+  }, []);
+
+  // Intercept tab close / refresh while uploads are active (BUG-005)
   useEffect(() => {
     if (!hasActiveUpload) return;
     const handler = (e: BeforeUnloadEvent) => {
@@ -26,8 +39,8 @@ export const useGlobalUpload = () => {
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, [hasActiveUpload]);
-  const createUploadTask = (file: File) => {
-    // 简单的上传前检测：空文件和同名未完成任务
+
+  const createUploadTask = (file: File, folderId?: string) => {
     if (!file || file.size === 0) {
       message.warning("文件为空，无法上传");
       return;
@@ -59,22 +72,20 @@ export const useGlobalUpload = () => {
       status: UploadStatus.pending,
       instance: null as unknown as Uploader,
     };
-    //持久化存储
     store.set(uploadTaskAtomFamily(taskId), task);
     setUploadTasks((prev) => [taskId, ...prev]);
     const instance = new Uploader({
-      file: file,
+      file,
+      folderId,
       onChange: (status, progress, speed) => {
         store.set(uploadTaskAtomFamily(taskId), (prevTask) =>
           prevTask ? { ...prevTask, status, progress, speed } : null,
         );
       },
       onFinish: () => {
-        //完成后会重新请求队列
         queryClient.invalidateQueries({ queryKey: ["files"] });
       },
     });
-    // 绑定 instance
     store.set(uploadTaskAtomFamily(taskId), (prevTask) =>
       prevTask ? { ...prevTask, instance } : null,
     );
