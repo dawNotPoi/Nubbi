@@ -1,6 +1,11 @@
-import { Response } from "express";
+import type { Response } from "express";
 
-export const successResponse = (res:Response, data:any=null,message="success") => {
+/** 统一成功响应格式：{ code: 1, message, data } */
+export const successResponse = (
+  res: Response,
+  data: unknown = null,
+  message = "success",
+): void => {
   res.json({
     code: 1,
     message,

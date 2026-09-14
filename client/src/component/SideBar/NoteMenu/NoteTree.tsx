@@ -4,42 +4,41 @@ import {
   SidebarTreeItem,
   SidebarTreeState,
 } from "@/component/SideBar/components";
+import { useDeleteNote } from "@/features/note/hooks/useDeleteNote";
+import { useNoteTreeQuery } from "@/features/note/hooks/useNoteTreeQuery";
 import { normalizeNoteTitle } from "@/features/note/model/hierarchy";
-import {
-  deleteSingleNoteAtom,
-  expandedNodesAtom,
-  noteChildrenAtom,
-} from "@/store/atom/noteAtom";
-import { useAtom, useAtomValue } from "jotai";
+import { expandedNodesAtom } from "@/store/atom/noteAtom";
+import { useDraggable } from "@dnd-kit/core";
+import clsx from "clsx";
+import { useAtom } from "jotai";
 import { Plus, Trash2 } from "lucide-react";
 import { useParams } from "react-router-dom";
+import { type NoteDragData, noteDragId } from "../NoteDnd/model";
+import { useNoteDropTarget } from "../NoteDnd/useNoteDropTarget";
 import { WrittingModal } from "./WritingModal";
 
 type NoteTreeProps = {
   notes: Note[];
-  owner?: string;
   depth?: number;
 };
 
 type NoteTreeNodeProps = {
   note: Note;
-  owner?: string;
   depth: number;
 };
 
 type NoteChildrenProps = {
   noteId: string;
-  owner?: string;
   depth: number;
 };
 
-function NoteChildren({ noteId, owner, depth }: NoteChildrenProps) {
+function NoteChildren({ noteId, depth }: NoteChildrenProps) {
   const {
     data: children,
     isError,
     isLoading,
     refetch,
-  } = useAtomValue(noteChildrenAtom(noteId));
+  } = useNoteTreeQuery(noteId);
   const hasChildrenData = children !== undefined;
 
   if (isLoading && !hasChildrenData) {
@@ -69,14 +68,23 @@ function NoteChildren({ noteId, owner, depth }: NoteChildrenProps) {
     );
   }
 
-  return <NoteTree depth={depth} owner={owner} notes={children} />;
+  return <NoteTree depth={depth} notes={children} />;
 }
 
-function NoteTreeNode({ note, owner, depth }: NoteTreeNodeProps) {
+function NoteTreeNode({ note, depth }: NoteTreeNodeProps) {
   const { Id } = useParams();
   const [expandedNodes, setExpandedNodes] = useAtom(expandedNodesAtom);
-  const { mutate: deleteNote } = useAtomValue(deleteSingleNoteAtom);
+  const deleteNote = useDeleteNote();
   const open = expandedNodes.includes(note._id);
+
+  const {
+    isDragging,
+    listeners,
+    setNodeRef: setDragRef,
+  } = useDraggable({
+    id: noteDragId(note._id),
+    data: { type: "note", note } satisfies NoteDragData,
+  });
 
   const setOpen = (nextOpen: boolean | ((prev: boolean) => boolean)) => {
     setExpandedNodes((prev) => {
@@ -92,6 +100,13 @@ function NoteTreeNode({ note, owner, depth }: NoteTreeNodeProps) {
     });
   };
 
+  const { dropClassName, setNodeRef: setDropRef } = useNoteDropTarget(note, {
+    expanded: open,
+    onExpand: () => {
+      setOpen(true);
+    },
+  });
+
   const actions: SidebarTreeAction[] = [
     {
       key: "new-child",
@@ -99,7 +114,6 @@ function NoteTreeNode({ note, owner, depth }: NoteTreeNodeProps) {
       icon: <Plus className="size-3.5" />,
       render: (className) => (
         <WrittingModal
-          owner={owner}
           parent={note}
           onTrigger={() => {
             setOpen(true);
@@ -124,9 +138,8 @@ function NoteTreeNode({ note, owner, depth }: NoteTreeNodeProps) {
       danger: true,
       onClick: () => {
         deleteNote({
-          owner,
-          parentId: note.parentId,
           noteId: note._id,
+          parentId: note.parentId,
         });
       },
     },
@@ -134,30 +147,47 @@ function NoteTreeNode({ note, owner, depth }: NoteTreeNodeProps) {
 
   return (
     <>
-      <SidebarTreeItem
-        actions={actions}
-        active={note._id === Id}
-        depth={depth}
-        expanded={open}
-        hasChildren={note.hasChildren}
-        onToggle={() => {
-          setOpen((value) => !value);
+      <div
+        className={clsx(isDragging && "opacity-40")}
+        ref={(element) => {
+          setDragRef(element);
+          setDropRef(element);
         }}
-        title={normalizeNoteTitle(note.title)}
-        to={`/note/${note._id}`}
-      />
+        {...listeners}
+      >
+        <SidebarTreeItem
+          actions={actions}
+          active={note._id === Id}
+          className={dropClassName}
+          depth={depth}
+          expanded={open}
+          hasChildren={note.hasChildren}
+          onToggle={() => {
+            setOpen((value) => !value);
+          }}
+          title={normalizeNoteTitle(note.title)}
+          to={`/note/${note._id}`}
+        />
+      </div>
       {open && note.hasChildren ? (
-        <NoteChildren depth={depth + 1} owner={owner} noteId={note._id} />
+        <NoteChildren depth={depth + 1} noteId={note._id} />
       ) : null}
     </>
   );
 }
 
-export default function NoteTree({ notes, owner, depth = 1 }: NoteTreeProps) {
+export default function NoteTree({
+  notes,
+  depth = 1,
+}: NoteTreeProps) {
   return (
     <div>
       {notes.map((note) => (
-        <NoteTreeNode depth={depth} key={note._id} owner={owner} note={note} />
+        <NoteTreeNode
+          depth={depth}
+          key={note._id}
+          note={note}
+        />
       ))}
     </div>
   );

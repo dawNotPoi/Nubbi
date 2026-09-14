@@ -2,7 +2,7 @@
   fetchFilePreviewBlob,
   fetchFilePreviewStreamUrl,
 } from "@/api/file";
-import type { FileTableRow } from "@/views/file-manage/components/FileListTable/fileIcons";
+import type { FileListItem as FileTableRow } from "@/api/file";
 import { Button, Modal, Spin, Tabs } from "antd";
 import JSZip from "jszip";
 import { FileText, FileWarning, Presentation, Table2 } from "lucide-react";
@@ -31,7 +31,7 @@ type PreviewState =
 const OFFICE_PREVIEW_SIZE_LIMIT = 20 * 1024 * 1024;
 
 const modalBodyStyle = {
-  minHeight: 520,
+  minHeight: "min(520px, 60dvh)",
   maxHeight: "70vh",
   overflow: "auto" as const,
   paddingTop: 8,
@@ -384,13 +384,13 @@ const FilePreviewModal = ({
         return null;
       case "loading":
         return (
-          <div className="flex h-[520px] items-center justify-center">
+          <div className="flex h-[min(520px,60dvh)] items-center justify-center">
             <Spin size="large" />
           </div>
         );
       case "image":
         return (
-          <div className="flex min-h-[520px] items-center justify-center rounded-2xl bg-[#f7f7f8] p-4">
+          <div className="flex min-h-[min(520px,60dvh)] items-center justify-center rounded-2xl bg-[#f7f7f8] p-4">
             <img
               src={previewState.objectUrl}
               alt={record?.name || "preview"}
@@ -409,7 +409,7 @@ const FilePreviewModal = ({
         );
       case "video":
         return (
-          <div className="flex min-h-[520px] items-center justify-center rounded-2xl bg-black p-4">
+          <div className="flex min-h-[min(520px,60dvh)] items-center justify-center rounded-2xl bg-black p-4">
             <video
               key={previewState.src}
               src={previewState.src}

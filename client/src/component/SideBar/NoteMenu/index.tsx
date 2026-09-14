@@ -3,13 +3,18 @@ import {
   SidebarSectionHeader,
   SidebarTreeState,
 } from "@/component/SideBar/components";
-import { createNoteAtom, rootNotesAtom } from "@/store/atom/noteAtom";
+import { useNoteTreeQuery } from "@/features/note/hooks/useNoteTreeQuery";
+import { createNoteAtom } from "@/store/atom/noteAtom";
 import { useSession } from "@/utils/auth";
 import { routes } from "@/utils/routes";
 import { useAtomValue } from "jotai";
 import { ListTree, Plus } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  RootDropIndicator,
+  RootHeaderDropZone,
+} from "../NoteDnd/DropZones";
 import NoteTree from "./NoteTree";
 
 function NoteTitleIcon({ className }: { className?: string }) {
@@ -60,7 +65,7 @@ export default function NoteMenu() {
     isError,
     isLoading,
     refetch,
-  } = useAtomValue(rootNotesAtom(owner));
+  } = useNoteTreeQuery(null, { enabled: Boolean(owner) });
   const { mutate: createNote } = useAtomValue(createNoteAtom);
   const [open, setOpen] = useState(true);
   const navigate = useNavigate();
@@ -71,7 +76,7 @@ export default function NoteMenu() {
 
     const note = newNote();
     createNote(
-      { owner, note },
+      { note },
       {
         onSuccess: () => {
           navigate(routes.note(note._id));
@@ -82,36 +87,38 @@ export default function NoteMenu() {
 
   return (
     <section>
-      <SidebarSectionHeader
-        actions={[
-          {
-            key: "open-note-library",
-            label: "Open note library",
-            icon: <ListTree className="size-3.5" />,
-            onClick: () => {
-              navigate(routes.noteLib);
+      <RootHeaderDropZone>
+        <SidebarSectionHeader
+          actions={[
+            {
+              key: "open-note-library",
+              label: "Open note library",
+              icon: <ListTree className="size-3.5" />,
+              onClick: () => {
+                navigate(routes.noteLib);
+              },
             },
-          },
-          {
-            key: "new-root-note",
-            label: "New note",
-            icon: <Plus className="size-3.5" />,
-            onClick: createNoteHandler,
-          },
-        ]}
-        onToggle={() => {
-          setOpen((value) => !value);
-        }}
-        open={open}
-        title={
-          <span className="inline-flex min-w-0 items-center gap-2">
-            <span className="inline-flex size-4 shrink-0 items-center justify-center">
-              <NoteTitleIcon className="size-5" />
+            {
+              key: "new-root-note",
+              label: "New note",
+              icon: <Plus className="size-3.5" />,
+              onClick: createNoteHandler,
+            },
+          ]}
+          onToggle={() => {
+            setOpen((value) => !value);
+          }}
+          open={open}
+          title={
+            <span className="inline-flex min-w-0 items-center gap-2">
+              <span className="inline-flex size-4 shrink-0 items-center justify-center">
+                <NoteTitleIcon className="size-5" />
+              </span>
+              <span className="truncate">小记</span>
             </span>
-            <span className="truncate">小记</span>
-          </span>
-        }
-      />
+          }
+        />
+      </RootHeaderDropZone>
       {open ? (
         !owner || (isLoading && !hasRootNotesData) ? (
           <SidebarTreeState depth={1} rows={4} type="loading" />
@@ -125,7 +132,10 @@ export default function NoteMenu() {
             type="error"
           />
         ) : rootNotes && rootNotes.length > 0 ? (
-          <NoteTree owner={owner} notes={rootNotes} />
+          <>
+            <NoteTree notes={rootNotes} />
+            <RootDropIndicator />
+          </>
         ) : (
           <SidebarTreeState
             depth={1}

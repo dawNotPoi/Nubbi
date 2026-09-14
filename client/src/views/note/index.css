@@ -46,6 +46,38 @@
   width: min(1200px, calc(100vw - 96px));
 }
 
+@media (max-width: 767px) {
+  .note-editor-shell,
+  .note-editor-shell--wide {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    padding-inline: 16px;
+  }
+
+  .note-markdown-editor {
+    margin-top: 20px;
+    min-height: 420px;
+    padding: 12px;
+  }
+
+  .note-split-editor {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  .note-split-editor .note-markdown-editor,
+  .note-split-editor__preview {
+    height: auto;
+    min-height: 420px;
+  }
+
+  .note-split-editor__preview {
+    padding: 14px;
+  }
+}
+
 .note-display-mode-button {
   display: inline-flex;
   min-width: 28px;

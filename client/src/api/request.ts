@@ -1,50 +1,51 @@
-import {
-  ensureJwt,
-  handleUnauthorized,
-} from "@/utils/auth";
-import { getApiBaseUrl } from "@/utils/env";
+import { authorizedFetch } from "@/utils/auth";
 
-const baseUrl = getApiBaseUrl();
-
-type ApiResponse<T> = {
+export type ApiResponse<T> = {
   code: 0 | 1;
   data: T;
   message: string;
 };
 
-const resolveApiUrl = (url: string) => {
-  const pathUrl = url.startsWith("/") ? url : `/${url}`;
-  return `${baseUrl}${pathUrl}`;
+type ApiErrorPayload = {
+  message?: unknown;
+  errorCode?: unknown;
 };
 
-const withAuthHeaders = async (headers?: HeadersInit) => {
-  const nextHeaders = new Headers(headers);
-  const token = await ensureJwt();
+export class ApiRequestError extends Error {
+  status: number;
+  errorCode?: string;
 
-  if (token) {
-    nextHeaders.set("Authorization", `Bearer ${token}`);
+  constructor(message: string, status: number, errorCode?: string) {
+    super(message);
+    this.name = "ApiRequestError";
+    this.status = status;
+    this.errorCode = errorCode;
+  }
+}
+
+const parseJsonResponse = async <T>(response: Response): Promise<T> => {
+  const payload = (await response.json().catch(() => null)) as
+    | (T & ApiErrorPayload)
+    | null;
+
+  if (!response.ok) {
+    const message =
+      typeof payload?.message === "string" && payload.message.trim()
+        ? payload.message
+        : `请求失败 (${response.status})`;
+    const errorCode =
+      typeof payload?.errorCode === "string" ? payload.errorCode : undefined;
+    throw new ApiRequestError(message, response.status, errorCode);
   }
 
-  return nextHeaders;
-};
-
-export const authorizedFetch = async (
-  url: string,
-  init: RequestInit = {},
-): Promise<Response> => {
-  const response = await fetch(resolveApiUrl(url), {
-    ...init,
-    credentials: init.credentials ?? "omit",
-    headers: await withAuthHeaders(init.headers),
-  });
-
-  if (response.status === 401) {
-    await handleUnauthorized();
-    throw new Error("认证失败，请重新登录");
+  if (!payload) {
+    throw new ApiRequestError("服务端返回了无效响应", response.status);
   }
 
-  return response;
+  return payload;
 };
+
+export { authorizedFetch };
 
 export default async function request<T>(
   url: string,
@@ -52,7 +53,7 @@ export default async function request<T>(
   method = "post",
   init: RequestInit = {},
 ): Promise<ApiResponse<T>> {
-  const headers = await withAuthHeaders(init.headers);
+  const headers = new Headers(init.headers);
 
   if (!headers.has("Content-Type") && body !== undefined) {
     headers.set("Content-Type", "application/json");
@@ -65,7 +66,7 @@ export default async function request<T>(
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
-  return response.json();
+  return parseJsonResponse<ApiResponse<T>>(response);
 }
 
 export async function requestWithNoJson<T>(
@@ -80,7 +81,7 @@ export async function requestWithNoJson<T>(
     body: body ?? undefined,
   });
 
-  return response.json();
+  return parseJsonResponse<ApiResponse<T>>(response);
 }
 
 export function Get<T = unknown>(
@@ -112,8 +113,4 @@ export function Get<T = unknown>(
     ...options,
     method: "GET",
   }).then((response) => response.json());
-}
-
-export function getWebData() {
-  return request("admin/info", undefined, "get");
 }

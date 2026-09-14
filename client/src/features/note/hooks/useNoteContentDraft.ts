@@ -12,15 +12,22 @@ type UseNoteContentDraftOptions = {
 const getRevision = (note?: NoteWithContent) => note?.contentRevision ?? 0;
 const getContent = (note?: NoteWithContent) => note?.content ?? "";
 
+/**
+ * 笔记正文草稿管理 Hook。
+ * 延迟自动保存正文内容，追踪本地修订版本号，
+ * 确保外部更新时不会覆盖用户正在编辑的内容。
+ * @param data 服务端返回的笔记数据。
+ * @param noteId 当前笔记 ID，切换笔记时重置草稿状态。
+ */
 export const useNoteContentDraft = ({
   data,
   noteId,
 }: UseNoteContentDraftOptions) => {
   const contentMutation = useAtomValue(updateNoteContentAtom);
   const updateContentRef = useRef(contentMutation.mutate);
-  const activeNoteIdRef = useRef<string>();
-  const activeSavingNoteIdRef = useRef<string>();
-  const activeRequestIdRef = useRef<string>();
+  const activeNoteIdRef = useRef<string | undefined>(undefined);
+  const activeSavingNoteIdRef = useRef<string | undefined>(undefined);
+  const activeRequestIdRef = useRef<string | undefined>(undefined);
   const baseRevisionByNoteRef = useRef(new Map<string, number>());
   const draftContentByNoteRef = useRef(new Map<string, string>());
   const lastSavedContentByNoteRef = useRef(new Map<string, string>());

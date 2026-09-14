@@ -1,0 +1,19 @@
+{
+  "name": "code-map",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "生成项目代码结构的交互式下钻图（模块 → 文件 → 函数调用与参数流动）",
+  "scripts": {
+    "generate": "node scripts/generate.mjs",
+    "generate:assistant": "node scripts/generate.mjs ../..",
+    "generate:api": "node scripts/generate.mjs ../../api",
+    "smoke-test": "node scripts/smoke-test.mjs"
+  },
+  "dependencies": {
+    "ts-morph": "^25.0.1"
+  },
+  "devDependencies": {
+    "jsdom": "^30.0.1"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    // 浏览器端代码：目标 ES2020，并启用 DOM 类型声明。
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "allowJs": false,
+    // 跳过 node_modules 中的类型声明检查，加快编译。
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "ESNext",
+    // 使用 Vite 的 Bundler 解析策略，允许按导入路径解析 .ts/.tsx。
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    // 数组索引访问视为可能为 undefined，强制处理越界情况。
+    "noUncheckedIndexedAccess": true
+  },
+  "include": ["src"]
+}

@@ -59,31 +59,16 @@ export default function NoteCover({
         label: "Default",
         children: (
           <>
-            <div
-              style={{
-                display: "flex",
-                gap: "10px",
-                alignContent: "start",
-                height: "200px",
-                flexWrap: "wrap",
-                overflowY: "auto",
-                scrollBehavior: "auto",
-              }}
-            >
+            <div className="grid h-[240px] grid-cols-2 content-start gap-2 overflow-y-auto sm:h-[200px] sm:grid-cols-4">
               {NOTE_COVER_OPTIONS.map((item, index) => {
                 return (
-                  <div
+                  <button
                     key={index}
                     onClick={() => {
                       updateCover(item);
                     }}
-                    style={{
-                      width: "23%",
-                      height: "80px",
-                      borderRadius: "4px",
-                      overflow: "hidden",
-                      cursor: "pointer",
-                    }}
+                    className="h-20 overflow-hidden rounded"
+                    type="button"
                   >
                     <img
                       style={{
@@ -94,7 +79,7 @@ export default function NoteCover({
                       src={item}
                       alt=""
                     />
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -185,11 +170,11 @@ export default function NoteCover({
       {cover ? (
         <div
           className={clsx(
-            "group/cover relative  h-[30vh] min-h-[180px] max-h-[280px] w-full overflow-hidden",
+            "group/cover relative h-[24vh] min-h-[140px] max-h-[220px] w-full overflow-hidden md:h-[30vh] md:min-h-[180px] md:max-h-[280px]",
             className,
           )}
         >
-          <div className="absolute right-3 top-3 z-10 flex gap-2 opacity-0 transition-opacity group-hover/cover:opacity-100">
+          <div className="absolute right-3 top-3 z-10 flex gap-2 opacity-100 transition-opacity md:opacity-0 md:group-hover/cover:opacity-100">
             <button
               className="py-1 rounded-[3px] border border-neutral-200 bg-white/90 px-2.5 text-[12px] font-medium text-[#37352f] shadow-[0_1px_3px_rgba(15,15,15,0.12)] backdrop-blur-sm transition hover:bg-white hover:shadow-[0_2px_6px_rgba(15,15,15,0.16)]"
               onClick={showModal}

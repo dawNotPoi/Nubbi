@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f7f4ee;
+  --ink: #24211d;
+  --ink-muted: #686159;
+  --ink-subtle: #8a8177;
+  --line: #ddd6cc;
+  --accent: #8b4d35;
+  --accent-soft: rgb(139 77 53 / 12%);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-subtle: var(--ink-subtle);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --font-sans: Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-serif: Georgia, "Songti SC", "STSong", serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #171614;
+    --ink: #f2eee7;
+    --ink-muted: #b7afa4;
+    --ink-subtle: #8f877d;
+    --line: #36322d;
+    --accent: #d38a69;
+    --accent-soft: rgb(211 138 105 / 15%);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--background);
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(circle at 12% 10%, var(--accent-soft), transparent 28rem),
+    var(--background);
+  color: var(--ink);
+  font-family: Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--accent-soft);
+}

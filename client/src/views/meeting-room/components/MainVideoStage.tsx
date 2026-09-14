@@ -148,7 +148,7 @@ function ParticipantStageCard({
     participant.isVideoEnabled && hasVideoTrack(participant.stream);
 
   return (
-    <div className="relative flex h-full min-h-0 w-full flex-col items-center justify-center gap-3 overflow-hidden rounded-[28px] bg-[#f5f5f5] p-0 text-center">
+    <div className="relative flex h-full min-h-0 w-full flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl bg-[#f5f5f5] p-0 text-center md:rounded-[28px]">
       {canRenderVideo ? (
         <video
           autoPlay
@@ -210,7 +210,7 @@ function AvatarItem({ participant }: { participant: StageParticipant }) {
 
 function AvatarGallery({ participants }: { participants: StageParticipant[] }) {
   return (
-    <div className="mx-auto flex h-full w-full flex-wrap content-center justify-center gap-4">
+    <div className="mx-auto flex h-full w-full flex-wrap content-center justify-center gap-2 overflow-y-auto sm:gap-4">
       {participants.map((participant) => (
         <AvatarItem key={participant.id} participant={participant} />
       ))}
@@ -234,7 +234,7 @@ export default function MainVideoStage({
 
   return (
     <div className="flex size-full flex-1 flex-col overflow-hidden bg-[#fbfbfa]">
-      <section className="w-full flex-1 overflow-hidden bg-[#fbfbfa] p-4">
+      <section className="w-full flex-1 overflow-hidden bg-bg-panel p-2 sm:p-3 md:p-4">
         {hasActiveVideo && activeParticipant ? (
           <ParticipantStageCard
             participant={activeParticipant}

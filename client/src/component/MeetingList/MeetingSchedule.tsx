@@ -28,7 +28,7 @@ export default function MeetingSchedule() {
           return (
             <li
               key={item._id}
-              className="rounded-md p-2 cursor-pointer flex items-center hover:bg-gray-500/10"
+              className="flex cursor-pointer flex-col gap-3 rounded-md p-2 hover:bg-gray-500/10 sm:flex-row sm:items-center"
             >
               <div className="flex-1">
                 <h3>{item.title}</h3>
@@ -37,7 +37,7 @@ export default function MeetingSchedule() {
                   {start.format("HH:mm")}-{end.format("HH:mm")}
                 </span>
               </div>
-              <div className="w-[100px] space-y-2">
+              <div className="flex w-full gap-2 sm:w-[100px] sm:flex-col sm:space-y-2">
                 <Button
                   onClick={() => {
                     window.open(

@@ -84,7 +84,7 @@ const DImage = Image.extend<DImageOptions>({
       return "";
     }
 
-    const escapedAlt = String(alt).replace(/([\\\[\]])/g, "\\$1");
+    const escapedAlt = String(alt).replace(/[[\]\\]/g, "\\$&");
     const escapedTitle = String(title).replace(/([\\"])/g, "\\$1");
 
     return escapedTitle

@@ -1,4 +1,5 @@
 import { getSocketBaseUrl } from "@/utils/env";
+import { ensureJwt } from "@/utils/auth";
 import { atom } from "jotai";
 import { Socket, io } from "socket.io-client";
 const url = getSocketBaseUrl();
@@ -17,18 +18,22 @@ export const socketAtom = atom<SocketState>({
 // 初始化 socket 的派生 atom
 export const initSocketAtom = atom(null, (_, set) => {
   const socket = io(url, {
+    autoConnect: false,
+    withCredentials: true,
+    auth: (callback) => {
+      void ensureJwt()
+        .then((token) => callback(token ? { token } : {}))
+        .catch(() => callback({}));
+    },
     reconnection: true,
     reconnectionAttempts: 5,
   });
-  console.log(socket);
   socket.connect();
   socket.on("connect", () => {
-    console.log("connect sucess");
     set(socketAtom, (state) => ({ ...state, connected: true }));
   });
 
   socket.on("disconnect", () => {
-    console.log("connect close");
     set(socketAtom, (state) => ({ ...state, connected: false }));
   });
 

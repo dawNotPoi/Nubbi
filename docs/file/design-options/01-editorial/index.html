@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>文件 · Light Compact Table</title>
+  <style>
+    :root{--bg:#f6f7f9;--panel:#fff;--text:#202124;--muted:#6f747c;--line:#e6e8eb;--soft:#f7f8fa;--hover:#f5f8fc;--blue:#1769e0;--blue-hover:#0f57bd;--focus:#d9e8ff}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 Inter,"PingFang SC","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}
+    button,input{font:inherit}
+    button{cursor:pointer}
+    .page{width:min(1180px,calc(100% - 40px));margin:32px auto}
+    .manager{min-height:650px;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+    .topbar{min-height:68px;padding:14px 18px 14px 22px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--line)}
+    h1{margin:0 auto 0 0;font-size:21px;line-height:1;font-weight:650;letter-spacing:-.02em}
+    .search{width:240px;height:38px;padding:0 12px;border:1px solid var(--line);border-radius:7px;background:var(--soft);outline:none;transition:.15s}
+    .search::placeholder{color:#969aa1}
+    .search:focus{background:var(--panel);border-color:var(--blue);box-shadow:0 0 0 3px var(--focus)}
+    .button{height:38px;padding:0 15px;border:1px solid var(--line);border-radius:7px;background:var(--panel);color:var(--text);white-space:nowrap;transition:.15s}
+    .button:hover{background:var(--soft);border-color:#d8dbe0}
+    .button.primary{border-color:var(--blue);background:var(--blue);color:#fff}
+    .button.primary:hover{border-color:var(--blue-hover);background:var(--blue-hover)}
+    .pathbar{height:48px;padding:0 18px 0 22px;display:flex;align-items:center;border-bottom:1px solid var(--line)}
+    .crumbs{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:13px}
+    .crumbs strong{color:var(--text);font-weight:550}
+    .slash{color:#c0c3c8}
+    .refresh{margin-left:auto;padding:6px 8px;border:0;background:transparent;color:var(--muted);font-size:13px;border-radius:5px}
+    .refresh:hover{background:var(--soft);color:var(--text)}
+    .table{width:100%;border-collapse:collapse;table-layout:fixed}
+    .table th{height:40px;padding:0 12px;border-bottom:1px solid var(--line);background:#fbfbfc;color:var(--muted);text-align:left;font-size:12px;font-weight:500}
+    .table td{height:54px;padding:0 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+    .table tr:last-child td{border-bottom:0}
+    .table tbody tr{transition:background .12s}
+    .table tbody tr:hover{background:var(--hover)}
+    .check{width:48px!important;padding-left:22px!important;padding-right:4px!important}
+    input[type="checkbox"]{width:15px;height:15px;margin:0;accent-color:var(--blue);vertical-align:middle}
+    .name{font-weight:550;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .kind{width:180px;color:var(--muted);font-size:13px}
+    .modified{width:170px;color:var(--muted);font-size:13px}
+    .operation{width:74px;text-align:right!important;padding-right:18px!important}
+    .more{padding:5px 8px;border:0;border-radius:5px;background:transparent;color:var(--muted);font-size:12px;opacity:0}
+    tr:hover .more,.more:focus{opacity:1}
+    .more:hover{background:#e9eef6;color:var(--text)}
+    .footer{height:48px;padding:0 22px;display:flex;align-items:center;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+    .empty{display:none;padding:72px 24px;text-align:center;color:var(--muted)}
+    .draft td{background:#f5f9ff}
+    .draft-name{width:min(360px,100%);height:32px;padding:0 9px;border:1px solid var(--blue);border-radius:5px;outline:none;box-shadow:0 0 0 3px var(--focus)}
+    @media(max-width:720px){
+      .page{width:100%;margin:0}.manager{min-height:100vh;border:0;border-radius:0}
+      .topbar{padding:14px 16px;flex-wrap:wrap}.topbar h1{width:100%;margin-bottom:4px}
+      .search{width:100%;order:2}.button{flex:1;order:3}
+      .pathbar{padding:0 16px}.check{width:42px!important;padding-left:16px!important}
+      .kind{width:110px}.modified{display:none}.operation{width:62px;padding-right:12px!important}
+      .table th,.table td{padding-left:8px;padding-right:8px}.more{opacity:1}
+    }
+    @media(max-width:460px){.kind{display:none}.name{font-size:13px}.table td{height:58px}}
+    @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="manager" aria-label="文件管理">
+      <header class="topbar">
+        <h1>文件</h1>
+        <input class="search" id="search" type="search" placeholder="搜索文件" aria-label="搜索文件" autocomplete="off">
+        <button class="button" id="upload" type="button">上传</button>
+        <button class="button primary" id="newFolder" type="button">新建文件夹</button>
+        <input id="picker" type="file" multiple hidden>
+      </header>
+      <nav class="pathbar" aria-label="当前位置">
+        <div class="crumbs"><strong>全部文件</strong><span class="slash">/</span><span>项目空间</span></div>
+        <button class="refresh" id="refresh" type="button">刷新</button>
+      </nav>
+      <table class="table">
+        <thead><tr><th class="check"><input id="selectAll" type="checkbox" aria-label="全选"></th><th>名称</th><th class="kind">类型与大小</th><th class="modified">修改时间</th><th class="operation">操作</th></tr></thead>
+        <tbody id="rows">
+          <tr data-name="产品资料"><td class="check"><input type="checkbox" aria-label="选择产品资料"></td><td class="name">产品资料</td><td class="kind">文件夹 · 12 项</td><td class="modified">今天 09:40</td><td class="operation"><button class="more" type="button">更多</button></td></tr>
+          <tr data-name="设计素材"><td class="check"><input type="checkbox" aria-label="选择设计素材"></td><td class="name">设计素材</td><td class="kind">文件夹 · 28 项</td><td class="modified">昨天 16:24</td><td class="operation"><button class="more" type="button">更多</button></td></tr>
+          <tr data-name="会议归档"><td class="check"><input type="checkbox" aria-label="选择会议归档"></td><td class="name">会议归档</td><td class="kind">文件夹 · 9 项</td><td class="modified">7 月 12 日</td><td class="operation"><button class="more" type="button">更多</button></td></tr>
+          <tr data-name="Nubbi 产品手册.pdf"><td class="check"><input type="checkbox" aria-label="选择 Nubbi 产品手册"></td><td class="name">Nubbi 产品手册.pdf</td><td class="kind">PDF · 2.4 MB</td><td class="modified">7 月 11 日</td><td class="operation"><button class="more" type="button">更多</button></td></tr>
+          <tr data-name="发布说明.md"><td class="check"><input type="checkbox" aria-label="选择发布说明"></td><td class="name">发布说明.md</td><td class="kind">Markdown · 18 KB</td><td class="modified">7 月 9 日</td><td class="operation"><button class="more" type="button">更多</button></td></tr>
+          <tr data-name="演示封面.png"><td class="check"><input type="checkbox" aria-label="选择演示封面"></td><td class="name">演示封面.png</td><td class="kind">PNG · 1.8 MB</td><td class="modified">7 月 6 日</td><td class="operation"><button class="more" type="button">更多</button></td></tr>
+        </tbody>
+      </table>
+      <div class="empty" id="empty">没有找到匹配的文件</div>
+      <footer class="footer"><span id="count">共 6 项</span></footer>
+    </section>
+  </main>
+  <script>
+    const search=document.querySelector('#search'),rows=document.querySelector('#rows'),empty=document.querySelector('#empty'),count=document.querySelector('#count'),all=document.querySelector('#selectAll');
+    const items=()=>[...rows.querySelectorAll('tr:not(.draft)')];
+    search.addEventListener('input',()=>{const q=search.value.trim().toLowerCase();let visible=0;items().forEach(row=>{const show=row.dataset.name.toLowerCase().includes(q);row.hidden=!show;visible+=show});empty.style.display=visible?'none':'block';count.textContent=`共 ${visible} 项`});
+    all.addEventListener('change',()=>items().filter(row=>!row.hidden).forEach(row=>row.querySelector('input[type="checkbox"]').checked=all.checked));
+    document.querySelector('#upload').addEventListener('click',()=>document.querySelector('#picker').click());
+    document.querySelector('#refresh').addEventListener('click',event=>{event.currentTarget.textContent='已刷新';setTimeout(()=>event.currentTarget.textContent='刷新',900)});
+    document.querySelector('#newFolder').addEventListener('click',()=>{if(document.querySelector('.draft'))return;const row=document.createElement('tr');row.className='draft';row.innerHTML='<td class="check"><input type="checkbox" disabled></td><td><input class="draft-name" aria-label="文件夹名称" placeholder="输入文件夹名称"></td><td class="kind">文件夹</td><td class="modified">刚刚</td><td></td>';rows.prepend(row);const input=row.querySelector('.draft-name');input.focus();input.addEventListener('keydown',event=>{if(event.key==='Escape')row.remove();if(event.key==='Enter'&&input.value.trim()){row.dataset.name=input.value.trim();row.innerHTML=`<td class="check"><input type="checkbox" aria-label="选择 ${input.value.trim()}"></td><td class="name"></td><td class="kind">文件夹 · 0 项</td><td class="modified">刚刚</td><td class="operation"><button class="more" type="button">更多</button></td>`;row.querySelector('.name').textContent=input.value.trim();count.textContent=`共 ${items().length} 项`}})});
+  </script>
+</body>
+</html>

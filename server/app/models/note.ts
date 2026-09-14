@@ -1,4 +1,5 @@
 import mongoose from "@/lib/db";
+import type { HydratedDocument, InferSchemaType, Model } from "mongoose";
 
 const { Schema } = mongoose;
 
@@ -109,5 +110,14 @@ noteSchema.index({ userId: 1, status: 1 });
 noteSchema.index({ userId: 1, updatedAt: -1 });
 noteSchema.index({ userId: 1, tags: 1 });
 noteSchema.index({ published: 1, updatedAt: -1 });
+noteSchema.index({ userId: 1, deletedAt: -1, _id: -1 });
 
-export default mongoose.model("Note", noteSchema);
+export type NoteEntity = InferSchemaType<typeof noteSchema>;
+export type NoteDocument = HydratedDocument<NoteEntity>;
+
+const NoteModel: Model<NoteEntity> = mongoose.model<NoteEntity>(
+  "Note",
+  noteSchema,
+);
+
+export default NoteModel;

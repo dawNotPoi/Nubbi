@@ -1,0 +1,763 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="拾光笔记文章详情页设计稿"
+    />
+    <title>一次 Next.js 博客工程的取舍 · 拾光笔记</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --paper: #f5f1e9;
+        --paper-raised: #ece5da;
+        --ink: #28241f;
+        --ink-muted: #655e56;
+        --ink-subtle: #898075;
+        --line: #d8cfc2;
+        --line-strong: #aea294;
+        --accent: #90533b;
+        --accent-soft: #ead9cf;
+        --wash: rgb(144 83 59 / 5%);
+        --code: #292622;
+        --code-ink: #ede7dd;
+        --serif: Georgia, "Songti SC", "STSong", "SimSun", serif;
+        --sans: Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+        --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+        scroll-padding-top: 2rem;
+        background: var(--paper);
+      }
+
+      body {
+        min-width: 320px;
+        min-height: 100vh;
+        margin: 0;
+        background: #f5f1e9;
+        background: var(--paper);
+        color: #28241f;
+        color: var(--ink);
+        font-family: var(--sans);
+        font-synthesis: none;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      a:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 5px;
+      }
+
+      ::selection {
+        background: var(--accent-soft);
+      }
+
+      .page {
+        width: min(100%, 88rem);
+        min-height: 100vh;
+        margin: 0 auto;
+        border-inline: 1px solid var(--line);
+      }
+
+      .site-header {
+        display: grid;
+        grid-template-columns: minmax(15.5rem, 0.68fr) minmax(0, 2.2fr);
+        min-height: 5.25rem;
+        border-bottom: 1px solid var(--line-strong);
+      }
+
+      .brand,
+      .header-tools {
+        display: flex;
+        align-items: center;
+        padding-inline: clamp(1.5rem, 3.5vw, 3.5rem);
+      }
+
+      .brand {
+        gap: 0.7rem;
+        border-right: 1px solid var(--line);
+        font-family: var(--mono);
+        font-size: 0.67rem;
+        font-weight: 600;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+      }
+
+      .brand::before {
+        width: 0.52rem;
+        height: 0.52rem;
+        border: 1px solid var(--accent);
+        border-radius: 50%;
+        background: var(--accent-soft);
+        content: "";
+      }
+
+      .header-tools {
+        justify-content: space-between;
+        gap: 1.5rem;
+        color: var(--ink-subtle);
+        font-family: var(--mono);
+        font-size: 0.66rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        color: var(--ink-muted);
+        transition: color 160ms ease;
+      }
+
+      .back-link:hover {
+        color: var(--accent);
+      }
+
+      .article-layout {
+        display: grid;
+        grid-template-columns: minmax(15.5rem, 0.68fr) minmax(0, 2.2fr);
+      }
+
+      .article-rail {
+        min-width: 0;
+        border-right: 1px solid var(--line);
+      }
+
+      .rail-inner {
+        position: sticky;
+        top: 0;
+        display: flex;
+        flex-direction: column;
+        min-height: calc(100vh - 5.25rem);
+        padding: clamp(2rem, 4vw, 4rem) clamp(1.5rem, 3.5vw, 3.5rem);
+      }
+
+      .rail-label {
+        margin: 0 0 1.5rem;
+        color: var(--ink-subtle);
+        font-family: var(--mono);
+        font-size: 0.64rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .toc {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .toc li {
+        border-top: 1px solid var(--line);
+      }
+
+      .toc li:last-child {
+        border-bottom: 1px solid var(--line);
+      }
+
+      .toc a {
+        display: grid;
+        grid-template-columns: 1.6rem minmax(0, 1fr);
+        gap: 0.55rem;
+        padding: 0.85rem 0;
+        color: var(--ink-muted);
+        font-size: 0.74rem;
+        line-height: 1.55;
+        transition:
+          color 160ms ease,
+          padding-left 160ms ease;
+      }
+
+      .toc a:hover {
+        padding-left: 0.25rem;
+        color: var(--accent);
+      }
+
+      .toc a:focus-visible {
+        color: var(--accent);
+      }
+
+      .toc-number {
+        color: var(--ink-subtle);
+        font-family: var(--mono);
+        font-size: 0.62rem;
+      }
+
+      .rail-note {
+        margin: auto 0 0;
+        padding-top: 2rem;
+        color: var(--ink-subtle);
+        font-family: var(--serif);
+        font-size: 0.8rem;
+        line-height: 1.7;
+      }
+
+      .article-main {
+        min-width: 0;
+        padding: clamp(3rem, 7vw, 6.5rem) clamp(1.5rem, 7vw, 7rem) 4rem;
+      }
+
+      .article-header,
+      .prose,
+      .article-footer {
+        width: min(100%, 44rem);
+        margin-inline: auto;
+      }
+
+      .article-meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.75rem 1.25rem;
+        color: var(--ink-subtle);
+        font-family: var(--mono);
+        font-size: 0.68rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .article-meta .category {
+        color: var(--accent);
+      }
+
+      .article-meta span + span::before,
+      .article-meta time + span::before {
+        margin-right: 1.25rem;
+        color: var(--line-strong);
+        content: "/";
+      }
+
+      .article-header h1 {
+        max-width: 10.5em;
+        margin: 1.5rem 0 0;
+        font-family: var(--serif);
+        font-size: clamp(3rem, 6.3vw, 5.55rem);
+        font-weight: 500;
+        letter-spacing: -0.052em;
+        line-height: 1.08;
+      }
+
+      .article-lead {
+        max-width: 38rem;
+        margin: 2rem 0 0;
+        color: var(--ink-muted);
+        font-family: var(--serif);
+        font-size: clamp(1.08rem, 1.8vw, 1.26rem);
+        line-height: 1.82;
+      }
+
+      .byline {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-top: 2.75rem;
+        padding-block: 1.1rem;
+        border-block: 1px solid var(--line);
+        color: var(--ink-muted);
+        font-size: 0.76rem;
+      }
+
+      .author-mark {
+        display: grid;
+        width: 2.25rem;
+        height: 2.25rem;
+        border: 1px solid var(--line-strong);
+        border-radius: 50%;
+        color: var(--accent);
+        font-family: var(--serif);
+        font-size: 0.92rem;
+        place-items: center;
+      }
+
+      .byline strong {
+        display: block;
+        color: var(--ink);
+        font-size: 0.78rem;
+        font-weight: 500;
+      }
+
+      .byline span {
+        display: block;
+        margin-top: 0.15rem;
+        color: var(--ink-subtle);
+        font-family: var(--mono);
+        font-size: 0.62rem;
+      }
+
+      .prose {
+        margin-top: clamp(3.75rem, 7vw, 6rem);
+        font-family: var(--serif);
+        font-size: clamp(1.03rem, 1.4vw, 1.09rem);
+        line-height: 1.95;
+      }
+
+      .prose section {
+        scroll-margin-top: 3rem;
+      }
+
+      .prose section + section {
+        margin-top: 4.5rem;
+      }
+
+      .prose h2 {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 1rem;
+        align-items: center;
+        margin: 0 0 1.75rem;
+        font-family: var(--serif);
+        font-size: clamp(1.85rem, 3.5vw, 2.65rem);
+        font-weight: 500;
+        letter-spacing: -0.04em;
+        line-height: 1.25;
+      }
+
+      .prose h2::after {
+        height: 1px;
+        background: var(--line);
+        content: "";
+      }
+
+      .prose h3 {
+        margin: 2.75rem 0 1rem;
+        font-family: var(--sans);
+        font-size: 1rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
+
+      .prose p {
+        margin: 1.3rem 0;
+      }
+
+      .prose > section:first-child > p:first-of-type::first-letter {
+        float: left;
+        margin: 0.13em 0.18em 0 0;
+        color: var(--accent);
+        font-size: 3.25em;
+        line-height: 0.78;
+      }
+
+      .prose a {
+        color: var(--accent);
+        text-decoration: underline;
+        text-decoration-color: var(--line-strong);
+        text-decoration-thickness: 1px;
+        text-underline-offset: 0.25em;
+      }
+
+      .prose code {
+        padding: 0.12em 0.35em;
+        border: 1px solid var(--line);
+        background: var(--paper-raised);
+        font-family: var(--mono);
+        font-size: 0.84em;
+      }
+
+      .prose pre {
+        overflow-x: auto;
+        margin: 2rem 0;
+        padding: 1.4rem 1.5rem;
+        border-left: 3px solid var(--accent);
+        background: var(--code);
+        color: var(--code-ink);
+        font-family: var(--mono);
+        font-size: 0.78rem;
+        line-height: 1.8;
+        tab-size: 2;
+      }
+
+      .prose pre code {
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        font-size: inherit;
+      }
+
+      .prose blockquote {
+        margin: 2.75rem 0;
+        padding: 0.3rem 0 0.3rem 1.75rem;
+        border-left: 1px solid var(--accent);
+        color: var(--ink-muted);
+        font-size: 1.18rem;
+        font-style: italic;
+        line-height: 1.8;
+      }
+
+      .decision-list {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        margin: 2.5rem 0;
+        border-top: 1px solid var(--line-strong);
+        border-left: 1px solid var(--line-strong);
+        font-family: var(--sans);
+      }
+
+      .decision-item {
+        min-height: 9rem;
+        padding: 1.25rem;
+        border-right: 1px solid var(--line-strong);
+        border-bottom: 1px solid var(--line-strong);
+      }
+
+      .decision-item span {
+        color: var(--accent);
+        font-family: var(--mono);
+        font-size: 0.64rem;
+      }
+
+      .decision-item strong {
+        display: block;
+        margin-top: 1.2rem;
+        font-size: 0.83rem;
+        font-weight: 600;
+      }
+
+      .decision-item p {
+        margin: 0.55rem 0 0;
+        color: var(--ink-muted);
+        font-size: 0.72rem;
+        line-height: 1.65;
+      }
+
+      .decision-item:last-child {
+        background: var(--wash);
+      }
+
+      .article-footer {
+        margin-top: 6rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--line-strong);
+      }
+
+      .article-footer-label {
+        color: var(--ink-subtle);
+        font-family: var(--mono);
+        font-size: 0.64rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .next-link {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 2rem;
+        padding-block: 1.5rem;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .next-link strong {
+        max-width: 22em;
+        font-family: var(--serif);
+        font-size: clamp(1.45rem, 3vw, 2.2rem);
+        font-weight: 500;
+        line-height: 1.3;
+      }
+
+      .next-link span {
+        color: var(--accent);
+        font-size: 1.4rem;
+        transition: transform 160ms ease;
+      }
+
+      .next-link:hover span {
+        transform: translateX(0.25rem);
+      }
+
+      .footer-bottom {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        padding-top: 3rem;
+        color: var(--ink-subtle);
+        font-family: var(--mono);
+        font-size: 0.62rem;
+      }
+
+      @supports (text-wrap: balance) {
+        .article-header h1,
+        .article-lead,
+        .prose h2 {
+          text-wrap: balance;
+        }
+      }
+
+      @media (max-width: 62rem) {
+        .page {
+          border-inline: 0;
+        }
+
+        .site-header {
+          display: flex;
+          justify-content: space-between;
+          min-height: 4.25rem;
+        }
+
+        .brand {
+          border-right: 0;
+        }
+
+        .header-tools {
+          padding-left: 0;
+        }
+
+        .header-tools > span {
+          display: none;
+        }
+
+        .article-layout {
+          display: block;
+        }
+
+        .article-rail {
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .rail-inner {
+          position: relative;
+          min-height: auto;
+          padding: 1rem clamp(1.5rem, 6vw, 4rem);
+        }
+
+        .rail-label,
+        .rail-note {
+          display: none;
+        }
+
+        .toc {
+          display: flex;
+          gap: 1rem;
+          overflow-x: auto;
+          padding-bottom: 0.25rem;
+        }
+
+        .toc li,
+        .toc li:last-child {
+          flex: 0 0 auto;
+          border: 0;
+        }
+
+        .toc a {
+          display: block;
+          padding: 0.4rem 0;
+          white-space: nowrap;
+        }
+
+        .toc-number {
+          margin-right: 0.35rem;
+        }
+
+        .article-main {
+          padding: clamp(3rem, 8vw, 6rem) clamp(1.5rem, 7vw, 5rem) 3rem;
+        }
+      }
+
+      @media (max-width: 40rem) {
+        .brand,
+        .header-tools {
+          padding-inline: 1.25rem;
+        }
+
+        .header-tools {
+          padding-left: 0;
+        }
+
+        .article-header h1 {
+          font-size: clamp(2.8rem, 13vw, 4.25rem);
+        }
+
+        .article-meta span + span::before,
+        .article-meta time + span::before {
+          display: none;
+        }
+
+        .decision-list {
+          grid-template-columns: 1fr;
+        }
+
+        .decision-item {
+          min-height: auto;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+
+        *,
+        *::before,
+        *::after {
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page" id="top">
+      <header class="site-header">
+        <a class="brand" href="./homepage.html">Nubbi Notes</a>
+        <div class="header-tools">
+          <a class="back-link" href="./homepage.html">← 返回主页</a>
+          <span>Article · 001</span>
+        </div>
+      </header>
+
+      <div class="article-layout">
+        <aside class="article-rail">
+          <div class="rail-inner">
+            <p class="rail-label">On this page</p>
+            <nav aria-label="文章目录">
+              <ol class="toc">
+                <li>
+                  <a href="#start"><span class="toc-number">01</span>起点</a>
+                </li>
+                <li>
+                  <a href="#tradeoff"><span class="toc-number">02</span>真正的取舍</a>
+                </li>
+                <li>
+                  <a href="#structure"><span class="toc-number">03</span>保留的结构</a>
+                </li>
+                <li>
+                  <a href="#after"><span class="toc-number">04</span>写在最后</a>
+                </li>
+              </ol>
+            </nav>
+            <p class="rail-note">
+              工具应该让写作更安静，<br />而不是成为新的主题。
+            </p>
+          </div>
+        </aside>
+
+        <main class="article-main">
+          <article>
+            <header class="article-header">
+              <div class="article-meta">
+                <span class="category">技术</span>
+                <time datetime="2026-07-12">2026.07.12</time>
+                <span>8 min read</span>
+              </div>
+              <h1>一次 Next.js 博客工程的取舍</h1>
+              <p class="article-lead">
+                从 Next.js 与 Vite 的组合实验，回到一个标准、稳定且更少意外的起点。
+                这不是对工具热情的否定，而是一次关于长期维护的选择。
+              </p>
+              <div class="byline">
+                <span class="author-mark" aria-hidden="true">N</span>
+                <div>
+                  <strong>Nubbi</strong>
+                  <span>Filed under Engineering Notes</span>
+                </div>
+              </div>
+            </header>
+
+            <div class="prose">
+              <section id="start">
+                <h2>起点</h2>
+                <p>
+                  为博客选择技术栈时，我最初对 <code>Next.js + Vite</code>
+                  的组合产生了兴趣。Vite 的开发体验足够直接，而 Next.js
+                  已经提供路由、服务端渲染、元数据和缓存等完整能力。把两者放在一起，听起来像是同时获得两边的优点。
+                </p>
+                <p>
+                  但工程选择真正困难的部分，往往不在“能不能运行”，而在半年以后是否依然容易理解、升级和排查。
+                  一个实验性的组合可能在第一天带来新鲜感，也可能在每一次框架更新时收取额外成本。
+                </p>
+                <blockquote>
+                  对个人项目来说，维护成本不是抽象指标。它最终会直接决定，我还有没有心情继续写作。
+                </blockquote>
+              </section>
+
+              <section id="tradeoff">
+                <h2>真正的取舍</h2>
+                <p>
+                  我把选择拆成三个维度：今天的开发体验、未来的兼容风险，以及项目真正需要的能力。
+                  当需求只是一个内容型博客时，标准 Next.js 已经覆盖了当前阶段的全部基础设施。
+                </p>
+                <div class="decision-list" aria-label="方案取舍摘要">
+                  <div class="decision-item">
+                    <span>01 / NEED</span>
+                    <strong>实际需要</strong>
+                    <p>路由、渲染、元数据和可预测的生产构建。</p>
+                  </div>
+                  <div class="decision-item">
+                    <span>02 / COST</span>
+                    <strong>额外成本</strong>
+                    <p>适配层、插件兼容和框架升级后的持续验证。</p>
+                  </div>
+                  <div class="decision-item">
+                    <span>03 / CHOICE</span>
+                    <strong>最终选择</strong>
+                    <p>先使用标准 Next.js，把复杂度留给真实需求。</p>
+                  </div>
+                </div>
+                <p>
+                  这并不意味着组合方案没有价值。它仍然是理解框架边界的好实验，只是不适合作为这个博客的默认基础。
+                  技术探索可以继续存在，但不必让每一次探索都进入产品主线。
+                </p>
+              </section>
+
+              <section id="structure">
+                <h2>保留的结构</h2>
+                <p>
+                  最终项目保留一套很薄的基础：App Router、TypeScript、Tailwind CSS，
+                  以及独立的 workspace 边界。运行方式保持明确，不让根项目承担额外编排。
+                </p>
+                <pre><code>pnpm --filter nubbi-website dev
+pnpm --filter nubbi-website typecheck
+pnpm --filter nubbi-website build</code></pre>
+                <h3>内容功能暂时后置</h3>
+                <p>
+                  Markdown、API 客户端、文章数据模型和部署方式都没有在初始化阶段提前决定。
+                  它们会在内容来源与发布流程明确以后再进入工程，而不是先安装一批“以后可能需要”的依赖。
+                </p>
+              </section>
+
+              <section id="after">
+                <h2>写在最后</h2>
+                <p>
+                  我越来越喜欢一种朴素的工程节奏：先让边界清楚，再让功能生长。
+                  好的基础不一定展示最多能力，它只是让下一步足够自然，也让回头修改时不必付出太多勇气。
+                </p>
+                <p>
+                  对“拾光笔记”来说，技术最终应该退到文字之后。读者看到的是文章、时间和思考，
+                  而不是支撑它们的工具清单。
+                </p>
+              </section>
+            </div>
+
+            <footer class="article-footer">
+              <span class="article-footer-label">Continue reading</span>
+              <a class="next-link" href="./homepage.html#notes">
+                <strong>返回最近书写，继续浏览其他笔记</strong>
+                <span aria-hidden="true">→</span>
+              </a>
+              <div class="footer-bottom">
+                <span>© 2026 NUBBI NOTES</span>
+                <a href="#top">BACK TO TOP ↑</a>
+              </div>
+            </footer>
+          </article>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

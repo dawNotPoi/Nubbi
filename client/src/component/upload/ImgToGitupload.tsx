@@ -1,9 +1,32 @@
-import { Button } from "antd";
-import { DragEventHandler } from "react";
 import { imgToGitCloud } from "@/api/file";
+import { Button, message } from "antd";
+import type { DragEventHandler, ReactElement } from "react";
 
-const ImgToGitupload = ({ onFinish, onPreRender }: any) => {
-  const readPreview = (file: File) => {
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set([
+  "image/avif",
+  "image/gif",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
+
+type ImgToGitUploadProps = {
+  onFinish?: (url: string) => void;
+  onPreRender?: (previewUrl: string) => void;
+};
+
+const getValidationError = (file: File): string | null => {
+  if (!ALLOWED_IMAGE_TYPES.has(file.type)) return "不支持该图片格式";
+  if (file.size > MAX_IMAGE_SIZE) return "图片大小不能超过 5MB";
+  return null;
+};
+
+const ImgToGitupload = ({
+  onFinish,
+  onPreRender,
+}: ImgToGitUploadProps): ReactElement => {
+  const readPreview = (file: File): Promise<string> => {
     return new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
 
@@ -23,13 +46,19 @@ const ImgToGitupload = ({ onFinish, onPreRender }: any) => {
     });
   };
 
-  const handleUpload = async (file: File) => {
+  const handleUpload = async (file: File): Promise<void> => {
+    const validationError = getValidationError(file);
+    if (validationError) {
+      message.warning(validationError);
+      return;
+    }
+
     try {
       await readPreview(file);
       const url = await imgToGitCloud(file);
       onFinish?.(url);
     } catch (error) {
-      console.error("图片上传失败", error);
+      message.error(error instanceof Error ? error.message : "图片上传失败");
     }
   };
 
@@ -44,7 +73,7 @@ const ImgToGitupload = ({ onFinish, onPreRender }: any) => {
   const getFile = () => {
     const fileInput = document.createElement("input");
     fileInput.type = "file";
-    fileInput.accept = "image/*";
+    fileInput.accept = Array.from(ALLOWED_IMAGE_TYPES).join(",");
     fileInput.onchange = (event: Event) => {
       const target = event.target as HTMLInputElement;
       const file = target.files?.[0];
@@ -59,18 +88,12 @@ const ImgToGitupload = ({ onFinish, onPreRender }: any) => {
     <div
       onDrop={handleDrop}
       onDragOver={(event) => event.preventDefault()}
-      style={{
-        border: "2px dashed #ddd",
-        padding: "20px",
-        textAlign: "center",
-      }}
+      className="border-2 border-dashed border-border-button p-5 text-center"
     >
-      <Button onClick={getFile}>Upload</Button>
+      <Button onClick={getFile}>上传图片</Button>
 
-      <div style={{ marginTop: "16px" }}>
-        <span style={{ fontSize: "12px" }}>
-          The maximum size per file is 5MB
-        </span>
+      <div className="mt-4">
+        <span className="text-xs text-text-muted">单张图片最大 5MB</span>
       </div>
     </div>
   );

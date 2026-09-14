@@ -1,100 +1,20 @@
-import type { FileTableRow } from "./FileListTable/fileIcons";
+import type { FileListItem as FileTableRow } from "@/api/file";
+import {
+  ARCHIVE_EXTENSIONS,
+  AUDIO_EXTENSIONS,
+  IMAGE_EXTENSIONS,
+  SHEET_EXTENSIONS,
+  SLIDE_EXTENSIONS,
+  TEXT_EXTENSIONS,
+  VIDEO_EXTENSIONS,
+  WORD_EXTENSIONS,
+} from "./filePreviewConstants";
 
 type FilePreviewRecord = Extract<FileTableRow, { kind: "file" }>;
 
 const isFilePreviewRecord = (
   record?: FileTableRow | null,
 ): record is FilePreviewRecord => record?.kind === "file";
-
-const ARCHIVE_EXTENSIONS = new Set([
-  "zip",
-  "rar",
-  "7z",
-  "tar",
-  "gz",
-  "bz2",
-  "xz",
-  "tgz",
-]);
-
-const IMAGE_EXTENSIONS = new Set([
-  "jpg",
-  "jpeg",
-  "png",
-  "gif",
-  "webp",
-  "svg",
-  "bmp",
-  "ico",
-  "avif",
-  "tiff",
-]);
-
-const VIDEO_EXTENSIONS = new Set([
-  "mp4",
-  "mov",
-  "avi",
-  "mkv",
-  "webm",
-  "m4v",
-  "flv",
-  "wmv",
-]);
-
-const AUDIO_EXTENSIONS = new Set([
-  "mp3",
-  "wav",
-  "ogg",
-  "flac",
-  "aac",
-  "m4a",
-]);
-
-const TEXT_EXTENSIONS = new Set([
-  "txt",
-  "md",
-  "markdown",
-  "json",
-  "js",
-  "jsx",
-  "ts",
-  "tsx",
-  "css",
-  "scss",
-  "less",
-  "html",
-  "htm",
-  "xml",
-  "yml",
-  "yaml",
-  "csv",
-  "log",
-  "sql",
-  "sh",
-  "bat",
-  "ps1",
-  "java",
-  "kt",
-  "go",
-  "rs",
-  "py",
-  "rb",
-  "php",
-  "c",
-  "cc",
-  "cpp",
-  "h",
-  "hpp",
-  "vue",
-  "svelte",
-  "ini",
-  "conf",
-  "properties",
-]);
-
-const WORD_EXTENSIONS = new Set(["doc", "docx", "odt"]);
-const SHEET_EXTENSIONS = new Set(["xls", "xlsx", "ods"]);
-const SLIDE_EXTENSIONS = new Set(["ppt", "pptx", "odp"]);
 
 export type PreviewCategory =
   | "archive"
@@ -118,7 +38,7 @@ export const getRecordMimeType = (
   record?: FileTableRow | null,
 ) => {
   if (!isFilePreviewRecord(record)) return "";
-  return record.type?.toLowerCase().trim() ?? "";
+  return record.mimeType?.toLowerCase().trim() ?? "";
 };
 
 export const normalizeMimeType = (mimeType?: string) =>

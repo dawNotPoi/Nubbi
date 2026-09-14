@@ -11,6 +11,7 @@ const FolderSchema = new Schema(
 );
 
 // 索引优化：方便查询某个文件夹下的子文件夹
-FolderSchema.index({ ownerId: 1, parentId: 1, name: 1 });
+FolderSchema.index({ ownerId: 1, parentId: 1, name: 1, _id: 1 });
+FolderSchema.index({ ownerId: 1, parentId: 1, updatedAt: -1, _id: -1 });
 
 export const Folder = model("Folder", FolderSchema);

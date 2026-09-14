@@ -1,4 +1,4 @@
-import { AppProvider } from "./AppProvider";
+import AppProvider from "./AppProvider";
 import { RouteWrapper } from "./Route";
 function App() {
   return (

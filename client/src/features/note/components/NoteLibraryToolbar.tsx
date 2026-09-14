@@ -95,13 +95,13 @@ export function NoteLibraryToolbar({
   }));
 
   return (
-    <div className="flex min-h-9 flex-wrap items-center justify-end gap-3">
-      <div className="flex items-center gap-1 text-text-subtle">
+    <div className="flex min-h-9 w-full items-center justify-start md:justify-end">
+      <div className="flex w-full items-center gap-1 overflow-x-auto pb-1 text-text-subtle scrollbar-none md:w-auto md:pb-0">
         {(searchOpen || filterText) && (
           <Input
             allowClear
             autoFocus={searchOpen}
-            className="h-8 w-[220px] rounded-md border-border-toolbar text-sm"
+            className="h-8 min-w-[180px] flex-1 rounded-md border-border-toolbar text-sm md:w-[220px] md:flex-none"
             onChange={(event) => onFilterTextChange(event.target.value)}
             onPressEnter={() => onSearchOpenChange(false)}
             placeholder="搜索页面"

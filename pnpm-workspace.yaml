@@ -1,8 +1,21 @@
 packages:
   - client
   - server
+  - mcp
+  - website
+  - assistant/api
+  - assistant/web
+  - assistant/mobile
 
 overrides:
   mongodb: 6.21.0
 
-storeDir: E:/learning/Nubbi/.pnpm-store/v10
+packageExtensions:
+  lucide-react:
+    peerDependencies:
+      "@types/react": "*"
+
+onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - '@swc/core'
+  - esbuild

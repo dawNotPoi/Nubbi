@@ -1,6 +1,5 @@
 import { type Note } from "@/api/note";
 import { Modal } from "@/component/UI/Dialog";
-import { Divider } from "@/component/UI/Divider";
 import Popover from "@/component/UI/Popover";
 import TiptapEditor from "@/component/editor/Tiptap";
 import { NoteTargetPickerPanel } from "@/features/note/components/NoteTargetPicker";
@@ -9,33 +8,68 @@ import { getRecentTargetNotes } from "@/features/note/model/library";
 import { allNotesAtom, recentNoteAtom } from "@/store/atom/noteAtom";
 import clsx from "clsx";
 import { useAtomValue } from "jotai";
-import { cloneElement, useMemo, useState } from "react";
 import { Expand, FileText, Plus } from "lucide-react";
+import { cloneElement, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { IconButton } from "../../components";
 
 const DEFAULT_TITLE = "未命名文档";
 
-export const WrittingModal = ({
-  parent,
-  owner,
-  onTrigger,
-  trigger,
-}: {
+type WritingModalProps = {
   parent: Note;
-  owner?: string;
   onTrigger?: () => void;
   trigger?: React.ReactElement;
-}) => {
-  const [open, setOpen] = useState(false);
-  const navigate = useNavigate();
-  const draft = useCreateNoteDraft({ owner, parent });
-  const { data: allNotes = [] } = useAtomValue(allNotesAtom(owner ?? ""));
-  const { data: recentNotes = [] } = useAtomValue(recentNoteAtom);
-  const addToTargets = useMemo(
+};
+
+type LazyTargetPickerProps = {
+  blockedIds: Set<string>;
+  onCancel: () => void;
+  onSelect: (note: Note) => void;
+  selectedId?: string;
+};
+
+function LazyTargetPicker({
+  blockedIds,
+  onCancel,
+  onSelect,
+  selectedId,
+}: LazyTargetPickerProps) {
+  const { data: allNotes = [], isLoading: allNotesLoading } = useAtomValue(allNotesAtom);
+  const { data: recentNotes = [], isLoading: recentNotesLoading } = useAtomValue(recentNoteAtom);
+  const targets = useMemo(
     () => getRecentTargetNotes(recentNotes, allNotes),
     [allNotes, recentNotes],
   );
+
+  return (
+    <NoteTargetPickerPanel
+      allNotes={allNotes}
+      autoFocus
+      blockedIds={blockedIds}
+      className="h-[min(440px,65dvh)] w-[min(420px,calc(100vw-32px))]"
+      disabled={allNotesLoading || recentNotesLoading}
+      emptyMessage={
+        allNotesLoading || recentNotesLoading ? "正在加载..." : "暂无可添加的位置"
+      }
+      onCancel={onCancel}
+      onSelect={onSelect}
+      placeholder="添加到..."
+      selectedId={selectedId}
+      targets={targets}
+    />
+  );
+}
+
+/**
+ * 新建笔记弹窗。
+ * 点击触发元素后在弹窗内编辑标题和内容，支持选择存放位置。
+ * @param parent 默认存放的父级笔记。
+ * @param onTrigger 触发时额外回调。
+ * @param trigger 自定义触发元素，默认显示 Plus 图标。
+ */
+export const WrittingModal = ({ parent, onTrigger, trigger }: WritingModalProps) => {
+  const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
+  const draft = useCreateNoteDraft({ parent });
   const blockedTargetIds = useMemo(() => {
     return new Set(draft.draftNote ? [draft.draftNote._id] : []);
   }, [draft.draftNote]);
@@ -57,10 +91,14 @@ export const WrittingModal = ({
   };
 
   const triggerElement = cloneElement(
-    trigger ?? <Plus className="size-full" />,
+    (trigger ?? <Plus className="size-full" />) as React.ReactElement<
+      Record<string, unknown>
+    >,
     {
       onClick: (event: React.MouseEvent) => {
-        trigger?.props.onClick?.(event);
+        (
+          trigger?.props as { onClick?: (e: React.MouseEvent) => void }
+        )?.onClick?.(event);
         onTrigger?.();
         draft.createDraftNote();
         setOpen(true);
@@ -72,26 +110,38 @@ export const WrittingModal = ({
     <>
       {triggerElement}
       <Modal
-        open={open}
         className={clsx(
-          "h-[80%] min-h-[320px] w-full max-w-3xl md:max-w-4xl lg:max-w-5xl",
-          "rounded-2xl border border-neutral-200/80 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.12)]",
+          "h-[90dvh] w-full !max-h-[90dvh] !overflow-hidden",
+          "rounded-t-3xl border border-border-toolbar bg-white shadow-soft",
+          "md:!mt-[5dvh] md:h-[88dvh] md:!max-h-[860px]",
+          "md:!w-[min(94vw,1120px)] md:!rounded-2xl",
         )}
         onCancel={closeModal}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen && open) closeModal();
+        }}
+        open={open}
+        showClose
         title={
-          <div className="flex items-center justify-start gap-2 text-sm text-neutral-500">
-            <IconButton
+          <div className="flex min-w-0 items-center gap-2 py-1 text-sm">
+            <button
+              aria-label="在完整页面中打开"
               className={clsx(
-                "flex size-8 items-center justify-center rounded-md text-neutral-500 transition-colors",
-                "hover:bg-neutral-100 hover:text-neutral-700",
+                "grid size-8 shrink-0 place-items-center rounded-md text-text-muted transition-colors",
+                "hover:bg-bg-icon-hover hover:text-text-primary",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
               )}
               onClick={createNoteHandler}
+              type="button"
             >
-              <Expand />
-            </IconButton>
-            <Divider orientation="vertical" className="mx-1 my-2 h-5" />
+              <Expand className="size-4" />
+            </button>
+            <span
+              aria-hidden="true"
+              className="mx-1 h-5 w-px shrink-0 bg-border-row"
+            />
             <Popover
-              className="overflow-hidden rounded-xl border border-[#deddda] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.12)]"
+              className="overflow-hidden rounded-xl border border-border-toolbar bg-white shadow-soft"
               onClickOutside={() => {
                 draft.setTargetPickerOpen(false);
               }}
@@ -99,58 +149,62 @@ export const WrittingModal = ({
               trigger={
                 <button
                   className={clsx(
-                    "flex h-8 items-center gap-2 rounded-md px-2 text-center text-neutral-500 transition-colors",
-                    "hover:bg-neutral-100 hover:text-neutral-700",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300",
+                    "flex h-8 min-w-0 items-center gap-2 rounded-md px-2 text-text-muted transition-colors",
+                    "hover:bg-bg-hover hover:text-text-primary",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
                   )}
                   onClick={() => {
                     draft.setTargetPickerOpen(!draft.targetPickerOpen);
                   }}
                   type="button"
                 >
-                  <span className="text-neutral-400">Add to</span>
-                  <FileText className="text-neutral-400" />
-                  <span className="max-w-[220px] truncate font-medium text-neutral-900">
+                  <span className="hidden shrink-0 text-text-subtle sm:inline">
+                    存放到
+                  </span>
+                  <FileText className="size-4 shrink-0 text-text-subtle" />
+                  <span className="max-w-[180px] truncate font-medium text-text-primary sm:max-w-[280px]">
                     {draft.targetNote?.title || DEFAULT_TITLE}
                   </span>
                 </button>
               }
             >
-              <NoteTargetPickerPanel
-                allNotes={allNotes}
-                autoFocus
-                blockedIds={blockedTargetIds}
-                className="h-[360px] w-[360px]"
-                emptyMessage="暂无可添加的位置"
-                onCancel={() => draft.setTargetPickerOpen(false)}
-                onSelect={draft.selectParent}
-                placeholder="添加到..."
-                selectedId={draft.targetNote?._id}
-                targets={addToTargets}
-              />
+              {draft.targetPickerOpen ? (
+                <LazyTargetPicker
+                  blockedIds={blockedTargetIds}
+                  onCancel={() => draft.setTargetPickerOpen(false)}
+                  onSelect={draft.selectParent}
+                  selectedId={draft.targetNote?._id}
+                />
+              ) : null}
             </Popover>
           </div>
         }
       >
-        <main className="h-full max-h-[70vh] cursor-text overflow-y-auto px-8 py-8 md:px-10">
-          <header className="mb-3">
-            <input
-              className={clsx(
-                "w-full border-none bg-transparent py-2 text-3xl font-semibold tracking-tight text-neutral-900 outline-none",
-                "placeholder:text-neutral-300",
-              )}
-              onChange={(event) => {
-                draft.syncTitle(event.target.value);
-              }}
-              placeholder={DEFAULT_TITLE}
-              type="text"
-              value={draft.title}
-            />
-          </header>
-          <TiptapEditor
-            defaultValue={draft.content}
-            onChange={draft.syncContent}
-          />
+        <main className="-mx-4 flex h-[calc(90dvh-80px)] min-h-0 flex-col md:h-[calc(88dvh-80px)] md:max-h-[780px]">
+          <section className="min-h-0 flex-1 overflow-y-auto bg-white scrollbar-thin scrollbar-thumb-border">
+            <div className="mx-auto min-h-full w-full max-w-[840px] px-5 py-8 sm:px-10 sm:py-12">
+              <header className="mb-2">
+                <input
+                  autoFocus
+                  className={clsx(
+                    "w-full border-none bg-transparent py-2 text-3xl font-bold tracking-tight text-text-primary outline-none sm:text-4xl",
+                    "placeholder:text-text-placeholder",
+                  )}
+                  onChange={(event) => {
+                    draft.syncTitle(event.target.value);
+                  }}
+                  placeholder={DEFAULT_TITLE}
+                  type="text"
+                  value={draft.title}
+                />
+              </header>
+              <TiptapEditor
+                className="min-h-[420px]"
+                defaultValue={draft.content}
+                onChange={draft.syncContent}
+              />
+            </div>
+          </section>
         </main>
       </Modal>
     </>

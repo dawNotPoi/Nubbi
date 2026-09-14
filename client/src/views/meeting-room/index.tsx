@@ -1,299 +1,132 @@
 import { useAuth } from "@/hooks/useAuth";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import useMediaStream from "@/hooks/useMedia";
-import useP2PConnection from "@/hooks/useP2PConnection";
 import { message } from "antd";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useRef, useState, type ReactElement } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import CommentPanel from "./components/CommentPanel";
-import MainVideoStage from "./components/MainVideoStage";
-import ParticipantSidebar from "./components/ParticipantSidebar";
-import VideoControls from "./components/VideoControls";
+import MeetingRoomView from "./components/MeetingRoomView";
+import { attachMediaStream } from "./helpers/meeting-room";
+import { useMeetingPanels } from "./hooks/use-meeting-panels";
+import { useMeetingParticipants } from "./hooks/use-meeting-participants";
+import { useMeetingSession } from "./hooks/use-meeting-session";
 import type {
   MediaDeviceKind,
   MediaToggleKind,
-  StageParticipant,
   TrackReplaceHandler,
 } from "./types";
 
-const hasVideoTrack = (stream: MediaStream | null) =>
-  Boolean(stream?.getVideoTracks().length);
+type VideoProps = {
+  meetingTitle?: string;
+  meetingHostId?: string;
+  meetingAccessToken: string;
+  onAccessRejected: () => void;
+};
 
 export default function Video({
   meetingTitle = "",
   meetingHostId = "",
-}: {
-  meetingTitle?: string;
-  meetingHostId?: string;
-}) {
+  meetingAccessToken,
+  onAccessRejected,
+}: VideoProps): ReactElement {
   const { roomId = "room1" } = useParams();
   const navigate = useNavigate();
-  const [isCommentOpen, setIsCommentOpen] = useState(false);
-  const [unreadCommentCount, setUnreadCommentCount] = useState(0);
-  const [activeParticipantId, setActiveParticipantId] = useState<string>();
-  const [endingMeeting, setEndingMeeting] = useState(false);
-  const previousCommentCountRef = useRef(0);
-  const {
-    mediaStream,
-    devices,
-    switchDevice,
-    videoStatu,
-    audioStatu,
-    isScreenSharing,
-    startScreenShare,
-    stopScreenShare,
-    toggleDevice,
-  } = useMediaStream();
+  const isMobile = useIsMobile();
+  const media = useMediaStream();
   const { user } = useAuth();
   const localVideoRef = useRef<HTMLVideoElement>(null);
-  const {
-    remoteStreams,
-    roomUsers,
-    meetingComments,
-    localPeerId,
-    joinRoom,
-    connectToPeer,
-    sendMeetingComment,
-    endMeeting,
-    syncRoomUser,
-    destroyPeerConnections,
-    meetingEndedAt,
-    peersRef,
-  } = useP2PConnection();
-
-  const updateVideo = (stream: MediaStream) => {
-    if (!localVideoRef.current) return;
-    localVideoRef.current.srcObject = null;
-    localVideoRef.current.srcObject = stream;
-  };
-
-  //处理加入房间事件
-  useEffect(() => {
-    joinRoom(roomId, {
-      id: user?.id,
-      name: user?.name,
-      image: user?.image,
-      email: user?.email,
-      isVideoEnabled: videoStatu.open,
-      isAudioEnabled: audioStatu.open,
-    });
-    return () => {
-      destroyPeerConnections();
-    };
-  }, [destroyPeerConnections, joinRoom, roomId]);
-
-  //处理建立p2p连接
-  useEffect(() => {
-    if (mediaStream) {
-      updateVideo(mediaStream);
-    }
-    connectToPeer(roomId, mediaStream, {
-      id: user?.id,
-      name: user?.name,
-      image: user?.image,
-      email: user?.email,
-      isVideoEnabled: videoStatu.open,
-      isAudioEnabled: audioStatu.open,
-    });
-  }, [
-    connectToPeer,
-    mediaStream,
+  const [endingMeeting, setEndingMeeting] = useState(false);
+  const session = useMeetingSession({
     roomId,
-    user?.email,
-    user?.id,
-    user?.image,
-    user?.name,
-  ]);
+    meetingAccessToken,
+    mediaStream: media.mediaStream,
+    videoEnabled: media.videoStatu.open,
+    audioEnabled: media.audioStatu.open,
+    localVideoRef,
+    onAccessRejected,
+  });
+  const panels = useMeetingPanels(session.meetingComments.length);
+  const participantState = useMeetingParticipants({
+    user,
+    roomUsers: session.roomUsers,
+    localPeerId: session.localPeerId,
+    remoteStreams: session.remoteStreams,
+    mediaStream: media.mediaStream,
+    videoEnabled: media.videoStatu.open,
+    audioEnabled: media.audioStatu.open,
+    isMobile,
+    onMobileSelect: panels.closeParticipants,
+  });
 
-  useEffect(() => {
-    if (!mediaStream) return;
-
-    updateVideo(mediaStream);
-  }, [mediaStream]);
-
-  useEffect(() => {
-    syncRoomUser(roomId, {
-      id: user?.id,
-      name: user?.name,
-      image: user?.image,
-      email: user?.email,
-      isVideoEnabled: videoStatu.open,
-      isAudioEnabled: audioStatu.open,
-    });
-  }, [
-    audioStatu.open,
-    roomId,
-    syncRoomUser,
-    user?.email,
-    user?.id,
-    user?.image,
-    user?.name,
-    videoStatu.open,
-  ]);
-
-  useEffect(() => {
-    if (!meetingEndedAt) return;
-
-    message.info("主持人已结束会议");
-    navigate("/home", { replace: true });
-  }, [meetingEndedAt, navigate]);
-
-  useEffect(() => {
-    if (isCommentOpen) {
-      setUnreadCommentCount(0);
-      previousCommentCountRef.current = meetingComments.length;
-      return;
-    }
-
-    const nextUnreadCount = meetingComments.length - previousCommentCountRef.current;
-    if (nextUnreadCount > 0) {
-      setUnreadCommentCount((prev) => prev + nextUnreadCount);
-    }
-
-    previousCommentCountRef.current = meetingComments.length;
-  }, [isCommentOpen, meetingComments.length]);
-
-  const remoteUsers = useMemo(
-    () =>
-      Object.values(roomUsers).filter(
-        (roomUser) => roomUser.peerId !== localPeerId,
-      ),
-    [localPeerId, roomUsers],
-  );
-  const participants = useMemo<StageParticipant[]>(() => {
-    const localParticipant: StageParticipant = {
-      id: "local-user",
-      name: user?.name || "Me",
-      avatarSrc: user?.image || "",
-      stream: mediaStream,
-      isVideoEnabled: videoStatu.open,
-      isAudioEnabled: audioStatu.open,
-      isLocal: true,
-    };
-
-    const remoteParticipants = remoteUsers.map((roomUser) => {
-      const stream = remoteStreams[roomUser.peerId] || null;
-
-      return {
-        id: roomUser.peerId,
-        name: roomUser.name || roomUser.peerId,
-        avatarSrc: roomUser.image || "",
-        stream,
-        isVideoEnabled: roomUser.isVideoEnabled,
-        isAudioEnabled: roomUser.isAudioEnabled,
-      };
-    });
-
-    return [localParticipant, ...remoteParticipants];
-  }, [
-    audioStatu.open,
-    mediaStream,
-    remoteStreams,
-    remoteUsers,
-    user?.image,
-    user?.name,
-    videoStatu.open,
-  ]);
-  const videoParticipants = useMemo(
-    () =>
-      participants.filter(
-        (participant) =>
-          participant.isVideoEnabled && hasVideoTrack(participant.stream),
-      ),
-    [participants],
-  );
-
-  useEffect(() => {
-    if (videoParticipants.length === 0) {
-      setActiveParticipantId(undefined);
-      return;
-    }
-
-    const hasActiveParticipant = videoParticipants.some(
-      (participant) => participant.id === activeParticipantId,
-    );
-
-    if (!hasActiveParticipant) {
-      setActiveParticipantId(videoParticipants[0]?.id);
-    }
-  }, [activeParticipantId, videoParticipants]);
-
-  const handleSwitchDevice = (kind: MediaDeviceKind, deviceId: string) => {
-    if (!mediaStream) return;
-
-    switchDevice(
+  const handleSwitchDevice = (
+    kind: MediaDeviceKind,
+    deviceId: string,
+  ): void => {
+    const currentStream = media.mediaStream;
+    if (!currentStream) return;
+    void media.switchDevice(
       kind,
       deviceId,
-      (_, oldTrack, newTrack) => {
-        Object.values(peersRef.current).forEach((peer) => {
-          peer.replaceTrack(oldTrack, newTrack, mediaStream);
+      (_stream, oldTrack, newTrack) => {
+        Object.values(session.peersRef.current).forEach((peer) => {
+          peer.replaceTrack(oldTrack, newTrack, currentStream);
         });
       },
-      (stream) => {
-        updateVideo(stream);
-      },
+      (stream) => attachMediaStream(localVideoRef, stream),
     );
   };
 
-  const replacePeerTrack: TrackReplaceHandler = (_, oldTrack, newTrack) => {
-    if (!mediaStream) return;
-
-    Object.values(peersRef.current).forEach((peer) => {
-      peer.replaceTrack(oldTrack, newTrack, mediaStream);
+  const replacePeerTrack: TrackReplaceHandler = (
+    _stream,
+    oldTrack,
+    newTrack,
+  ): void => {
+    const currentStream = media.mediaStream;
+    if (!currentStream) return;
+    Object.values(session.peersRef.current).forEach((peer) => {
+      peer.replaceTrack(oldTrack, newTrack, currentStream);
     });
   };
 
-  const handleDeviceToggle = (kind: MediaToggleKind, enabled: boolean) => {
-    toggleDevice(kind, enabled);
+  const handleDeviceToggle = (
+    kind: MediaToggleKind,
+    enabled: boolean,
+  ): void => {
+    void media.toggleDevice(kind, enabled);
   };
 
-  const handleSelectParticipant = (participantId: string) => {
-    const participant = participants.find((item) => item.id === participantId);
-
-    if (!participant?.isVideoEnabled || !hasVideoTrack(participant.stream)) {
+  const handleToggleScreenShare = async (): Promise<void> => {
+    if (!media.mediaStream) return;
+    if (media.isScreenSharing) {
+      media.stopScreenShare(replacePeerTrack, (stream) =>
+        attachMediaStream(localVideoRef, stream),
+      );
       return;
     }
-
-    setActiveParticipantId(participantId);
-  };
-
-  const handleToggleScreenShare = async () => {
-    if (!mediaStream) return;
-
-    if (isScreenSharing) {
-      stopScreenShare(replacePeerTrack, updateVideo);
-      return;
-    }
-
-    const success = await startScreenShare(replacePeerTrack, updateVideo);
-
+    const success = await media.startScreenShare(
+      replacePeerTrack,
+      (stream) => attachMediaStream(localVideoRef, stream),
+    );
     if (!success) {
       message.error("共享屏幕失败，请检查浏览器权限后重试");
     }
   };
 
-  const handleSendComment = async (content: string) => {
-    const response = await sendMeetingComment(roomId, content, {
-      id: user?.id,
-      name: user?.name,
-      image: user?.image,
-      email: user?.email,
-    });
-
+  const handleSendComment = async (content: string): Promise<boolean> => {
+    const response = await session.sendMeetingComment(roomId, content);
     if (!response.ok) {
       message.error("评论发送失败，请稍后重试");
       return false;
     }
-
     return true;
   };
 
-  const isHost = Boolean(user?.id && meetingHostId && user.id === meetingHostId);
-
-  const handleEndMeeting = async () => {
+  const isHost = Boolean(
+    user?.id && meetingHostId && user.id === meetingHostId,
+  );
+  const handleEndMeeting = async (): Promise<void> => {
     if (endingMeeting) return;
-
     if (!isHost) {
-      destroyPeerConnections();
+      session.destroyPeerConnections();
       message.success("已离开会议");
       navigate("/home", { replace: true });
       return;
@@ -301,12 +134,12 @@ export default function Video({
 
     setEndingMeeting(true);
     try {
-      const response = await endMeeting(roomId, user?.id);
+      const response = await session.endMeeting(roomId);
       if (!response.ok) {
         message.error("结束会议失败，请稍后重试");
         return;
       }
-      destroyPeerConnections();
+      session.destroyPeerConnections();
       message.success("会议已结束");
       navigate("/home", { replace: true });
     } catch {
@@ -317,46 +150,35 @@ export default function Video({
   };
 
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-[#fbfbfa]">
-      <main className="flex h-[calc(100vh-40px)] min-w-[1180px] gap-0 overflow-hidden">
-        <MainVideoStage
-          videoRef={localVideoRef}
-          participants={participants}
-          activeParticipantId={activeParticipantId}
-        />
-        {/* 侧边栏 */}
-        <ParticipantSidebar
-          participants={participants}
-          activeParticipantId={activeParticipantId}
-          onSelectParticipant={handleSelectParticipant}
-        />
-        {isCommentOpen && (
-          <CommentPanel
-            meetingTitle={meetingTitle}
-            currentUserName={user?.name || "Me"}
-            currentUserAvatar={user?.image || ""}
-            roomUsers={remoteUsers}
-            comments={meetingComments}
-            onSendComment={handleSendComment}
-          />
-        )}
-      </main>
-      <VideoControls
-        devices={devices}
-        videoStatus={videoStatu}
-        audioStatus={audioStatu}
-        isScreenSharing={isScreenSharing}
-        isCommentOpen={isCommentOpen}
-        commentCount={unreadCommentCount}
-        endActionLabel={isHost ? "结束会议" : "离开会议"}
-        ending={endingMeeting}
-        onToggleDevice={handleDeviceToggle}
-        onSwitchDevice={handleSwitchDevice}
-        onToggleScreenShare={handleToggleScreenShare}
-        onSendComment={handleSendComment}
-        onToggleComment={() => setIsCommentOpen((prev) => !prev)}
-        onEndMeeting={() => void handleEndMeeting()}
-      />
-    </div>
+    <MeetingRoomView
+      localVideoRef={localVideoRef}
+      participants={participantState.participants}
+      activeParticipantId={participantState.activeParticipantId}
+      isParticipantOpen={panels.isParticipantOpen}
+      isCommentOpen={panels.isCommentOpen}
+      meetingTitle={meetingTitle}
+      currentUserName={user?.name || "Me"}
+      currentUserId={user?.id || ""}
+      currentUserAvatar={user?.image || ""}
+      remoteUsers={participantState.remoteUsers}
+      comments={session.meetingComments}
+      devices={media.devices}
+      videoStatus={media.videoStatu}
+      audioStatus={media.audioStatu}
+      isScreenSharing={media.isScreenSharing}
+      unreadCommentCount={panels.unreadCommentCount}
+      endActionLabel={isHost ? "结束会议" : "离开会议"}
+      ending={endingMeeting}
+      onCloseParticipants={panels.closeParticipants}
+      onSelectParticipant={participantState.selectParticipant}
+      onCloseComment={panels.closeComment}
+      onToggleDevice={handleDeviceToggle}
+      onSwitchDevice={handleSwitchDevice}
+      onToggleScreenShare={() => void handleToggleScreenShare()}
+      onSendComment={handleSendComment}
+      onToggleComment={panels.toggleComment}
+      onToggleParticipants={panels.toggleParticipants}
+      onEndMeeting={() => void handleEndMeeting()}
+    />
   );
 }

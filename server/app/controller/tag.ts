@@ -4,7 +4,7 @@ import tag from "@/models/tag";
 const normalizeTagName = (name: unknown) =>
   typeof name === "string" ? name.trim() : "";
 
-const seedTagsFromNotes = async (userId: string) => {
+const readLegacyNoteTags = async (userId: string): Promise<string[]> => {
   const notes = await note.find({ userId, deletedAt: null }, "tags").lean();
   const uniqueNames = new Set<string>();
 
@@ -15,26 +15,22 @@ const seedTagsFromNotes = async (userId: string) => {
     });
   });
 
-  if (!uniqueNames.size) return;
-
-  await tag.insertMany(
-    Array.from(uniqueNames).map((name) => ({ userId, name })),
-    { ordered: false },
-  ).catch(() => null);
+  return Array.from(uniqueNames).sort((left, right) =>
+    left.localeCompare(right),
+  );
 };
 
-export const listTags = async (userId: string) => {
-  let tags = await tag.find({ userId }).sort({ name: 1 }).lean();
-
-  if (!tags.length) {
-    await seedTagsFromNotes(userId);
-    tags = await tag.find({ userId }).sort({ name: 1 }).lean();
-  }
-
-  return tags.map((item) => item.name);
+export const listTags = async (userId: string): Promise<string[]> => {
+  const tags = await tag.find({ userId }).sort({ name: 1 }).lean();
+  return tags.length > 0
+    ? tags.map((item) => item.name)
+    : readLegacyNoteTags(userId);
 };
 
-export const createTag = async (userId: string, name: string) => {
+export const createTag = async (
+  userId: string,
+  name: string,
+): Promise<string | null> => {
   const cleanName = normalizeTagName(name);
   if (!cleanName) return null;
 
@@ -47,7 +43,10 @@ export const createTag = async (userId: string, name: string) => {
   return cleanName;
 };
 
-export const deleteTag = async (userId: string, name: string) => {
+export const deleteTag = async (
+  userId: string,
+  name: string,
+): Promise<boolean> => {
   const cleanName = normalizeTagName(name);
   if (!cleanName) return false;
 
@@ -60,11 +59,20 @@ export const deleteTag = async (userId: string, name: string) => {
   return true;
 };
 
-export const syncUserTags = async (userId: string, names: unknown) => {
-  if (!Array.isArray(names) || !names.length) return;
+/**
+ * 将标签名称记录到用户的标签库中。
+ *
+ * 写入前会去除首尾空格、忽略空标签并合并重复项，然后通过 upsert 幂等写入。
+ * 此操作不会修改 Note 文档，也不会删除已不再被任何笔记使用的标签记录。
+ */
+export const recordUserTags = async (
+  userId: string,
+  tagNames?: readonly string[] | null,
+): Promise<void> => {
+  if (!tagNames?.length) return;
 
   const uniqueNames = Array.from(
-    new Set(names.map(normalizeTagName).filter(Boolean)),
+    new Set(tagNames.map(normalizeTagName).filter(Boolean)),
   );
 
   if (!uniqueNames.length) return;

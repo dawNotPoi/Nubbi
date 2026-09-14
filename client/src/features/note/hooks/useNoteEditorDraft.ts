@@ -15,6 +15,14 @@ type UseNoteEditorDraftOptions = {
   noteId?: string;
 };
 
+/**
+ * 笔记编辑器草稿管理 Hook。
+ * 管理标题、属性及正文的本地草稿状态，自动防抖保存，
+ * 追踪保存状态（空闲/保存中/已保存），并处理外部数据同步。
+ * @param data 服务端返回的笔记数据。
+ * @param defaultTitle 无标题时的默认标题。
+ * @param noteId 当前笔记 ID。
+ */
 export const useNoteEditorDraft = ({
   data,
   defaultTitle,
@@ -25,7 +33,7 @@ export const useNoteEditorDraft = ({
   const [title, setTitleState] = useState("");
   const [titleDebouncing, setTitleDebouncing] = useState(false);
   const [hasAutoSaved, setHasAutoSaved] = useState(false);
-  const activeNoteIdRef = useRef<string>();
+  const activeNoteIdRef = useRef<string | undefined>(undefined);
   const updatePropertiesRef = useRef(propertiesMutation.mutate);
   const {
     canApplyExternalContent,
@@ -50,13 +58,13 @@ export const useNoteEditorDraft = ({
       debounceWithControls(
         (
           nextNoteId: string,
+          parentId: string | null | undefined,
           nextTitle: string,
-          parentId?: string | null,
         ) => {
           setTitleDebouncing(false);
           updatePropertiesRef.current({
-            parentId: parentId ?? undefined,
             noteId: nextNoteId,
+            parentId,
             properties: { title: nextTitle },
           });
         },
@@ -130,12 +138,10 @@ export const useNoteEditorDraft = ({
       setTitleDebouncing(true);
       patchNotePropertiesCache({
         noteId,
-        properties: {
-          parentId: data?.parentId ?? null,
-          title: nextTitle,
-        },
+        parentId: data?.parentId,
+        properties: { title: nextTitle },
       });
-      debouncedUpdateTitle(noteId, nextTitle, data?.parentId);
+      debouncedUpdateTitle(noteId, data?.parentId, nextTitle);
     },
     [data?.parentId, debouncedUpdateTitle, patchNotePropertiesCache, noteId],
   );
@@ -145,8 +151,8 @@ export const useNoteEditorDraft = ({
       if (!noteId) return;
 
       updatePropertiesRef.current({
-        parentId: data?.parentId ?? undefined,
         noteId,
+        parentId: data?.parentId,
         properties,
       });
     },

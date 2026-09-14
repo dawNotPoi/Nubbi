@@ -23,5 +23,24 @@ services:
       - server_storage:/app/server/storage
     restart: unless-stopped
 
+  mcp:
+    build:
+      context: .
+      dockerfile: mcp/Dockerfile
+    environment:
+      MCP_ALLOWED_HOSTS: "${MCP_ALLOWED_HOSTS:-localhost,127.0.0.1}"
+      MCP_ALLOWED_ORIGINS: "${MCP_ALLOWED_ORIGINS:-}"
+      MCP_HOST: 0.0.0.0
+      MCP_PORT: 3100
+      MCP_TRANSPORT: http
+      NUBBI_API_URL: http://server:4000
+    ports:
+      - "${MCP_BIND_ADDRESS:-127.0.0.1}:${MCP_PORT:-3100}:3100/tcp"
+    expose:
+      - "3100"
+    depends_on:
+      - server
+    restart: unless-stopped
+
 volumes:
   server_storage:

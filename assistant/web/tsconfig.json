@@ -1,0 +1,10 @@
+{
+  // 工程引用入口：不直接编译任何文件，实际编译由 app 与 node 两个子配置承担。
+  "files": [],
+  "references": [
+    // 浏览器端源码（src/**）的编译配置。
+    { "path": "./tsconfig.app.json" },
+    // 构建工具（vite.config.ts、tailwind.config.ts）的编译配置。
+    { "path": "./tsconfig.node.json" }
+  ]
+}

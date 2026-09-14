@@ -32,7 +32,7 @@ export default function HeadingTOC({ editor }: { editor: Editor }) {
   const [headings, setHeadings] = useState<HeadingEntry[]>([]);
   const [activeId, setActiveId] = useState<number | null>(null);
   const [open, setOpen] = useState(false);
-  const closeTimer = useRef<ReturnType<typeof setTimeout>>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeRef = useRef<HTMLButtonElement>(null);
   const navRef = useRef<HTMLElement>(null);
 

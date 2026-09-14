@@ -45,6 +45,22 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+@media (max-width: 767px) {
+  .dn-editor {
+    border-radius: 0.75rem;
+  }
+
+  .dn-editor .dn-editor__content {
+    min-height: 280px;
+    padding: 1rem 0 5rem;
+    font-size: 16px;
+  }
+
+  .dn-editor .dn-editor__drag-handle {
+    display: none !important;
+  }
+}
+
 .dn-editor.dn-editor--preview {
   @apply h-auto overflow-visible rounded-none bg-transparent;
   --editor-bg: transparent;

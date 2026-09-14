@@ -1,4 +1,5 @@
 import { ObjectId } from "bson";
+import type { PaginatedResult, PaginationParams } from "./pagination";
 import request, { Get } from "./request";
 
 export type NoteSource = "user" | "agent";
@@ -139,8 +140,12 @@ export const getRecentNotes = async () => {
   return Get<Note[]>("note/recent");
 };
 
-export const getTrashNotes = async () => {
-  return Get<Note[]>("note/trash");
+export const getTrashNotes = async (pagination: PaginationParams = {}) => {
+  const response = await Get<PaginatedResult<Note>>(
+    "note/trash",
+    pagination,
+  );
+  return assertSuccess(response, "Failed to load trash notes");
 };
 
 export const getDirectChildren = async (parentId: string) => {

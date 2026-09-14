@@ -55,8 +55,8 @@ const ImagePopoverContent = ({
   );
 
   return (
-    <div className="w-[500px]  py-1 bg-white border rounded-md">
-      <header className="px-2 pt-1  flex gap-1 border-b">
+    <div className="w-[min(500px,calc(100vw-24px))] rounded-md border bg-white py-1">
+      <header className="flex gap-1 overflow-x-auto border-b px-2 pt-1 scrollbar-none">
         {tabs.map((tab) => (
           <button
             type="button"
@@ -107,7 +107,7 @@ const ImagePopoverContent = ({
               <Button
                 onClick={() => onEmbedUrl(link)}
                 type="primary"
-                className="w-[300px] mx-auto"
+                className="mx-auto w-full max-w-[300px]"
               >
                 {status === "done" ? "更新链接" : "嵌入图片"}
               </Button>
@@ -135,7 +135,7 @@ const ImagePopoverContent = ({
                   })
                 }
                 type="primary"
-                className="w-[300px] mx-auto"
+                className="mx-auto w-full max-w-[300px]"
               >
                 保存描述
               </Button>

@@ -1,6 +1,6 @@
 import { Extension } from "@tiptap/core";
 import { Fragment } from "@tiptap/pm/model";
-import { Plugin, PluginKey } from "@tiptap/pm/state";
+import { Plugin, PluginKey, Selection } from "@tiptap/pm/state";
 
 export const PasteMarkdownExtension = Extension.create({
   name: "pasteMarkdown",
@@ -39,9 +39,9 @@ export const PasteMarkdownExtension = Extension.create({
                 selection.to,
                 fragment,
               );
-              const endPos = selection.from + fragment.content.size;
+              const endPos = selection.from + fragment.size;
               tr = tr.setSelection(
-                state.selection.constructor.near(tr.doc.resolve(endPos)),
+                Selection.near(tr.doc.resolve(endPos)),
               );
               dispatch(tr);
               return true;

@@ -30,10 +30,6 @@ const meetingCommentSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-    email: {
-      type: String,
-      default: "",
-    },
   },
   {
     timestamps: true,

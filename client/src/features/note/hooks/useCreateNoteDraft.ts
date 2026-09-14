@@ -15,7 +15,6 @@ type SubmitDraftOptions = {
 };
 
 type UseCreateNoteDraftOptions = {
-  owner?: string;
   parent: Note;
 };
 
@@ -24,10 +23,7 @@ const DEFAULT_DRAFT_TITLE = "未命名文档";
 const normalizeDraftTitle = (title: string) =>
   title.trim() ? title : DEFAULT_DRAFT_TITLE;
 
-export const useCreateNoteDraft = ({
-  owner,
-  parent,
-}: UseCreateNoteDraftOptions) => {
+export const useCreateNoteDraft = ({ parent }: UseCreateNoteDraftOptions) => {
   const [targetNote, setTargetNote] = useState<Note | null>(parent);
   const [targetPickerOpen, setTargetPickerOpen] = useState(false);
   const [draftNote, setDraftNote] = useState<NoteWithContent | null>(null);
@@ -70,8 +66,8 @@ export const useCreateNoteDraft = ({
       debounceWithControls(
         (
           noteId: string,
+          parentId: string | null | undefined,
           nextTitle: string,
-          parentId?: string | null,
         ) => {
           if (!createdNoteIdsRef.current.has(noteId)) {
             pendingTitleSaveRef.current.set(noteId, {
@@ -82,15 +78,14 @@ export const useCreateNoteDraft = ({
           }
 
           updatePropertiesRef.current({
-            owner,
-            parentId: parentId ?? undefined,
             noteId,
+            parentId,
             properties: { title: nextTitle },
           });
         },
         300,
       ),
-    [owner],
+    [],
   );
 
   const debouncedUpdateContent = useMemo(
@@ -163,7 +158,7 @@ export const useCreateNoteDraft = ({
     setDraftNote(note);
     createdNoteIdsRef.current.delete(note._id);
     createNoteRef.current(
-      { owner, note },
+      { note },
       {
         onError: () => {
           createdNoteIdsRef.current.delete(note._id);
@@ -174,12 +169,11 @@ export const useCreateNoteDraft = ({
           createdNoteIdsRef.current.add(note._id);
 
           const pendingTitle = pendingTitleSaveRef.current.get(note._id);
-          if (pendingTitle) {
+          if (pendingTitle !== undefined) {
             pendingTitleSaveRef.current.delete(note._id);
             updatePropertiesRef.current({
-              owner,
-              parentId: pendingTitle.parentId ?? undefined,
               noteId: note._id,
+              parentId: pendingTitle.parentId,
               properties: { title: pendingTitle.title },
             });
           }
@@ -201,7 +195,7 @@ export const useCreateNoteDraft = ({
     );
 
     return note;
-  }, [owner, resolvedTargetNote]);
+  }, [resolvedTargetNote]);
 
   const selectParent = (nextParent: Note) => {
     targetChangedByUserRef.current = true;
@@ -218,9 +212,8 @@ export const useCreateNoteDraft = ({
     draftNoteRef.current = nextNote;
     setDraftNote(nextNote);
     updatePropertiesRef.current({
-      owner,
-      parentId: currentNote.parentId ?? undefined,
       noteId: currentNote._id,
+      parentId: currentNote.parentId,
       properties: { parentId: nextParent._id },
     });
   };
@@ -238,15 +231,15 @@ export const useCreateNoteDraft = ({
     setDraftNote(nextNote);
     patchNotePropertiesCache({
       noteId: currentNote._id,
+      parentId: currentNote.parentId,
       properties: {
-        parentId: currentNote.parentId ?? null,
         title: nextDraftTitle,
       },
     });
     debouncedUpdateTitle(
       currentNote._id,
-      nextDraftTitle,
       currentNote.parentId,
+      nextDraftTitle,
     );
   };
 

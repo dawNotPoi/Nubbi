@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { db } from "./db";
 import env from "./env";
 
+/** 邮箱验证码 MongoDB 文档结构 */
 type EmailVerificationCodeDocument = {
   email: string;
   codeHash: string;
@@ -13,12 +14,16 @@ type EmailVerificationCodeDocument = {
 };
 
 const EMAIL_VERIFICATION_COLLECTION = "email_verification_codes";
+/** 验证码长度（6 位数字） */
 const EMAIL_VERIFICATION_CODE_LENGTH = 6;
+/** 两次发送验证码的最小间隔（秒） */
 export const EMAIL_VERIFICATION_COOLDOWN_SECONDS = 60;
+/** 验证码最大错误尝试次数，超过后失效 */
 const EMAIL_VERIFICATION_MAX_ATTEMPTS = 5;
 
 let indexesEnsured = false;
 
+/** 获取邮箱验证码集合，首次访问时自动建立索引（包括 TTL 过期索引） */
 const getEmailVerificationCollection = async () => {
   const mongoDb = await db;
 
@@ -31,31 +36,37 @@ const getEmailVerificationCollection = async () => {
   );
 
   if (!indexesEnsured) {
-    indexesEnsured = true;
     await collection.createIndexes([
       { key: { email: 1, createdAt: -1 } },
       { key: { expiresAt: 1 }, expireAfterSeconds: 0 },
     ]);
+    indexesEnsured = true;
   }
 
   return collection;
 };
 
+/** 标准化邮箱地址：去空格、转小写 */
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
+/** 使用 SHA-256 哈希验证码，防止数据库泄露时直接还原明文验证码 */
 const hashVerificationCode = (email: string, code: string) =>
   crypto
     .createHash("sha256")
     .update(`${env.BETTER_AUTH_SECRET}:${normalizeEmail(email)}:${code}`)
     .digest("hex");
 
+/** 生成 6 位随机数字验证码 */
 const generateVerificationCode = () =>
   crypto
     .randomInt(0, 10 ** EMAIL_VERIFICATION_CODE_LENGTH)
     .toString()
     .padStart(EMAIL_VERIFICATION_CODE_LENGTH, "0");
 
-export const getEmailVerificationRemainingSeconds = async (email: string) => {
+/** 查询该邮箱距离上次发送验证码还剩多少冷却秒数（0 表示可立即发送） */
+export const getEmailVerificationRemainingSeconds = async (
+  email: string,
+): Promise<number> => {
   const collection = await getEmailVerificationCollection();
   const normalizedEmail = normalizeEmail(email);
   const now = new Date();
@@ -76,7 +87,10 @@ export const getEmailVerificationRemainingSeconds = async (email: string) => {
     : 0;
 };
 
-export const createEmailVerificationAttempt = async (email: string) => {
+/** 创建一次验证码发送尝试记录（仅占用冷却槽，不含验证码） */
+export const createEmailVerificationAttempt = async (
+  email: string,
+): Promise<void> => {
   const collection = await getEmailVerificationCollection();
   const normalizedEmail = normalizeEmail(email);
   const now = new Date();
@@ -92,14 +106,16 @@ export const createEmailVerificationAttempt = async (email: string) => {
     expiresAt,
     createdAt: now,
     usedAt: null,
+    failedAttempts: 0,
   });
 };
 
+/** 生成随机验证码，存储哈希值，返回明文（仅用于邮件发送） */
 export const createEmailVerificationCode = async (
   email: string,
   token: string,
   expiresInSeconds = 60 * 60 * 24,
-) => {
+): Promise<string> => {
   const emailVerificationCollection = await getEmailVerificationCollection();
   const normalizedEmail = normalizeEmail(email);
   const code = generateVerificationCode();
@@ -114,51 +130,51 @@ export const createEmailVerificationCode = async (
     expiresAt,
     createdAt: now,
     usedAt: null,
+    failedAttempts: 0,
   });
 
   return code;
 };
 
+/** 校验并消费验证码：匹配成功返回关联的 Better Auth token，失败计入尝试次数 */
 export const consumeEmailVerificationCode = async (
   email: string,
   code: string,
-) => {
+): Promise<string | null> => {
   const collection = await getEmailVerificationCollection();
   const normalizedEmail = normalizeEmail(email);
   const now = new Date();
 
-  const record = await collection.findOne({
+  const attemptFilter = {
     email: normalizedEmail,
     codeHash: { $ne: "" },
     expiresAt: { $gt: now },
     usedAt: null,
-  });
-
-  if (!record) return null;
-
-  if ((record.failedAttempts ?? 0) >= EMAIL_VERIFICATION_MAX_ATTEMPTS) {
-    return null;
-  }
-
-  if (record.codeHash !== hashVerificationCode(normalizedEmail, code)) {
-    const newFailedAttempts = (record.failedAttempts ?? 0) + 1;
-    const update: Record<string, unknown> = { failedAttempts: newFailedAttempts };
-    if (newFailedAttempts >= EMAIL_VERIFICATION_MAX_ATTEMPTS) {
-      update.usedAt = now;
-    }
-    await collection.updateOne(
-      { email: normalizedEmail, codeHash: record.codeHash, usedAt: null },
-      { $set: update },
-    );
-    return null;
-  }
-
-  const consumeResult = await collection.updateOne(
-    { email: normalizedEmail, codeHash: record.codeHash, usedAt: null },
+    $or: [
+      { failedAttempts: { $exists: false } },
+      { failedAttempts: { $lt: EMAIL_VERIFICATION_MAX_ATTEMPTS } },
+    ],
+  };
+  const record = await collection.findOneAndUpdate(
+    {
+      ...attemptFilter,
+      codeHash: hashVerificationCode(normalizedEmail, code),
+    },
     { $set: { usedAt: now } },
+    { returnDocument: "before" },
   );
+  if (record) return record.token;
 
-  if (consumeResult.modifiedCount !== 1) return null;
-
-  return record.token;
+  const failedRecord = await collection.findOneAndUpdate(
+    attemptFilter,
+    { $inc: { failedAttempts: 1 } },
+    { returnDocument: "after", sort: { createdAt: -1 } },
+  );
+  if ((failedRecord?.failedAttempts ?? 0) >= EMAIL_VERIFICATION_MAX_ATTEMPTS) {
+    await collection.updateOne(
+      { _id: failedRecord?._id, usedAt: null },
+      { $set: { usedAt: now } },
+    );
+  }
+  return null;
 };
