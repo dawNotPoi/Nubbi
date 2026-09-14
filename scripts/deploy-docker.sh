@@ -3,7 +3,7 @@ set -Eeuo pipefail
 
 BRANCH="${1:-${DEPLOY_BRANCH:-master}}"
 APP_DIR="${APP_DIR:-$(pwd)}"
-HEALTHCHECK_URL="${HEALTHCHECK_URL:-http://127.0.0.1/}"
+HEALTHCHECK_URL="${HEALTHCHECK_URL:-}"
 
 log() {
   printf '[docker-deploy] %s\n' "$*"
@@ -14,6 +14,46 @@ require_command() {
     printf '[docker-deploy] missing command: %s\n' "$1" >&2
     exit 1
   fi
+}
+
+get_env_value() {
+  awk -F= -v key="$1" '
+    $1 == key {
+      value = substr($0, index($0, "=") + 1)
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
+      gsub(/^"|"$/, "", value)
+      print value
+      exit
+    }
+  ' .env 2>/dev/null || true
+}
+
+resolve_healthcheck_url() {
+  if [ -n "$HEALTHCHECK_URL" ]; then
+    printf '%s\n' "$HEALTHCHECK_URL"
+    return
+  fi
+
+  local mapped_port
+  mapped_port="$(docker compose port client 80 2>/dev/null | tail -n 1 || true)"
+
+  if [ -n "$mapped_port" ]; then
+    printf 'http://127.0.0.1:%s/\n' "${mapped_port##*:}"
+    return
+  fi
+
+  local env_port
+  env_port="${WEB_PORT:-$(get_env_value WEB_PORT || true)}"
+  printf 'http://127.0.0.1:%s/\n' "${env_port:-80}"
+}
+
+print_diagnostics() {
+  log "containers"
+  docker compose ps || true
+  log "client logs"
+  docker compose logs --tail 80 client || true
+  log "server logs"
+  docker compose logs --tail 80 server || true
 }
 
 cd "$APP_DIR"
@@ -50,8 +90,22 @@ log "building and starting client and server containers"
 docker compose up -d --build --remove-orphans client server
 
 if command -v curl >/dev/null 2>&1; then
+  HEALTHCHECK_URL="$(resolve_healthcheck_url)"
   log "health checking: $HEALTHCHECK_URL"
-  curl -fsS --retry 10 --retry-delay 3 "$HEALTHCHECK_URL" >/dev/null
+
+  for attempt in $(seq 1 20); do
+    if curl -fsS "$HEALTHCHECK_URL" >/dev/null; then
+      break
+    fi
+
+    if [ "$attempt" = "20" ]; then
+      log "health check failed after $attempt attempts"
+      print_diagnostics
+      exit 1
+    fi
+
+    sleep 3
+  done
 fi
 
 log "containers"
