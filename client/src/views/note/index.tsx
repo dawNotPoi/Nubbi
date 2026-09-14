@@ -2,18 +2,15 @@ import TiptapEditor from "@/component/editor/Tiptap";
 import { Header } from "@/component/Header";
 import { useNoteEditorDraft } from "@/features/note/hooks/useNoteEditorDraft";
 import type { NoteSaveStatus } from "@/features/note/model/types";
-import {
-  noteAncestorsAtom,
-  noteDetailAtom,
-} from "@/store/atom/noteAtom";
+import { noteAncestorsAtom, noteDetailAtom } from "@/store/atom/noteAtom";
 import { useAtomValue } from "jotai";
 import { CheckCircle2, LoaderCircle } from "lucide-react";
 import { useMemo } from "react";
 import "react-markdown-editor-lite/lib/index.css";
 import { useParams } from "react-router-dom";
 import "./index.css";
-import NoteCard from "./NoteCard";
 import NoteBreadcrumb from "./NoteBreadcrumb";
+import NoteCard from "./NoteCard";
 import NoteMeta from "./NoteMeta";
 
 const DEFAULT_TITLE = "未命名文档";
@@ -109,7 +106,7 @@ export default function Note() {
       <main className="mt-10 w-full items-center">
         <div className="mx-auto w-[50%] min-w-[600px]">
           <input
-            className="w-full px-2 text-4xl font-extrabold outline-none"
+            className="w-full px-2  text-5xl font-extrabold outline-none"
             onChange={(event) => {
               setTitle(event.target.value);
             }}

@@ -54,6 +54,11 @@ export const getRootNotes = async (owner: string) => {
   return Get<Note[]>("note/roots", { owner });
 };
 
+// 获取全部笔记
+export const getAllNotes = async () => {
+  return Get<Note[]>("note/all");
+};
+
 //获取最近修改的笔记
 export const getRecentNotes = async () => {
   return Get<Note[]>("note/recent");
@@ -81,7 +86,17 @@ export async function updateNoteProperties(
     cover?: string;
   }
 ) {
-  return request<Note>("note/properties", { noteId, ...properties }, "put");
+  const response = await request<Note>(
+    "note/properties",
+    { noteId, ...properties },
+    "put",
+  );
+
+  if (response.code === 0) {
+    throw new Error(response.message || "属性更新失败");
+  }
+
+  return response;
 }
 
 // 删除笔记（支持单个和批量）

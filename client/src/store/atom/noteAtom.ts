@@ -26,6 +26,7 @@ import type {
 import {
   createNote,
   deleteNote,
+  getAllNotes,
   getDirectChildren,
   getNoteAncestors,
   getNoteDetail,
@@ -51,6 +52,22 @@ export const rootNotesAtom = atomFamily((owner: string) =>
       },
       enabled: Boolean(owner),
       staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+    }),
+    () => queryClient,
+  ),
+);
+
+export const allNotesAtom = atomFamily((owner: string) =>
+  atomWithQuery(
+    () => ({
+      queryKey: noteKeys.allList(owner),
+      queryFn: async () => {
+        const response = await getAllNotes();
+        return response.data || [];
+      },
+      enabled: Boolean(owner),
+      staleTime: 2 * 60 * 1000,
       gcTime: 10 * 60 * 1000,
     }),
     () => queryClient,

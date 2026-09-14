@@ -51,6 +51,7 @@ export const invalidateNoteListQuery = (
     queryClient.invalidateQueries({
       queryKey: noteListQueryKey({ parentId }),
     });
+    queryClient.invalidateQueries({ queryKey: noteKeys.allLists });
     return;
   }
 
@@ -58,9 +59,11 @@ export const invalidateNoteListQuery = (
     queryClient.invalidateQueries({
       queryKey: noteListQueryKey({ owner }),
     });
+    queryClient.invalidateQueries({ queryKey: noteKeys.allLists });
     return;
   }
 
+  queryClient.invalidateQueries({ queryKey: noteKeys.allLists });
   queryClient.invalidateQueries({ queryKey: noteKeys.rootLists });
 };
 
@@ -68,7 +71,8 @@ export const isNoteListQueryKey = (queryKey: readonly unknown[]) => {
   return (
     queryKey[0] === noteKeys.lists[0] &&
     queryKey[1] === noteKeys.lists[1] &&
-    (queryKey[2] === noteKeys.rootLists[2] ||
+    (queryKey[2] === noteKeys.allLists[2] ||
+      queryKey[2] === noteKeys.rootLists[2] ||
       queryKey[2] === noteKeys.childrenLists[2])
   );
 };
@@ -392,4 +396,5 @@ export const invalidateNotePropertiesUpdate = (
   }
   queryClient.invalidateQueries({ queryKey: noteKeys.ancestorsRoot });
   queryClient.invalidateQueries({ queryKey: noteKeys.recent() });
+  queryClient.invalidateQueries({ queryKey: noteKeys.allLists });
 };

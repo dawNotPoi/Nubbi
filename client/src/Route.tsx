@@ -16,7 +16,7 @@ import Home from "./views/home";
 import { LoginPage } from "./views/login";
 import MeetingAccessGuard from "./views/meeting-room/MeetingAccessGuard";
 import Meetings from "./views/meetings";
-import NoteTable from "./views/NoteTable";
+import NoteLibrary from "./views/NoteLibrary";
 import { ResetPasswordPage } from "./views/reset-password";
 
 const UserLayout = () => {
@@ -116,7 +116,7 @@ export const RouteWrapper = () => {
           >
             <Route path="home" element={<Home />} />
             <Route path="meetings" element={<Meetings />} />
-            <Route path="table" element={<NoteTable />} />
+            <Route path="note-lib" element={<NoteLibrary />} />
             <Route path="file/*" element={<FileManager />} />
             <Route path="note/:Id" element={<Note />} />
           </Route>

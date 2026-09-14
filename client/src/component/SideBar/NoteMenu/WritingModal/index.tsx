@@ -3,13 +3,16 @@ import { Modal } from "@/component/UI/Dialog";
 import { Divider } from "@/component/UI/Divider";
 import Popover from "@/component/UI/Popover";
 import TiptapEditor from "@/component/editor/Tiptap";
+import { NoteTargetPickerPanel } from "@/features/note/components/NoteTargetPicker";
 import { useCreateNoteDraft } from "@/features/note/hooks/useCreateNoteDraft";
+import { getRecentTargetNotes } from "@/features/note/model/library";
+import { allNotesAtom, recentNoteAtom } from "@/store/atom/noteAtom";
 import clsx from "clsx";
-import { cloneElement, useState } from "react";
+import { useAtomValue } from "jotai";
+import { cloneElement, useMemo, useState } from "react";
 import { Expand, FileText, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { IconButton } from "../../components";
-import { SearchNoteList } from "./SearchNodeList";
 
 const DEFAULT_TITLE = "未命名文档";
 
@@ -27,6 +30,15 @@ export const WrittingModal = ({
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const draft = useCreateNoteDraft({ owner, parent });
+  const { data: allNotes = [] } = useAtomValue(allNotesAtom(owner ?? ""));
+  const { data: recentNotes = [] } = useAtomValue(recentNoteAtom);
+  const addToTargets = useMemo(
+    () => getRecentTargetNotes(recentNotes, allNotes),
+    [allNotes, recentNotes],
+  );
+  const blockedTargetIds = useMemo(() => {
+    return new Set(draft.draftNote ? [draft.draftNote._id] : []);
+  }, [draft.draftNote]);
 
   const closeModal = () => {
     draft.resetDraft();
@@ -79,7 +91,7 @@ export const WrittingModal = ({
             </IconButton>
             <Divider orientation="vertical" className="mx-1 my-2 h-5" />
             <Popover
-              className="rounded-xl border border-neutral-200 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.12)]"
+              className="overflow-hidden rounded-xl border border-[#deddda] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.12)]"
               onClickOutside={() => {
                 draft.setTargetPickerOpen(false);
               }}
@@ -104,9 +116,16 @@ export const WrittingModal = ({
                 </button>
               }
             >
-              <SearchNoteList
-                onChange={draft.selectParent}
+              <NoteTargetPickerPanel
+                autoFocus
+                blockedIds={blockedTargetIds}
+                className="h-[360px] w-[360px]"
+                emptyMessage="暂无可添加的位置"
+                onCancel={() => draft.setTargetPickerOpen(false)}
+                onSelect={draft.selectParent}
+                placeholder="添加到..."
                 selectedId={draft.targetNote?._id}
+                targets={addToTargets}
               />
             </Popover>
           </div>

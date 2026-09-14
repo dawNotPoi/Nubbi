@@ -6,6 +6,8 @@ export type NoteListScope = {
 export const noteKeys = {
   all: ["notes"] as const,
   lists: ["notes", "list"] as const,
+  allLists: ["notes", "list", "all"] as const,
+  allList: (owner: string) => ["notes", "list", "all", owner] as const,
   rootLists: ["notes", "list", "root"] as const,
   root: (owner: string) => ["notes", "list", "root", owner] as const,
   childrenLists: ["notes", "list", "children"] as const,

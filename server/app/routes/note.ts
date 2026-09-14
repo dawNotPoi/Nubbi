@@ -6,12 +6,14 @@ import { createNote } from "../controller/note/create";
 import { deleteNote } from "../controller/note/delete";
 import {
   getDirectChildren,
+  getAllNotes,
   getNoteAncestors,
   getNoteById,
   getNotes,
   getRecentNotes,
   getRootNotes,
   searchNotes,
+  validateNoteMoveTarget,
   validateNoteUser,
 } from "../controller/note/query";
 import { updateNoteContent, updateNoteMeta } from "../controller/note/update";
@@ -31,7 +33,7 @@ router.post(
     z.object({
       title: z.string(),
       content: z.string().optional(),
-      parentId: z.string().optional(),
+      parentId: z.string().nullable().optional(),
       meta: z.record(z.any()).optional(),
     }),
   ),
@@ -83,8 +85,30 @@ router.put(
     if (!(await validateNoteUser(user.id, noteId))) {
       throw Object.assign(new Error("Unauthorized"), { status: 401 });
     }
+    if (
+      Object.prototype.hasOwnProperty.call(properties, "parentId") &&
+      !(await validateNoteMoveTarget({
+        noteId,
+        parentId: properties.parentId,
+        userId: user.id,
+      }))
+    ) {
+      throw Object.assign(new Error("不能移动到自身或子级"), {
+        status: 400,
+      });
+    }
     const result = await updateNoteMeta(noteId, properties);
     successResponse(res, result, "属性更新成功");
+  }),
+);
+
+router.get(
+  "/all",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const owner = await getUser(req);
+    const result = await getAllNotes(owner.id);
+    successResponse(res, result, "查询成功");
   }),
 );
 

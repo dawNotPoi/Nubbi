@@ -77,6 +77,13 @@ export const getRootNotes = async (userId: string) => {
     .select("-content");
 };
 
+export const getAllNotes = async (userId: string) => {
+  return await note
+    .find({ userId })
+    .sort({ updatedAt: -1, createdAt: -1 })
+    .select("-content");
+};
+
 // 根据标签查询笔记
 export const findNotesByTags = async (tags: string[]) => {
   return await note
@@ -149,6 +156,60 @@ export const validateNoteUser = async (userId: string, noteId: string) => {
   const Result = await note.findById(noteId);
   if (Result?.userId === userId) return true;
   else return false;
+};
+
+export const validateNoteMoveTarget = async ({
+  noteId,
+  parentId,
+  userId,
+}: {
+  noteId: string;
+  parentId?: string | null;
+  userId: string;
+}) => {
+  if (!parentId) return true;
+  if (parentId === noteId) return false;
+
+  try {
+    const targetNote = await note
+      .findById(parentId)
+      .select("parentId userId")
+      .lean();
+
+    if (!targetNote || targetNote.userId !== userId) {
+      return false;
+    }
+
+    const visitedNoteIds = new Set<string>();
+    let currentParentId = targetNote.parentId
+      ? String(targetNote.parentId)
+      : null;
+
+    while (currentParentId) {
+      if (currentParentId === noteId || visitedNoteIds.has(currentParentId)) {
+        return false;
+      }
+
+      visitedNoteIds.add(currentParentId);
+
+      const parentNote = await note
+        .findById(currentParentId)
+        .select("parentId userId")
+        .lean();
+
+      if (!parentNote || parentNote.userId !== userId) {
+        return false;
+      }
+
+      currentParentId = parentNote.parentId
+        ? String(parentNote.parentId)
+        : null;
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
 };
 
 export const searchNotes = async (userId: string, title: string) => {

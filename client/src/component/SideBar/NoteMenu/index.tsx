@@ -75,7 +75,7 @@ export default function NoteMenu() {
             label: "Open note library",
             icon: <ListTree className="size-3.5" />,
             onClick: () => {
-              navigate(routes.table);
+              navigate(routes.noteLib);
             },
           },
           {

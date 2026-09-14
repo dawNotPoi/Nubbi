@@ -147,11 +147,12 @@ type Response = SuccessEnvelope<NoteDocument | null>;
 
 - `401` 未登录
 - `400` `noteId` 缺失
+- `400` 目标 `parentId` 是当前笔记自身或其子级
 - `401` 笔记归属校验失败
 
 备注：
 
-- 这里同样存在 `validateNoteUser()` 未 `await` 的风险。
+- 移动笔记时会通过 `validateNoteMoveTarget()` 沿目标父链向上校验，避免把父节点移动到自身或子节点下形成循环。
 
 后端流程图：
 
@@ -163,8 +164,10 @@ flowchart TD
   C -- 是 --> D[校验 body]
   D --> E{validateNoteUser}
   E -- 否 --> Y([返回 Unauthorized])
-  E -- 是 --> F[updateNoteMeta]
-  F --> G([successResponse 返回更新结果])
+  E -- 是 --> F{parentId 是否是合法移动目标}
+  F -- 否 --> X([返回 400])
+  F -- 是 --> G[updateNoteMeta]
+  G --> H([successResponse 返回更新结果])
 ```
 
 ### `GET /note/roots`
@@ -201,6 +204,41 @@ flowchart TD
   C -- 否 --> Z([返回 400])
   C -- 是 --> D[getRootNotes(owner)]
   D --> E([successResponse 返回列表])
+```
+
+### `GET /note/all`
+
+- 鉴权要求：需要登录
+- 源码：[server/app/routes/note.ts](/e:/Code/D-NOTE/server/app/routes/note.ts)
+- 作用：查询当前登录用户的全部笔记，不区分根节点、父节点或子节点，用于 Notes 库页的全量列表
+
+请求参数：
+
+```ts
+type Query = {};
+```
+
+成功响应：
+
+```ts
+type Response = SuccessEnvelope<NoteSummary[]>;
+```
+
+常见错误：
+
+- `401` 未登录
+- `500` 查询失败
+
+后端流程图：
+
+```mermaid
+flowchart TD
+  A([收到请求]) --> B[requireAuth]
+  B --> C{已登录?}
+  C -- 否 --> Z([返回 401])
+  C -- 是 --> D[getUser(req)]
+  D --> E[getAllNotes(user.id)]
+  E --> F([successResponse 返回全部笔记摘要])
 ```
 
 ### `GET /note/children`

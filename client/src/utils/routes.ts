@@ -3,7 +3,7 @@ export const routes = {
   login: "/login",
   meetings: "/meetings",
   file: "/file",
-  table: "/table",
+  noteLib: "/note-lib",
   note: (id: string) => `/note/${id}`,
 };
 
