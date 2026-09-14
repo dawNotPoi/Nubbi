@@ -9,6 +9,8 @@ import { FileUploadError } from "./errors";
 import { assertOwnedUploadFolder } from "./folderValidation";
 import { removeUnreferencedUploadFile } from "./storageCleanup";
 import { getActiveUploadTaskGuard } from "./taskPolicy";
+import type { UploadedFileDto } from "./types";
+import { serializeUploadedFile } from "./file-dto";
 
 type FinalizeTask = {
   _id: unknown;
@@ -24,7 +26,7 @@ export const finalizeUploadFile = (
   ownerId: string,
   task: FinalizeTask,
   storagePath: string,
-) => withFileFolderStructureLock(ownerId, async () => {
+): Promise<UploadedFileDto> => withFileFolderStructureLock(ownerId, async () => {
   let ownsLease = false;
   try {
     const cutoff = new Date();
@@ -80,7 +82,7 @@ export const finalizeUploadFile = (
     if (completed.matchedCount === 0) {
       throw new FileUploadError(409, "UPLOAD_EXPIRED", "上传合并租约已失效");
     }
-    return file;
+    return serializeUploadedFile(file);
   } catch (error) {
     if (ownsLease) {
       await removeUnreferencedUploadFile(storagePath).catch((cleanupError) => {

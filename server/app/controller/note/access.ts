@@ -1,5 +1,6 @@
+import { httpError } from "@/common/http-error";
 import Note from "@/models/note";
-import { httpError } from "@/controller/mcp/shared";
+import NotePurgeTask from "@/models/notePurgeTask";
 
 export type NoteAccessSnapshot = {
   id: string;
@@ -33,6 +34,21 @@ export const getOwnedNoteSnapshot = async (
     updatedAt: item.updatedAt ?? null,
     deletedAt: item.deletedAt ?? null,
   };
+};
+
+export const assertOwnedNote = getOwnedNoteSnapshot;
+
+export const assertNotesNotPendingPurge = async (
+  userId: string,
+  noteIds: readonly string[],
+): Promise<void> => {
+  const pendingPurge = await NotePurgeTask.exists({
+    userId,
+    targetIds: { $in: noteIds },
+  });
+  if (pendingPurge) {
+    throw httpError(409, "Note purge is still in progress");
+  }
 };
 
 export const assertAgentNote = async (

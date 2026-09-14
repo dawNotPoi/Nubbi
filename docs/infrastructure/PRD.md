@@ -14,7 +14,7 @@
 
 | 文件 | 导出 | 用途 |
 |------|------|------|
-| `middleware/session.ts` | `requireAuth` | Bearer Token 解析，注入用户信息到 `req` |
+| `middleware/session.ts` | `requireAuth` | Session/JWT/API Key 解析，注入用户信息到 `req` |
 | `middleware/validator.ts` | `validate`, `validateQuery`, `validateParams` | Zod schema 验证 |
 | `middleware/common.ts` | `asyncHandler` | 异步错误自动捕获（替代 try-catch） |
 | `middleware/common.ts` | `errorHandler` | 全局错误处理，统一错误响应格式 |
@@ -33,8 +33,20 @@
 
 | 文件 | 用途 |
 |------|------|
-| `socket/userHandler.ts` | 用户在线状态、私密消息 |
-| `socket/P2PHandler.ts` | 会议室 WebRTC 信令 |
+| `socket/user-handler.ts` | 用户在线人数状态 |
+| `socket/authentication.ts` | Socket Session/JWT 握手认证 |
+| `socket/meeting/` | 会议室 WebRTC 信令和房间状态 |
+
+HTTP 与 Socket CORS 只允许 `env` 中声明的可信 Origin；无 Origin 的服务端或
+同源调用可继续使用。请求日志只记录脱敏后的 pathname，不记录 query string，
+并遮蔽 Better-Auth 密码重置路径中的 Token。服务端 500 响应不回传内部异常消息。
+生产环境仅保留 Better-Auth 警告和错误日志，认证日志中的 Token、Cookie、
+验证码、密码和密钥字段统一脱敏，主消息和附加参数使用同一套脱敏规则。
+`TRUST_PROXY_HOPS` 默认是 `0`；仅当服务端位于确定数量的受控反向代理后方时，
+才按实际代理层数设置为 `1`–`5`，认证发码限流据此读取可信客户端 IP。
+全局错误处理只接受 400–599 的数字状态码，并兼容 Better Auth 的
+`statusCode`；无效状态不会直接传入 Express。会议 Socket 的 ack 和事件
+payload 都执行运行时校验，遗留的跨 socket 私密转发事件已移除。
 
 ---
 

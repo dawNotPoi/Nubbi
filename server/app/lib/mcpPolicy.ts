@@ -10,6 +10,8 @@ export const MCP_NOTE_ACTIONS = [
   "restore",
 ] as const;
 
+export type McpNoteAction = (typeof MCP_NOTE_ACTIONS)[number];
+
 export const MCP_TOKEN_METADATA = {
   kind: "mcp",
   policyVersion: MCP_POLICY_VERSION,

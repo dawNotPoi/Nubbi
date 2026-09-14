@@ -18,7 +18,7 @@ import type { Response } from "express";
 export const signedStreamPreviewController = async (
   req: AuthRequest,
   res: Response,
-) => {
+): Promise<Response | void> => {
   const fileId = normalizeRouteParam(req.params.fileId);
   if (!fileId) {
     return res.status(400).json({ message: "文件 id 不能为空" });
@@ -69,7 +69,7 @@ export const signedStreamPreviewController = async (
 export const publicDownloadController = async (
   req: AuthRequest,
   res: Response,
-) => {
+): Promise<Response | void> => {
   const fileId = normalizeRouteParam(req.params.fileId);
   if (!fileId) {
     return res.status(400).json({ message: "文件 id 不能为空" });
@@ -94,7 +94,7 @@ export const publicDownloadController = async (
 export const downloadFileController = async (
   req: AuthRequest,
   res: Response,
-) => {
+): Promise<Response | void> => {
   const fileId = normalizeRouteParam(req.params.fileId);
   if (!fileId) {
     return res.status(400).json({ message: "文件 id 不能为空" });
@@ -112,7 +112,7 @@ export const downloadFileController = async (
 export const previewFileController = async (
   req: AuthRequest,
   res: Response,
-) => {
+): Promise<Response | void> => {
   const fileId = normalizeRouteParam(req.params.fileId);
   if (!fileId) {
     return res.status(400).json({ message: "文件 id 不能为空" });

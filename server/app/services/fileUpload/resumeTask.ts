@@ -1,15 +1,15 @@
 import { UploadTask } from "@/models/file/uploadTask";
 import { fileUploadConfig } from "./config";
 import { FileUploadError } from "./errors";
-import type { InitUploadInput } from "./schemas";
 import { getActiveUploadTaskGuard } from "./taskPolicy";
+import type { InitUploadInput, UploadProgressDto } from "./types";
 
 export const resumeUploadTaskUnlocked = async (
   ownerId: string,
   uploadId: string,
   input: InitUploadInput,
   cutoff: Date,
-) => {
+): Promise<UploadProgressDto | null> => {
   const task = await UploadTask.findOne({
     _id: uploadId,
     ownerId,

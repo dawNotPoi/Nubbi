@@ -1,6 +1,6 @@
 import { authorizedFetch } from "@/utils/auth";
 
-type ApiResponse<T> = {
+export type ApiResponse<T> = {
   code: 0 | 1;
   data: T;
   message: string;

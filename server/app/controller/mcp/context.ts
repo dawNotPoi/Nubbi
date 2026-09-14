@@ -1,8 +1,27 @@
-import { MCP_LIMITS, MCP_NOTE_ACTIONS } from "@/lib/mcpPolicy";
+import {
+  MCP_LIMITS,
+  MCP_NOTE_ACTIONS,
+  type McpNoteAction,
+} from "@/lib/mcpPolicy";
 import type { RequestAuthContext } from "@/middleware/common";
 import { httpError, toIsoString } from "./shared";
 
-export const getMcpContext = (context?: RequestAuthContext) => {
+export type McpContextResult = {
+  user: { id: string };
+  token: {
+    id: string;
+    name: string | null;
+    kind: "mcp";
+    policyVersion: unknown;
+    expiresAt: string | null;
+  };
+  capabilities: { note: McpNoteAction[] };
+  limits: typeof MCP_LIMITS;
+};
+
+export const getMcpContext = (
+  context?: RequestAuthContext,
+): McpContextResult => {
   if (context?.method !== "apiKey" || !context.apiKey) {
     throw httpError(401, "An MCP Agent API key is required");
   }

@@ -5,19 +5,19 @@ import { getActiveUploadTaskGuard } from "./taskPolicy";
 
 export const MERGE_LEASE_MS = 5 * 60 * 1000;
 
-export const getMergeLeaseExpiry = (now: Date) =>
+export const getMergeLeaseExpiry = (now: Date): Date =>
   new Date(now.getTime() + MERGE_LEASE_MS);
 
 export const isMergeLeaseActive = (
   expiresAt: Date | null | undefined,
   cutoff: Date,
-) => Boolean(expiresAt && expiresAt > cutoff);
+): boolean => Boolean(expiresAt && expiresAt > cutoff);
 
 export const startMergeLeaseRenewal = (
   ownerId: string,
   uploadId: string,
   mergeToken: string,
-) => {
+): (() => void) => {
   const timer = setInterval(() => {
     const cutoff = new Date();
     void UploadTask.updateOne(

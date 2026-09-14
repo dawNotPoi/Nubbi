@@ -1,12 +1,16 @@
-import note from "@/models/note";
-import { recalculateHasChildren } from "./update";
-import { withNoteStructureLock } from "./structureLock";
+import { httpError } from "@/common/http-error";
+import note, { type NoteDocument } from "@/models/note";
+import notePurgeTask from "@/models/notePurgeTask";
+import { completePendingNotePurge } from "@/services/note/purge";
+import { withNoteStructureLock } from "@/services/note/structure-lock";
+import { assertNotesNotPendingPurge } from "./access";
+import { recalculateHasChildren } from "./structure-update";
 
 export const collectDescendantNoteIds = async (
   noteId: string,
   userId: string,
   includeDeleted = false,
-) => {
+): Promise<string[]> => {
   const descendantIds: string[] = [];
   const visitedIds = new Set([noteId]);
   let parentIds = [noteId];
@@ -34,13 +38,16 @@ export const collectDescendantNoteIds = async (
   return descendantIds;
 };
 
-const deleteNoteUnlocked = async (noteId: string, userId: string) => {
+const deleteNoteUnlocked = async (
+  noteId: string,
+  userId: string,
+): Promise<NoteDocument | null> => {
   const targetNote = await note
     .findOne({ _id: noteId, userId, deletedAt: null })
     .select("parentId")
     .lean();
 
-  if (!targetNote) return null;
+  if (!targetNote) throw httpError(404, "Note not found");
 
   const deletedAt = new Date();
   const descendantIds = await collectDescendantNoteIds(noteId, userId);
@@ -51,26 +58,30 @@ const deleteNoteUnlocked = async (noteId: string, userId: string) => {
     { $set: { deletedAt } },
   );
 
-  await recalculateHasChildren(targetNote.parentId);
+  await recalculateHasChildren(targetNote.parentId, userId);
 
-  return await note.findById(noteId);
+  return await note.findOne({ _id: noteId, userId });
 };
 
-export const deleteNote = async (noteId: string, userId: string) =>
+export const deleteNote = async (
+  noteId: string,
+  userId: string,
+): Promise<NoteDocument | null> =>
   withNoteStructureLock(userId, () => deleteNoteUnlocked(noteId, userId));
 
-const restoreNoteUnlocked = async (noteId: string, userId: string) => {
+const restoreNoteUnlocked = async (
+  noteId: string,
+  userId: string,
+): Promise<NoteDocument | null> => {
   const targetNote = await note
     .findOne({ _id: noteId, userId })
     .select("parentId deletedAt")
     .lean();
 
-  if (!targetNote) return null;
+  if (!targetNote) throw httpError(404, "Note not found");
 
   if (!targetNote.deletedAt) {
-    throw Object.assign(new Error("Only trashed notes can be restored"), {
-      status: 400,
-    });
+    throw httpError(400, "Only trashed notes can be restored");
   }
 
   if (targetNote.parentId) {
@@ -80,51 +91,80 @@ const restoreNoteUnlocked = async (noteId: string, userId: string) => {
       .lean();
 
     if (!parentNote || parentNote.deletedAt) {
-      throw Object.assign(
-        new Error("Cannot restore note while its parent is in trash"),
-        { status: 400 },
+      throw httpError(
+        400,
+        "Cannot restore note while its parent is in trash",
       );
     }
   }
 
   const descendantIds = await collectDescendantNoteIds(noteId, userId, true);
   const targetIds = [noteId, ...descendantIds];
+  await assertNotesNotPendingPurge(userId, targetIds);
 
   await note.updateMany(
     { _id: { $in: targetIds }, userId },
     { $set: { deletedAt: null, expiresAt: null } },
   );
 
-  await recalculateHasChildren(targetNote.parentId);
+  await recalculateHasChildren(targetNote.parentId, userId);
 
-  return await note.findById(noteId);
+  return await note.findOne({ _id: noteId, userId });
 };
 
-export const restoreNote = async (noteId: string, userId: string) =>
+export const restoreNote = async (
+  noteId: string,
+  userId: string,
+): Promise<NoteDocument | null> =>
   withNoteStructureLock(userId, () => restoreNoteUnlocked(noteId, userId));
 
-const purgeNoteUnlocked = async (noteId: string, userId: string) => {
-  const targetNote = await note
-    .findOne({ _id: noteId, userId })
-    .select("parentId deletedAt")
-    .lean();
+const purgeNoteUnlocked = async (
+  noteId: string,
+  userId: string,
+): Promise<{ deletedCount: number }> => {
+  let task = await notePurgeTask.findOne({
+    userId,
+    rootNoteId: noteId,
+  });
 
-  if (!targetNote) return null;
+  if (!task) {
+    const targetNote = await note
+      .findOne({ _id: noteId, userId })
+      .select("parentId deletedAt")
+      .lean();
 
-  if (!targetNote.deletedAt) {
-    throw Object.assign(new Error("Only trashed notes can be purged"), {
-      status: 400,
-    });
+    if (!targetNote) throw httpError(404, "Note not found");
+    if (!targetNote.deletedAt) {
+      throw httpError(400, "Only trashed notes can be purged");
+    }
+
+    const descendantIds = await collectDescendantNoteIds(
+      noteId,
+      userId,
+      true,
+    );
+    task = await notePurgeTask.findOneAndUpdate(
+      { userId, rootNoteId: noteId },
+      {
+        $setOnInsert: {
+          userId,
+          rootNoteId: noteId,
+          targetIds: [noteId, ...descendantIds],
+          parentId: targetNote.parentId,
+        },
+      },
+      { new: true, upsert: true },
+    );
   }
+  if (!task) throw httpError(500, "Failed to prepare note purge");
 
-  const descendantIds = await collectDescendantNoteIds(noteId, userId, true);
-  const targetIds = [noteId, ...descendantIds];
-
-  await note.deleteMany({ _id: { $in: targetIds }, userId });
-  await recalculateHasChildren(targetNote.parentId);
-
-  return { deletedCount: targetIds.length };
+  const result = await completePendingNotePurge(userId, noteId);
+  if (!result) throw httpError(500, "Failed to find note purge task");
+  return result;
 };
 
-export const purgeNote = async (noteId: string, userId: string) =>
+export const purgeNote = async (
+  noteId: string,
+  userId: string,
+): Promise<{ deletedCount: number }> =>
   withNoteStructureLock(userId, () => purgeNoteUnlocked(noteId, userId));

@@ -1,14 +1,15 @@
 import logger from "@/common/logger";
+import { waitForAll } from "@/common/promises";
 import { UploadTask } from "@/models/file/uploadTask";
 import { withFileFolderStructureLock } from "@/services/fileManagement/structureLock";
 import fse from "fs-extra";
 import path from "path";
+import { expectedChunkBytes } from "./chunk-math";
 import { fileUploadConfig } from "./config";
 import { FileUploadError } from "./errors";
 import { finalizeUploadFile } from "./finalizeTask";
 import { claimUploadForMerge } from "./mergeClaim";
 import { startMergeLeaseRenewal } from "./mergeLease";
-import { expectedChunkBytes } from "./schemas";
 import { mergeTaskChunks } from "./storage";
 import {
   removeUnreferencedUploadFile,
@@ -18,18 +19,27 @@ import {
   getActiveUploadTaskGuard,
   isUploadTaskExpired,
 } from "./taskPolicy";
+import type {
+  StoreUploadChunkInput,
+  StoreUploadChunkResult,
+  UploadedFileDto,
+} from "./types";
 
 const nextExpiry = () => new Date(Date.now() + fileUploadConfig.taskTtlMs);
+const UPLOAD_MERGE_FAILED_MESSAGE = "文件合并失败，请稍后重试";
 
 const cleanupFailedMerge = async (
   ownerId: string,
   uploadId: string,
   storagePath: string,
 ) => {
-  await Promise.all([
-    removeUnreferencedUploadFile(storagePath),
-    removeUploadStagingFiles(ownerId, uploadId),
-  ]).catch((error) => {
+  await waitForAll(
+    [
+      removeUnreferencedUploadFile(storagePath),
+      removeUploadStagingFiles(ownerId, uploadId),
+    ],
+    "上传失败后的物理文件清理未全部完成",
+  ).catch((error) => {
     logger.warn("上传失败后的物理文件清理失败", {
       uploadId,
       storagePath,
@@ -71,19 +81,13 @@ const failClaimedMerge = (
   );
 });
 
-type StoreChunkInput = {
-  ownerId: string;
-  uploadId: string;
-  chunkIndex: number;
-  incomingFile: Express.Multer.File;
-};
-
 export const storeUploadChunk = ({
   ownerId,
   uploadId,
   chunkIndex,
   incomingFile,
-}: StoreChunkInput) => withFileFolderStructureLock(ownerId, async () => {
+}: StoreUploadChunkInput): Promise<StoreUploadChunkResult> =>
+  withFileFolderStructureLock(ownerId, async () => {
   const cutoff = new Date();
   const task = await UploadTask.findOne({ _id: uploadId, ownerId });
   if (!task) {
@@ -122,13 +126,22 @@ export const storeUploadChunk = ({
     },
   );
   if (update.matchedCount === 0) {
-    await fse.remove(chunkPath);
+    await fse.remove(chunkPath).catch((error: unknown) => {
+      logger.warn("不可写分片的临时文件清理失败", {
+        uploadId,
+        chunkPath,
+        error,
+      });
+    });
     throw new FileUploadError(409, "UPLOAD_NOT_WRITABLE", "上传任务当前不可写入");
   }
   return { chunkIndex };
-});
+  });
 
-export const completeUpload = async (ownerId: string, uploadId: string) => {
+export const completeUpload = async (
+  ownerId: string,
+  uploadId: string,
+): Promise<UploadedFileDto> => {
   const claimed = await claimUploadForMerge(ownerId, uploadId);
   if (claimed.completedFile) return claimed.completedFile;
   const task = claimed.task!;
@@ -143,21 +156,34 @@ export const completeUpload = async (ownerId: string, uploadId: string) => {
   try {
     storagePath = await mergeTaskChunks(task);
     const file = await finalizeUploadFile(ownerId, task, storagePath);
-    await Promise.all([
-      fse.remove(task.tempDir),
-      removeUploadStagingFiles(ownerId, uploadId),
-    ]).catch((error) => {
+    await waitForAll(
+      [
+        fse.remove(task.tempDir),
+        removeUploadStagingFiles(ownerId, uploadId),
+      ],
+      "上传完成后临时文件清理未全部完成",
+    ).catch((error) => {
       logger.warn("上传完成后临时文件清理失败", { uploadId, error });
     });
     return file;
   } catch (error) {
-    const message = error instanceof Error ? error.message : "文件合并失败";
+    const publicError =
+      error instanceof FileUploadError
+        ? error
+        : new FileUploadError(
+            500,
+            "UPLOAD_MERGE_FAILED",
+            UPLOAD_MERGE_FAILED_MESSAGE,
+          );
+    if (!(error instanceof FileUploadError)) {
+      logger.error("文件合并失败", { ownerId, uploadId, error });
+    }
     await failClaimedMerge(
       ownerId,
       uploadId,
       mergeToken,
       storagePath,
-      message,
+      publicError.message,
     ).catch((cleanupError) => {
       logger.warn("未能获取物理文件清理锁", {
         uploadId,
@@ -165,7 +191,7 @@ export const completeUpload = async (ownerId: string, uploadId: string) => {
         error: cleanupError,
       });
     });
-    throw error;
+    throw publicError;
   } finally {
     stopLeaseRenewal();
   }

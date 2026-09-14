@@ -1,7 +1,14 @@
-import type { FileListInput } from "./schemas";
+import type { FileListInput } from "./input-types";
 
 type MongoFilter = Record<string, unknown>;
 type SortDirection = 1 | -1;
+
+export type PageSlices = {
+  folderSkip: number;
+  folderLimit: number;
+  fileSkip: number;
+  fileLimit: number;
+};
 
 const extensionFilter = (extensions: string[]): MongoFilter => ({
   extension: {
@@ -65,7 +72,7 @@ export const buildPageSlices = (
   folderCount: number,
   offset: number,
   limit: number,
-) => {
+): PageSlices => {
   const folderSkip = Math.min(offset, folderCount);
   const folderLimit = Math.max(0, Math.min(limit, folderCount - folderSkip));
   const fileSkip = Math.max(0, offset - folderCount);

@@ -2,6 +2,10 @@ import nodemailer from "nodemailer";
 import logger from "@/common/logger";
 import env from "./env";
 
+export type EmailSendResult =
+  | { success: true }
+  | { success: false; error: unknown };
+
 const transporter = env.SMTP_HOST
   ? nodemailer.createTransport({
       host: env.SMTP_HOST,
@@ -23,7 +27,7 @@ const transporter = env.SMTP_HOST
 export const sendVerificationEmail = async (
   to: string,
   verificationCode: string,
-) => {
+): Promise<EmailSendResult> => {
   const mailOptions = {
     from: env.EMAIL_FROM,
     to,
@@ -59,7 +63,7 @@ export const sendVerificationEmail = async (
 export const sendRegisterVerificationEmail = async (
   to: string,
   verificationCode: string,
-) => {
+): Promise<EmailSendResult> => {
   const mailOptions = {
     from: env.EMAIL_FROM,
     to,
@@ -95,7 +99,7 @@ export const sendRegisterVerificationEmail = async (
 export const sendAccountDeletionVerificationEmail = async (
   to: string,
   verificationCode: string,
-) => {
+): Promise<EmailSendResult> => {
   const mailOptions = {
     from: env.EMAIL_FROM,
     to,
@@ -128,7 +132,10 @@ export const sendAccountDeletionVerificationEmail = async (
   }
 };
 
-export const sendPasswordResetEmail = async (to: string, resetCode: string) => {
+export const sendPasswordResetEmail = async (
+  to: string,
+  resetCode: string,
+): Promise<EmailSendResult> => {
   const mailOptions = {
     from: env.EMAIL_FROM,
     to,

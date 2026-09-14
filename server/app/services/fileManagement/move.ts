@@ -1,6 +1,11 @@
+import { httpError } from "@/common/http-error";
 import { File } from "@/models/file/file";
 import { Folder } from "@/models/file/folder";
-import type { MoveBatchInput, MoveFileInput, MoveTarget } from "./schemas";
+import type {
+  MoveBatchInput,
+  MoveFileInput,
+  MoveTarget,
+} from "./input-types";
 import { withFileFolderStructureLock } from "./structureLock";
 import {
   isInvalidFolderTarget,
@@ -11,14 +16,16 @@ type MoveKind = MoveTarget["kind"];
 
 export type MovedItem = MoveTarget & { targetFolderId: string | null };
 export type UnmovedItem = MoveTarget & { reason: string };
+export type MoveBatchResult = {
+  moved: MovedItem[];
+  skipped: UnmovedItem[];
+  failed: UnmovedItem[];
+};
 
 type InternalOutcome =
   | { state: "moved"; item: MovedItem }
   | { state: "skipped"; item: UnmovedItem }
   | { state: "failed"; item: UnmovedItem; status: number };
-
-const httpError = (status: number, message: string): Error =>
-  Object.assign(new Error(message), { status });
 
 const sameFolder = (current: unknown, target: string | null): boolean =>
   (current ? String(current) : null) === target;
@@ -129,7 +136,10 @@ const moveFileItemUnlocked = async (ownerId: string, input: MoveFileInput) => {
   return outcome.item;
 };
 
-export const moveFileItem = (ownerId: string, input: MoveFileInput) =>
+export const moveFileItem = (
+  ownerId: string,
+  input: MoveFileInput,
+): Promise<MovedItem | UnmovedItem> =>
   withFileFolderStructureLock(ownerId, () =>
     moveFileItemUnlocked(ownerId, input),
   );
@@ -165,7 +175,10 @@ const moveFileBatchUnlocked = async (
   return { moved, skipped, failed: failedItems };
 };
 
-export const moveFileBatch = (ownerId: string, input: MoveBatchInput) =>
+export const moveFileBatch = (
+  ownerId: string,
+  input: MoveBatchInput,
+): Promise<MoveBatchResult> =>
   withFileFolderStructureLock(ownerId, () =>
     moveFileBatchUnlocked(ownerId, input),
   );

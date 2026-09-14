@@ -4,7 +4,12 @@ import {
   getFileMobileMeta,
   getFileTypeAndSize,
 } from "@/features/file/model";
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ReactElement,
+} from "react";
 import { FileRowActions } from "./FileRowActions";
 
 const COMPACT_FILE_QUERY = "(max-width: 820px)";
@@ -38,11 +43,10 @@ interface FileRowProps {
   onRename: (item: FileListItem, name: string) => Promise<boolean>;
   onSelectOnly: (id: string) => void;
   onShare: (item: FileListItem) => void;
-  onStartRename: (item: FileListItem) => void;
   onToggle: (id: string, checked: boolean) => void;
 }
 
-export function FileRow(props: FileRowProps) {
+export function FileRow(props: FileRowProps): ReactElement {
   const [name, setName] = useState(props.item.name);
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -138,7 +142,6 @@ export function FileRow(props: FileRowProps) {
         onDownload={props.onDownload}
         onMove={props.onMove}
         onOpen={props.onOpen}
-        onRename={props.onStartRename}
         onShare={props.onShare}
       />
     </li>

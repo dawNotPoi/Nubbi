@@ -1,19 +1,25 @@
 import { toNodeHandler } from "better-auth/node";
 import bodyParser from "body-parser";
-import cors from "cors";
+import cors, { type CorsOptions, type CorsOriginCallback } from "cors";
 import express from "express";
 import http from "http";
 import { Server } from "socket.io";
 import logger from "./common/logger";
 import { auth } from "./lib/auth";
 import env from "./lib/env";
-import { errorHandler } from "./middleware/common";
+import { isTrustedOrigin } from "./lib/trusted-origins";
+import { trackBetterAuthMutation } from "./middleware/better-auth-mutation";
+import { asyncHandler, errorHandler } from "./middleware/common";
 import { requestLogger } from "./middleware/requestLogger";
 import { rejectScopedApiKeys } from "./middleware/session";
+import { subscribeAccountDeletionStart } from "./services/auth/account-mutation-guard";
 import {
   prepareFileUploadInfrastructure,
   startFileUploadMaintenance,
 } from "./services/fileUpload/maintenance";
+import { startImageCleanupMaintenance } from "./services/image/cleanup";
+import { subscribeMeetingRoomClosure } from "./services/meeting/room-events";
+import { startNotePurgeMaintenance } from "./services/note/purge";
 import { startStorageCleanupMaintenance } from "./services/storageCleanupQueue";
 
 import authRouter from "./routes/auth";
@@ -21,27 +27,34 @@ import fileRouter from "./routes/file";
 import imageRouter from "./routes/image";
 import meetingRouter from "./routes/meeting";
 import noteRouter from "./routes/note";
-import mcpApiRouter from "./routes/mcpApi";
-import summryRouter from "./routes/summary";
+import mcpApiRouter from "./routes/mcp";
+import summaryRouter from "./routes/summary";
 import tagRouter from "./routes/tag";
 
-import P2PHandler from "./socket/P2PHandler";
-import userHandlers from "./socket/userHandler";
+import {
+  authenticateSocket,
+  disconnectUserSockets,
+} from "./socket/authentication";
+import registerMeetingSocketHandlers from "./socket/meeting";
+import { endMeetingRoom } from "./socket/meeting/room-state";
+import userHandlers from "./socket/user-handler";
 const app = express();
 const server = new http.Server(app);
-// 服务器响应端口
-const PORT = env.SERVER_PORT || 4000;
-// socket端口
-const SOCKETPORT = env.SOCKET_PORT || 4040;
+const betterAuthHandler = toNodeHandler(auth);
 
-//跨域处理
-const corsOptions = {
-  origin: (
-    origin: string | undefined,
-    callback: (error: Error | null, allow?: boolean | string) => void,
-  ) => {
-    callback(null, origin || true);
-  },
+if (env.TRUST_PROXY_HOPS > 0) {
+  app.set("trust proxy", env.TRUST_PROXY_HOPS);
+}
+
+const resolveCorsOrigin = (
+  origin: string | undefined,
+  callback: CorsOriginCallback,
+): void => {
+  callback(null, isTrustedOrigin(origin));
+};
+
+const corsOptions: CorsOptions = {
+  origin: resolveCorsOrigin,
   credentials: true, // 允许携带凭证（如 cookies）
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-API-Key", "Range"], // 允许的请求头
@@ -57,20 +70,22 @@ app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 const socketIO = new Server({
   cors: {
-    origin: (
-      origin: string | undefined,
-      callback: (error: Error | null, allow?: boolean | string) => void,
-    ) => {
-      callback(null, origin || true);
-    },
+    origin: resolveCorsOrigin,
     credentials: true,
   },
 });
+subscribeAccountDeletionStart((userId) =>
+  disconnectUserSockets(socketIO, userId),
+);
 
 // 请求日志
 app.use(requestLogger);
 //拦截用户信息请求
-app.all("/api/auth/*", toNodeHandler(auth));
+app.all(
+  "/api/auth/*",
+  trackBetterAuthMutation,
+  asyncHandler((req, res) => betterAuthHandler(req, res)),
+);
 
 //进行表单上传时，默认限制100kb，要使用文件上传需要修改限制
 app.use(bodyParser.json({ limit: "10MB" }));
@@ -92,35 +107,40 @@ app.use(
   rejectScopedApiKeys,
 );
 app.use("/tag", tagRouter);
-app.use("/download", express.static("static"));
 app.use("/file", fileRouter);
-app.use("/summary", summryRouter);
+app.use("/summary", summaryRouter);
 
 app.use("/meeting", meetingRouter);
 app.use("/image", imageRouter);
 
-app.use(errorHandler);
 // 404 处理
 app.use((req, res) => {
-  res.status(404).json({ error: "Not Found" });
+  res.status(404).json({ code: 0, message: "Not Found", data: null });
 });
+app.use(errorHandler);
 
-await prepareFileUploadInfrastructure();
-socketIO.listen(SOCKETPORT as number);
-server.listen(PORT, () => {
-  startStorageCleanupMaintenance();
-  logger.info(`服务器端口: ${PORT}`);
-  void startFileUploadMaintenance().catch((error) => {
-    logger.error("文件上传维护任务启动失败", { error });
-  });
-});
-
+socketIO.use(authenticateSocket);
 socketIO.on("connection", (socket) => {
   logger.info(`⚡: ${socket.id} 用户已连接!`);
   userHandlers(socketIO, socket);
 
-  P2PHandler(socketIO, socket);
+  registerMeetingSocketHandlers(socketIO, socket);
   socket.on("disconnect", () => {
     logger.info(`🔥: ${socket.id} 用户已断开连接!`);
+  });
+});
+subscribeMeetingRoomClosure(({ roomId, endedBy }) =>
+  endMeetingRoom(socketIO, roomId, endedBy),
+);
+
+await prepareFileUploadInfrastructure();
+socketIO.listen(env.SOCKET_PORT);
+server.listen(env.SERVER_PORT, () => {
+  startStorageCleanupMaintenance();
+  startImageCleanupMaintenance();
+  startNotePurgeMaintenance();
+  logger.info(`服务器端口: ${env.SERVER_PORT}`);
+  void startFileUploadMaintenance().catch((error) => {
+    logger.error("文件上传维护任务启动失败", { error });
   });
 });

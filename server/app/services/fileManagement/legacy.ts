@@ -1,10 +1,16 @@
+import { httpError } from "@/common/http-error";
 import { File } from "@/models/file/file";
 import { Folder } from "@/models/file/folder";
 import path from "path";
 import { withFileFolderStructureLock } from "./structureLock";
 
-const httpError = (status: number, message: string): Error =>
-  Object.assign(new Error(message), { status });
+type LegacyFolderDocument = InstanceType<typeof Folder>;
+type LegacyFileDocument = InstanceType<typeof File>;
+
+export type LegacyFileListResult = {
+  folders: LegacyFolderDocument[];
+  files: LegacyFileDocument[];
+};
 
 const assertOwnedParent = async (
   ownerId: string | undefined,
@@ -18,7 +24,7 @@ const assertOwnedParent = async (
 export const listFilesLegacy = async (
   ownerId: string | undefined,
   parentId: unknown,
-) => {
+): Promise<LegacyFileListResult> => {
   const currentParentId = !parentId || parentId === "root" ? null : parentId;
   await assertOwnedParent(ownerId, currentParentId);
   const [folders, files] = await Promise.all([
@@ -36,7 +42,7 @@ export const createFolderLegacy = async (
   ownerId: string | undefined,
   name: unknown,
   parentId: unknown,
-) => {
+): Promise<LegacyFolderDocument> => {
   const create = async () => {
     await assertOwnedParent(ownerId, parentId);
     return Folder.create({ name, parentId: parentId || null, ownerId });
@@ -44,7 +50,9 @@ export const createFolderLegacy = async (
   return ownerId ? withFileFolderStructureLock(ownerId, create) : create();
 };
 
-export const getFoldersLegacy = (ownerId: string | undefined) =>
+export const getFoldersLegacy = (
+  ownerId: string | undefined,
+): ReturnType<typeof Folder.find> =>
   Folder.find({ ownerId })
     .select("_id name parentId createdAt updatedAt")
     .sort({ name: 1 });
@@ -54,7 +62,7 @@ export const renameItemLegacy = async (
   id: unknown,
   name: string,
   kind: unknown,
-) => {
+): Promise<LegacyFolderDocument | LegacyFileDocument | null> => {
   if (kind === "folder") {
     return Folder.findOneAndUpdate(
       { _id: id, ownerId },

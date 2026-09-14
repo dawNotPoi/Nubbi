@@ -9,7 +9,9 @@ type MeetingLifecycleItem = {
   toObject?: () => Record<string, unknown>;
 };
 
-const getMeetingEndTimestamp = (item: MeetingLifecycleItem) => {
+export const getMeetingEndTimestamp = (
+  item: MeetingLifecycleItem,
+): number | null => {
   const startTime = item.startTime || item.createdAt;
   if (!startTime || !item.duration) return null;
 

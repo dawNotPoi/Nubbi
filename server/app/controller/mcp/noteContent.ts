@@ -1,6 +1,7 @@
 import Note from "@/models/note";
 import { assertAgentNote } from "@/controller/note/access";
 import { httpError, serializeNote, toIsoString } from "./shared";
+import type { McpContentNoteResult } from "./types";
 
 export type ContentEditInput = {
   mode: "replace" | "append" | "prepend" | "replace_text";
@@ -57,7 +58,7 @@ export const editMcpNoteContent = async (
   userId: string,
   noteId: string,
   input: ContentEditInput,
-) => {
+): Promise<McpContentNoteResult> => {
   const access = await assertAgentNote(userId, noteId);
   const item = await Note.findOne({
     _id: noteId,

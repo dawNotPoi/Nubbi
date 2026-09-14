@@ -20,7 +20,7 @@ const runInBatches = async <T>(
 export const enqueueStorageCleanup = async (
   ownerId: string,
   storagePaths: string[],
-) => {
+): Promise<void> => {
   const paths = uniquePaths(storagePaths);
   if (paths.length === 0) return;
   await Promise.all(paths.map((storagePath) =>
@@ -35,7 +35,7 @@ export const enqueueStorageCleanup = async (
 export const processStorageCleanupUnlocked = async (
   ownerId: string,
   storagePaths?: string[],
-) => {
+): Promise<void> => {
   const paths = storagePaths ? uniquePaths(storagePaths) : undefined;
   const tasks = await StorageCleanupTask.find({
     ownerId,
@@ -65,13 +65,13 @@ export const processStorageCleanupUnlocked = async (
 export const processStorageCleanup = (
   ownerId: string,
   storagePaths?: string[],
-) => withFileFolderStructureLock(ownerId, () =>
+): Promise<void> => withFileFolderStructureLock(ownerId, () =>
   processStorageCleanupUnlocked(ownerId, storagePaths),
 );
 
 let maintenanceStarted = false;
 
-export const runStorageCleanupQueue = async () => {
+export const runStorageCleanupQueue = async (): Promise<void> => {
   const ownerIds = await StorageCleanupTask.distinct("ownerId");
   await runInBatches(ownerIds, 4, async (ownerId) => {
     await processStorageCleanup(ownerId).catch((error) => {
@@ -80,7 +80,7 @@ export const runStorageCleanupQueue = async () => {
   });
 };
 
-export const startStorageCleanupMaintenance = () => {
+export const startStorageCleanupMaintenance = (): void => {
   if (maintenanceStarted) return;
   maintenanceStarted = true;
   const run = () => void runStorageCleanupQueue().catch((error) => {

@@ -1,16 +1,18 @@
 import crypto from "crypto";
 import fse from "fs-extra";
 import path from "path";
+import { fileUploadPaths } from "@/lib/fileUploadPolicy";
+import logger from "@/common/logger";
 import { pipeline } from "stream/promises";
+import { expectedChunkBytes } from "./chunk-math";
 import { FileUploadError } from "./errors";
-import { expectedChunkBytes } from "./schemas";
 
-export const UPLOAD_ROOT = path.join(process.cwd(), "storage");
-export const UPLOAD_TEMP_DIR = path.join(UPLOAD_ROOT, "temp");
-export const MULTER_TEMP_DIR = path.join(UPLOAD_ROOT, "temp_multer");
-export const UPLOAD_FINAL_DIR = path.join(UPLOAD_ROOT, "uploads");
+export const UPLOAD_ROOT = fileUploadPaths.root;
+export const UPLOAD_TEMP_DIR = fileUploadPaths.temp;
+export const MULTER_TEMP_DIR = fileUploadPaths.multerTemp;
+export const UPLOAD_FINAL_DIR = fileUploadPaths.final;
 
-export const ensureUploadDirectories = async () => {
+export const ensureUploadDirectories = async (): Promise<void> => {
   await Promise.all([
     fse.ensureDir(UPLOAD_TEMP_DIR),
     fse.ensureDir(MULTER_TEMP_DIR),
@@ -18,13 +20,13 @@ export const ensureUploadDirectories = async () => {
   ]);
 };
 
-export const getTaskTempDir = (uploadId: string) =>
+export const getTaskTempDir = (uploadId: string): string =>
   path.join(UPLOAD_TEMP_DIR, uploadId);
 
 const getOwnerStorageKey = (ownerId: string) =>
   crypto.createHash("sha256").update(ownerId).digest("hex").slice(0, 24);
 
-export const getUploadOwnerDirectory = (ownerId: string) =>
+export const getUploadOwnerDirectory = (ownerId: string): string =>
   path.join(UPLOAD_FINAL_DIR, getOwnerStorageKey(ownerId));
 
 export const getUploadFinalPath = (
@@ -42,7 +44,7 @@ export const getUploadStagingPath = (
   ownerId: string,
   uploadId: string,
   mergeToken?: string | null,
-) => path.join(
+): string => path.join(
   getUploadOwnerDirectory(ownerId),
   `.${uploadId}${mergeToken ? `-${mergeToken}` : ""}.part`,
 );
@@ -60,7 +62,7 @@ type MergeTask = {
   mergeToken?: string | null;
 };
 
-export const mergeTaskChunks = async (task: MergeTask) => {
+export const mergeTaskChunks = async (task: MergeTask): Promise<string> => {
   const expectedIndexes = Array.from(
     { length: task.totalChunks },
     (_, index) => index,
@@ -131,7 +133,12 @@ export const mergeTaskChunks = async (task: MergeTask) => {
     await fse.move(stagingPath, finalPath, { overwrite: false });
     return finalPath;
   } catch (error) {
-    await fse.remove(stagingPath);
+    await fse.remove(stagingPath).catch((cleanupError: unknown) => {
+      logger.warn("文件合并失败后的暂存文件清理失败", {
+        stagingPath,
+        error: cleanupError,
+      });
+    });
     throw error;
   }
 };

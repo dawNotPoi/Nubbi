@@ -23,10 +23,7 @@ const db = mongoose
   });
 
 // 非生产环境默认启用 Mongoose 查询日志
-if (
-  process.env.LOG_DB_QUERIES === "true" ||
-  process.env.NODE_ENV !== "production"
-) {
+if (env.LOG_DB_QUERIES || env.NODE_ENV !== "production") {
   mongoose.set(
     "debug",
     (collectionName: string, methodName: string, ...args: unknown[]) => {

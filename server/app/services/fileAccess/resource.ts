@@ -11,6 +11,13 @@ export type FileResource = {
   name: string;
 };
 
+export type OwnedActiveFile = {
+  storagePath: string;
+  mimeType?: string | null;
+  extension?: string | null;
+  name: string;
+};
+
 const previewStreamCache = new Map<string, FileResource>();
 
 export const normalizeRouteParam = (
@@ -20,12 +27,12 @@ export const normalizeRouteParam = (
 export const getOwnedActiveFile = async (
   fileId: string,
   userId?: string,
-) => {
+): Promise<OwnedActiveFile | null> => {
   if (!userId) return null;
   return File.findOne({ _id: fileId, ownerId: userId, status: "active" });
 };
 
-export const fileResourceExists = (storagePath: string) =>
+export const fileResourceExists = (storagePath: string): Promise<boolean> =>
   fse.pathExists(storagePath);
 
 export const getCachedPreview = (token: string): FileResource | undefined =>

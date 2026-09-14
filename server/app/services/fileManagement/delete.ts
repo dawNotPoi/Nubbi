@@ -11,6 +11,12 @@ export type DeleteTargetKind = "file" | "folder";
 export type DeleteTarget = { id: string; kind: DeleteTargetKind };
 
 type FileToDelete = { _id: unknown; storagePath: string };
+export type DeleteTargetsResult = {
+  filesToDelete: FileToDelete[];
+  folderIdsToDelete: string[];
+  missingFileIds: string[];
+  missingFolderIds: string[];
+};
 
 const resolveDeleteTargets = async (
   userId: string | undefined,
@@ -109,7 +115,7 @@ const deleteOwnedTargetsUnlocked = async (
 export const deleteOwnedTargets = (
   userId: string | undefined,
   targets: DeleteTarget[],
-) => {
+): Promise<DeleteTargetsResult> => {
   const task = () => deleteOwnedTargetsUnlocked(userId, targets);
   return userId && targets.length > 0
     ? withFileFolderStructureLock(userId, task)

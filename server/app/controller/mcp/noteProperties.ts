@@ -1,7 +1,8 @@
 import Note from "@/models/note";
 import { assertAgentNote } from "@/controller/note/access";
-import { syncUserTags } from "@/controller/tag";
+import { recordUserTags } from "@/controller/tag";
 import { assertExpectedDate, httpError, serializeNote } from "./shared";
+import type { McpNoteResult } from "./types";
 
 type MetaEntry = { key: string; value: unknown; type: string };
 
@@ -57,7 +58,7 @@ export const updateMcpNoteProperties = async (
   userId: string,
   noteId: string,
   input: PropertiesPatchInput,
-) => {
+): Promise<McpNoteResult> => {
   const access = await assertAgentNote(userId, noteId);
   assertExpectedDate(input.expectedUpdatedAt, access.updatedAt);
 
@@ -102,6 +103,6 @@ export const updateMcpNoteProperties = async (
     });
   }
 
-  await syncUserTags(userId, tags);
+  await recordUserTags(userId, tags);
   return serializeNote(updated);
 };

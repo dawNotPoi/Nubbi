@@ -1,7 +1,6 @@
 import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { apiKey, bearer, jwt } from "better-auth/plugins";
-import { AsyncLocalStorage } from "async_hooks";
 import logger from "@/common/logger";
 import { db } from "./db";
 import { createEmailVerificationCode } from "./emailVerification";
@@ -9,37 +8,20 @@ import { sendPasswordResetEmail, sendVerificationEmail } from "./email";
 import { createPasswordResetCode } from "./passwordReset";
 import env from "./env";
 import { guardExternalApiKeyServerFields } from "./apiKeyRequestGuard";
+import {
+  authDatabaseHooks,
+  isVerifiedRegisterEmail,
+  runWithVerifiedRegisterEmail,
+} from "./auth-database-hooks";
+import {
+  sanitizeAuthLogMessage,
+  serializeAuthLogArg,
+} from "./auth-logging";
 
 const authDb = await db;
 if (!authDb) {
   throw new Error("Database connection is not ready");
 }
-
-const serializeAuthLogArg = (value: unknown) => {
-  if (value instanceof Error) {
-    return {
-      name: value.name,
-      message: value.message,
-      stack: value.stack,
-      cause: value.cause,
-    };
-  }
-
-  if (typeof value === "object" && value !== null) {
-    return value;
-  }
-
-  return String(value);
-};
-
-const verifiedRegisterStorage = new AsyncLocalStorage<{ email: string }>();
-
-const normalizeEmail = (email: string) => email.trim().toLowerCase();
-
-const isVerifiedRegisterEmail = (email: string) => {
-  const verifiedRegister = verifiedRegisterStorage.getStore();
-  return verifiedRegister?.email === normalizeEmail(email);
-};
 
 export const auth = betterAuth({
   database: mongodbAdapter(authDb),
@@ -48,10 +30,10 @@ export const auth = betterAuth({
   basePath: "/api/auth",
   trustedOrigins: [env.CLIENT_URL, env.BETTER_AUTH_URL],
   logger: {
-    level: "debug",
+    level: env.NODE_ENV === "production" ? "warn" : "debug",
     log(level, message, ...args) {
       const authArgs = args.map(serializeAuthLogArg);
-      const msg = `[better-auth] ${message}`;
+      const msg = `[better-auth] ${sanitizeAuthLogMessage(message)}`;
 
       if (level === "error") {
         logger.error(msg, ...authArgs);
@@ -71,6 +53,7 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
+    revokeSessionsOnPasswordReset: true,
     // better-auth 默认即 8，显式声明以与路由层校验（注册/重置"至少 8 位"）保持同步
     minPasswordLength: 8,
     passwordResetTokenExpiresIn: 60 * 60,
@@ -105,26 +88,11 @@ export const auth = betterAuth({
       }
     },
   },
-  databaseHooks: {
-    user: {
-      create: {
-        before: async (user) => {
-          if (!isVerifiedRegisterEmail(user.email)) {
-            return;
-          }
-
-          return {
-            data: {
-              emailVerified: true,
-            },
-          };
-        },
-      },
-    },
-  },
+  databaseHooks: authDatabaseHooks,
   account: {
     accountLinking: {
       enabled: true,
+      trustedProviders: ["google", "github", "email-password"],
     },
   },
   socialProviders: {
@@ -136,12 +104,6 @@ export const auth = betterAuth({
       clientId: env.AUTH_GOOGLE_ID,
       clientSecret: env.AUTH_GOOGLE_SECRET,
     },
-  },
-  accountLinking: {
-    enabled: true,
-    trustedProviders: ["google", "github", "email-password"],
-    requireEmailVerification: true,
-    allowMultipleProviders: true,
   },
   session: {
     expiresIn: 60 * 60 * 24 * 30,
@@ -185,9 +147,9 @@ export const signUpVerifiedEmailWithPassword = async ({
   password: string;
   name: string;
   headers?: HeadersInit;
-}) =>
-  verifiedRegisterStorage.run(
-    { email: normalizeEmail(email) },
+}): Promise<Awaited<ReturnType<typeof auth.api.signUpEmail>>> =>
+  runWithVerifiedRegisterEmail(
+    email,
     async () =>
       auth.api.signUpEmail({
         body: {

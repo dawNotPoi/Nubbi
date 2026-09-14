@@ -2,8 +2,16 @@ import {
   hasMcpPermissionFingerprint,
   MCP_NOTE_ACTIONS,
   MCP_POLICY_VERSION,
+  type McpNoteAction,
 } from "@/lib/mcpPolicy";
-import type { NextFunction, Request, Response } from "express";
+import type { NoteAction } from "@/lib/notePolicy";
+import type {
+  NextFunction,
+  Request,
+  RequestHandler,
+  Response,
+} from "express";
+import { trackAuthenticatedMutation } from "./account-mutation";
 import {
   attachAuthContext,
   authenticateBySession,
@@ -51,7 +59,7 @@ const authorize =
     resource?: string,
     action?: string,
     options: AuthorizationOptions = {},
-  ) =>
+  ): RequestHandler =>
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const context = await authenticateWithApiKey(req);
@@ -70,7 +78,7 @@ const authorize =
       if (options.rejectMcp && isMcpPolicyContext(context)) {
         return void forbidden(
           res,
-          "MCP Agent keys must use /mcp-api for write operations",
+          "MCP Agent keys must use /mcp-api endpoints",
         );
       }
 
@@ -86,13 +94,18 @@ const authorize =
       }
 
       attachAuthContext(req, context);
+      trackAuthenticatedMutation(req, res, context.user.id);
       next();
     } catch (error) {
-      sendAuthenticationError(res, error);
+      sendAuthenticationError(res, error, next);
     }
   };
 
-async function requireAuth(req: Request, res: Response, next: NextFunction) {
+async function requireAuth(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   await authenticateBySession(req, res, next);
 }
 
@@ -100,7 +113,7 @@ export async function requireAuthWithApiKey(
   req: Request,
   res: Response,
   next: NextFunction,
-) {
+): Promise<void> {
   await authorize()(req, res, next);
 }
 
@@ -125,14 +138,16 @@ export async function rejectScopedApiKeys(
     attachAuthContext(req, context);
     next();
   } catch (error) {
-    sendAuthenticationError(res, error);
+    sendAuthenticationError(res, error, next);
   }
 }
 
-export const requireNotePermission = (action: string) =>
-  authorize("note", action, { rejectMcp: action !== "read" });
+export const requireNotePermission = (action: NoteAction): RequestHandler =>
+  authorize("note", action, { rejectMcp: true });
 
-export const requireMcpNotePermission = (action: string) =>
+export const requireMcpNotePermission = (
+  action: McpNoteAction,
+): RequestHandler =>
   authorize("note", action, { mcpOnly: true });
 
 export default requireAuth;

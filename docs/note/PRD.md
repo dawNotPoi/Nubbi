@@ -293,12 +293,14 @@ z.object({
 | `server/app/controller/note/create.ts` | 新增字段支持；创建子笔记时更新父节点的 hasChildren；移除旧 `stripSummaryFromMeta` 逻辑 |
 | `server/app/controller/note/update.ts` | `updateNoteMeta` 新增字段支持；新增 `moveNote` 含 hasChildren 双向维护；移除 `addWatchs`/`addLikes` |
 | `server/app/controller/note/delete.ts` | 删除后更新父节点 hasChildren |
-| `server/app/controller/note/query.ts` | `findNotesByStatus` 重构为 `findNotesByFilter({status?, tags?, published?})`；`getTagStats` 改为读顶层 tags；`getNotes` 不再依赖 children 字段；新增 `getNoteStats` 适配新 status 枚举 |
+| `server/app/controller/note/list-query.ts` | 详情、列表、最近、根节点和回收站查询 |
+| `server/app/controller/note/hierarchy-query.ts` | 祖先、直属子节点和移动目标校验 |
+| `server/app/controller/note/search-query.ts` | 标题搜索和路径标签生成 |
 
 ### Route
 | 文件 | 变更 |
 |------|------|
-| `server/app/routes/note.ts` | 全部 Zod 验证更新；新增 `/publish` 路由；移除旧 tags/status 混乱引用 |
+| `server/app/routes/note/` | 类型化路由声明、权限动作和请求 Zod Schema |
 
 ### Middleware / 其他
 | 文件 | 变更 |
@@ -503,8 +505,8 @@ await Note.updateMany({}, { $set: { date: null } });
 4. `server/app/controller/note/create.ts` — 含 hasChildren 维护
 5. `server/app/controller/note/update.ts` — 移动 + 属性更新
 6. `server/app/controller/note/delete.ts` — 含 hasChildren 清理
-7. `server/app/controller/note/query.ts` — 查询适配
-8. `server/app/routes/note.ts` — Zod 更新
+7. `server/app/controller/note/*-query.ts` — 查询适配
+8. `server/app/routes/note/` — Zod 更新
 
 ### 第 3 步：客户端 API 层
 9. `client/src/api/note.ts` — 类型 + 函数更新
@@ -585,3 +587,5 @@ await Note.updateMany({}, { $set: { date: null } });
 - 树形展示被删除的笔记，支持标题搜索与来源筛选。
 - 支持单项/批量恢复；父节点仍在回收站时不能单独恢复子节点。
 - 支持人类永久删除，必须二次确认；MCP 不暴露 purge 能力。
+- 永久删除笔记子树前创建持久化 purge 任务，再依次删除 Note 与 Summary；
+  任一步骤失败都可用同一根笔记 ID 续做，完成前禁止恢复任务内节点。

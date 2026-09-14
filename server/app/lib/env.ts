@@ -1,4 +1,4 @@
-import logger from "@/common/logger";
+import "dotenv/config";
 import { z } from "zod";
 
 const emptyToUndefined = (value: unknown) => {
@@ -20,6 +20,27 @@ const optionalString = () =>
 const optionalNumber = () =>
   z.preprocess(emptyToUndefined, z.coerce.number().optional());
 
+const boundedInteger = (
+  defaultValue: number,
+  minimum: number,
+  maximum: number,
+) =>
+  z.preprocess(
+    emptyToUndefined,
+    z.coerce.number().int().min(minimum).max(maximum).default(defaultValue),
+  );
+
+const portNumber = (name: string, defaultValue: number) =>
+  z.preprocess(
+    emptyToUndefined,
+    z.coerce
+      .number({ invalid_type_error: `${name} must be a number` })
+      .int()
+      .min(1)
+      .max(65535)
+      .default(defaultValue),
+  );
+
 const optionalBooleanString = () =>
   z
     .preprocess((value) => {
@@ -29,10 +50,16 @@ const optionalBooleanString = () =>
     .transform((value) => value === "true");
 
 const envSchema = z.object({
+  NODE_ENV: z
+    .enum(["development", "test", "production"])
+    .default("development"),
+  LOG_LEVEL: optionalString(),
+  LOG_DB_QUERIES: optionalBooleanString(),
   MONGO_URI: requiredString("MONGO_URI"),
   MONGO_DB_NAME: optionalString().default("Nubbi"),
-  SERVER_PORT: requiredString("SERVER_PORT"),
-  SOCKET_PORT: requiredString("SOCKET_PORT"),
+  SERVER_PORT: portNumber("SERVER_PORT", 4000),
+  SOCKET_PORT: portNumber("SOCKET_PORT", 4040),
+  TRUST_PROXY_HOPS: boundedInteger(0, 0, 5),
   BETTER_AUTH_SECRET: requiredString("BETTER_AUTH_SECRET"),
   BETTER_AUTH_URL: requiredString("BETTER_AUTH_URL"),
   CLIENT_URL: optionalString().default("http://localhost:5173"),
@@ -59,6 +86,11 @@ const envSchema = z.object({
   FILE_UPLOAD_USER_QUOTA_BYTES: optionalNumber().default(100 * 1024 ** 3),
   FILE_UPLOAD_MAX_ACTIVE_TASKS: optionalNumber().default(5),
   FILE_UPLOAD_TASK_TTL_HOURS: optionalNumber().default(24),
+  IMAGE_UPLOAD_MAX_BYTES: boundedInteger(
+    5 * 1024 ** 2,
+    1024 ** 2,
+    25 * 1024 ** 2,
+  ),
 });
 
 const parsedEnv = envSchema.parse(process.env);
@@ -77,26 +109,10 @@ const env = {
     "main",
 };
 
-const maskValue = (value?: string) => (value ? "***" : "");
-
-const envForLog = {
-  ...env,
-  MONGO_URI: maskValue(env.MONGO_URI),
-  BETTER_AUTH_SECRET: maskValue(env.BETTER_AUTH_SECRET),
-  AUTH_GITHUB_SECRET: maskValue(env.AUTH_GITHUB_SECRET),
-  AUTH_GOOGLE_SECRET: maskValue(env.AUTH_GOOGLE_SECRET),
-  AUTH_GOOLE_SECRET: maskValue(env.AUTH_GOOLE_SECRET),
-  EMAIL_PASS: maskValue(env.EMAIL_PASS),
-  GH_IMAGE_TOKEN: maskValue(env.GH_IMAGE_TOKEN),
-  GITHUB_IMAGE_TOKEN: maskValue(env.GITHUB_IMAGE_TOKEN),
-};
-
 if (!env.AUTH_GOOGLE_ID || !env.AUTH_GOOGLE_SECRET) {
   throw new Error(
     "Missing Google OAuth env vars. Please set AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET."
   );
 }
-
-logger.info("环境变量加载成功", envForLog);
 
 export default env;

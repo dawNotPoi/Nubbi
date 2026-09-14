@@ -34,7 +34,7 @@ export const removeUploadStagingFiles = async (
   uploadId: string,
   read: ReadDirectory = readDirectory,
   remove: RemoveStorage = removeStorage,
-) => {
+): Promise<void> => {
   const directory = getUploadOwnerDirectory(ownerId);
   let entries: string[];
   try {

@@ -1,4 +1,5 @@
 import { UploadTask } from "@/models/file/uploadTask";
+import { waitForAll } from "@/common/promises";
 import { withFileFolderStructureLock } from "@/services/fileManagement/structureLock";
 import fse from "fs-extra";
 import { randomUUID } from "node:crypto";
@@ -27,10 +28,13 @@ export const cleanupExpiredUploadTaskUnlocked = async (
     task.totalSize,
     task.fileName,
   );
-  await Promise.all([
-    removeUnreferencedUploadFile(storagePath),
-    removeUploadStagingFiles(ownerId, String(task._id)),
-  ]);
+  await waitForAll(
+    [
+      removeUnreferencedUploadFile(storagePath),
+      removeUploadStagingFiles(ownerId, String(task._id)),
+    ],
+    "过期上传任务关联文件清理未全部完成",
+  );
   await fse.remove(task.tempDir);
   await UploadTask.deleteOne({
     _id: task._id,
@@ -45,6 +49,6 @@ export const cleanupExpiredUploadTask = (
   ownerId: string,
   uploadId: string,
   cutoff = new Date(),
-) => withFileFolderStructureLock(ownerId, () =>
+): Promise<boolean> => withFileFolderStructureLock(ownerId, () =>
   cleanupExpiredUploadTaskUnlocked(ownerId, uploadId, cutoff),
 );

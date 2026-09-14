@@ -15,7 +15,7 @@ export const createPreviewSignature = (
   fileId: string,
   userId: string,
   expiresAt: number,
-) =>
+): string =>
   crypto
     .createHmac("sha256", env.BETTER_AUTH_SECRET)
     .update(`${fileId}:${userId}:${expiresAt}`)
@@ -58,7 +58,7 @@ export const buildPreviewStreamPath = (
   fileId: string,
   userId: string,
   expiresAt: number,
-) =>
+): string =>
   buildSignedPath(
     `/file/stream/${encodeURIComponent(fileId)}`,
     userId,
@@ -70,7 +70,7 @@ export const buildPublicDownloadPath = (
   fileId: string,
   userId: string,
   expiresAt: number,
-) =>
+): string =>
   buildSignedPath(
     `/file/public-download/${encodeURIComponent(fileId)}`,
     userId,
@@ -96,9 +96,11 @@ const resolveSignedUserId = (
 export const resolveSignedPreviewUserId = (
   fileId: string,
   query: Record<string, unknown>,
-) => resolveSignedUserId(fileId, query, createPreviewSignature);
+): string | null =>
+  resolveSignedUserId(fileId, query, createPreviewSignature);
 
 export const resolveSignedShareDownloadUserId = (
   fileId: string,
   query: Record<string, unknown>,
-) => resolveSignedUserId(fileId, query, createShareDownloadSignature);
+): string | null =>
+  resolveSignedUserId(fileId, query, createShareDownloadSignature);

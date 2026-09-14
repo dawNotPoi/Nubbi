@@ -31,11 +31,11 @@ const getEmailVerificationCollection = async () => {
   );
 
   if (!indexesEnsured) {
-    indexesEnsured = true;
     await collection.createIndexes([
       { key: { email: 1, createdAt: -1 } },
       { key: { expiresAt: 1 }, expireAfterSeconds: 0 },
     ]);
+    indexesEnsured = true;
   }
 
   return collection;
@@ -55,7 +55,9 @@ const generateVerificationCode = () =>
     .toString()
     .padStart(EMAIL_VERIFICATION_CODE_LENGTH, "0");
 
-export const getEmailVerificationRemainingSeconds = async (email: string) => {
+export const getEmailVerificationRemainingSeconds = async (
+  email: string,
+): Promise<number> => {
   const collection = await getEmailVerificationCollection();
   const normalizedEmail = normalizeEmail(email);
   const now = new Date();
@@ -76,7 +78,9 @@ export const getEmailVerificationRemainingSeconds = async (email: string) => {
     : 0;
 };
 
-export const createEmailVerificationAttempt = async (email: string) => {
+export const createEmailVerificationAttempt = async (
+  email: string,
+): Promise<void> => {
   const collection = await getEmailVerificationCollection();
   const normalizedEmail = normalizeEmail(email);
   const now = new Date();
@@ -92,6 +96,7 @@ export const createEmailVerificationAttempt = async (email: string) => {
     expiresAt,
     createdAt: now,
     usedAt: null,
+    failedAttempts: 0,
   });
 };
 
@@ -99,7 +104,7 @@ export const createEmailVerificationCode = async (
   email: string,
   token: string,
   expiresInSeconds = 60 * 60 * 24,
-) => {
+): Promise<string> => {
   const emailVerificationCollection = await getEmailVerificationCollection();
   const normalizedEmail = normalizeEmail(email);
   const code = generateVerificationCode();
@@ -114,6 +119,7 @@ export const createEmailVerificationCode = async (
     expiresAt,
     createdAt: now,
     usedAt: null,
+    failedAttempts: 0,
   });
 
   return code;
@@ -122,43 +128,41 @@ export const createEmailVerificationCode = async (
 export const consumeEmailVerificationCode = async (
   email: string,
   code: string,
-) => {
+): Promise<string | null> => {
   const collection = await getEmailVerificationCollection();
   const normalizedEmail = normalizeEmail(email);
   const now = new Date();
 
-  const record = await collection.findOne({
+  const attemptFilter = {
     email: normalizedEmail,
     codeHash: { $ne: "" },
     expiresAt: { $gt: now },
     usedAt: null,
-  });
-
-  if (!record) return null;
-
-  if ((record.failedAttempts ?? 0) >= EMAIL_VERIFICATION_MAX_ATTEMPTS) {
-    return null;
-  }
-
-  if (record.codeHash !== hashVerificationCode(normalizedEmail, code)) {
-    const newFailedAttempts = (record.failedAttempts ?? 0) + 1;
-    const update: Record<string, unknown> = { failedAttempts: newFailedAttempts };
-    if (newFailedAttempts >= EMAIL_VERIFICATION_MAX_ATTEMPTS) {
-      update.usedAt = now;
-    }
-    await collection.updateOne(
-      { email: normalizedEmail, codeHash: record.codeHash, usedAt: null },
-      { $set: update },
-    );
-    return null;
-  }
-
-  const consumeResult = await collection.updateOne(
-    { email: normalizedEmail, codeHash: record.codeHash, usedAt: null },
+    $or: [
+      { failedAttempts: { $exists: false } },
+      { failedAttempts: { $lt: EMAIL_VERIFICATION_MAX_ATTEMPTS } },
+    ],
+  };
+  const record = await collection.findOneAndUpdate(
+    {
+      ...attemptFilter,
+      codeHash: hashVerificationCode(normalizedEmail, code),
+    },
     { $set: { usedAt: now } },
+    { returnDocument: "before" },
   );
+  if (record) return record.token;
 
-  if (consumeResult.modifiedCount !== 1) return null;
-
-  return record.token;
+  const failedRecord = await collection.findOneAndUpdate(
+    attemptFilter,
+    { $inc: { failedAttempts: 1 } },
+    { returnDocument: "after", sort: { createdAt: -1 } },
+  );
+  if ((failedRecord?.failedAttempts ?? 0) >= EMAIL_VERIFICATION_MAX_ATTEMPTS) {
+    await collection.updateOne(
+      { _id: failedRecord?._id, usedAt: null },
+      { $set: { usedAt: now } },
+    );
+  }
+  return null;
 };

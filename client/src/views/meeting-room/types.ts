@@ -24,7 +24,6 @@ export type VideoRoomUser = {
   roomId: string;
   name: string;
   image: string;
-  email: string;
   isVideoEnabled: boolean;
   isAudioEnabled: boolean;
 };
@@ -47,7 +46,6 @@ export type MeetingComment = {
   userId: string;
   name: string;
   avatar: string;
-  email: string;
   createdAt: string;
   updatedAt: string;
 };

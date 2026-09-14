@@ -1,3 +1,4 @@
+import { httpError } from "@/common/http-error";
 import FileFolderStructureLock from "@/models/fileFolderStructureLock";
 import { randomUUID } from "node:crypto";
 
@@ -33,9 +34,7 @@ const acquire = async (userId: string, owner: string): Promise<void> => {
     }
     await wait();
   }
-  throw Object.assign(new Error("文件夹结构正忙，请刷新后重试"), {
-    status: 409,
-  });
+  throw httpError(409, "文件夹结构正忙，请刷新后重试");
 };
 
 export const withFileFolderStructureLock = async <T>(

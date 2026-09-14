@@ -8,6 +8,28 @@ import { FileUploadError } from "./errors";
 import { getMergeLeaseExpiry, isMergeLeaseActive } from "./mergeLease";
 import { getUploadFinalPath } from "./storage";
 import { getActiveUploadTaskGuard } from "./taskPolicy";
+import type { UploadedFileDto } from "./types";
+import { serializeUploadedFile } from "./file-dto";
+
+type ClaimedUploadTask = {
+  _id: unknown;
+  ownerId: string;
+  fileHash: string;
+  fileName: string;
+  totalSize: number;
+  folderId?: unknown;
+  mimeType?: string | null;
+  chunkSize: number;
+  totalChunks: number;
+  uploadedChunks: number[];
+  tempDir: string;
+  storagePath?: string | null;
+  mergeToken?: string | null;
+};
+
+type ClaimUploadResult =
+  | { completedFile: UploadedFileDto; task: null }
+  | { completedFile: null; task: ClaimedUploadTask };
 
 const recoverCompletedFile = async (ownerId: string, task: {
   _id: unknown;
@@ -28,10 +50,13 @@ const recoverCompletedFile = async (ownerId: string, task: {
       $unset: { storagePath: 1, mergeToken: 1, mergeLeaseExpiresAt: 1 },
     },
   );
-  return file;
+  return serializeUploadedFile(file);
 };
 
-export const claimUploadForMerge = (ownerId: string, uploadId: string) =>
+export const claimUploadForMerge = (
+  ownerId: string,
+  uploadId: string,
+): Promise<ClaimUploadResult> =>
   withFileFolderStructureLock(ownerId, async () => {
     const cutoff = new Date();
     const current = await UploadTask.findOne({ _id: uploadId, ownerId });

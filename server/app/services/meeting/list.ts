@@ -4,10 +4,16 @@ import {
 } from "@/common/pagination";
 import meeting from "@/models/meeting";
 import { autoEndExpiredMeetings } from "./lifecycle";
-import { serializeMeetingListItem } from "./listDto";
-import type { LegacyMeetingPageInput } from "./schemas";
+import { serializeMeetingListItem } from "./list-dto";
+import type {
+  LegacyMeetingPageInput,
+  LegacyMeetingPageResult,
+  MeetingPageResult,
+} from "./types";
 
-export const getMeetingPage = async (pagination: PaginationInput) => {
+export const getMeetingPage = async (
+  pagination: PaginationInput,
+): Promise<MeetingPageResult> => {
   const [items, total] = await Promise.all([
     meeting
       .find()
@@ -26,7 +32,7 @@ export const getMeetingPage = async (pagination: PaginationInput) => {
 
 export const getLegacyMeetingPage = async (
   input: LegacyMeetingPageInput,
-) => {
+): Promise<LegacyMeetingPageResult> => {
   const { page, pageSize, _id, hostId, status, title } = input;
   const filter = {
     ...(_id ? { _id } : {}),

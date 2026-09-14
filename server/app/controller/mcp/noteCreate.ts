@@ -1,7 +1,8 @@
 import { createNote } from "@/controller/note/create";
-import { syncUserTags } from "@/controller/tag";
+import { recordUserTags } from "@/controller/tag";
 import Note from "@/models/note";
 import { httpError, serializeNote } from "./shared";
+import type { McpContentNoteResult } from "./types";
 
 export type CreateMcpNoteInput = {
   title?: string;
@@ -16,7 +17,7 @@ export type CreateMcpNoteInput = {
 export const createMcpNote = async (
   userId: string,
   input: CreateMcpNoteInput,
-) => {
+): Promise<McpContentNoteResult> => {
   if (input.parentId) {
     const parent = await Note.findOne({
       _id: input.parentId,
@@ -34,7 +35,7 @@ export const createMcpNote = async (
     source: "agent",
     status: "inbox",
   });
-  await syncUserTags(userId, input.tags);
+  await recordUserTags(userId, input.tags);
 
   return {
     ...serializeNote(created),

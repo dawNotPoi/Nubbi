@@ -7,11 +7,21 @@ export const paginationQuerySchema = z.object({
 
 export type PaginationInput = z.infer<typeof paginationQuerySchema>;
 
+export type PaginationResult<T> = {
+  items: T[];
+  total: number;
+  count: number;
+  limit: number;
+  offset: number;
+  hasMore: boolean;
+  nextOffset: number | null;
+};
+
 export const buildPaginationResult = <T>(
   items: T[],
   total: number,
   pagination: PaginationInput,
-) => {
+): PaginationResult<T> => {
   const { limit, offset } = pagination;
   const count = items.length;
   const hasMore = count > 0 && offset + count < total;

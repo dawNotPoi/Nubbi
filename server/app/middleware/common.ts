@@ -1,8 +1,16 @@
-import { NextFunction, Request, Response } from "express";
 import logger from "@/common/logger";
+import { getErrorStatusCode } from "@/common/http-error";
+import { getSafeRequestPath } from "@/common/request-path";
+import env from "@/lib/env";
+import {
+  completeAccountMutationHandler,
+  runWithAccountMutationContext,
+} from "@/middleware/account-mutation";
+import type { NextFunction, Request, RequestHandler, Response } from "express";
 
 export interface AppError extends Error {
-  status?: number;
+  status?: unknown;
+  statusCode?: unknown;
   data?: unknown;
   errorCode?: string;
 }
@@ -12,20 +20,39 @@ export function errorHandler(
   req: Request,
   res: Response,
   next: NextFunction,
-) {
-  logger.error("未捕获的异常", err);
-  const status = err.status || 500;
+): void {
+  completeAccountMutationHandler(res);
+  if (res.headersSent) {
+    next(err);
+    return;
+  }
+
+  const status = getErrorStatusCode(err);
   const isMcpRequest = req.originalUrl.startsWith("/mcp-api");
+  const logContext = {
+    error: err,
+    method: req.method,
+    path: getSafeRequestPath(req.originalUrl, req.path),
+    status,
+  };
+
+  if (status >= 500) {
+    logger.error("请求处理异常", logContext);
+  } else {
+    logger.warn("请求被拒绝", logContext);
+  }
 
   res.status(status).json({
     code: 0,
     errorCode: err.errorCode,
     message:
-      isMcpRequest && status >= 500
-        ? "Internal server error"
-        : err.message || "服务器内部错误",
+      status >= 500
+        ? isMcpRequest
+          ? "Internal server error"
+          : "服务器内部错误"
+        : err.message || "请求失败",
     error:
-      process.env.NODE_ENV === "production" || isMcpRequest
+      env.NODE_ENV === "production" || isMcpRequest
         ? undefined
         : err.stack,
     data: err.data ?? null,
@@ -39,9 +66,14 @@ type AsyncRequestHandler = (
 ) => Promise<unknown>;
 
 export const asyncHandler =
-  (fn: AsyncRequestHandler) =>
-  (req: AuthRequest, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
+  (fn: AsyncRequestHandler): RequestHandler =>
+  (req: Request, res: Response, next: NextFunction): void => {
+    const authRequest = req as AuthRequest;
+    runWithAccountMutationContext(res, () =>
+      Promise.resolve().then(() => fn(authRequest, res, next)),
+    )
+      .finally(() => completeAccountMutationHandler(res))
+      .catch(next);
   };
 
 export interface AuthRequest extends Request {

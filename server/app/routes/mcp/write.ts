@@ -7,12 +7,14 @@ import {
   trashMcpNote,
 } from "@/controller/mcp/noteLifecycle";
 import { updateMcpNoteProperties } from "@/controller/mcp/noteProperties";
-import { getUser } from "@/lib/authUser";
-import { asyncHandler } from "@/middleware/common";
+import {
+  requireAuthenticatedUser,
+  type AuthenticatedUser,
+} from "@/lib/authUser";
+import type { McpNoteAction } from "@/lib/mcpPolicy";
 import { requireMcpNotePermission } from "@/middleware/session";
-import { validate, validateParams } from "@/middleware/validator";
+import { createJsonRouteRegistrar } from "@/routes/infrastructure/json-route-registrar";
 import express from "express";
-import { successResponse } from "../utils";
 import {
   archiveSchema,
   contentEditSchema,
@@ -25,118 +27,73 @@ import {
 } from "./schemas";
 
 const router = express.Router();
+const mcpWriteRoutes = createJsonRouteRegistrar<
+  McpNoteAction,
+  AuthenticatedUser
+>(router, {
+  authorize: requireMcpNotePermission,
+  resolveActor: requireAuthenticatedUser,
+});
 
-router.post(
-  "/notes",
-  requireMcpNotePermission("create"),
-  validate(createNoteSchema),
-  asyncHandler(async (req, res) => {
-    const user = await getUser(req);
-    const input = createNoteSchema.parse(req.body);
-    successResponse(res, await createMcpNote(user.id, input), "Note created");
-  }),
-);
+mcpWriteRoutes.post("/notes", {
+  action: "create",
+  body: createNoteSchema,
+  message: "Note created",
+  handler: ({ actor, body }) => createMcpNote(actor.id, body),
+});
 
-router.patch(
-  "/notes/:noteId/content",
-  requireMcpNotePermission("update"),
-  validateParams(noteParamsSchema),
-  validate(contentEditSchema),
-  asyncHandler(async (req, res) => {
-    const user = await getUser(req);
-    const { noteId } = noteParamsSchema.parse(req.params);
-    const input = contentEditSchema.parse(req.body);
-    successResponse(
-      res,
-      await editMcpNoteContent(user.id, noteId, input),
-      "Content updated",
-    );
-  }),
-);
+mcpWriteRoutes.patch("/notes/:noteId/content", {
+  action: "update",
+  params: noteParamsSchema,
+  body: contentEditSchema,
+  message: "Content updated",
+  handler: ({ actor, params, body }) =>
+    editMcpNoteContent(actor.id, params.noteId, body),
+});
 
-router.patch(
-  "/notes/:noteId/properties",
-  requireMcpNotePermission("update"),
-  validateParams(noteParamsSchema),
-  validate(propertiesSchema),
-  asyncHandler(async (req, res) => {
-    const user = await getUser(req);
-    const { noteId } = noteParamsSchema.parse(req.params);
-    const input = propertiesSchema.parse(req.body);
-    successResponse(
-      res,
-      await updateMcpNoteProperties(user.id, noteId, input),
-      "Properties updated",
-    );
-  }),
-);
+mcpWriteRoutes.patch("/notes/:noteId/properties", {
+  action: "update",
+  params: noteParamsSchema,
+  body: propertiesSchema,
+  message: "Properties updated",
+  handler: ({ actor, params, body }) =>
+    updateMcpNoteProperties(actor.id, params.noteId, body),
+});
 
-router.post(
-  "/notes/:noteId/move",
-  requireMcpNotePermission("move"),
-  validateParams(noteParamsSchema),
-  validate(moveSchema),
-  asyncHandler(async (req, res) => {
-    const user = await getUser(req);
-    const { noteId } = noteParamsSchema.parse(req.params);
-    const input = moveSchema.parse(req.body);
-    successResponse(
-      res,
-      await moveMcpNote(user.id, noteId, input),
-      "Note moved",
-    );
-  }),
-);
+mcpWriteRoutes.post("/notes/:noteId/move", {
+  action: "move",
+  params: noteParamsSchema,
+  body: moveSchema,
+  message: "Note moved",
+  handler: ({ actor, params, body }) =>
+    moveMcpNote(actor.id, params.noteId, body),
+});
 
-router.post(
-  "/notes/:noteId/archive",
-  requireMcpNotePermission("archive"),
-  validateParams(noteParamsSchema),
-  validate(archiveSchema),
-  asyncHandler(async (req, res) => {
-    const user = await getUser(req);
-    const { noteId } = noteParamsSchema.parse(req.params);
-    const input = archiveSchema.parse(req.body);
-    successResponse(
-      res,
-      await archiveMcpNote(user.id, noteId, input),
-      input.archived ? "Note archived" : "Note unarchived",
-    );
-  }),
-);
+mcpWriteRoutes.post("/notes/:noteId/archive", {
+  action: "archive",
+  params: noteParamsSchema,
+  body: archiveSchema,
+  message: "Archive state updated",
+  handler: ({ actor, params, body }) =>
+    archiveMcpNote(actor.id, params.noteId, body),
+});
 
-router.post(
-  "/notes/:noteId/trash",
-  requireMcpNotePermission("trash"),
-  validateParams(noteParamsSchema),
-  validate(trashSchema),
-  asyncHandler(async (req, res) => {
-    const user = await getUser(req);
-    const { noteId } = noteParamsSchema.parse(req.params);
-    const input = trashSchema.parse(req.body);
-    successResponse(
-      res,
-      await trashMcpNote(user.id, noteId, input),
-      "Note moved to trash",
-    );
-  }),
-);
+mcpWriteRoutes.post("/notes/:noteId/trash", {
+  action: "trash",
+  params: noteParamsSchema,
+  body: trashSchema,
+  message: "Note moved to trash",
+  handler: ({ actor, params, body }) =>
+    trashMcpNote(actor.id, params.noteId, body),
+});
 
-router.post(
-  "/notes/:noteId/restore",
-  requireMcpNotePermission("restore"),
-  validateParams(noteParamsSchema),
-  validate(restoreSchema),
-  asyncHandler(async (req, res) => {
-    const user = await getUser(req);
-    const { noteId } = noteParamsSchema.parse(req.params);
-    const input = restoreSchema.parse(req.body);
-    successResponse(
-      res,
-      await restoreMcpNote(user.id, noteId, input),
-      "Note restored",
-    );
-  }),
-);
+mcpWriteRoutes.post("/notes/:noteId/restore", {
+  action: "restore",
+  params: noteParamsSchema,
+  body: restoreSchema,
+  message: "Note restored",
+  handler: ({ actor, params, body }) =>
+    restoreMcpNote(actor.id, params.noteId, body),
+});
 
 export default router;

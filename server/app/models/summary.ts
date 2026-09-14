@@ -1,4 +1,6 @@
 import mongoose from "@/lib/db";
+import type { HydratedDocument, InferSchemaType, Model } from "mongoose";
+
 const summarySchema = new mongoose.Schema(
   {
     content: {
@@ -14,7 +16,16 @@ const summarySchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
-export default mongoose.model("Summary", summarySchema, "summary");
+export type SummaryEntity = InferSchemaType<typeof summarySchema>;
+export type SummaryDocument = HydratedDocument<SummaryEntity>;
+
+const SummaryModel: Model<SummaryEntity> = mongoose.model<SummaryEntity>(
+  "Summary",
+  summarySchema,
+  "summary",
+);
+
+export default SummaryModel;

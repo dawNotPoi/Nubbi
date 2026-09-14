@@ -14,7 +14,7 @@ const getEmailDomainCorrection = (email: string) => {
   return domain ? emailDomainCorrections[domain] : undefined;
 };
 
-export const validateEmailAddress = (email: string) => {
+export const validateEmailAddress = (email: string): string | null => {
   if (!emailPattern.test(email)) {
     return "请输入有效的邮箱地址";
   }

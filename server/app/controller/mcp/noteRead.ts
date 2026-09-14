@@ -1,5 +1,4 @@
 import Note from "@/models/note";
-import { assertPureAgentSubtree } from "@/controller/note/access";
 import {
   escapeRegExp,
   fitMeta,
@@ -10,6 +9,8 @@ import {
   serializeNote,
   truncateText,
 } from "./shared";
+import type * as McpTypes from "./types";
+import { canRestoreMcpTrashNote } from "./trash-state";
 
 export type ListNotesInput = {
   limit: number;
@@ -32,7 +33,7 @@ const buildActiveFilter = (userId: string, input: ListNotesInput) => ({
 export const listMcpNotes = async (
   userId: string,
   input: ListNotesInput,
-) => {
+): Promise<McpTypes.McpPaginationResult<McpTypes.McpNoteResult>> => {
   const filter = buildActiveFilter(userId, input);
   const [items, total] = await Promise.all([
     Note.find(filter)
@@ -68,7 +69,7 @@ const createExcerpt = (content: string, query: string): string => {
 export const searchMcpNotes = async (
   userId: string,
   input: SearchNotesInput,
-) => {
+): Promise<McpTypes.McpPaginationResult<McpTypes.McpSearchNoteResult>> => {
   const regex = new RegExp(escapeRegExp(input.query), "i");
   const filter = {
     ...buildActiveFilter(userId, input),
@@ -111,7 +112,7 @@ export const getMcpNote = async (
     contentOffset: number;
     contentLimit: number;
   },
-) => {
+): Promise<McpTypes.McpNoteDetailResult> => {
   const item = await Note.findOne({
     _id: noteId,
     userId,
@@ -154,7 +155,7 @@ export const getMcpNote = async (
 export const listMcpTrash = async (
   userId: string,
   input: Pick<ListNotesInput, "limit" | "offset" | "source">,
-) => {
+): Promise<McpTypes.McpPaginationResult<McpTypes.McpTrashNoteResult>> => {
   const filter = {
     userId,
     deletedAt: { $ne: null },
@@ -171,25 +172,15 @@ export const listMcpTrash = async (
   ]);
 
   const results = await Promise.all(
-    items.map(async (item) => {
-      let canRestore = item.source === "agent";
-      if (canRestore) {
-        try {
-          await assertPureAgentSubtree(userId, String(item._id), true);
-          if (item.parentId) {
-            const parent = await Note.findOne({
-              _id: item.parentId,
-              userId,
-              deletedAt: null,
-            }).select("_id");
-            canRestore = Boolean(parent);
-          }
-        } catch {
-          canRestore = false;
-        }
-      }
-      return { ...serializeNote(item), canRestore };
-    }),
+    items.map(async (item) => ({
+      ...serializeNote(item),
+      canRestore: await canRestoreMcpTrashNote(
+        userId,
+        String(item._id),
+        item.parentId,
+        item.source,
+      ),
+    })),
   );
 
   return paginationResult(fitResponseItems(results), total, input.offset);

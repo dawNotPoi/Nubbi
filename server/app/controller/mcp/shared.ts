@@ -1,5 +1,7 @@
-import { getNoteAncestors } from "@/controller/note/query";
+import { httpError } from "@/common/http-error";
+import { getNoteAncestors } from "@/controller/note/hierarchy-query";
 import { MCP_LIMITS } from "@/lib/mcpPolicy";
+import type * as McpTypes from "./types";
 
 export type NoteLike = {
   _id: unknown;
@@ -20,11 +22,7 @@ export type NoteLike = {
   updatedAt?: unknown;
 };
 
-export const httpError = (
-  status: number,
-  message: string,
-  data?: unknown,
-): Error => Object.assign(new Error(message), { status, data });
+export { httpError };
 
 export const escapeRegExp = (value: string): string =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -35,7 +33,7 @@ export const toIsoString = (value: unknown): string | null => {
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 };
 
-export const serializeNote = (item: NoteLike) => ({
+export const serializeNote = (item: NoteLike): McpTypes.McpNoteResult => ({
   id: String(item._id),
   title:
     typeof item.title === "string"
@@ -99,7 +97,7 @@ export const getNotePath = async (
   noteId: string,
   userId: string,
   includeDeleted = false,
-) => {
+): Promise<McpTypes.McpNotePathResult> => {
   const allAncestors = await getNoteAncestors(noteId, userId, {
     includeDeleted,
   });
@@ -120,7 +118,7 @@ export const paginationResult = <T>(
   items: T[],
   total: number,
   offset: number,
-) => ({
+): McpTypes.McpPaginationResult<T> => ({
   items,
   total,
   count: items.length,

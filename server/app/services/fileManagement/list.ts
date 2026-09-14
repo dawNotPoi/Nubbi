@@ -1,4 +1,6 @@
+import { httpError } from "@/common/http-error";
 import { buildPaginationResult } from "@/common/pagination";
+import type { PaginationResult } from "@/common/pagination";
 import { File } from "@/models/file/file";
 import { Folder } from "@/models/file/folder";
 import {
@@ -7,7 +9,7 @@ import {
   buildStableSort,
   escapeSearchText,
 } from "./listFilters";
-import type { FileListInput } from "./schemas";
+import type { FileListInput } from "./input-types";
 
 type MongoFilter = Record<string, unknown>;
 
@@ -27,11 +29,36 @@ type FileDocument = FolderDocument & {
 };
 
 export type FileBreadcrumb = { _id: string | null; name: string };
+export type FolderListItem = {
+  _id: string;
+  kind: "folder";
+  name: string;
+  parentId: string | null;
+  createdAt: Date | null;
+  updatedAt: Date | null;
+};
 
-const httpError = (status: number, message: string): Error =>
-  Object.assign(new Error(message), { status });
+export type FileListItem = {
+  _id: string;
+  kind: "file";
+  name: string;
+  extension: string;
+  mimeType: string;
+  size: number;
+  folderId: string | null;
+  createdAt: Date | null;
+  updatedAt: Date | null;
+};
 
-export const serializeFolderItem = (folder: FolderDocument) => ({
+export type FileListResult = PaginationResult<
+  FolderListItem | FileListItem
+> & {
+  breadcrumbs: FileBreadcrumb[];
+};
+
+export const serializeFolderItem = (
+  folder: FolderDocument,
+): FolderListItem => ({
   _id: String(folder._id),
   kind: "folder" as const,
   name: folder.name,
@@ -40,7 +67,7 @@ export const serializeFolderItem = (folder: FolderDocument) => ({
   updatedAt: folder.updatedAt ?? null,
 });
 
-export const serializeFileItem = (file: FileDocument) => ({
+export const serializeFileItem = (file: FileDocument): FileListItem => ({
   _id: String(file._id),
   kind: "file" as const,
   name: file.name,
@@ -89,7 +116,10 @@ const buildNameFilter = (query: string): MongoFilter =>
     ? { name: { $regex: escapeSearchText(query), $options: "i" } }
     : {};
 
-export const listFiles = async (ownerId: string, input: FileListInput) => {
+export const listFiles = async (
+  ownerId: string,
+  input: FileListInput,
+): Promise<FileListResult> => {
   const { parentId, category, query, limit, offset, sortBy, sortOrder } = input;
   const includeFolders = category === "all" || category === "folder";
   const includeFiles = category !== "folder";

@@ -1,4 +1,5 @@
 import type { FileListItem } from "@/api/file";
+import type { ReactElement } from "react";
 import { FileBatchBar } from "./FileBatchBar";
 import { FileListSkeleton } from "./FileListSkeleton";
 import { FileRow } from "./FileRow";
@@ -24,12 +25,11 @@ interface FileListProps {
   onRetry: () => void;
   onSelectOnly: (id: string) => void;
   onShare: (item: FileListItem) => void;
-  onStartRename: (item: FileListItem) => void;
   onToggle: (id: string, checked: boolean) => void;
   onToggleAll: (checked: boolean) => void;
 }
 
-export function FileList(props: FileListProps) {
+export function FileList(props: FileListProps): ReactElement {
   const allSelected =
     props.items.length > 0 && props.selectedIds.length === props.items.length;
   const partial = props.selectedIds.length > 0 && !allSelected;
@@ -104,7 +104,6 @@ export function FileList(props: FileListProps) {
               onRename={props.onRename}
               onSelectOnly={props.onSelectOnly}
               onShare={props.onShare}
-              onStartRename={props.onStartRename}
               onToggle={props.onToggle}
             />
           ))}

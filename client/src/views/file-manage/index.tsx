@@ -7,11 +7,11 @@ import { FileToolbar } from "@/features/file/components/FileToolbar";
 import { FileUploadButton } from "@/features/file/components/FileUploadButton";
 import { useFileManagerController } from "@/features/file/hooks/useFileManagerController";
 import { Button } from "antd";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, type ReactElement } from "react";
 
 const FilePreviewModal = lazy(() => import("./components/FilePreviewModal"));
 
-export default function FileManager() {
+export default function FileManager(): ReactElement {
   const manager = useFileManagerController();
   const data = manager.data;
 
@@ -76,7 +76,6 @@ export default function FileManager() {
           onRetry={() => void manager.query.refetch()}
           onSelectOnly={manager.selectOnly}
           onShare={(item) => void manager.share(item)}
-          onStartRename={(item) => manager.setEditingId(item._id)}
           onToggle={manager.toggle}
           onToggleAll={manager.toggleAll}
         />

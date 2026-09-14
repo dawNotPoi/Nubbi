@@ -10,7 +10,10 @@ const activeTaskFilter = (ownerId: string) => ({
   ...getActiveUploadTaskGuard(new Date()),
 });
 
-export const assertUploadQuota = async (ownerId: string, size: number) => {
+export const assertUploadQuota = async (
+  ownerId: string,
+  size: number,
+): Promise<void> => {
   const [fileUsage, taskUsage] = await Promise.all([
     File.aggregate<{ total: number }>([
       { $match: { ownerId, status: "active" } },
@@ -27,5 +30,7 @@ export const assertUploadQuota = async (ownerId: string, size: number) => {
   }
 };
 
-export const countActiveUploadTasks = (ownerId: string) =>
+export const countActiveUploadTasks = (
+  ownerId: string,
+): ReturnType<typeof UploadTask.countDocuments> =>
   UploadTask.countDocuments(activeTaskFilter(ownerId));

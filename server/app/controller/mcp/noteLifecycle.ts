@@ -1,37 +1,26 @@
 import {
   assertAgentNote,
+  assertNotesNotPendingPurge,
   assertPureAgentSubtree,
 } from "@/controller/note/access";
 import { collectDescendantNoteIds } from "@/controller/note/delete";
-import { validateNoteMoveTarget } from "@/controller/note/query";
-import { recalculateHasChildren } from "@/controller/note/update";
-import { withNoteStructureLock } from "@/controller/note/structureLock";
+import { validateNoteMoveTarget } from "@/controller/note/hierarchy-query";
+import { recalculateHasChildren } from "@/controller/note/structure-update";
 import Note from "@/models/note";
+import { withNoteStructureLock } from "@/services/note/structure-lock";
 import {
   assertExpectedDate,
   httpError,
   serializeNote,
-  toIsoString,
 } from "./shared";
-
-const throwUpdateConflict = async (
-  userId: string,
-  noteId: string,
-): Promise<never> => {
-  const current = await Note.findOne({ _id: noteId, userId })
-    .select("updatedAt deletedAt")
-    .lean();
-  throw httpError(409, "Note was changed; read it again and retry", {
-    updatedAt: toIsoString(current?.updatedAt),
-    deletedAt: toIsoString(current?.deletedAt),
-  });
-};
+import type { McpAffectedNoteResult, McpNoteResult } from "./types";
+import { throwMcpUpdateConflict } from "./mutation-conflict";
 
 const moveMcpNoteUnlocked = async (
   userId: string,
   noteId: string,
   input: { expectedUpdatedAt: string; parentId: string | null },
-) => {
+): Promise<McpNoteResult> => {
   const access = await assertAgentNote(userId, noteId);
   await assertPureAgentSubtree(userId, noteId, true);
   assertExpectedDate(input.expectedUpdatedAt, access.updatedAt);
@@ -66,11 +55,14 @@ const moveMcpNoteUnlocked = async (
     { $set: { parentId: input.parentId } },
     { new: true },
   );
-  if (!updated) return throwUpdateConflict(userId, noteId);
+  if (!updated) return throwMcpUpdateConflict(userId, noteId);
 
-  await recalculateHasChildren(access.parentId);
+  await recalculateHasChildren(access.parentId, userId);
   if (input.parentId) {
-    await Note.findByIdAndUpdate(input.parentId, { $set: { hasChildren: true } });
+    await Note.findOneAndUpdate(
+      { _id: input.parentId, userId },
+      { $set: { hasChildren: true } },
+    );
   }
   return serializeNote(updated);
 };
@@ -79,7 +71,7 @@ export const moveMcpNote = async (
   userId: string,
   noteId: string,
   input: { expectedUpdatedAt: string; parentId: string | null },
-) =>
+): Promise<McpNoteResult> =>
   withNoteStructureLock(userId, () =>
     moveMcpNoteUnlocked(userId, noteId, input),
   );
@@ -88,7 +80,7 @@ export const archiveMcpNote = async (
   userId: string,
   noteId: string,
   input: { expectedUpdatedAt: string; archived: boolean },
-) => {
+): Promise<McpNoteResult> => {
   const access = await assertAgentNote(userId, noteId);
   assertExpectedDate(input.expectedUpdatedAt, access.updatedAt);
   const updated = await Note.findOneAndUpdate(
@@ -102,7 +94,7 @@ export const archiveMcpNote = async (
     { $set: { status: input.archived ? "archived" : "active" } },
     { new: true },
   );
-  if (!updated) return throwUpdateConflict(userId, noteId);
+  if (!updated) return throwMcpUpdateConflict(userId, noteId);
   return serializeNote(updated);
 };
 
@@ -110,7 +102,7 @@ const trashMcpNoteUnlocked = async (
   userId: string,
   noteId: string,
   input: { expectedUpdatedAt?: string },
-) => {
+): Promise<McpAffectedNoteResult> => {
   const access = await assertAgentNote(userId, noteId);
   await assertPureAgentSubtree(userId, noteId, true);
   if (input.expectedUpdatedAt) {
@@ -130,7 +122,7 @@ const trashMcpNoteUnlocked = async (
     { $set: { deletedAt } },
     { new: true },
   );
-  if (!updated) return throwUpdateConflict(userId, noteId);
+  if (!updated) return throwMcpUpdateConflict(userId, noteId);
   await Note.updateMany(
     {
       _id: { $in: descendantIds },
@@ -140,7 +132,7 @@ const trashMcpNoteUnlocked = async (
     },
     { $set: { deletedAt } },
   );
-  await recalculateHasChildren(access.parentId);
+  await recalculateHasChildren(access.parentId, userId);
   return { ...serializeNote(updated), affectedCount: targetIds.length };
 };
 
@@ -148,7 +140,7 @@ export const trashMcpNote = async (
   userId: string,
   noteId: string,
   input: { expectedUpdatedAt?: string },
-) =>
+): Promise<McpAffectedNoteResult> =>
   withNoteStructureLock(userId, () =>
     trashMcpNoteUnlocked(userId, noteId, input),
   );
@@ -157,7 +149,7 @@ const restoreMcpNoteUnlocked = async (
   userId: string,
   noteId: string,
   input: { deletedAt?: string },
-) => {
+): Promise<McpAffectedNoteResult> => {
   const access = await assertPureAgentSubtree(userId, noteId, true);
   if (!access.deletedAt) throw httpError(400, "Only trashed notes can be restored");
   if (input.deletedAt) {
@@ -176,12 +168,13 @@ const restoreMcpNoteUnlocked = async (
 
   const descendantIds = await collectDescendantNoteIds(noteId, userId, true);
   const targetIds = [noteId, ...descendantIds];
+  await assertNotesNotPendingPurge(userId, targetIds);
   await Note.updateMany(
     { _id: { $in: targetIds }, userId, source: "agent" },
     { $set: { deletedAt: null, expiresAt: null } },
   );
-  await recalculateHasChildren(access.parentId);
-  const updated = await Note.findById(noteId);
+  await recalculateHasChildren(access.parentId, userId);
+  const updated = await Note.findOne({ _id: noteId, userId });
   if (!updated) throw httpError(404, "Note not found");
   return { ...serializeNote(updated), affectedCount: targetIds.length };
 };
@@ -190,7 +183,7 @@ export const restoreMcpNote = async (
   userId: string,
   noteId: string,
   input: { deletedAt?: string },
-) =>
+): Promise<McpAffectedNoteResult> =>
   withNoteStructureLock(userId, () =>
     restoreMcpNoteUnlocked(userId, noteId, input),
   );

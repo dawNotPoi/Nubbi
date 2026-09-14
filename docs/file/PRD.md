@@ -4,7 +4,7 @@
 
 完整的文件管理系统，支持大文件分片断点续传、文件夹层级管理、文件预览和分享。
 
-**服务端**: `server/app/routes/file*.ts` + `server/app/controller/file*.ts` + `server/app/services/fileManagement/` + `server/app/services/fileAccess/`
+**服务端**: `server/app/routes/file/` + `server/app/controller/file/` + `server/app/services/fileManagement/` + `server/app/services/fileAccess/`
 **客户端**: `client/src/views/file-manage/` + `client/src/features/file/` + `client/src/component/upload/`
 
 ---
@@ -86,6 +86,7 @@
 - 合并使用可续期租约和 fencing token；进程中断后，过期租约可被安全接管，旧 worker 不能覆盖新任务状态或删除新 worker 的暂存文件。
 - 每个合并租约使用独立 `.part` 路径。取消、账户删除和过期维护会先按引用计数清理最终文件，并清理该任务的全部暂存文件后再删除任务记录。
 - `UploadTask.expiresAt` 使用普通扫描索引，不使用 Mongo TTL 自动删除；后台维护按小时显式回收，清理失败时保留任务以便重试。
+- 上传初始化、合并和任务状态接口只返回公开文件 DTO，不返回 `storagePath`、`hash`、`ownerId` 或上传内部字段；任务关联文件会再次带 `ownerId` 查询。
 
 ### 文件夹
 | 方法 | 路径 | 说明 |
@@ -190,5 +191,6 @@
 - 外层继续使用 Nubbi Client 的 SideBar、共享 Header 和移动底部导航，文件页面不再增加 Finder 窗口或内部侧栏。
 - 当前目录搜索、类型筛选和排序由服务端在分页前执行，结果始终保持文件夹优先；UI 固定每页 20 项。
 - 桌面单击行选择、双击或显式按钮打开；移动端单击打开，复选框负责选择。新建文件夹成功后立即进入行内重命名。
+- 普通文件和已有文件夹的行级菜单不提供重命名按钮；保留新建文件夹后的即时命名流程。
 
 > HTML 文件仅作为视觉基线，真实页面使用 React、Tailwind、Ant Design 基础控件和现有文件 API 实现。

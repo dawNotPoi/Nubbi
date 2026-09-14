@@ -5,12 +5,14 @@ import {
   listMcpTrash,
   searchMcpNotes,
 } from "@/controller/mcp/noteRead";
-import { getUser } from "@/lib/authUser";
-import { asyncHandler } from "@/middleware/common";
+import {
+  requireAuthenticatedUser,
+  type AuthenticatedUser,
+} from "@/lib/authUser";
+import type { McpNoteAction } from "@/lib/mcpPolicy";
 import { requireMcpNotePermission } from "@/middleware/session";
-import { validateParams, validateQuery } from "@/middleware/validator";
+import { createJsonRouteRegistrar } from "@/routes/infrastructure/json-route-registrar";
 import express from "express";
-import { successResponse } from "../utils";
 import {
   listNotesQuerySchema,
   noteDetailQuerySchema,
@@ -20,63 +22,44 @@ import {
 } from "./schemas";
 
 const router = express.Router();
-const requireRead = requireMcpNotePermission("read");
+const mcpReadRoutes = createJsonRouteRegistrar<
+  McpNoteAction,
+  AuthenticatedUser
+>(router, {
+  authorize: requireMcpNotePermission,
+  resolveActor: requireAuthenticatedUser,
+});
 
-router.get(
-  "/context",
-  requireRead,
-  asyncHandler(async (req, res) => {
-    successResponse(res, getMcpContext(req.authContext), "MCP context ready");
-  }),
-);
+mcpReadRoutes.get("/context", {
+  action: "read",
+  message: "MCP context ready",
+  handler: ({ authContext }) => getMcpContext(authContext),
+});
 
-router.get(
-  "/notes",
-  requireRead,
-  validateQuery(listNotesQuerySchema),
-  asyncHandler(async (req, res) => {
-    const user = await getUser(req);
-    const input = listNotesQuerySchema.parse(req.query);
-    successResponse(res, await listMcpNotes(user.id, input));
-  }),
-);
+mcpReadRoutes.get("/notes", {
+  action: "read",
+  query: listNotesQuerySchema,
+  handler: ({ actor, query }) => listMcpNotes(actor.id, query),
+});
 
-router.get(
-  "/notes/search",
-  requireRead,
-  validateQuery(searchNotesQuerySchema),
-  asyncHandler(async (req, res) => {
-    const user = await getUser(req);
-    const input = searchNotesQuerySchema.parse(req.query);
-    successResponse(res, await searchMcpNotes(user.id, input));
-  }),
-);
+mcpReadRoutes.get("/notes/search", {
+  action: "read",
+  query: searchNotesQuerySchema,
+  handler: ({ actor, query }) => searchMcpNotes(actor.id, query),
+});
 
-router.get(
-  "/trash",
-  requireRead,
-  validateQuery(trashQuerySchema),
-  asyncHandler(async (req, res) => {
-    const user = await getUser(req);
-    const input = trashQuerySchema.parse(req.query);
-    successResponse(res, await listMcpTrash(user.id, input));
-  }),
-);
+mcpReadRoutes.get("/trash", {
+  action: "read",
+  query: trashQuerySchema,
+  handler: ({ actor, query }) => listMcpTrash(actor.id, query),
+});
 
-router.get(
-  "/notes/:noteId",
-  requireRead,
-  validateParams(noteParamsSchema),
-  validateQuery(noteDetailQuerySchema),
-  asyncHandler(async (req, res) => {
-    const user = await getUser(req);
-    const { noteId } = noteParamsSchema.parse(req.params);
-    const input = noteDetailQuerySchema.parse(req.query);
-    successResponse(
-      res,
-      await getMcpNote(user.id, noteId, input),
-    );
-  }),
-);
+mcpReadRoutes.get("/notes/:noteId", {
+  action: "read",
+  params: noteParamsSchema,
+  query: noteDetailQuerySchema,
+  handler: ({ actor, params, query }) =>
+    getMcpNote(actor.id, params.noteId, query),
+});
 
 export default router;

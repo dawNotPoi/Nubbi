@@ -1,12 +1,16 @@
 import { auth } from "@/lib/auth";
 import { toWebHeaders } from "@/lib/requestHeaders";
+import logger from "@/common/logger";
+import { getErrorStatusCode, httpError } from "@/common/http-error";
 import type { NextFunction, Request, Response } from "express";
 import { importJWK, jwtVerify, type JWK } from "jose";
+import type { IncomingHttpHeaders } from "node:http";
 import type {
   ApiKeyContext,
   AuthRequest,
   RequestAuthContext,
 } from "./common";
+import { trackAuthenticatedMutation } from "./account-mutation";
 
 type JwkKey = Record<string, unknown> & { alg?: string };
 
@@ -27,24 +31,20 @@ const getPublicKeys = async (): Promise<JwkKey[]> => {
 const verifyJwt = async (
   token: string,
 ): Promise<Record<string, unknown> | null> => {
-  try {
-    const keys = await getPublicKeys();
-    for (const keyData of keys) {
-      try {
-        const publicKey = await importJWK(
-          keyData as JWK,
-          keyData.alg ?? "EdDSA",
-        );
-        const { payload } = await jwtVerify(token, publicKey);
-        return payload as Record<string, unknown>;
-      } catch {
-        continue;
-      }
+  const keys = await getPublicKeys();
+  for (const keyData of keys) {
+    try {
+      const publicKey = await importJWK(
+        keyData as JWK,
+        keyData.alg ?? "EdDSA",
+      );
+      const { payload } = await jwtVerify(token, publicKey);
+      return payload as Record<string, unknown>;
+    } catch {
+      continue;
     }
-    return null;
-  } catch {
-    return null;
   }
+  return null;
 };
 
 const findExistingAuthUser = async (userId: string) => {
@@ -52,18 +52,33 @@ const findExistingAuthUser = async (userId: string) => {
   return authContext.internalAdapter.findUserById(userId);
 };
 
-export const unauthorized = (res: Response) =>
-  res.status(401).json({ code: 0, message: "Unauthorized" });
+export const unauthorized = (res: Response): void => {
+  res.status(401).json({ code: 0, message: "Unauthorized", data: null });
+};
 
 export const sendAuthenticationError = (
   res: Response,
   error: unknown,
+  next: NextFunction,
 ): void => {
-  if (error instanceof Error && "status" in error && error.status === 429) {
-    res.status(429).json({ code: 0, message: error.message, data: null });
+  const status = getErrorStatusCode(error);
+  if (status === 429) {
+    const message =
+      error instanceof Error ? error.message : "请求过于频繁，请稍后重试";
+    res.status(429).json({ code: 0, message, data: null });
     return;
   }
-  unauthorized(res);
+  if (status === 400 || status === 401 || status === 403) {
+    unauthorized(res);
+    return;
+  }
+  if (status === 409) {
+    next(error);
+    return;
+  }
+
+  logger.error("认证服务异常", { error });
+  next(error);
 };
 
 export const attachAuthContext = (
@@ -77,8 +92,14 @@ export const attachAuthContext = (
 
 export const getSessionAuthContext = async (
   req: Request,
+): Promise<RequestAuthContext | null> =>
+  getSessionAuthContextFromHeaders(req.headers);
+
+export const getSessionAuthContextFromHeaders = async (
+  headers: IncomingHttpHeaders,
 ): Promise<RequestAuthContext | null> => {
-  const authHeader = req.headers.authorization;
+  const headerValue = headers.authorization;
+  const authHeader = Array.isArray(headerValue) ? headerValue[0] : headerValue;
   if (authHeader?.startsWith("Bearer ")) {
     const token = authHeader.slice(7);
     if (token.split(".").length === 3) {
@@ -99,7 +120,7 @@ export const getSessionAuthContext = async (
   }
 
   const session = await auth.api.getSession({
-    headers: toWebHeaders(req.headers),
+    headers: toWebHeaders(headers),
   });
   if (!session?.user) return null;
   return {
@@ -119,9 +140,7 @@ export const getApiKeyContext = async (
   const result = await auth.api.verifyApiKey({ body: { key } });
   if (!result?.valid || !result.key?.userId) {
     if (result?.error?.code === "RATE_LIMITED") {
-      throw Object.assign(new Error("API key rate limit exceeded"), {
-        status: 429,
-      });
+      throw httpError(429, "API key rate limit exceeded");
     }
     return null;
   }
@@ -160,8 +179,9 @@ export const authenticateBySession = async (
     const context = await getSessionAuthContext(req);
     if (!context) return void unauthorized(res);
     attachAuthContext(req, context);
+    trackAuthenticatedMutation(req, res, context.user.id);
     next();
-  } catch {
-    unauthorized(res);
+  } catch (error) {
+    sendAuthenticationError(res, error, next);
   }
 };

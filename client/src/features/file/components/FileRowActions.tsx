@@ -5,11 +5,10 @@ import {
   Download,
   MoreHorizontal,
   Move,
-  Pencil,
   Share2,
   Trash2,
 } from "lucide-react";
-import type { MouseEvent } from "react";
+import type { MouseEvent, ReactElement } from "react";
 
 interface FileRowActionsProps {
   item: FileListItem;
@@ -17,11 +16,12 @@ interface FileRowActionsProps {
   onDownload: (item: FileListItem) => void;
   onMove: (item: FileListItem) => void;
   onOpen: (item: FileListItem) => void;
-  onRename: (item: FileListItem) => void;
   onShare: (item: FileListItem) => void;
 }
 
-export function FileRowActions(props: FileRowActionsProps) {
+export function FileRowActions(
+  props: FileRowActionsProps,
+): ReactElement {
   const { item } = props;
   const run = (callback: (item: FileListItem) => void) => callback(item);
   const items: MenuProps["items"] = [
@@ -46,12 +46,6 @@ export function FileRowActions(props: FileRowActionsProps) {
       icon: <Move className="size-4" />,
       label: "移动",
       onClick: () => run(props.onMove),
-    },
-    {
-      key: "rename",
-      icon: <Pencil className="size-4" />,
-      label: "重命名",
-      onClick: () => run(props.onRename),
     },
     { type: "divider" },
     {

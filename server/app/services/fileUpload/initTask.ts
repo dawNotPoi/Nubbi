@@ -1,5 +1,7 @@
 import { File } from "@/models/file/file";
 import { UploadTask } from "@/models/file/uploadTask";
+import logger from "@/common/logger";
+import { waitForAll } from "@/common/promises";
 import { withFileFolderStructureLock } from "@/services/fileManagement/structureLock";
 import fse from "fs-extra";
 import path from "path";
@@ -10,7 +12,6 @@ import { buildInstantFileFilter } from "./filters";
 import { assertOwnedUploadFolder } from "./folderValidation";
 import { assertUploadQuota, countActiveUploadTasks } from "./reservation";
 import { resumeUploadTaskUnlocked } from "./resumeTask";
-import type { InitUploadInput } from "./schemas";
 import {
   ensureUploadDirectories,
   getTaskTempDir,
@@ -21,6 +22,8 @@ import {
   removeUploadStagingFiles,
 } from "./storageCleanup";
 import { isUploadTaskExpired } from "./taskPolicy";
+import type { InitUploadInput, InitializeUploadResult } from "./types";
+import { serializeUploadedFile } from "./file-dto";
 
 const findUploadTask = (ownerId: string, input: InitUploadInput) =>
   UploadTask.findOne({
@@ -79,7 +82,12 @@ const createUploadTask = async (ownerId: string, input: InitUploadInput) => {
   try {
     await task.save();
   } catch (error) {
-    await fse.remove(task.tempDir);
+    await fse.remove(task.tempDir).catch((cleanupError: unknown) => {
+      logger.warn("上传任务创建失败后的临时目录清理失败", {
+        tempDir: task.tempDir,
+        error: cleanupError,
+      });
+    });
     throw error;
   }
   return {
@@ -94,7 +102,7 @@ const createUploadTask = async (ownerId: string, input: InitUploadInput) => {
 export const initializeUpload = async (
   ownerId: string,
   input: InitUploadInput,
-) => {
+): Promise<InitializeUploadResult> => {
   await ensureUploadDirectories();
   return withFileFolderStructureLock(ownerId, async () => {
     await assertOwnedUploadFolder(ownerId, input.folderId);
@@ -121,7 +129,12 @@ export const initializeUpload = async (
     }
 
     const instantFile = await createInstantFile(ownerId, input);
-    if (instantFile) return { needUpload: false as const, file: instantFile };
+    if (instantFile) {
+      return {
+        needUpload: false as const,
+        file: serializeUploadedFile(instantFile),
+      };
+    }
     if (existingTask?.status === "completed") {
       const storagePath = existingTask.storagePath || getUploadFinalPath(
         ownerId,
@@ -129,11 +142,14 @@ export const initializeUpload = async (
         existingTask.totalSize,
         existingTask.fileName,
       );
-      await Promise.all([
-        removeUnreferencedUploadFile(storagePath),
-        removeUploadStagingFiles(ownerId, String(existingTask._id)),
-        fse.remove(existingTask.tempDir),
-      ]);
+      await waitForAll(
+        [
+          removeUnreferencedUploadFile(storagePath),
+          removeUploadStagingFiles(ownerId, String(existingTask._id)),
+          fse.remove(existingTask.tempDir),
+        ],
+        "已完成上传任务清理未全部完成",
+      );
       await existingTask.deleteOne();
     }
     return createUploadTask(ownerId, input);

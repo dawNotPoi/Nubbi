@@ -32,11 +32,11 @@ const getPasswordResetCollection = async () => {
   );
 
   if (!indexesEnsured) {
-    indexesEnsured = true;
     await collection.createIndexes([
       { key: { email: 1, createdAt: -1 } },
       { key: { expiresAt: 1 }, expireAfterSeconds: 0 },
     ]);
+    indexesEnsured = true;
   }
 
   return collection;
@@ -56,7 +56,9 @@ const generateResetCode = () =>
     .toString()
     .padStart(PASSWORD_RESET_CODE_LENGTH, "0");
 
-export const createPasswordResetAttempt = async (email: string) => {
+export const createPasswordResetAttempt = async (
+  email: string,
+): Promise<void> => {
   const collection = await getPasswordResetCollection();
   const normalizedEmail = normalizeEmail(email);
   const now = new Date();
@@ -72,6 +74,7 @@ export const createPasswordResetAttempt = async (email: string) => {
     expiresAt,
     createdAt: now,
     usedAt: null,
+    failedAttempts: 0,
   });
 };
 
@@ -79,7 +82,7 @@ export const createPasswordResetCode = async (
   email: string,
   token: string,
   expiresInSeconds = PASSWORD_RESET_EXPIRES_IN_SECONDS,
-) => {
+): Promise<string> => {
   const passwordResetCollection = await getPasswordResetCollection();
   const normalizedEmail = normalizeEmail(email);
   const code = generateResetCode();
@@ -94,12 +97,15 @@ export const createPasswordResetCode = async (
     expiresAt,
     createdAt: now,
     usedAt: null,
+    failedAttempts: 0,
   });
 
   return code;
 };
 
-export const getPasswordResetRemainingSeconds = async (email: string) => {
+export const getPasswordResetRemainingSeconds = async (
+  email: string,
+): Promise<number> => {
   const passwordResetCollection = await getPasswordResetCollection();
   const normalizedEmail = normalizeEmail(email);
   const now = new Date();
@@ -122,43 +128,44 @@ export const getPasswordResetRemainingSeconds = async (email: string) => {
     : 0;
 };
 
-export const consumePasswordResetCode = async (email: string, code: string) => {
+export const consumePasswordResetCode = async (
+  email: string,
+  code: string,
+): Promise<string | null> => {
   const collection = await getPasswordResetCollection();
   const normalizedEmail = normalizeEmail(email);
   const now = new Date();
 
-  const record = await collection.findOne({
+  const attemptFilter = {
     email: normalizedEmail,
     codeHash: { $ne: "" },
     expiresAt: { $gt: now },
     usedAt: null,
-  });
-
-  if (!record) return null;
-
-  if ((record.failedAttempts ?? 0) >= PASSWORD_RESET_MAX_ATTEMPTS) {
-    return null;
-  }
-
-  if (record.codeHash !== hashResetCode(normalizedEmail, code)) {
-    const newFailedAttempts = (record.failedAttempts ?? 0) + 1;
-    const update: Record<string, unknown> = { failedAttempts: newFailedAttempts };
-    if (newFailedAttempts >= PASSWORD_RESET_MAX_ATTEMPTS) {
-      update.usedAt = now;
-    }
-    await collection.updateOne(
-      { email: normalizedEmail, codeHash: record.codeHash, usedAt: null },
-      { $set: update },
-    );
-    return null;
-  }
-
-  const consumeResult = await collection.updateOne(
-    { email: normalizedEmail, codeHash: record.codeHash, usedAt: null },
+    $or: [
+      { failedAttempts: { $exists: false } },
+      { failedAttempts: { $lt: PASSWORD_RESET_MAX_ATTEMPTS } },
+    ],
+  };
+  const record = await collection.findOneAndUpdate(
+    {
+      ...attemptFilter,
+      codeHash: hashResetCode(normalizedEmail, code),
+    },
     { $set: { usedAt: now } },
+    { returnDocument: "before" },
   );
+  if (record) return record.token;
 
-  if (consumeResult.modifiedCount !== 1) return null;
-
-  return record.token;
+  const failedRecord = await collection.findOneAndUpdate(
+    attemptFilter,
+    { $inc: { failedAttempts: 1 } },
+    { returnDocument: "after", sort: { createdAt: -1 } },
+  );
+  if ((failedRecord?.failedAttempts ?? 0) >= PASSWORD_RESET_MAX_ATTEMPTS) {
+    await collection.updateOne(
+      { _id: failedRecord?._id, usedAt: null },
+      { $set: { usedAt: now } },
+    );
+  }
+  return null;
 };

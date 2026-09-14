@@ -101,7 +101,7 @@ const ensureIndexes = async () => {
   ]);
 };
 
-export const prepareFileUploadInfrastructure = () => {
+export const prepareFileUploadInfrastructure = (): Promise<void> => {
   preparePromise ??= (async () => {
     await ensureUploadDirectories();
     await migrateNumericFields();
@@ -126,7 +126,7 @@ const removeStaleEntries = async (
   );
 };
 
-export const cleanupExpiredUploads = async () => {
+export const cleanupExpiredUploads = async (): Promise<void> => {
   await prepareFileUploadInfrastructure();
   const now = new Date();
   const expired = await UploadTask.find({ expiresAt: { $lte: now } })
@@ -175,7 +175,7 @@ const runFileUploadMaintenance = async () => {
   timer.unref();
 };
 
-export const startFileUploadMaintenance = () => {
+export const startFileUploadMaintenance = (): Promise<void> => {
   maintenancePromise ??= runFileUploadMaintenance();
   return maintenancePromise;
 };
