@@ -8,8 +8,8 @@ export type ExtensionResponse = {
   servers: {
     id: string;
     name: string;
-    transport: "http";
-    endpoint: string;
+    transport: "http" | "stdio";
+    endpoint?: string;
     enabled: boolean;
     toolCount: number;
   }[];
@@ -33,8 +33,8 @@ export class ExtensionsService {
       servers: servers.map((server) => ({
         id: server.id,
         name: server.name,
-        transport: "http",
-        endpoint: server.url,
+        transport: server.transport ?? "http",
+        endpoint: server.url ?? server.command,
         enabled: server.enabled,
         toolCount: tools.filter((tool) => tool.server.id === server.id).length,
       })),

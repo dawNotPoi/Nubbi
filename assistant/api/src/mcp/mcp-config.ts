@@ -13,25 +13,39 @@ export const mcpServerSchema = z.object({
   id: idSchema,
   name: z.string().trim().min(1, "名称不能为空").max(64),
   enabled: z.boolean().default(true),
-  url: z.string().url("请输入有效的 MCP URL"),
+  // http：通过 Streamable HTTP 连接远端；stdio：由本进程拉起子进程通信。
+  transport: z.enum(["http", "stdio"]).default("http"),
+  url: z.string().url("请输入有效的 MCP URL").optional(),
   headers: stringMapSchema,
+  command: z.string().trim().min(1, "请输入启动命令").optional(),
+  args: z.array(z.string()).default([]),
+  env: stringMapSchema,
+}).superRefine((server, context) => {
+  if (server.transport === "http" && !server.url) {
+    context.addIssue({
+      code: "custom",
+      message: "HTTP 类型的 MCP 服务必须填写 URL",
+      path: ["url"],
+    });
+  }
+  if (server.transport === "stdio" && !server.command) {
+    context.addIssue({
+      code: "custom",
+      message: "stdio 类型的 MCP 服务必须填写启动命令",
+      path: ["command"],
+    });
+  }
 });
 
 export type McpServerConfig = z.infer<typeof mcpServerSchema>;
 const configFile = path.join(projectRoot, "config", "mcp.json");
 
 /**
- * 兼容旧的 stdio 配置：遇到不支持的类型直接丢弃，其余字段按新 Schema 校验。
- * @param value 旧配置中的单个服务配置。
- * @returns 标准化后的服务配置；不支持的 stdio 类型返回 null。
+ * 兼容旧配置：无 transport 字段时由 Schema 默认值为 http，直接透传即可。
+ * @param value 配置中的单个服务配置。
+ * @returns 原样返回，交给 Schema 做默认值与交叉校验。
  */
-const normalizeLegacyServer = (value: unknown): unknown => {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return value;
-  const record = value as Record<string, unknown>;
-  if (record.transport === "stdio") return null;
-  const { transport: _transport, ...server } = record;
-  return server;
-};
+const normalizeLegacyServer = (value: unknown): unknown => value;
 
 /**
  * 读取并校验全部 MCP 服务配置。

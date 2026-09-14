@@ -1,4 +1,5 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { listMcpServers, type McpServerConfig } from "./mcp-config.js";
@@ -47,12 +48,21 @@ const expandRecord = (
 );
 
 /**
- * 创建 Streamable HTTP 传输层，URL 与请求头均支持环境变量注入。
+ * 创建传输层：stdio 服务拉起子进程通信，HTTP 服务走 Streamable HTTP。
+ * command/args/env 与 URL/请求头均支持 ${ENV_NAME} 环境变量展开。
  * @param server MCP 服务配置。
  * @returns 连接用的传输层实例。
  */
 const createTransport = (server: McpServerConfig): Transport => {
-  return new StreamableHTTPClientTransport(new URL(expandEnv(server.url)), {
+  if (server.transport === "stdio") {
+    // SDK 会合并安全白名单变量（PATH 等）与这里传入的 env。
+    return new StdioClientTransport({
+      command: expandEnv(server.command ?? ""),
+      args: server.args.map((arg) => expandEnv(arg)),
+      env: expandRecord(server.env),
+    });
+  }
+  return new StreamableHTTPClientTransport(new URL(expandEnv(server.url ?? "")), {
     requestInit: { headers: expandRecord(server.headers) },
   });
 };

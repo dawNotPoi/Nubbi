@@ -14,6 +14,8 @@ const emptyMcp = (): McpDraft => ({
   enabled: true,
   url: "",
   headers: [],
+  args: [],
+  env: {},
 });
 
 /**
@@ -33,7 +35,7 @@ export const toMcpDraft = (server: McpServerConfig | null): McpDraft => server
 export const fromMcpDraft = (draft: McpDraft): McpServerConfig => {
   const id = draft.id.trim();
   const name = draft.name.trim();
-  const url = draft.url.trim();
+  const url = draft.url?.trim() ?? "";
   if (!id || !name || !url) throw new Error("请填写名称、ID 和 MCP URL");
   if (!/^[a-z0-9-]+$/.test(id)) throw new Error("ID 只能包含小写字母、数字和连字符");
   if (!/^https?:\/\//i.test(url)) throw new Error("MCP URL 必须以 http:// 或 https:// 开头");
@@ -45,5 +47,7 @@ export const fromMcpDraft = (draft: McpDraft): McpServerConfig => {
     headers: Object.fromEntries(draft.headers
       .map((item) => [item.key.trim(), item.value])
       .filter(([key]) => Boolean(key))),
+    args: draft.args ?? [],
+    env: draft.env ?? {},
   };
 };

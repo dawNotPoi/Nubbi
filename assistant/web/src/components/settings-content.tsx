@@ -70,9 +70,13 @@ export const SettingsContent = ({
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <p className="truncate text-sm font-semibold">{server.name}</p>
-                  <span className="rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium uppercase text-muted-foreground">HTTP</span>
+                  <span className="rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium uppercase text-muted-foreground">
+                    {server.transport === "stdio" ? "STDIO" : "HTTP"}
+                  </span>
                 </div>
-                <p className="mt-1 truncate font-mono text-xs text-muted-foreground">{server.url}</p>
+                <p className="mt-1 truncate font-mono text-xs text-muted-foreground">
+                  {server.url ?? (server.command ? "stdio: " + server.command : "(stdio)")}
+                </p>
               </div>
               <label className="relative mt-0.5 inline-flex h-6 w-10 shrink-0 cursor-pointer items-center">
                 <input aria-label={`${server.enabled ? "停用" : "启用"}${server.name}`} checked={server.enabled} className="peer sr-only" disabled={loading} onChange={() => onToggle(server)} type="checkbox" />

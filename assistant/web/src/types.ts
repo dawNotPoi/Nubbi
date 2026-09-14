@@ -62,8 +62,13 @@ type McpServerBase = {
 };
 
 export type McpServerConfig = McpServerBase & {
-  url: string;
+  // http：远端 Streamable HTTP 地址；stdio：本地启动命令。
+  transport?: "http" | "stdio";
+  url?: string;
   headers: Record<string, string>;
+  command?: string;
+  args?: string[];
+  env: Record<string, string>;
 };
 
 export type McpConnectionTest = {
