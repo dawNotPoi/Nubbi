@@ -41,10 +41,40 @@ export const createFloderMutationAtom = atomWithMutation(() => ({
   }) => {
     return createFloder(name, parentId);
   },
-  onSuccess: (_data, variables) => {
-    // 新建成功后仅刷新当前目录列表
+  onSuccess: (response, variables) => {
+    if (response.code !== 1 || !response.data?._id) {
+      return;
+    }
+
+    const queryKey = ["files", variables.parentId ?? "root"];
+    queryClient.setQueryData<Awaited<ReturnType<typeof listFiles>>>(
+      queryKey,
+      (cache) => {
+        if (!cache?.data) return cache;
+
+        const nextFolders = [
+          ...cache.data.folders.filter(
+            (folder) => String(folder._id) !== String(response.data._id),
+          ),
+          response.data,
+        ].sort((left, right) =>
+          String(left.name || "").localeCompare(String(right.name || ""), "zh-CN"),
+        );
+
+        return {
+          ...cache,
+          data: {
+            ...cache.data,
+            folders: nextFolders,
+          },
+        };
+      },
+    );
+
+    // 后台同步一次，避免缓存与服务端排序或字段细节漂移。
     queryClient.invalidateQueries({
-      queryKey: ["files", variables.parentId ?? "root"],
+      queryKey,
+      refetchType: "active",
     });
   },
 }));

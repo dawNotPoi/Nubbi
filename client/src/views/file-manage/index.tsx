@@ -157,9 +157,8 @@ const FileManager = () => {
   const crumbs = useAtomValue(breadcrumbsAtom);
   const setCrumbs = useSetAtom(breadcrumbsAtom);
   const { data: files, refetch, isFetching } = useAtomValue(listFilesAtom);
-  const { mutate: createFolderMutation } = useAtomValue(
-    createFloderMutationAtom,
-  );
+  const { mutate: createFolderMutation, isPending: creatingFolder } =
+    useAtomValue(createFloderMutationAtom);
 
   const { createUploadTask } = useGlobalUpload();
   const [messageApi, contextHolder] = message.useMessage();
@@ -169,6 +168,22 @@ const FileManager = () => {
     setMovingRecord(null);
     setSelectedMoveTargetId(undefined);
     setExpandedKeys([]);
+  };
+
+  const handleCreateFolder = () => {
+    createFolderMutation(
+      { parentId: folderId },
+      {
+        onError: (error) => {
+          messageApi.error(getActionErrorMessage(error, "新建文件夹失败"));
+        },
+        onSuccess: (response) => {
+          if (response.code !== 1) {
+            messageApi.error(response.message || "新建文件夹失败");
+          }
+        },
+      },
+    );
   };
 
   const handleOpenFolder = (folder: { _id?: string; name?: string }) => {
@@ -584,7 +599,7 @@ const FileManager = () => {
 
       <header className="flex gap-2 pb-4">
         <Button onClick={() => setOpen(true)}>传输</Button>
-        <Button onClick={() => createFolderMutation({ parentId: folderId })}>
+        <Button loading={creatingFolder} onClick={handleCreateFolder}>
           新建文件夹
         </Button>
         <UploadButton
@@ -604,8 +619,19 @@ const FileManager = () => {
               selectedCount={selectedRows.length}
               onDelete={handleBulkDelete}
             />
-            <button title="刷新">
-              <RotateCw onClick={() => refetch()} className="size-4" />
+            <button
+              type="button"
+              title="刷新"
+              className="inline-flex size-7 items-center justify-center rounded-md text-[#6b7280] transition-colors hover:bg-[#f3f4f6] disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={isFetching}
+              onClick={() => void refetch()}
+            >
+              <RotateCw
+                className={[
+                  "size-4",
+                  isFetching ? "animate-spin" : "",
+                ].join(" ")}
+              />
             </button>
           </div>
         </nav>
@@ -613,7 +639,7 @@ const FileManager = () => {
           <FileListTable
             list={files?.data}
             onOpenFolder={handleOpenFolder}
-            isLoading={isFetching}
+            isLoading={isFetching && !files?.data}
             selectedRowKeys={selectedRowKeys}
             onSelectedRowKeysChange={(keys, rows) => {
               setSelectedRowKeys(keys);
