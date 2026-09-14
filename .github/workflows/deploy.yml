@@ -134,9 +134,9 @@ jobs:
           #!/usr/bin/env bash
           set -Eeuo pipefail
           if [ -f "$HOME/.ssh/deploy_key" ]; then
-            exec ssh -i "$HOME/.ssh/deploy_key" -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" "$@"
+            exec ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=3 -i "$HOME/.ssh/deploy_key" -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" "$@"
           fi
-          exec sshpass -p "$DEPLOY_PASSWORD" ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" "$@"
+          exec sshpass -p "$DEPLOY_PASSWORD" ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=3 -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" "$@"
           SH
 
           cat > "$RUNNER_TEMP/scp-run" <<'SH'
@@ -145,9 +145,9 @@ jobs:
           source_path="$1"
           target_path="$2"
           if [ -f "$HOME/.ssh/deploy_key" ]; then
-            exec scp -i "$HOME/.ssh/deploy_key" -P "$DEPLOY_PORT" "$source_path" "$DEPLOY_USER@$DEPLOY_HOST:$target_path"
+            exec scp -o ServerAliveInterval=60 -o ServerAliveCountMax=3 -i "$HOME/.ssh/deploy_key" -P "$DEPLOY_PORT" "$source_path" "$DEPLOY_USER@$DEPLOY_HOST:$target_path"
           fi
-          exec sshpass -p "$DEPLOY_PASSWORD" scp -P "$DEPLOY_PORT" "$source_path" "$DEPLOY_USER@$DEPLOY_HOST:$target_path"
+          exec sshpass -p "$DEPLOY_PASSWORD" scp -o ServerAliveInterval=60 -o ServerAliveCountMax=3 -P "$DEPLOY_PORT" "$source_path" "$DEPLOY_USER@$DEPLOY_HOST:$target_path"
           SH
 
           chmod +x "$RUNNER_TEMP/ssh-run" "$RUNNER_TEMP/scp-run"
