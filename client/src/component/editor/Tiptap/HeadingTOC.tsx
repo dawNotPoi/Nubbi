@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Editor } from "@tiptap/react";
 
@@ -32,6 +32,22 @@ function scrollToHeading(editor: Editor, pos: number) {
 export default function HeadingTOC({ editor }: { editor: Editor }) {
   const [headings, setHeadings] = useState<HeadingEntry[]>([]);
   const [activeId, setActiveId] = useState<number | null>(null);
+  const [open, setOpen] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout>>(null);
+  const activeRef = useRef<HTMLButtonElement>(null);
+  const navRef = useRef<HTMLElement>(null);
+
+  const handleEnter = useCallback(() => {
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+    setOpen(true);
+  }, []);
+
+  const handleLeave = useCallback(() => {
+    closeTimer.current = setTimeout(() => setOpen(false), 150);
+  }, []);
 
   const updateHeadings = useCallback(() => {
     setHeadings(extractHeadings(editor));
@@ -76,13 +92,24 @@ export default function HeadingTOC({ editor }: { editor: Editor }) {
     return () => observer.disconnect();
   }, [headings]);
 
+  // Auto-scroll the TOC panel to keep the active heading visible
+  useEffect(() => {
+    if (activeRef.current && navRef.current) {
+      activeRef.current.scrollIntoView({ block: "nearest" });
+    }
+  }, [activeId]);
+
   if (headings.length < 2) return null;
 
   const content = (
     <div className="fixed right-[30px] top-[200px] z-50">
-      <div className="group/toc flex items-start justify-end">
+      <div
+        className="flex items-start justify-end"
+        onMouseEnter={handleEnter}
+        onMouseLeave={handleLeave}
+      >
         {/* vertical bar indicator — always visible */}
-        <div className="relative z-10 flex shrink-0 flex-col items-end gap-[3px] rounded-full bg-white/60 px-1.5 py-3 shadow-sm backdrop-blur-sm transition-shadow group-hover/toc:shadow-md">
+        <div className={`relative z-10 flex shrink-0 flex-col items-end gap-[3px] rounded-full bg-white/60 px-1.5 py-3 shadow-sm backdrop-blur-sm transition-shadow ${open ? "shadow-md" : ""}`}>
           {headings.map((h, i) => (
             <button
               key={i}
@@ -111,15 +138,16 @@ export default function HeadingTOC({ editor }: { editor: Editor }) {
         </div>
 
         {/* expanded text panel — on hover, slides left */}
-        <div className="pointer-events-none absolute right-full -top-3 mr-2 z-10 opacity-0 transition-opacity duration-150 group-hover/toc:pointer-events-auto group-hover/toc:opacity-100">
+        <div className={`absolute right-full -top-3 mr-2 z-10 transition-opacity duration-150 ${open ? "opacity-100" : "pointer-events-none opacity-0"}`}>
           <div className="w-52 rounded-xl border border-neutral-200/80 bg-white shadow-lg backdrop-blur">
             <div className="px-3 pb-2 pt-3 text-xs font-medium text-neutral-400">
               目录
             </div>
-            <nav className="max-h-[50vh] overflow-y-auto px-1 pb-2">
+            <nav ref={navRef} className="max-h-[50vh] overflow-y-auto px-1 pb-2">
               {headings.map((h, i) => (
                 <button
                   key={i}
+                  ref={activeId === i ? activeRef : undefined}
                   className={`block w-full truncate rounded-md px-2 py-1 text-left text-[13px] leading-relaxed transition hover:bg-neutral-100 ${
                     activeId === i
                       ? "font-medium text-neutral-800"
