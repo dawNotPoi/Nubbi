@@ -51,6 +51,7 @@ export default function NoteMenu() {
   const { mutate: createNote } = useAtomValue(createNoteAtom);
   const [open, setOpen] = useState(true);
   const navigate = useNavigate();
+  const hasRootNotesData = rootNotes !== undefined;
 
   const createNoteHandler = () => {
     if (!owner) return;
@@ -99,7 +100,7 @@ export default function NoteMenu() {
         }
       />
       {open ? (
-        !owner || isLoading ? (
+        !owner || (isLoading && !hasRootNotesData) ? (
           <SidebarTreeState depth={1} rows={4} type="loading" />
         ) : isError ? (
           <SidebarTreeState

@@ -5,13 +5,12 @@ import {
   applyOptimisticNoteContentUpdate,
   applyOptimisticNotePropertiesUpdate,
   applySuccessfulNoteContentUpdate,
-  invalidateNoteListQuery,
   invalidateNotePropertiesUpdate,
+  markNoteListQueryStale,
   optimisticPrependNoteToList,
   optimisticRemoveNoteFromList,
   patchNoteAcrossCaches,
   patchNoteDetailCache,
-  replaceNoteInListCache,
   rollbackNoteListSnapshot,
   rollbackOptimisticNoteContentUpdate,
   rollbackOptimisticNotePropertiesUpdate,
@@ -81,6 +80,9 @@ export const noteChildrenAtom = atomFamily((noteId: string) =>
       const response = await getDirectChildren(noteId);
       return response.data;
     },
+    enabled: Boolean(noteId),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   })),
 );
 
@@ -134,13 +136,17 @@ export const createNoteAtom = atomWithMutation(() => ({
     console.error("create Note error", error);
     rollbackNoteListSnapshot(queryClient, context);
   },
-  onSuccess: (_data, variables) => {
+  onSuccess: (response, variables) => {
     const scope = { parentId: variables.note.parentId, owner: variables.owner };
+    const nextNote = response.data || variables.note;
 
-    replaceNoteInListCache(queryClient, scope, variables.note);
-    patchNoteDetailCache(queryClient, variables.note._id, variables.note);
-    queryClient.invalidateQueries({ queryKey: noteKeys.recent() });
-    invalidateNoteListQuery(queryClient, scope);
+    patchNoteAcrossCaches(queryClient, variables.note._id, nextNote);
+    patchNoteDetailCache(queryClient, variables.note._id, nextNote);
+    markNoteListQueryStale(queryClient, scope);
+    queryClient.invalidateQueries({
+      queryKey: noteKeys.recent(),
+      refetchType: "none",
+    });
   },
 }));
 
@@ -155,11 +161,18 @@ export const deleteSingleNoteAtom = atomWithMutation(() => ({
     console.error("delete Note error", error);
   },
   onSuccess: (_data, variables) => {
-    invalidateNoteListQuery(queryClient, {
+    markNoteListQueryStale(queryClient, {
       parentId: variables.parentId,
       owner: variables.owner,
     });
-    queryClient.invalidateQueries({ queryKey: noteKeys.recent() });
+    queryClient.invalidateQueries({
+      queryKey: noteKeys.recent(),
+      refetchType: "none",
+    });
+    queryClient.invalidateQueries({
+      queryKey: noteKeys.detailRoot,
+      refetchType: "none",
+    });
   },
 }));
 

@@ -12,10 +12,17 @@ import type { UpdateNotePropertiesVariables } from "./types";
 
 export type NoteListSnapshot = {
   canPatch: boolean;
+  caches?: NoteListCacheSnapshot[];
   hadPreviousData?: boolean;
   previousNotes?: Note[];
   queryKey?: QueryKey;
   scope: NoteListScope;
+};
+
+type NoteListCacheSnapshot = {
+  hadPreviousData: boolean;
+  previousNotes?: Note[];
+  queryKey: QueryKey;
 };
 
 export type NotePropertiesSnapshot = {
@@ -67,6 +74,44 @@ export const invalidateNoteListQuery = (
   queryClient.invalidateQueries({ queryKey: noteKeys.rootLists });
 };
 
+export const markNoteListQueryStale = (
+  queryClient: QueryClient,
+  { parentId, owner }: NoteListScope,
+) => {
+  if (hasParentId(parentId)) {
+    queryClient.invalidateQueries({
+      queryKey: noteListQueryKey({ parentId }),
+      refetchType: "none",
+    });
+    queryClient.invalidateQueries({
+      queryKey: noteKeys.allLists,
+      refetchType: "none",
+    });
+    return;
+  }
+
+  if (owner) {
+    queryClient.invalidateQueries({
+      queryKey: noteListQueryKey({ owner }),
+      refetchType: "none",
+    });
+    queryClient.invalidateQueries({
+      queryKey: noteKeys.allLists,
+      refetchType: "none",
+    });
+    return;
+  }
+
+  queryClient.invalidateQueries({
+    queryKey: noteKeys.allLists,
+    refetchType: "none",
+  });
+  queryClient.invalidateQueries({
+    queryKey: noteKeys.rootLists,
+    refetchType: "none",
+  });
+};
+
 export const isNoteListQueryKey = (queryKey: readonly unknown[]) => {
   return (
     queryKey[0] === noteKeys.lists[0] &&
@@ -75,6 +120,99 @@ export const isNoteListQueryKey = (queryKey: readonly unknown[]) => {
       queryKey[2] === noteKeys.rootLists[2] ||
       queryKey[2] === noteKeys.childrenLists[2])
   );
+};
+
+const queryKeyId = (queryKey: QueryKey) => JSON.stringify(queryKey);
+
+const getUniqueQueryKeys = (queryKeys: QueryKey[]) => {
+  const uniqueKeys = new Map<string, QueryKey>();
+  queryKeys.forEach((queryKey) => {
+    uniqueKeys.set(queryKeyId(queryKey), queryKey);
+  });
+  return Array.from(uniqueKeys.values());
+};
+
+const getCachedNoteListQueryKeys = (queryClient: QueryClient) =>
+  queryClient
+    .getQueryCache()
+    .findAll({ queryKey: noteKeys.lists })
+    .filter((query) => isNoteListQueryKey(query.queryKey))
+    .map((query) => query.queryKey);
+
+const getCachedAllNoteListQueryKeys = (queryClient: QueryClient) =>
+  queryClient
+    .getQueryCache()
+    .findAll({ queryKey: noteKeys.allLists })
+    .map((query) => query.queryKey);
+
+const getNoteListSnapshots = (
+  queryClient: QueryClient,
+  queryKeys: QueryKey[],
+): NoteListCacheSnapshot[] =>
+  getUniqueQueryKeys(queryKeys).map((queryKey) => {
+    const previousNotes = queryClient.getQueryData<Note[]>(queryKey);
+    return {
+      hadPreviousData: previousNotes !== undefined,
+      previousNotes,
+      queryKey,
+    };
+  });
+
+const prependUniqueNote = (notes: Note[], note: Note) => [
+  note,
+  ...notes.filter((cachedNote) => cachedNote._id !== note._id),
+];
+
+const getChildNoteIds = (note: Note) => {
+  if (!Array.isArray(note.children)) return [];
+
+  return (note.children as unknown[])
+    .map((child) => {
+      if (typeof child === "string") return child;
+      if (!child || typeof child !== "object" || !("_id" in child)) return "";
+
+      return String((child as { _id?: unknown })._id || "");
+    })
+    .filter((noteId): noteId is string => Boolean(noteId));
+};
+
+const collectNoteAndDescendantIds = (
+  queryClient: QueryClient,
+  noteId: string,
+) => {
+  const removedIds = new Set([noteId]);
+  const childrenByParentId = new Map<string, string[]>();
+
+  getCachedNoteListQueryKeys(queryClient).forEach((queryKey) => {
+    const notes = queryClient.getQueryData<Note[]>(queryKey) ?? [];
+    notes.forEach((note) => {
+      const childIds = getChildNoteIds(note);
+      if (childIds.length > 0) {
+        const children = childrenByParentId.get(note._id) ?? [];
+        childrenByParentId.set(note._id, [...children, ...childIds]);
+      }
+
+      if (!hasParentId(note.parentId)) return;
+
+      const children = childrenByParentId.get(note.parentId) ?? [];
+      childrenByParentId.set(note.parentId, [...children, note._id]);
+    });
+  });
+
+  const queue = [noteId];
+  while (queue.length > 0) {
+    const parentId = queue.shift();
+    if (!parentId) continue;
+
+    const childIds = childrenByParentId.get(parentId) ?? [];
+    childIds.forEach((childId) => {
+      if (removedIds.has(childId)) return;
+      removedIds.add(childId);
+      queue.push(childId);
+    });
+  }
+
+  return removedIds;
 };
 
 export const patchNoteInCachedLists = (
@@ -210,16 +348,41 @@ export const optimisticPrependNoteToList = async (
   }
 
   const queryKey = noteListQueryKey(scope);
-  await queryClient.cancelQueries({ queryKey });
+  await Promise.all([
+    queryClient.cancelQueries({ queryKey }),
+    queryClient.cancelQueries({ queryKey: noteKeys.allLists }),
+    queryClient.cancelQueries({ queryKey: noteKeys.recent() }),
+  ]);
+  const recentNotes = queryClient.getQueryData<Note[]>(noteKeys.recent());
+  const cacheQueryKeys = getUniqueQueryKeys([
+    queryKey,
+    ...getCachedAllNoteListQueryKeys(queryClient),
+    ...(recentNotes === undefined ? [] : [noteKeys.recent()]),
+  ]);
+  const caches = getNoteListSnapshots(queryClient, cacheQueryKeys);
   const previousNotes = queryClient.getQueryData<Note[]>(queryKey);
   const hadPreviousData = previousNotes !== undefined;
 
-  queryClient.setQueryData<Note[]>(queryKey, (old = []) => [
-    note,
-    ...(old as Note[]),
-  ]);
+  queryClient.setQueryData<Note[]>(queryKey, (old = []) =>
+    prependUniqueNote(old as Note[], note),
+  );
+  getCachedAllNoteListQueryKeys(queryClient).forEach((allListQueryKey) => {
+    queryClient.setQueryData<Note[]>(allListQueryKey, (old) =>
+      old ? prependUniqueNote(old, note) : old,
+    );
+  });
+  queryClient.setQueryData<Note[]>(noteKeys.recent(), (old) =>
+    old ? prependUniqueNote(old, note) : old,
+  );
 
-  return { canPatch: true, hadPreviousData, previousNotes, queryKey, scope };
+  return {
+    caches,
+    canPatch: true,
+    hadPreviousData,
+    previousNotes,
+    queryKey,
+    scope,
+  };
 };
 
 export const optimisticRemoveNoteFromList = async (
@@ -231,16 +394,35 @@ export const optimisticRemoveNoteFromList = async (
     return { canPatch: false, scope };
   }
 
+  const removedIds = collectNoteAndDescendantIds(queryClient, noteId);
   const queryKey = noteListQueryKey(scope);
-  await queryClient.cancelQueries({ queryKey });
+  await Promise.all([
+    queryClient.cancelQueries({ queryKey: noteKeys.lists }),
+    queryClient.cancelQueries({ queryKey: noteKeys.recent() }),
+  ]);
+  const recentNotes = queryClient.getQueryData<Note[]>(noteKeys.recent());
+  const cacheQueryKeys = getUniqueQueryKeys([
+    ...getCachedNoteListQueryKeys(queryClient),
+    ...(recentNotes === undefined ? [] : [noteKeys.recent()]),
+  ]);
+  const caches = getNoteListSnapshots(queryClient, cacheQueryKeys);
   const previousNotes = queryClient.getQueryData<Note[]>(queryKey);
   const hadPreviousData = previousNotes !== undefined;
 
-  queryClient.setQueryData<Note[]>(queryKey, (old = []) =>
-    (old as Note[]).filter((note: Note) => note._id !== noteId),
-  );
+  cacheQueryKeys.forEach((cachedQueryKey) => {
+    queryClient.setQueryData<Note[]>(cachedQueryKey, (old) =>
+      old ? old.filter((note) => !removedIds.has(note._id)) : old,
+    );
+  });
 
-  return { canPatch: true, hadPreviousData, previousNotes, queryKey, scope };
+  return {
+    caches,
+    canPatch: true,
+    hadPreviousData,
+    previousNotes,
+    queryKey,
+    scope,
+  };
 };
 
 export const rollbackNoteListSnapshot = (
@@ -248,6 +430,18 @@ export const rollbackNoteListSnapshot = (
   snapshot?: NoteListSnapshot,
 ) => {
   if (!snapshot?.canPatch || !snapshot.queryKey) {
+    return;
+  }
+
+  if (snapshot.caches) {
+    snapshot.caches.forEach((cache) => {
+      if (!cache.hadPreviousData) {
+        queryClient.removeQueries({ exact: true, queryKey: cache.queryKey });
+        return;
+      }
+
+      queryClient.setQueryData(cache.queryKey, cache.previousNotes);
+    });
     return;
   }
 

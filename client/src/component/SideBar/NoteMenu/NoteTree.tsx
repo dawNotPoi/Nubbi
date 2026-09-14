@@ -41,8 +41,9 @@ function NoteChildren({ noteId, owner, depth }: NoteChildrenProps) {
     isLoading,
     refetch,
   } = useAtomValue(noteChildrenAtom(noteId));
+  const hasChildrenData = children !== undefined;
 
-  if (isLoading) {
+  if (isLoading && !hasChildrenData) {
     return <SidebarTreeState depth={depth} rows={3} type="loading" />;
   }
 
