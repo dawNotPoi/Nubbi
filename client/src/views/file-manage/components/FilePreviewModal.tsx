@@ -1,4 +1,8 @@
-﻿import { fetchFilePreviewBlob, getFileDownloadUrl } from "@/api/file";
+﻿import {
+  fetchFilePreviewBlob,
+  fetchFilePreviewStreamUrl,
+  getFileDownloadUrl,
+} from "@/api/file";
 import type { FileTableRow } from "@/views/file-manage/components/FileListTable/fileIcons";
 import { Button, Modal, Spin, Tabs } from "antd";
 import JSZip from "jszip";
@@ -17,18 +21,36 @@ import {
 type PreviewState =
   | { mode: "idle" }
   | { mode: "loading" }
-  | { mode: "image" | "pdf" | "video" | "audio"; objectUrl: string }
+  | { mode: "image"; objectUrl: string }
+  | { mode: "pdf" | "video" | "audio"; src: string }
   | { mode: "html"; html: string; note?: string }
   | { mode: "sheet"; sheets: Array<{ key: string; label: string; html: string }> }
   | { mode: "slide"; slides: string[]; note?: string }
   | { mode: "text"; text: string; note?: string }
   | { mode: "unsupported"; message: string; fallbackText?: string };
 
+const OFFICE_PREVIEW_SIZE_LIMIT = 20 * 1024 * 1024;
+
 const modalBodyStyle = {
   minHeight: 520,
   maxHeight: "70vh",
   overflow: "auto" as const,
   paddingTop: 8,
+};
+
+const isStreamPreviewCategory = (
+  category: PreviewCategory,
+): category is "pdf" | "video" | "audio" =>
+  category === "pdf" || category === "video" || category === "audio";
+
+const isOfficePreviewCategory = (category: PreviewCategory) =>
+  category === "word" || category === "sheet" || category === "slide";
+
+const getRecordSize = (record: FileTableRow) => {
+  if (record.kind !== "file") return 0;
+
+  const size = Number(record.size);
+  return Number.isFinite(size) ? size : 0;
 };
 
 const decodeHtml = (value: string) => {
@@ -197,6 +219,30 @@ const FilePreviewModal = ({
       setPreviewState({ mode: "loading" });
 
       try {
+        const initialCategory = getPreviewCategory(record);
+
+        if (isStreamPreviewCategory(initialCategory)) {
+          const { url } = await fetchFilePreviewStreamUrl(record._id);
+          if (!cancelled) {
+            setPreviewState({ mode: initialCategory, src: url });
+          }
+          return;
+        }
+
+        if (
+          isOfficePreviewCategory(initialCategory) &&
+          getRecordSize(record) > OFFICE_PREVIEW_SIZE_LIMIT
+        ) {
+          if (!cancelled) {
+            setPreviewState({
+              mode: "unsupported",
+              message:
+                "文件较大，暂不支持在线预览，请下载后在本地应用中查看。",
+            });
+          }
+          return;
+        }
+
         const { blob, contentType } = await fetchFilePreviewBlob(record._id);
         const extension = getFileExtension(record.name);
         const resolvedCategory = getPreviewCategory(record, contentType);
@@ -213,13 +259,14 @@ const FilePreviewModal = ({
             setObjectState("image", normalizedBlob);
             return;
           case "pdf":
-            setObjectState("pdf", normalizedBlob);
-            return;
           case "video":
-            setObjectState("video", normalizedBlob);
-            return;
           case "audio":
-            setObjectState("audio", normalizedBlob);
+            {
+              const { url } = await fetchFilePreviewStreamUrl(record._id);
+              if (!cancelled) {
+                setPreviewState({ mode: resolvedCategory, src: url });
+              }
+            }
             return;
           case "word":
             try {
@@ -353,8 +400,9 @@ const FilePreviewModal = ({
       case "pdf":
         return (
           <iframe
+            key={previewState.src}
             title={record?.name || "pdf-preview"}
-            src={previewState.objectUrl}
+            src={previewState.src}
             className="h-[70vh] w-full rounded-2xl border border-[#ebecef] bg-white"
           />
         );
@@ -362,8 +410,10 @@ const FilePreviewModal = ({
         return (
           <div className="flex min-h-[520px] items-center justify-center rounded-2xl bg-black p-4">
             <video
-              src={previewState.objectUrl}
+              key={previewState.src}
+              src={previewState.src}
               controls
+              preload="metadata"
               className="max-h-[62vh] max-w-full rounded-xl"
             />
           </div>
@@ -372,8 +422,10 @@ const FilePreviewModal = ({
         return (
           <div className="flex min-h-[320px] items-center justify-center rounded-2xl bg-[#f7f7f8]">
             <audio
-              src={previewState.objectUrl}
+              key={previewState.src}
+              src={previewState.src}
               controls
+              preload="metadata"
               className="w-full max-w-[560px]"
             />
           </div>
