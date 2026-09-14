@@ -1,10 +1,10 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "module": "nodenext",
+    "module": "ESNext",
     "strict": true,
     "noImplicitAny": false,
-    "moduleResolution": "nodenext",
+    "moduleResolution": "bundler",
     "paths": {
       "@/*": ["./app/*"]
     },
