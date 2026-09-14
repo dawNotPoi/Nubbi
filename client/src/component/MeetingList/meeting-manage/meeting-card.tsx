@@ -6,7 +6,7 @@ import { Clock3, MessageSquareText, Trash2 } from "lucide-react";
 import type { ReactElement } from "react";
 import type { MeetingActions } from "./types";
 
-const statusMap = {
+/** 会议审批状态 → 标签样式映射 */
   unreviewd: {
     label: "待审批",
     className: "border-amber-200 bg-amber-50 text-amber-700",
@@ -26,12 +26,22 @@ type MeetingCardProps = MeetingActions & {
   currentUserId?: string;
 };
 
+/**
+ * 格式化会议时间范围为可读字符串。
+ * @param meeting 会议对象。
+ * @returns "MM-DD HH:mm - MM-DD HH:mm" 格式的时间范围。
+ */
 const getMeetingTimeRange = (meeting: MeetingType): string => {
   const start = dayjs(meeting.startTime || meeting.createdAt);
   const end = start.add(meeting.duration, "minute");
   return `${start.format("MM-DD HH:mm")} - ${end.format("MM-DD HH:mm")}`;
 };
 
+/**
+ * 会议状态标签组件。
+ * 已结束显示蓝色标签；其他按 status 映射为待审批/已通过/已拒绝。
+ * @param meeting 会议对象。
+ */
 const MeetingStatusTag = ({
   meeting,
 }: {
@@ -54,12 +64,23 @@ const MeetingStatusTag = ({
   );
 };
 
+/** 会议卡片骨架屏，加载中占位 */
 export const MeetingCardSkeleton = (): ReactElement => (
   <div className="rounded-lg border border-border-row bg-white p-5 shadow-soft">
     <Skeleton active paragraph={{ rows: 3 }} title={{ width: "48%" }} />
   </div>
 );
 
+/**
+ * 会议列表卡片。
+ * 展示标题、状态、时间范围；根据当前用户身份显示审批、加入、评论、删除等操作。
+ * @param meeting 会议数据。
+ * @param currentUserId 当前登录用户 ID，用于判断是否为会议主持人。
+ * @param onVet 审批回调。
+ * @param onJoin 加入会议回调。
+ * @param onViewComments 查看评论回调。
+ * @param onDelete 删除回调。
+ */
 export const MeetingCard = ({
   meeting,
   currentUserId,

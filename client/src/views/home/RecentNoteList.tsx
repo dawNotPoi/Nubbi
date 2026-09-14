@@ -33,7 +33,11 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
   const listRef = useRef<HTMLUListElement>(null);
   const hasNotes = data.length > 0;
 
-  /** 创建一篇根级笔记并跳转到编辑页 */
+  /**
+   * 创建一篇根级笔记（无父节点）并跳转到编辑页。
+   * 仅当用户已登录时执行，未登录时静默忽略。
+   * @returns 无返回值。
+   */
   const handleCreateNote = () => {
     if (!user?.id) return;
     const note = newNote();
@@ -47,6 +51,11 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
     );
   };
 
+  /**
+   * 测量列表容器与卡片宽度，计算当前可视区域内能容纳的卡片数、
+   * 单页滚动步长以及右侧渐隐遮罩宽度。
+   * @returns 布局计算结果，卡片不可用时返回 null。
+   */
   const getListLayout = useCallback(() => {
     const wrapper = wrapperRef.current;
     const list = listRef.current;

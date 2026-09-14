@@ -59,6 +59,13 @@ function LazyTargetPicker({
   );
 }
 
+/**
+ * 新建笔记弹窗。
+ * 点击触发元素后在弹窗内编辑标题和内容，支持选择存放位置。
+ * @param parent 默认存放的父级笔记。
+ * @param onTrigger 触发时额外回调。
+ * @param trigger 自定义触发元素，默认显示 Plus 图标。
+ */
 export const WrittingModal = ({ parent, onTrigger, trigger }: WritingModalProps) => {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();

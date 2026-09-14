@@ -31,6 +31,12 @@ type MeetingManageState = {
   closeComments: () => void;
 };
 
+/**
+ * 会议管理页的状态与操作 Hook。
+ * 仅在 active 为 true 时自动拉取数据，避免弹窗未打开时不必要的请求。
+ * @param active 是否激活数据拉取（page 模式恒为 true，modal 模式按 open 状态切换）。
+ * @returns 会议列表、统计、CRUD 操作及评论弹窗状态。
+ */
 export const useMeetingManage = (active: boolean): MeetingManageState => {
   const { message } = App.useApp();
   const navigate = useNavigate();
@@ -53,6 +59,7 @@ export const useMeetingManage = (active: boolean): MeetingManageState => {
     if (active) void refresh();
   }, [active, refresh]);
 
+  /** 审批会议（同意/拒绝），成功后刷新列表 */
   const vet = useCallback(
     async (id: string, status: MeetingDecision): Promise<void> => {
       try {
@@ -70,6 +77,7 @@ export const useMeetingManage = (active: boolean): MeetingManageState => {
     [message],
   );
 
+  /** 删除指定会议，同时刷新 allMeeting 和 meeting 缓存 */
   const remove = useCallback(
     async (id: string): Promise<void> => {
       try {
@@ -88,6 +96,7 @@ export const useMeetingManage = (active: boolean): MeetingManageState => {
     [message],
   );
 
+  /** 跳转到会议房间页面 */
   const join = useCallback(
     (id: string): void => {
       navigate(`/meeting/${id}`);
@@ -95,6 +104,10 @@ export const useMeetingManage = (active: boolean): MeetingManageState => {
     [navigate],
   );
 
+  /**
+   * 打开评论弹窗并加载指定会议的评论列表。
+   * @param meeting 要查看评论的会议。
+   */
   const viewComments = useCallback(
     async (meeting: MeetingType): Promise<void> => {
       setCommentLoading(true);
@@ -119,11 +132,13 @@ export const useMeetingManage = (active: boolean): MeetingManageState => {
     [message],
   );
 
+  /** 关闭评论弹窗并清空缓存 */
   const closeComments = useCallback((): void => {
     setCommentModalOpen(false);
     setComments([]);
   }, []);
 
+  /** 基于当前数据计算待审批/已结束/总数 */
   const stats = useMemo<MeetingStats>(() => {
     const pending = data.filter(
       (meeting) => meeting.status === "unreviewd",

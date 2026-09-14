@@ -14,6 +14,15 @@ type MeetingManageContentProps = MeetingActions & {
   onRefresh: () => Promise<void>;
 };
 
+/**
+ * 会议管理内容区。
+ * 展示统计卡片、刷新按钮；根据加载/空/有数据三种状态渲染列表或占位。
+ * @param meetings 会议列表。
+ * @param loading 列表是否加载中。
+ * @param currentUserId 当前用户 ID。
+ * @param stats 统计摘要数据。
+ * @param onRefresh 刷新回调。
+ */
 export const MeetingManageContent = ({
   className,
   meetings,

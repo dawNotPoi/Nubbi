@@ -10,6 +10,14 @@ type MeetingManageProps = PropsWithChildren<{
   className?: string;
 }>;
 
+/**
+ * 会议管理入口组件。
+ * - variant="page"：直接内嵌渲染。
+ * - variant="modal"（默认）：通过触发元素打开弹窗。
+ * @param variant 渲染模式。
+ * @param className 附加类名。
+ * @param children 弹窗模式的触发元素。
+ */
 const Meetingmanage = ({
   children,
   variant = "modal",

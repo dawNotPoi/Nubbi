@@ -13,6 +13,15 @@ type MeetingCommentsModalProps = {
   onClose: () => void;
 };
 
+/**
+ * 会议评论查看弹窗。
+ * 加载中显示骨架屏，无评论显示空提示，有数据时按时间列出评论。
+ * @param open 弹窗是否可见。
+ * @param title 会议标题。
+ * @param comments 评论列表。
+ * @param loading 评论是否加载中。
+ * @param onClose 关闭回调。
+ */
 export const MeetingCommentsModal = ({
   open,
   title,
