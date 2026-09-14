@@ -1,7 +1,8 @@
 import { useAuth } from "@/hooks/useAuth";
+import { activeUploadCountAtom } from "@/store/atom/FileAtom";
 import { routes } from "@/utils/routes";
 import clsx from "clsx";
-import { useSetAtom } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import {
   Camera,
   ChevronsLeft,
@@ -33,6 +34,7 @@ import ResizeTab from "./ResizeTab";
 const SideBar: React.FC = () => {
   const setSideBarOpened = useSetAtom(sideBarOpenedAtom);
   const setMobileSideBarOpened = useSetAtom(mobileSideBarOpenedAtom);
+  const activeUploads = useAtomValue(activeUploadCountAtom);
   const isMobile = useIsMobile();
   const location = useLocation();
   const { user, logout, updateAvatar } = useAuth();
@@ -149,6 +151,11 @@ const SideBar: React.FC = () => {
             <MenuItemContainer to={routes.file}>
               <FolderTree size={16} />
               <span>文件</span>
+              {activeUploads > 0 && (
+                <span className="ml-auto rounded-full bg-red-500 px-1.5 text-[10px] leading-4 text-white">
+                  {activeUploads > 99 ? "99+" : activeUploads}
+                </span>
+              )}
             </MenuItemContainer>
             <MenuItemContainer to={routes.meetings}>
               <Presentation size={16} />

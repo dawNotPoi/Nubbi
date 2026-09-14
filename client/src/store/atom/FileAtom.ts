@@ -3,7 +3,11 @@ import { atomWithMutation, atomWithQuery } from "jotai-tanstack-query";
 import { atomFamily } from "jotai/utils";
 import { queryClient } from "../../AppProvider";
 import { createFloder, deleteFile, listFiles } from "../../api/file";
-import { Uploader, UploadStatus } from "../../utils/file";
+import {
+  Uploader,
+  UploadStatus,
+  isActiveUploadStatus,
+} from "../../utils/file";
 
 interface BreadcrumbItem {
   id: string;
@@ -96,26 +100,49 @@ export const deleteFileAtom = atomWithMutation(() => ({
 export interface UploadTask {
   id: string;
   name: string;
+  size: number;
+  folderId?: string;
+  uploadId?: string;
   progress: number;
   speed: number;
   status: UploadStatus;
-  instance: Uploader;
+  error?: string;
+  instance: Uploader | null;
 }
 
 export const uploadTasksAtom = atom<string[]>([]);
 
-export const uploadTaskAtomFamily = atomFamily((_id: string) =>
-  atom<UploadTask | null>(null),
-);
+export const uploadTaskAtomFamily = atomFamily((id: string) => {
+  void id;
+  return atom<UploadTask | null>(null);
+});
 
 export const hasActiveUploadAtom = atom((get) => {
   const ids = get(uploadTasksAtom);
   return ids.some((id) => {
     const task = get(uploadTaskAtomFamily(id));
-    return (
-      task &&
-      (task.status === UploadStatus.uploading ||
-        task.status === UploadStatus.paused)
-    );
+    return Boolean(task && isActiveUploadStatus(task.status));
   });
+});
+
+export const activeUploadCountAtom = atom((get) => {
+  const ids = get(uploadTasksAtom);
+  return ids.reduce((count, id) => {
+    const task = get(uploadTaskAtomFamily(id));
+    return count + (task && isActiveUploadStatus(task.status) ? 1 : 0);
+  }, 0);
+});
+
+export const finishedUploadCountAtom = atom((get) => {
+  const ids = get(uploadTasksAtom);
+  return ids.reduce((count, id) => {
+    const task = get(uploadTaskAtomFamily(id));
+    return (
+      count +
+      (task &&
+      [UploadStatus.success, UploadStatus.cancelled].includes(task.status)
+        ? 1
+        : 0)
+    );
+  }, 0);
 });

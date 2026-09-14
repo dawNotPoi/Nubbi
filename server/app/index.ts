@@ -10,6 +10,7 @@ import env from "./lib/env";
 import { errorHandler } from "./middleware/common";
 import { requestLogger } from "./middleware/requestLogger";
 import { rejectScopedApiKeys } from "./middleware/session";
+import { startFileUploadMaintenance } from "./services/fileUpload/maintenance";
 
 import authRouter from "./routes/auth";
 import fileRouter from "./routes/file";
@@ -102,6 +103,9 @@ app.use((req, res) => {
 
 server.listen(PORT, () => {
   logger.info(`服务器端口: ${PORT}`);
+  void startFileUploadMaintenance().catch((error) => {
+    logger.error("文件上传维护任务启动失败", { error });
+  });
 });
 
 socketIO.on("connection", (socket) => {

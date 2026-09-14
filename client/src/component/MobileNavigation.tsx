@@ -1,5 +1,6 @@
 import { newNote } from "@/api/note";
 import { mobileSideBarOpenedAtom } from "@/store/atom/common";
+import { activeUploadCountAtom } from "@/store/atom/FileAtom";
 import { createNoteAtom } from "@/store/atom/noteAtom";
 import { useSession } from "@/utils/auth";
 import { routes } from "@/utils/routes";
@@ -37,6 +38,7 @@ export default function MobileNavigation() {
   const { data } = useSession();
   const owner = data?.user.id ?? "";
   const createMutation = useAtomValue(createNoteAtom);
+  const activeUploads = useAtomValue(activeUploadCountAtom);
   const [drawerOpen, setDrawerOpen] = useAtom(mobileSideBarOpenedAtom);
 
   const createRootNote = () => {
@@ -79,7 +81,16 @@ export default function MobileNavigation() {
       </button>
       <NavItem
         active={location.pathname.startsWith(routes.file)}
-        icon={<FolderTree className="size-5" />}
+        icon={
+          <span className="relative">
+            <FolderTree className="size-5" />
+            {activeUploads > 0 && (
+              <span className="absolute -right-2 -top-1 grid min-w-4 place-items-center rounded-full bg-red-500 px-1 text-[9px] leading-4 text-white">
+                {activeUploads > 9 ? "9+" : activeUploads}
+              </span>
+            )}
+          </span>
+        }
         label="文件"
         onClick={() => navigate(routes.file)}
       />

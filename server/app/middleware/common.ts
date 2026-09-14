@@ -4,6 +4,7 @@ import logger from "@/common/logger";
 export interface AppError extends Error {
   status?: number;
   data?: unknown;
+  errorCode?: string;
 }
 
 export function errorHandler(
@@ -18,6 +19,7 @@ export function errorHandler(
 
   res.status(status).json({
     code: 0,
+    errorCode: err.errorCode,
     message:
       isMcpRequest && status >= 500
         ? "Internal server error"

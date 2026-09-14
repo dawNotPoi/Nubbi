@@ -59,13 +59,15 @@ export interface FileListData {
 
 export interface InitUploadInstantData {
   needUpload: false;
+  file: FileRecord;
 }
 
 export interface InitUploadPendingData {
-  needUpload?: true;
-  status: "UPLOADING";
+  needUpload: true;
+  status: "uploading" | "merging" | "failed";
   uploadId: string;
   uploadedChunks: number[];
+  expiresAt: string;
 }
 
 export type InitUploadTaskData = InitUploadInstantData | InitUploadPendingData;
@@ -138,9 +140,11 @@ export async function moveFileItem(
 export const initUploadTask = async (param: {
   fileName: string;
   fileHash: string;
-  totalSize: string;
-  totalChunksSize: string;
+  totalSize: number;
+  chunkSize: number;
+  totalChunks: number;
   folderId?: string;
+  mimeType?: string;
 }) => {
   return request<InitUploadTaskData>("file/init", param);
 };
@@ -150,8 +154,32 @@ export const uploadChunk = async (formdata: FormData, signal?: AbortSignal) => {
 };
 
 export const mergeChunk = async (uploadId: string) => {
-  return request("/file/merge", { uploadId });
+  return request<FileRecord>("/file/merge", { uploadId });
 };
+
+export interface UploadTaskStatusData {
+  uploadId: string;
+  fileName: string;
+  totalSize: number;
+  folderId?: string | null;
+  uploadedChunks: number[];
+  totalChunks: number;
+  chunkSize: number;
+  status: "uploading" | "merging" | "completed" | "failed";
+  error?: string | null;
+  expiresAt: string;
+  file?: FileRecord | null;
+}
+
+export const getUploadTaskStatus = async (uploadId: string) =>
+  request<UploadTaskStatusData>(`/file/upload/${encodeURIComponent(uploadId)}`, undefined, "get");
+
+export const cancelUploadTask = async (uploadId: string) =>
+  request<{ cancelled: boolean }>(
+    `/file/upload/${encodeURIComponent(uploadId)}`,
+    undefined,
+    "delete",
+  );
 
 export const imgToGitCloud = async (file: File): Promise<string> => {
   const formData = new FormData();

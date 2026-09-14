@@ -65,7 +65,7 @@
 
 ## P2 — 中优先级
 
-### BUG-006 所有上传错误仅显示"失败"，无任何原因说明
+### BUG-006 ~~所有上传错误仅显示"失败"，无任何原因说明~~ ✅ 已修复
 
 **位置**：`client/src/component/upload/UploadItem.tsx`
 
@@ -85,7 +85,7 @@
 
 ---
 
-### BUG-008 没有取消单个上传任务的入口
+### BUG-008 ~~没有取消单个上传任务的入口~~ ✅ 已修复
 
 **位置**：`client/src/component/upload/UploadItem.tsx`
 
@@ -95,7 +95,7 @@
 
 ---
 
-### BUG-009 上传列表关闭后无活跃上传指示
+### BUG-009 ~~上传列表关闭后无活跃上传指示~~ ✅ 已修复
 
 **位置**：`client/src/component/upload/UploadListWrapper.tsx`
 
@@ -115,7 +115,7 @@
 
 ---
 
-### BUG-011 无客户端文件大小上限校验
+### BUG-011 ~~无客户端文件大小上限校验~~ ✅ 已修复
 
 **位置**：`client/src/component/upload/hooks/GlobalUpload.ts`
 
@@ -125,7 +125,7 @@
 
 ---
 
-### BUG-012 上传列表无"清除已完成"按钮
+### BUG-012 ~~上传列表无"清除已完成"按钮~~ ✅ 已修复
 
 **位置**：`client/src/component/upload/UploadListWrapper.tsx`
 

@@ -55,6 +55,10 @@ const envSchema = z.object({
   SMTP_HOST: optionalString(),
   SMTP_PORT: optionalNumber(),
   SMTP_SECURE: optionalBooleanString(),
+  FILE_UPLOAD_MAX_FILE_BYTES: optionalNumber().default(10 * 1024 ** 3),
+  FILE_UPLOAD_USER_QUOTA_BYTES: optionalNumber().default(100 * 1024 ** 3),
+  FILE_UPLOAD_MAX_ACTIVE_TASKS: optionalNumber().default(5),
+  FILE_UPLOAD_TASK_TTL_HOURS: optionalNumber().default(24),
 });
 
 const parsedEnv = envSchema.parse(process.env);

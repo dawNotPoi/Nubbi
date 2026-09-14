@@ -5,7 +5,7 @@ const FileSchema = new Schema(
     name: { type: String, required: true, trim: true },
     extension: { type: String },
     mimeType: { type: String },
-    size: { type: String, required: true },
+    size: { type: Number, required: true },
     hash: { type: String, required: true },
     folderId: {
       type: Schema.Types.ObjectId,
@@ -14,6 +14,7 @@ const FileSchema = new Schema(
     },
     ownerId: { type: String },
     storagePath: { type: String, required: true },
+    uploadId: { type: Schema.Types.ObjectId, ref: "UploadTask" },
     status: {
       type: String,
       enum: ["active", "recycled", "processing"],
@@ -26,12 +27,16 @@ const FileSchema = new Schema(
 /**
  * 🚀 索引优化
  */
-// 1. 极速查询：用于秒传校验 (全局唯一 hash)
+// 1. 用户内秒传：hash 与文件大小共同匹配
 FileSchema.index({ hash: 1 });
+FileSchema.index(
+  { ownerId: 1, hash: 1, size: 1, status: 1 },
+);
 // 2. 列表查询：用户在特定文件夹下的文件列表 (配合 Folder 的步进式请求)
 FileSchema.index({ ownerId: 1, folderId: 1, status: 1 });
 // 3. 统计：用户空间使用量计算
 FileSchema.index({ ownerId: 1, size: 1 });
 FileSchema.index({ storagePath: 1 });
+FileSchema.index({ ownerId: 1, uploadId: 1 }, { unique: true, sparse: true });
 
 export const File = model("File", FileSchema);

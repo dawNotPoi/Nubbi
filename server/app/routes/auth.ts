@@ -39,7 +39,7 @@ import requireAuth from "@/middleware/session";
 import Note from "@/models/note";
 import { File } from "@/models/file/file";
 import { Folder } from "@/models/file/folder";
-import { UploadTask } from "@/models/file/uploadTask";
+import { deleteUserUploadTasks } from "@/services/fileUpload/taskLifecycle";
 import MeetingComment from "@/models/meetingComment";
 import express from "express";
 import fse from "fs-extra";
@@ -113,12 +113,12 @@ const deleteUserAccountData = async ({
   const storagePaths = userFiles.map((file) => file.storagePath);
 
   await mongoDb.collection("apikey").deleteMany({ userId });
+  await deleteUserUploadTasks(userId);
 
   await Promise.all([
     Note.deleteMany({ userId }),
     Folder.deleteMany({ ownerId: userId }),
     File.deleteMany({ ownerId: userId }),
-    UploadTask.deleteMany({ ownerId: userId }),
     MeetingComment.deleteMany({ userId }),
     mongoDb.collection("session").deleteMany({ userId }),
     mongoDb.collection("account").deleteMany({ userId }),

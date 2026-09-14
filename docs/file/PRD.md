@@ -18,7 +18,7 @@
   extension:   string          // 扩展名
   mimeType:    string          // MIME 类型
   size:        number          // 文件大小（字节）
-  hash:        string          // 文件 SHA 哈希（用于断点续传识别）
+  hash:        string          // 完整/抽样 MD5；与 size 共同识别文件
   folderId:    ObjectId | null // 所属文件夹
   ownerId:     string          // 上传者 ID
   storagePath: string          // 存储路径
@@ -49,9 +49,11 @@
   totalSize:      number
   folderId:       ObjectId | null
   totalChunks:    number
+  chunkSize:      number
   uploadedChunks: number[]      // 已上传分片序号
   tempDir:        string        // 临时目录
-  createdAt:      Date          // TTL: 24 小时
+  status:         'uploading' | 'merging' | 'completed' | 'failed'
+  expiresAt:      Date          // 默认 24 小时
 }
 ```
 
@@ -62,9 +64,20 @@
 ### 上传
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| POST | `/file/init` | 初始化上传任务。返回 `uploadId` 和需要补传的分片 |
+| POST | `/file/init` | 使用 `ownerId + hash + size` 在用户内秒传，或返回续传任务 |
 | POST | `/file/uploadchunk` | 上传分片。FormData: `{ uploadId, chunkIndex, chunk }` |
-| POST | `/file/merge` | 合并分片为完整文件 |
+| POST | `/file/merge` | 校验全部分片并原子合并为完整文件 |
+| GET | `/file/upload/:uploadId` | 查询上传任务及已完成分片 |
+| DELETE | `/file/upload/:uploadId` | 取消任务并清理临时文件 |
+
+### 上传约定
+
+- 秒传只在同一用户内生效，必须同时匹配 hash 与数值型文件大小；跨用户不共享上传记录或物理文件。
+- 小于 100MB 的文件计算完整 MD5，大文件计算包含文件大小的抽样 MD5；服务端仍独立比较 `size`。
+- 分片大小按文件大小选择 5MB、10MB 或 20MB；服务端校验分片数量、索引和实际字节数。
+- 客户端最多保留 5 个未完成任务，全局最多并发 6 个分片、单文件最多并发 3 个分片。
+- 默认限制为单文件 10GB、单用户 100GB，可通过服务端环境变量覆盖。
+- 合并先写入 `.part` 文件，完整校验通过后再原子重命名；完成接口可以安全重试。
 
 ### 文件夹
 | 方法 | 路径 | 说明 |
@@ -120,6 +133,8 @@
 | Atom | 路径 | 用途 |
 |------|------|------|
 | 上传队列 | `store/atom/FileAtom.ts` | 上传任务状态、文件夹列表、面包屑路径 |
+
+上传任务元数据持久化到浏览器本地存储。刷新后客户端查询服务端任务状态，用户重新选择名称和大小一致的原文件后继续上传；浏览器不持久化文件 Blob。
 
 ---
 

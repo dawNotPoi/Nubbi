@@ -6,6 +6,45 @@ type ApiResponse<T> = {
   message: string;
 };
 
+type ApiErrorPayload = {
+  message?: unknown;
+  errorCode?: unknown;
+};
+
+export class ApiRequestError extends Error {
+  status: number;
+  errorCode?: string;
+
+  constructor(message: string, status: number, errorCode?: string) {
+    super(message);
+    this.name = "ApiRequestError";
+    this.status = status;
+    this.errorCode = errorCode;
+  }
+}
+
+const parseJsonResponse = async <T>(response: Response): Promise<T> => {
+  const payload = (await response.json().catch(() => null)) as
+    | (T & ApiErrorPayload)
+    | null;
+
+  if (!response.ok) {
+    const message =
+      typeof payload?.message === "string" && payload.message.trim()
+        ? payload.message
+        : `请求失败 (${response.status})`;
+    const errorCode =
+      typeof payload?.errorCode === "string" ? payload.errorCode : undefined;
+    throw new ApiRequestError(message, response.status, errorCode);
+  }
+
+  if (!payload) {
+    throw new ApiRequestError("服务端返回了无效响应", response.status);
+  }
+
+  return payload;
+};
+
 export { authorizedFetch };
 
 export default async function request<T>(
@@ -27,7 +66,7 @@ export default async function request<T>(
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
-  return response.json();
+  return parseJsonResponse<ApiResponse<T>>(response);
 }
 
 export async function requestWithNoJson<T>(
@@ -42,7 +81,7 @@ export async function requestWithNoJson<T>(
     body: body ?? undefined,
   });
 
-  return response.json();
+  return parseJsonResponse<ApiResponse<T>>(response);
 }
 
 export function Get<T = unknown>(

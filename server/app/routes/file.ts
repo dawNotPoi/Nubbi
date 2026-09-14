@@ -2,23 +2,18 @@
 import { requireAuthWithApiKey as requireAuth } from "@/middleware/session";
 import { File } from "@/models/file/file";
 import { Folder } from "@/models/file/folder";
-import { UploadTask } from "@/models/file/uploadTask";
 import env from "@/lib/env";
 import logger from "@/common/logger";
 import crypto from "crypto";
 import express from "express";
 import fse from "fs-extra";
-import multer from "multer";
 import path from "path";
-import { pipeline } from "stream/promises";
 import { asyncHandler, AuthRequest } from "./../middleware/common";
+import fileUploadRouter from "./fileUpload";
 import { successResponse } from "./utils";
 
 const router = express.Router();
 
-const upload = multer({ dest: "storage/temp_multer/" });
-const UPLOAD_TEMP_DIR = path.join(process.cwd(), "storage/temp");
-const UPLOAD_FINAL_DIR = path.join(process.cwd(), "storage/uploads");
 const PREVIEW_STREAM_TTL_MS = 60 * 60 * 1000;
 const FILE_SHARE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -34,13 +29,7 @@ type PreviewStreamFile = {
 
 const previewStreamCache = new Map<string, PreviewStreamFile>();
 
-if (!fse.existsSync(UPLOAD_TEMP_DIR)) {
-  fse.mkdirSync(UPLOAD_TEMP_DIR, { recursive: true });
-}
-
-if (!fse.existsSync(UPLOAD_FINAL_DIR)) {
-  fse.mkdirSync(UPLOAD_FINAL_DIR, { recursive: true });
-}
+router.use(fileUploadRouter);
 
 const collectDescendantFolderIds = (
   folders: Array<{ _id: string; parentId?: string | null }>,
@@ -408,165 +397,6 @@ const resolveDeleteTargets = async (
     missingFolderIds,
   };
 };
-
-const appendChunkToFile = async (chunkPath: string, targetPath: string) => {
-  const readStream = fse.createReadStream(chunkPath);
-  const writeStream = fse.createWriteStream(targetPath, { flags: "a" });
-  await pipeline(readStream, writeStream);
-};
-
-router.post(
-  "/init",
-  requireAuth,
-  asyncHandler(async (req: AuthRequest, res) => {
-    try {
-      const { fileName, fileHash, totalSize, totalChunksSize, folderId } =
-        req.body;
-
-      const userId = req.user?.id;
-
-      if (folderId) {
-        const folder = await Folder.findOne({ _id: folderId, ownerId: userId });
-        if (!folder) {
-          return res.status(403).json({ message: "无权访问该文件夹" });
-        }
-      }
-
-      const globalFile = await File.findOne({
-        hash: fileHash,
-        status: "active",
-      });
-
-      if (globalFile && fse.existsSync(globalFile.storagePath)) {
-        await File.create({
-          name: fileName,
-          extension: path.extname(fileName),
-          mimeType: globalFile.mimeType || "application/octet-stream",
-          size: totalSize,
-          hash: fileHash,
-          folderId: folderId || null,
-          ownerId: userId,
-          storagePath: globalFile.storagePath,
-          status: "active",
-        });
-
-        successResponse(res, { needUpload: false }, "restored");
-        return;
-      }
-
-      let task = await UploadTask.findOne({ fileHash, ownerId: userId });
-
-      if (!task) {
-        const taskTempDir = path.join(UPLOAD_TEMP_DIR, fileHash);
-        if (!fse.existsSync(taskTempDir)) {
-          fse.mkdirSync(taskTempDir);
-        }
-
-        task = await UploadTask.create({
-          fileHash,
-          fileName,
-          folderId: folderId || null,
-          totalSize,
-          totalChunks: totalChunksSize,
-          tempDir: taskTempDir,
-          ownerId: userId,
-          uploadedChunks: [],
-        });
-      }
-
-      successResponse(res, {
-        status: "UPLOADING",
-        uploadId: task._id,
-        uploadedChunks: task.uploadedChunks,
-      });
-    } catch (error) {
-      logger.error("上传初始化失败", { error });
-      res.status(500).json({ message: "初始化失败" });
-    }
-  }),
-);
-
-router.post(
-  "/uploadchunk",
-  requireAuth,
-  upload.single("chunk"),
-  asyncHandler(async (req, res) => {
-    const { uploadId, chunkIndex } = req.body;
-    const userId = req.user?.id;
-    logger.debug("上传分片", { chunkIndex });
-    if (!req.file) {
-      return res.status(400).send("No chunk file");
-    }
-
-    const task = await UploadTask.findOne({ _id: uploadId, ownerId: userId });
-    if (!task) {
-      await fse.remove(req.file.path);
-      return res.status(404).send("Task expired");
-    }
-
-    const chunkPath = path.join(task.tempDir, chunkIndex.toString());
-    await fse.move(req.file.path, chunkPath, { overwrite: true });
-
-    await UploadTask.updateOne(
-      { _id: uploadId },
-      { $addToSet: { uploadedChunks: Number(chunkIndex) } },
-    );
-
-    res.json({ success: true });
-  }),
-);
-
-router.post(
-  "/merge",
-  requireAuth,
-  asyncHandler(async (req: AuthRequest, res) => {
-    const { uploadId } = req.body;
-    const userId = req.user?.id;
-    const task = await UploadTask.findOne({ _id: uploadId, ownerId: userId });
-
-    if (task && task.totalChunks < task.uploadedChunks.length) {
-      UploadTask.deleteOne({ _id: uploadId });
-      return res.status(400).send("upload error retry");
-    }
-
-    if (!task || task.uploadedChunks.length !== task.totalChunks) {
-      return res.status(400).send("Chunks incomplete");
-    }
-
-    const finalFilename = `${task.fileHash}${path.extname(task.fileName)}`;
-    const finalPath = path.join(UPLOAD_FINAL_DIR, finalFilename);
-
-    const globalExists = await File.findOne({
-      hash: task.fileHash,
-      status: "active",
-    });
-
-    if (!globalExists || !(await fse.pathExists(finalPath))) {
-      await fse.ensureFile(finalPath);
-      await fse.truncate(finalPath, 0);
-
-      for (let i = 0; i < task.totalChunks; i++) {
-        const chunkPath = path.join(task.tempDir, i.toString());
-        await appendChunkToFile(chunkPath, finalPath);
-      }
-    }
-
-    await fse.remove(task.tempDir);
-    await UploadTask.deleteOne({ _id: uploadId });
-
-    const fileDoc = await File.create({
-      name: task.fileName,
-      size: task.totalSize,
-      hash: task.fileHash,
-      folderId: task.folderId,
-      ownerId: task.ownerId,
-      storagePath: finalPath,
-      status: "active",
-    });
-
-    res.json({ success: true, file: fileDoc });
-  }),
-);
 
 router.post(
   "/delete",

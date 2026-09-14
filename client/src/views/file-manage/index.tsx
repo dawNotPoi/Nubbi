@@ -13,13 +13,14 @@ import { Header } from "@/component/Header";
 import { useGlobalUpload } from "@/component/upload/hooks/GlobalUpload";
 import UploadListWrapper from "@/component/upload/UploadListWrapper";
 import {
+  activeUploadCountAtom,
   breadcrumbsAtom,
   createFloderMutationAtom,
   currentFolderIdAtom,
   listFilesAtom,
 } from "@/store/atom/FileAtom";
 import { UploadOutlined } from "@ant-design/icons";
-import { Button, Empty, Modal, Spin, Tree, message } from "antd";
+import { Badge, Button, Empty, Modal, Spin, Tree, message } from "antd";
 import type { DataNode } from "antd/es/tree";
 import { useAtomValue, useSetAtom } from "jotai";
 import {
@@ -154,13 +155,14 @@ const FileManager = () => {
   const [selectedRows, setSelectedRows] = useState<FileTableRow[]>([]);
   const navigate = useNavigate();
   const folderId = useAtomValue(currentFolderIdAtom);
+  const activeUploads = useAtomValue(activeUploadCountAtom);
   const crumbs = useAtomValue(breadcrumbsAtom);
   const setCrumbs = useSetAtom(breadcrumbsAtom);
   const { data: files, refetch, isFetching } = useAtomValue(listFilesAtom);
   const { mutate: createFolderMutation, isPending: creatingFolder } =
     useAtomValue(createFloderMutationAtom);
 
-  const { createUploadTask } = useGlobalUpload();
+  const { createUploadTasks } = useGlobalUpload();
   const [messageApi, contextHolder] = message.useMessage();
 
   const closeMoveModal = () => {
@@ -598,13 +600,15 @@ const FileManager = () => {
       />
 
       <header className="flex flex-wrap gap-2 px-2 pb-4">
-        <Button onClick={() => setOpen(true)}>传输</Button>
+        <Badge count={activeUploads} size="small">
+          <Button onClick={() => setOpen(true)}>传输</Button>
+        </Badge>
         <Button loading={creatingFolder} onClick={handleCreateFolder}>
           新建文件夹
         </Button>
         <UploadButton
-          onFileSelect={(file) => {
-            createUploadTask(file, folderId);
+          onFileSelect={(selectedFiles) => {
+            createUploadTasks(selectedFiles, folderId);
             setOpen(true);
           }}
         />
@@ -663,7 +667,7 @@ const FileManager = () => {
 const UploadButton = ({
   onFileSelect,
 }: {
-  onFileSelect: (file: File) => void;
+  onFileSelect: (files: File[]) => void;
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -679,10 +683,13 @@ const UploadButton = ({
       <input
         ref={fileInputRef}
         type="file"
+        multiple
         className="hidden"
-        onChange={(event) =>
-          event.target.files?.[0] && onFileSelect(event.target.files[0])
-        }
+        onChange={(event) => {
+          const files = Array.from(event.target.files ?? []);
+          if (files.length > 0) onFileSelect(files);
+          event.target.value = "";
+        }}
       />
     </div>
   );

@@ -1,7 +1,12 @@
+import {
+  finishedUploadCountAtom,
+  uploadTasksAtom,
+} from "@/store/atom/FileAtom";
 import clsx from "clsx";
 import { useAtomValue } from "jotai";
+import { X } from "lucide-react";
 import { useEffect, useRef } from "react";
-import { uploadTasksAtom } from "../../store/atom/FileAtom";
+import { useUploadTaskActions } from "./hooks/useUploadTaskActions";
 import UploadItem from "./UploadItem";
 
 export default function UploadListWrapper({
@@ -11,9 +16,11 @@ export default function UploadListWrapper({
   open: boolean;
   onClose: () => void;
 }) {
-  // 此处管理上传列表
   const tasks = useAtomValue(uploadTasksAtom);
+  const finishedCount = useAtomValue(finishedUploadCountAtom);
+  const { cancelTask, clearFinished, removeTask } = useUploadTaskActions();
   const wrapperRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!open) return;
     const handleClickOutside = (event: MouseEvent) => {
@@ -25,34 +32,58 @@ export default function UploadListWrapper({
       }
     };
     document.addEventListener("mousedown", handleClickOutside, true);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside, true);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside, true);
   }, [onClose, open]);
+
   return (
-    <div
+    <aside
       ref={wrapperRef}
+      aria-label="上传任务"
       className={clsx(
         "fixed inset-x-0 bottom-0 z-50 flex h-[min(70dvh,520px)] w-full flex-col rounded-t-2xl bg-white p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-2xl md:inset-x-auto md:bottom-auto md:right-[10%] md:top-4 md:h-[400px] md:w-[700px] md:rounded-xl md:pb-4 md:shadow-md",
-        open ? "block" : "hidden"
+        open ? "flex" : "hidden",
       )}
     >
-      <header className="border-b-4 p-2">
+      <header className="flex items-center justify-between border-b border-border-row pb-3">
         <div>
-          <h4>上传队列</h4>
+          <h4 className="font-medium text-text-primary">上传任务</h4>
+          <p className="text-xs text-text-subtle">共 {tasks.length} 项</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="text-xs text-text-muted disabled:opacity-40"
+            disabled={finishedCount === 0}
+            onClick={clearFinished}
+          >
+            清除已完成
+          </button>
+          <button
+            type="button"
+            aria-label="关闭上传任务"
+            className="grid size-8 place-items-center rounded-full text-text-muted hover:bg-bg-icon-hover"
+            onClick={onClose}
+          >
+            <X className="size-4" />
+          </button>
         </div>
       </header>
-      {/* <GlobalFileUpload /> */}
-      <div className="overflow-y-auto flex-1">
-        {tasks?.length ? (
-          tasks.map((id) => <UploadItem key={id} id={id} />)
+      <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-border">
+        {tasks.length > 0 ? (
+          tasks.map((id) => (
+            <UploadItem
+              key={id}
+              id={id}
+              onCancel={(taskId) => void cancelTask(taskId)}
+              onRemove={removeTask}
+            />
+          ))
         ) : (
-          <div className="text-center text-gray-400 py-10 text-sm">暂无上传任务</div>
+          <div className="py-10 text-center text-sm text-text-subtle">
+            暂无上传任务
+          </div>
         )}
       </div>
-      <div className="flex justify-center items-center p-2 ">
-        <span className="text-xs text-gray-500/80">-仅展示本次上传任务-</span>
-      </div>
-    </div>
+    </aside>
   );
 }

@@ -4,6 +4,7 @@ import { queryClientAtom } from "jotai-tanstack-query";
 import { useHydrateAtoms } from "jotai/utils";
 import { useEffect } from "react";
 import { ModalProvider } from "./component/UI/Dialog";
+import UploadLifecycle from "./component/upload/UploadLifecycle";
 import { restoreAuthSession } from "./utils/auth";
 
 export const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       <Provider>
         <HydrateQueryClient>
           <AuthBootstrap>
+            <UploadLifecycle />
             <ModalProvider>{children}</ModalProvider>
           </AuthBootstrap>
         </HydrateQueryClient>
