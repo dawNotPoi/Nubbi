@@ -14,8 +14,8 @@ import Blog from "./views/blog/Blog";
 import FileManager from "./views/FileManage";
 import Home from "./views/Home";
 import { LoginPage } from "./views/Login";
+import MeetingAccessGuard from "./views/MeetingRoom/MeetingAccessGuard";
 import Meetings from "./views/Mettings";
-import MeetingAccessGuard from "./views/Mettings/components/MeetingAccessGuard";
 import PostTable from "./views/PostTable";
 
 const UserLayout = () => {

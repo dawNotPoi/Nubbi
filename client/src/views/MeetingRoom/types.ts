@@ -30,3 +30,16 @@ export type StageParticipant = {
   isAudioEnabled: boolean;
   isLocal?: boolean;
 };
+
+export type MeetingComment = {
+  _id: string;
+  roomId: string;
+  meetingId: string;
+  content: string;
+  userId: string;
+  name: string;
+  avatar: string;
+  email: string;
+  createdAt: string;
+  updatedAt: string;
+};

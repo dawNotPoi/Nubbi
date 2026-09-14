@@ -1,7 +1,11 @@
-import { getMeetingById, validateMeetingAccess, type MeetingType } from "@/api/meeting";
+import {
+  getMeetingById,
+  validateMeetingAccess,
+  type MeetingType,
+} from "@/api/meeting";
 import { Modal } from "@/component/UI/Dialog";
 import { useAuth } from "@/hooks/useAuth";
-import VideoPage from "@/views/Video";
+import VideoPage from "@/views/MeetingRoom";
 import { Button, Input, Spin, message } from "antd";
 import { Lock, LogIn, Video } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -13,7 +17,12 @@ const MeetingAccessGuard = () => {
   const { roomId = "" } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, loginWithGitHub, loginWithGoogle, loading: authLoading } = useAuth();
+  const {
+    user,
+    loginWithGitHub,
+    loginWithGoogle,
+    loading: authLoading,
+  } = useAuth();
 
   const [meeting, setMeeting] = useState<MeetingType | null>(null);
   const [password, setPassword] = useState("");
@@ -43,7 +52,8 @@ const MeetingAccessGuard = () => {
           return;
         }
 
-        const hasAccess = window.sessionStorage.getItem(accessKey) === "granted";
+        const hasAccess =
+          window.sessionStorage.getItem(accessKey) === "granted";
         if (hasAccess) {
           setGranted(true);
           return;
@@ -128,7 +138,10 @@ const MeetingAccessGuard = () => {
             </p>
           </div>
           <div className="flex flex-col gap-2">
-            <Button icon={<LogIn className="size-4" />} onClick={handleOpenLoginPage}>
+            <Button
+              icon={<LogIn className="size-4" />}
+              onClick={handleOpenLoginPage}
+            >
               前往登录页
             </Button>
             <Button
@@ -154,7 +167,9 @@ const MeetingAccessGuard = () => {
           </div>
           <div>
             <h2 className="text-xl font-semibold text-slate-900">进入会议室</h2>
-            <p className="text-sm text-slate-500">请输入会议密码并完成身份校验。</p>
+            <p className="text-sm text-slate-500">
+              请输入会议密码并完成身份校验。
+            </p>
           </div>
         </div>
 
@@ -170,7 +185,9 @@ const MeetingAccessGuard = () => {
           <>
             <div className="rounded-xl bg-slate-50 px-4 py-3">
               <div className="text-sm text-slate-500">会议主题</div>
-              <div className="mt-1 font-medium text-slate-900">{meeting.title}</div>
+              <div className="mt-1 font-medium text-slate-900">
+                {meeting.title}
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -195,8 +212,16 @@ const MeetingAccessGuard = () => {
             </div>
 
             <div className="flex gap-3">
-              {!user && <Button onClick={() => setShowLoginModal(true)}>登录后进入</Button>}
-              <Button type="primary" loading={submitting} onClick={handleSubmitPassword}>
+              {!user && (
+                <Button onClick={() => setShowLoginModal(true)}>
+                  登录后进入
+                </Button>
+              )}
+              <Button
+                type="primary"
+                loading={submitting}
+                onClick={handleSubmitPassword}
+              >
                 {meeting.password ? "验证并进入" : "直接进入会议室"}
               </Button>
             </div>

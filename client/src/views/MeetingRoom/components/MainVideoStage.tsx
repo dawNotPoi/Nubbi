@@ -89,9 +89,11 @@ function useSpeaking(stream: MediaStream | null, enabled: boolean) {
 function ParticipantStageCard({
   participant,
   videoRef,
+  fullScreen,
 }: {
   participant: StageParticipant;
   videoRef?: RefObject<HTMLVideoElement | null>;
+  fullScreen?: boolean;
 }) {
   const isSpeaking = useSpeaking(
     participant.stream,
@@ -118,13 +120,15 @@ function ParticipantStageCard({
     [participant.stream, videoRef],
   );
   return (
-    <div className="flex h-full min-h-[240px] flex-col items-center justify-center gap-3 rounded-2xl bg-[#f5f5f5] p-6 text-center">
+    <div
+      className={`flex min-h-0 flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl bg-[#f5f5f5] text-center ${fullScreen ? "h-full w-full p-0" : "min-h-[240px] flex-1 p-4"}`}
+    >
       {participant.isVideoEnabled ? (
         <video
           autoPlay
           playsInline
           muted={participant.isLocal}
-          className="h-full max-h-[320px] w-full rounded-2xl object-cover"
+          className={`h-full w-full ${fullScreen ? "object-contain bg-black" : "rounded-2xl object-cover"}`}
           ref={bindVideoRef}
         />
       ) : (
@@ -145,23 +149,20 @@ export default function MainVideoStage({
   videoRef,
   participants,
 }: MainVideoStageProps) {
-  const gridClassName = useMemo(() => {
-    if (participants.length <= 1) return "grid-cols-1 max-w-[560px]";
-    if (participants.length <= 4) return "grid-cols-2 max-w-[980px]";
-    return "grid-cols-3 max-w-[1280px]";
-  }, [participants.length]);
+  const isSingleParticipant = participants.length <= 1;
 
   return (
-    <div className="bg-normal flex flex-col size-full flex-1 overflow-hidden">
-      <section className="flex-1 w-full overflow-y-auto bg-[#f5f5f5] p-6">
+    <div className="flex size-full flex-1 flex-col overflow-hidden bg-[#fbfbfa]">
+      <section className="w-full flex-1 overflow-hidden bg-[#fbfbfa] p-4">
         <div
-          className={`mx-auto grid min-h-full w-full gap-4 ${gridClassName}`}
+          className={`mx-auto flex h-full w-full items-center justify-center gap-4 ${isSingleParticipant ? "" : "flex-wrap"}`}
         >
           {participants.map((participant) => (
             <ParticipantStageCard
               key={participant.id}
               participant={participant}
               videoRef={participant.isLocal ? videoRef : undefined}
+              fullScreen={isSingleParticipant}
             />
           ))}
         </div>

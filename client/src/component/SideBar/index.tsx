@@ -92,9 +92,6 @@ const SideBar: React.FC = () => {
           <MenuItemContainer onClickCapture={() => navigate("meetings")}>
             <span>会议</span>
           </MenuItemContainer>
-          <MenuItemContainer onClickCapture={() => navigate("/live/test")}>
-            <span>视频测试页</span>
-          </MenuItemContainer>
         </div>
       </div>
     </ResizeTab>

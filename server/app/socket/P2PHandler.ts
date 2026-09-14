@@ -1,4 +1,6 @@
 import { Server, Socket } from "socket.io";
+import meeting from "../models/meeting";
+import meetingComment from "../models/meetingComment";
 
 type JoinUserPayload = {
   id?: string;
@@ -21,8 +23,36 @@ type JoinMeetingResponse = {
   roomUsers: RoomUserInfo[];
 };
 
+type MeetingCommentInfo = {
+  _id: string;
+  roomId: string;
+  meetingId: string;
+  content: string;
+  userId: string;
+  name: string;
+  avatar: string;
+  email: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 const socketRooms = new Map<string, string>();
 const roomUsers = new Map<string, Map<string, RoomUserInfo>>();
+
+function serializeMeetingComment(commentDoc: any): MeetingCommentInfo {
+  return {
+    _id: String(commentDoc._id),
+    roomId: commentDoc.roomId,
+    meetingId: String(commentDoc.meetingId),
+    content: commentDoc.content,
+    userId: commentDoc.userId || "",
+    name: commentDoc.name || "Guest",
+    avatar: commentDoc.avatar || "",
+    email: commentDoc.email || "",
+    createdAt: commentDoc.createdAt,
+    updatedAt: commentDoc.updatedAt,
+  };
+}
 
 function getRoomUsers(roomId: string) {
   return Array.from(roomUsers.get(roomId)?.values() || []);
@@ -30,6 +60,22 @@ function getRoomUsers(roomId: string) {
 
 function syncRoomUsers(io: Server, roomId: string) {
   io.to(roomId).emit("room-users-sync", getRoomUsers(roomId));
+}
+
+async function syncMeetingComments(
+  io: Server,
+  roomId: string,
+  target?: Socket,
+) {
+  const comments = await meetingComment.find({ roomId }).sort({ createdAt: 1 });
+  const payload = comments.map(serializeMeetingComment);
+
+  if (target) {
+    target.emit("meeting-comments-sync", payload);
+    return;
+  }
+
+  io.to(roomId).emit("meeting-comments-sync", payload);
 }
 
 function upsertRoomUser(roomId: string, socketId: string, user?: JoinUserPayload) {
@@ -105,8 +151,22 @@ const P2PHandler = (io: Server, socket: Socket) => {
       }
 
       syncRoomUsers(io, roomId);
+      void syncMeetingComments(io, roomId, socket);
       callback?.({ existingPeers, roomUsers: getRoomUsers(roomId) });
     },
+  );
+
+  socket.on(
+    "syncMeetingUser",
+    ({ roomId, user }: { roomId?: string; user?: JoinUserPayload }) => {
+      if (!roomId) return;
+
+      const currentRoomId = socketRooms.get(socket.id);
+      if (currentRoomId !== roomId) return;
+
+      upsertRoomUser(roomId, socket.id, user);
+      syncRoomUsers(io, roomId);
+    }
   );
 
   socket.on("signal", (data) => {
@@ -115,6 +175,50 @@ const P2PHandler = (io: Server, socket: Socket) => {
       signal: data.signal,
     });
   });
+
+  socket.on(
+    "sendMeetingComment",
+    async (
+      {
+        roomId,
+        comment,
+      }: {
+        roomId?: string;
+        comment?: JoinUserPayload & { content?: string };
+      },
+      callback?: (response: { ok: boolean; comment?: MeetingCommentInfo; reason?: string }) => void,
+    ) => {
+      try {
+        const content = comment?.content?.trim();
+        if (!roomId || !content) {
+          callback?.({ ok: false, reason: "INVALID_PAYLOAD" });
+          return;
+        }
+
+        const existingMeeting = await meeting.findById(roomId);
+        if (!existingMeeting) {
+          callback?.({ ok: false, reason: "MEETING_NOT_FOUND" });
+          return;
+        }
+
+        const createdComment = await meetingComment.create({
+          meetingId: existingMeeting._id,
+          roomId,
+          content,
+          userId: comment?.id || socket.id,
+          name: comment?.name || "Guest",
+          avatar: comment?.image || "",
+          email: comment?.email || "",
+        });
+
+        const serializedComment = serializeMeetingComment(createdComment);
+        io.to(roomId).emit("meeting-comment-created", serializedComment);
+        callback?.({ ok: true, comment: serializedComment });
+      } catch {
+        callback?.({ ok: false, reason: "CREATE_FAILED" });
+      }
+    },
+  );
 
   socket.on("disconnect", () => {
     const roomId = removeRoomUser(socket.id);

@@ -6,7 +6,7 @@ type ParticipantTileProps = {
   name: string;
   stream: MediaStream | null;
   avatarSrc?: string;
-  showAvatarFallback?: boolean;
+
   isVideoEnabled?: boolean;
 };
 
@@ -14,8 +14,8 @@ export default function ParticipantTile({
   name,
   stream,
   avatarSrc,
-  showAvatarFallback = false,
-  isVideoEnabled = true,
+
+  isVideoEnabled = false,
 }: ParticipantTileProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
@@ -30,9 +30,9 @@ export default function ParticipantTile({
     [stream],
   );
 
-  const content = showAvatarFallback && !isVideoEnabled ? (
-    <div className="size-full overflow-hidden bg-black flex justify-center items-center">
-      <Image className="size-[5rem] rounded-full" src={avatarSrc || ""} />
+  const content = !isVideoEnabled ? (
+    <div className="flex size-full items-center justify-center overflow-hidden bg-[#2f3437]">
+      <Image className="size-16 rounded-full border border-white/10" src={avatarSrc || ""} />
     </div>
   ) : (
     <video
@@ -40,15 +40,14 @@ export default function ParticipantTile({
       className="size-full overflow-hidden object-cover"
       autoPlay
       playsInline
-      muted={showAvatarFallback}
     />
   );
 
   return (
-    <li className="w-full relative aspect-video">
+    <li className="relative w-full overflow-hidden rounded-2xl border border-[#ecebe8] bg-white shadow-sm aspect-video">
       {content}
-      <footer className="absolute flex gap-1 items-center text-white bottom-1 left-0">
-        <TbMicrophoneFilled />
+      <footer className="absolute bottom-2 left-2 flex items-center gap-1 rounded-full bg-black/45 px-2.5 py-1 text-white backdrop-blur-sm">
+        <TbMicrophoneFilled className="text-xs" />
         <span className="text-xs">{name}</span>
       </footer>
     </li>

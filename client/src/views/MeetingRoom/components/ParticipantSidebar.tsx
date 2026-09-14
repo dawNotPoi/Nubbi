@@ -25,13 +25,14 @@ export default function ParticipantSidebar({
           name={localName}
           stream={localStream}
           avatarSrc={localAvatar}
-          showAvatarFallback
           isVideoEnabled={localVideoEnabled}
         />
         {remoteUsers.map((roomUser) => {
           const stream = remoteStreams[roomUser.peerId] || null;
           const isVideoEnabled =
-            stream?.getVideoTracks().some((track) => track.readyState === "live") || false;
+            stream
+              ?.getVideoTracks()
+              .some((track) => track.readyState === "live") || false;
 
           return (
             <ParticipantTile

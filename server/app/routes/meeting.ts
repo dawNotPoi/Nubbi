@@ -1,6 +1,7 @@
 import requireAuth from "@/middleware/session";
 import express from "express";
 import { asyncHandler } from "../middleware/common";
+import meetingComment from "../models/meetingComment";
 import meeting from "../models/meeting";
 import { successResponse } from "./utils";
 const router = express.Router();
@@ -98,6 +99,7 @@ router.delete(
 
       throw error;
     }
+    await meetingComment.deleteMany({ roomId: String(_id) });
     successResponse(res, result);
   })
 );

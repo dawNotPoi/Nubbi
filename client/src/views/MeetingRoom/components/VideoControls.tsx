@@ -1,6 +1,12 @@
 ﻿import Input from "antd/es/input/Input";
 import clsx from "clsx";
-import { BiCamera, BiCameraOff, BiMicrophone, BiMicrophoneOff } from "react-icons/bi";
+import {
+  BiCamera,
+  BiCameraOff,
+  BiMicrophone,
+  BiMicrophoneOff,
+} from "react-icons/bi";
+import { LuMessageSquareText } from "react-icons/lu";
 import { SlScreenDesktop } from "react-icons/sl";
 import type {
   DeviceStatus,
@@ -14,8 +20,11 @@ type VideoControlsProps = {
   devices: MediaDevices;
   videoStatus: DeviceStatus;
   audioStatus: DeviceStatus;
+  isCommentOpen: boolean;
+  commentCount: number;
   onToggleDevice: (kind: MediaToggleKind, enabled: boolean) => void;
   onSwitchDevice: (kind: MediaDeviceKind, deviceId: string) => void;
+  onToggleComment: () => void;
 };
 
 type DeviceMenuProps = {
@@ -28,7 +37,9 @@ type ActionItemProps = {
   active: boolean;
   label: string;
   icon: React.ReactNode;
+  badgeCount?: number;
   onClick?: () => void;
+  withSelect?: boolean;
   children?: React.ReactNode;
 };
 
@@ -47,14 +58,15 @@ function DeviceMenu({ devices, selectedDeviceId, onSelect }: DeviceMenuProps) {
     <ul className="min-w-[260px] py-2">
       {devices.map((item) => {
         const selected = item.deviceId === selectedDeviceId;
-
         return (
           <li
             key={item.deviceId}
             onClick={() => onSelect(item.deviceId)}
             className={clsx(
               "mx-2 flex cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors",
-              selected ? "bg-slate-100 text-slate-900" : "text-slate-600 hover:bg-slate-50"
+              selected
+                ? "bg-slate-100 text-slate-900"
+                : "text-slate-600 hover:bg-slate-50",
             )}
           >
             <span className="max-w-[190px] overflow-hidden text-ellipsis whitespace-nowrap">
@@ -68,32 +80,45 @@ function DeviceMenu({ devices, selectedDeviceId, onSelect }: DeviceMenuProps) {
   );
 }
 
-function ActionItem({ active, label, icon, onClick, children }: ActionItemProps) {
+function ActionItem({
+  active,
+  label,
+  icon,
+  badgeCount,
+  onClick,
+  withSelect = false,
+  children,
+}: ActionItemProps) {
   return (
-    <div className="flex w-[84px] flex-col items-center">
-      <div className="flex items-center justify-center gap-[4px]">
-        <button
-          type="button"
-          onClick={onClick}
-          className={clsx(
-            "flex size-10 items-center justify-center rounded-xl border transition-all",
-            active
-              ? "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-              : "border-slate-200 bg-slate-50 text-slate-400 hover:bg-slate-100"
-          )}
-        >
-          <span className="flex size-5 items-center justify-center text-[22px]">{icon}</span>
-        </button>
-        {children}
-      </div>
-      <span
+    <div className="flex items-stretch rounded-xl border border-slate-200 shadow-sm">
+      <button
+        type="button"
+        onClick={onClick}
         className={clsx(
-          "mt-1 w-full text-center text-xs leading-5",
-          active ? "text-slate-700" : "text-slate-400"
+          "relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-l-xl px-3 py-2 text-center transition-all",
+          active
+            ? "bg-white text-slate-700 hover:bg-slate-50"
+            : "bg-slate-50 text-slate-400 hover:bg-slate-100",
         )}
       >
-        {label}
-      </span>
+        {badgeCount ? (
+          <span className="absolute -right-1.5 -top-1.5 flex min-w-5 items-center justify-center rounded-full bg-[#2f3437] px-1.5 text-[10px] font-semibold leading-5 text-white shadow-sm">
+            {badgeCount > 99 ? "99+" : badgeCount}
+          </span>
+        ) : null}
+        <span className="flex size-5 shrink-0 items-center justify-center text-[22px]">
+          {icon}
+        </span>
+        <span
+          className={clsx(
+            "max-w-full truncate text-[11px] leading-4",
+            active ? "text-slate-700" : "text-slate-400",
+          )}
+        >
+          {label}
+        </span>
+      </button>
+      {withSelect ? children : null}
     </div>
   );
 }
@@ -102,8 +127,11 @@ export default function VideoControls({
   devices,
   videoStatus,
   audioStatus,
+  isCommentOpen,
+  commentCount,
   onToggleDevice,
   onSwitchDevice,
+  onToggleComment,
 }: VideoControlsProps) {
   return (
     <footer className="w-full border-t border-slate-200 bg-white/95 px-3 py-2 backdrop-blur-sm">
@@ -125,6 +153,7 @@ export default function VideoControls({
             label="选择音频"
             icon={audioStatus.open ? <BiMicrophone /> : <BiMicrophoneOff />}
             onClick={() => onToggleDevice("audio", !audioStatus.open)}
+            withSelect
           >
             <Select>
               <DeviceMenu
@@ -140,6 +169,7 @@ export default function VideoControls({
             label={videoStatus.open ? "开启视频" : "关闭视频"}
             icon={videoStatus.open ? <BiCamera /> : <BiCameraOff />}
             onClick={() => onToggleDevice("video", !videoStatus.open)}
+            withSelect
           >
             <Select>
               <DeviceMenu
@@ -151,6 +181,13 @@ export default function VideoControls({
           </ActionItem>
 
           <ActionItem active label="共享屏幕" icon={<SlScreenDesktop />} />
+          <ActionItem
+            active={isCommentOpen}
+            label={isCommentOpen ? "关闭评论" : "打开评论"}
+            icon={<LuMessageSquareText />}
+            badgeCount={commentCount}
+            onClick={onToggleComment}
+          />
         </div>
 
         <div className="flex w-[210px] justify-end">

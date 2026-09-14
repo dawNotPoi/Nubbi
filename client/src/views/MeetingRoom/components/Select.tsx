@@ -36,16 +36,20 @@ export default function Select({ children }: SelectProps) {
         ref={triggerRef}
         onClick={() => setOpen((prev) => !prev)}
         className={clsx(
-          "flex size-7 cursor-pointer items-center justify-center rounded-md text-slate-400 transition-all",
-          open ? "bg-slate-100 text-slate-700" : "hover:bg-slate-100 hover:text-slate-700"
+          "flex h-full px-1 cursor-pointer items-center justify-center rounded-r-xl border-l border-slate-200 text-slate-400 transition-all",
+          open
+            ? "bg-slate-100 text-slate-700"
+            : "bg-white hover:bg-slate-100 hover:text-slate-700",
         )}
       >
-        <AiOutlineUp className={clsx("text-xs transition-transform", open && "rotate-180")} />
+        <AiOutlineUp
+          className={clsx("text-xs transition-transform", open && "rotate-180")}
+        />
       </div>
       {open && (
         <div
           ref={menuRef}
-          className="absolute bottom-[calc(100%+4px)] left-1/2 min-w-[220px] -translate-x-1/2 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg"
+          className="absolute bottom-[calc(100%+8px)] right-0 min-w-[220px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg"
         >
           {children}
         </div>
