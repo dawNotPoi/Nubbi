@@ -223,6 +223,7 @@ export default function Note() {
         canApplyExternalContent={canApplyExternalContent}
         onChange={setContent}
         serverValue={content}
+        showTOC
       />
     );
   }, [

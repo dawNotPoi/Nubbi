@@ -1,7 +1,7 @@
 @import "tippy.js/themes/light.css";
 
 .dn-editor {
-  @apply relative size-full overflow-visible rounded-2xl transition-shadow duration-200;
+  @apply relative size-full rounded-2xl transition-shadow duration-200;
   --editor-bg: #ffffff;
   --editor-surface: #fbfbfa;
   --editor-surface-hover: #f3f3f1;
