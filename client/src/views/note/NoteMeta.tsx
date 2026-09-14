@@ -1,4 +1,4 @@
-import { Post } from "@/api/post";
+import { Note } from "@/api/note";
 import { DatePicker } from "antd";
 import dayjs from "dayjs";
 import { useCallback, useEffect, useState } from "react";
@@ -32,9 +32,9 @@ export default function NoteMeta({
   className,
   onUpdate,
 }: {
-  data: Post;
+  data: Note;
   className?: string;
-  onUpdate: (newData: Post["meta"]) => void;
+  onUpdate: (newData: Note["meta"]) => void;
 }) {
   const [meta, setMeta] = useState<Record<string, any>>({
     ...data.meta,

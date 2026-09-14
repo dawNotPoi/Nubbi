@@ -1,23 +1,22 @@
 import TiptapEditor from "@/component/editor/Tiptap";
 import { Header } from "@/component/Header";
+import { useNoteEditorDraft } from "@/features/note/hooks/useNoteEditorDraft";
+import type { NoteSaveStatus } from "@/features/note/model/types";
 import {
-  postDetailAtom,
-  updatePostContentAtom,
-  updatePostPropertiesAtom,
-} from "@/store/atom/postAtom";
-import { debounceWrapper } from "@/utils/common";
-import { useAtom, useAtomValue } from "jotai";
+  noteAncestorsAtom,
+  noteDetailAtom,
+} from "@/store/atom/noteAtom";
+import { useAtomValue } from "jotai";
 import { CheckCircle2, LoaderCircle } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import "react-markdown-editor-lite/lib/index.css";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import "./index.css";
 import NoteCard from "./NoteCard";
+import NoteBreadcrumb from "./NoteBreadcrumb";
 import NoteMeta from "./NoteMeta";
 
 const DEFAULT_TITLE = "未命名文档";
-
-type SaveStatus = "idle" | "saving" | "saved";
 
 function NoteSkeleton() {
   return (
@@ -45,7 +44,7 @@ function NoteSkeleton() {
   );
 }
 
-function SaveIndicator({ status }: { status: SaveStatus }) {
+function SaveIndicator({ status }: { status: NoteSaveStatus }) {
   if (status === "idle") return null;
 
   const isSaving = status === "saving";
@@ -64,96 +63,32 @@ function SaveIndicator({ status }: { status: SaveStatus }) {
 
 export default function Note() {
   const { Id } = useParams();
-  const navigate = useNavigate();
-  const { data, isLoading, refetch } = useAtomValue(postDetailAtom(Id!));
-  const [contentMutation] = useAtom(updatePostContentAtom);
-  const propertiesMutation = useAtomValue(updatePostPropertiesAtom);
-  const [title, setTitle] = useState("");
-  const [titleDebouncing, setTitleDebouncing] = useState(false);
-  const [contentDebouncing, setContentDebouncing] = useState(false);
-  const [hasAutoSaved, setHasAutoSaved] = useState(false);
-
-  const { mutate: updatePostContent, isPending: isContentSaving } =
-    contentMutation;
-  const { mutate: updatePostProperties, isPending: isPropertiesSaving } =
-    propertiesMutation;
-
-  const debouncedUpdatePost = useCallback(
-    debounceWrapper((postId: string, content: string) => {
-      setContentDebouncing(false);
-      updatePostContent({ postId, content });
-    }),
-    [updatePostContent],
-  );
-
-  const debouncedUpdateTitle = useMemo(
-    () =>
-      debounceWrapper((nextTitle: string, parentId?: string | null) => {
-        if (!Id) return;
-        setTitleDebouncing(false);
-        updatePostProperties({
-          postId: Id,
-          properties: { title: nextTitle },
-          parentId: parentId ?? undefined,
-        });
-      }, 300),
-    [Id, updatePostProperties],
-  );
-
-  useEffect(() => {
-    refetch();
-  }, [Id, refetch]);
-
-  useEffect(() => {
-    setTitle(data?.title ?? "");
-    setTitleDebouncing(false);
-    setContentDebouncing(false);
-    setHasAutoSaved(false);
-  }, [Id, data?.title]);
-
-  useEffect(() => {
-    if (!hasAutoSaved && (titleDebouncing || contentDebouncing)) {
-      setHasAutoSaved(true);
-    }
-  }, [contentDebouncing, hasAutoSaved, titleDebouncing]);
-
-  const saveStatus: SaveStatus = useMemo(() => {
-    if (!hasAutoSaved) return "idle";
-    if (
-      titleDebouncing ||
-      contentDebouncing ||
-      isContentSaving ||
-      isPropertiesSaving
-    ) {
-      return "saving";
-    }
-    return "saved";
-  }, [
-    contentDebouncing,
-    hasAutoSaved,
-    isContentSaving,
-    isPropertiesSaving,
-    titleDebouncing,
-  ]);
-
-  const headerTitle = useMemo(
-    () => (title || data?.title || DEFAULT_TITLE).trim(),
-    [data?.title, title],
-  );
+  const { data, isLoading } = useAtomValue(noteDetailAtom(Id!));
+  const { data: ancestors = [] } = useAtomValue(noteAncestorsAtom(Id!));
+  const {
+    headerTitle,
+    saveStatus,
+    setContent,
+    setTitle,
+    title,
+    updateProperties,
+  } = useNoteEditorDraft({
+    data,
+    defaultTitle: DEFAULT_TITLE,
+    noteId: Id,
+  });
 
   const Editor = useMemo(() => {
     if (isLoading || !Id || !data) return null;
+
     return (
       <TiptapEditor
-        key={`${Id}:${data.updatedAt ?? ""}:${data.content?.length ?? 0}`}
+        key={Id}
         defaultValue={data.content}
-        onChange={(markdown) => {
-          setContentDebouncing(true);
-          debouncedUpdatePost(Id, markdown);
-        }}
+        onChange={setContent}
       />
     );
-  }, [Id, isLoading, data, debouncedUpdatePost]);
+  }, [Id, isLoading, data, setContent]);
 
   if (!Id || isLoading || !data) return <NoteSkeleton />;
 
@@ -161,57 +96,31 @@ export default function Note() {
     <div className="min-w-[800px]">
       <Header className="mb-4">
         <div className="flex items-center justify-between gap-4">
-          <div className="flex min-w-0 items-center gap-2 text-sm">
-            <button
-              className="shrink-0 text-neutral-500 transition-colors hover:text-neutral-800"
-              onClick={() => navigate("/table")}
-              type="button"
-            >
-              笔记
-            </button>
-            <span className="shrink-0 text-neutral-300">/</span>
-            <span className="truncate text-neutral-500">{headerTitle}</span>
-          </div>
+          <NoteBreadcrumb
+            ancestors={ancestors}
+            current={{ _id: Id, title: headerTitle }}
+          />
           <div className="shrink-0">
             <SaveIndicator status={saveStatus} />
           </div>
         </div>
       </Header>
-      <NoteCard
-        data={data}
-        onUpdate={(newData) => {
-          updatePostProperties({
-            postId: Id,
-            properties: newData,
-            parentId: data.parentId ?? undefined,
-          });
-        }}
-      />
+      <NoteCard data={data} onUpdate={updateProperties} />
       <main className="mt-10 w-full items-center">
-        <div
-          key={`${Id}:${data.updatedAt ?? ""}:${data.content?.length ?? 0}`}
-          className="mx-auto w-[50%] min-w-[600px]"
-        >
+        <div className="mx-auto w-[50%] min-w-[600px]">
           <input
             className="w-full px-2 text-4xl font-extrabold outline-none"
+            onChange={(event) => {
+              setTitle(event.target.value);
+            }}
             placeholder={DEFAULT_TITLE}
             value={title}
-            onChange={(event) => {
-              const nextTitle = event.target.value;
-              setTitle(nextTitle);
-              setTitleDebouncing(true);
-              debouncedUpdateTitle(nextTitle, data.parentId);
-            }}
           />
           <NoteMeta
             className="mt-4 -z-10"
             data={data}
             onUpdate={(newMeta) => {
-              updatePostProperties({
-                postId: Id,
-                properties: { meta: newMeta },
-                parentId: data.parentId ?? undefined,
-              });
+              updateProperties({ meta: newMeta });
             }}
           />
           {Editor}

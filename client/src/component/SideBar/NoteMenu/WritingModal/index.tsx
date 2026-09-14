@@ -1,22 +1,12 @@
-import { newPost, Post, PostWithContent } from "@/api/post";
+import { type Note } from "@/api/note";
 import { Modal } from "@/component/UI/Dialog";
 import { Divider } from "@/component/UI/Divider";
 import Popover from "@/component/UI/Popover";
 import TiptapEditor from "@/component/editor/Tiptap";
-import {
-  createPostAtom,
-  updatePostContentAtom,
-  updatePostPropertiesAtom,
-} from "@/store/atom/postAtom";
-import { debounceWrapper } from "@/utils/common";
+import { useCreateNoteDraft } from "@/features/note/hooks/useCreateNoteDraft";
 import clsx from "clsx";
-import { useAtom, useAtomValue } from "jotai";
-import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Expand,
-  FileText,
-  Plus,
-} from "lucide-react";
+import { cloneElement, useState } from "react";
+import { Expand, FileText, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { IconButton } from "../../components";
 import { SearchNoteList } from "./SearchNodeList";
@@ -25,241 +15,124 @@ const DEFAULT_TITLE = "未命名文档";
 
 export const WrittingModal = ({
   parent,
+  owner,
   onTrigger,
+  trigger,
 }: {
-  parent: Post;
+  parent: Note;
+  owner?: string;
   onTrigger?: () => void;
+  trigger?: React.ReactElement;
 }) => {
-  const [targetNote, setTargetNote] = useState<Post | null>(parent);
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [draftPost, setDraftPost] = useState<PostWithContent | null>(null);
-  const draftPostRef = useRef<PostWithContent | null>(null);
-  const titleRef = useRef("");
-  const contentRef = useRef("");
-  const { mutate: createPostMutate } = useAtomValue(createPostAtom);
-  const [{ mutate: updatePostContent }] = useAtom(updatePostContentAtom);
-  const { mutate: updatePostProperties } = useAtomValue(
-    updatePostPropertiesAtom,
-  );
-  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const [targetPickerOpen, setTargetPickerOpen] = useState(false);
+  const navigate = useNavigate();
+  const draft = useCreateNoteDraft({ owner, parent });
 
-  useEffect(() => {
-    draftPostRef.current = draftPost;
-  }, [draftPost]);
-
-  useEffect(() => {
-    titleRef.current = title;
-  }, [title]);
-
-  useEffect(() => {
-    contentRef.current = content;
-  }, [content]);
-
-  const resetModal = () => {
-    draftPostRef.current = null;
-    titleRef.current = "";
-    contentRef.current = "";
+  const closeModal = () => {
+    draft.resetDraft();
     setOpen(false);
-    setTargetPickerOpen(false);
-    setTitle("");
-    setContent("");
-    setDraftPost(null);
-    setTargetNote(parent);
   };
 
-  const createDraft = (initialValues?: Partial<PostWithContent>) => {
-    const post = newPost({
-      parentId: targetNote?._id,
-      ...initialValues,
-    });
-    draftPostRef.current = post;
-    setDraftPost(post);
-    createPostMutate(post);
-    return post;
-  };
-
-  const syncParent = (nextParent: Post) => {
-    setTargetNote(nextParent);
-    setTargetPickerOpen(false);
-    setDraftPost((prev) =>
-      prev ? { ...prev, parentId: nextParent._id } : prev,
-    );
-
-    if (!draftPostRef.current) return;
-
-    updatePostProperties({
-      postId: draftPostRef.current._id,
-      properties: { parentId: nextParent._id },
-      parentId: draftPostRef.current.parentId ?? undefined,
-    });
-  };
-
-  const debouncedUpdateTitle = useMemo(
-    () =>
-      debounceWrapper((postId: string, nextTitle: string, parentId?: string) => {
-        updatePostProperties({
-          postId,
-          properties: { title: nextTitle },
-          parentId,
-        });
-      }, 300),
-    [updatePostProperties],
-  );
-
-  const debouncedUpdateContent = useMemo(
-    () =>
-      debounceWrapper((postId: string, nextContent: string) => {
-        updatePostContent({ postId, content: nextContent });
-      }, 300),
-    [updatePostContent],
-  );
-
-  const syncTitle = (nextTitle: string) => {
-    titleRef.current = nextTitle;
-
-    if (!draftPostRef.current) {
-      createDraft({ title: nextTitle, content: contentRef.current });
-      return;
-    }
-
-    debouncedUpdateTitle(
-      draftPostRef.current._id,
-      nextTitle,
-      draftPostRef.current.parentId ?? undefined,
-    );
-  };
-
-  const syncContent = (nextContent: string) => {
-    contentRef.current = nextContent;
-
-    if (!draftPostRef.current) {
-      createDraft({ title: titleRef.current, content: nextContent });
-      return;
-    }
-
-    debouncedUpdateContent(draftPostRef.current._id, nextContent);
-  };
-
-  const createPostHandler = () => {
-    const currentDraft = draftPostRef.current;
-
-    if (currentDraft) {
-      navigate("note/" + currentDraft._id);
-      resetModal();
-      return;
-    }
-
-    const post = newPost({
-      title,
-      content,
-      parentId: targetNote?._id,
-    });
-
-    createPostMutate(post, {
-      onSuccess: () => {
-        navigate("note/" + post._id);
-        resetModal();
+  const createNoteHandler = () => {
+    draft.submitDraft({
+      onCreated: (note) => {
+        navigate(`/note/${note._id}`);
+      },
+      onSubmitted: () => {
+        setOpen(false);
       },
     });
   };
 
-  const Editor = useMemo(
-    () => (
-      <TiptapEditor
-        defaultValue={content}
-        onChange={(value) => {
-          setContent(value);
-          syncContent(value);
-        }}
-      />
-    ),
-    [],
+  const triggerElement = cloneElement(
+    trigger ?? <Plus className="size-full" />,
+    {
+      onClick: (event: React.MouseEvent) => {
+        trigger?.props.onClick?.(event);
+        onTrigger?.();
+        draft.createDraftNote();
+        setOpen(true);
+      },
+    },
   );
 
   return (
-    <Modal
-      open={open}
-      className={clsx(
-        "h-[80%] min-h-[320px] w-full max-w-3xl md:max-w-4xl lg:max-w-5xl",
-        "rounded-2xl border border-neutral-200/80 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.12)]",
-      )}
-      onCancel={resetModal}
-      title={
-        <div className="flex items-center justify-start gap-2 text-sm text-neutral-500">
-          <IconButton
-            onClick={createPostHandler}
-            className={clsx(
-              "flex size-8 items-center justify-center rounded-md text-neutral-500 transition-colors",
-              "hover:bg-neutral-100 hover:text-neutral-700",
-            )}
-          >
-            <Expand />
-          </IconButton>
-          <Divider orientation="vertical" className="mx-1 my-2 h-5" />
-          <Popover
-            open={targetPickerOpen}
-            onClickOutside={() => setTargetPickerOpen(false)}
-            className="rounded-xl border border-neutral-200 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.12)]"
-            trigger={
-              <div
-                onClick={() => {
-                  setTargetPickerOpen((prev) => !prev);
-                }}
-              >
-                <IconButton
+    <>
+      {triggerElement}
+      <Modal
+        open={open}
+        className={clsx(
+          "h-[80%] min-h-[320px] w-full max-w-3xl md:max-w-4xl lg:max-w-5xl",
+          "rounded-2xl border border-neutral-200/80 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.12)]",
+        )}
+        onCancel={closeModal}
+        title={
+          <div className="flex items-center justify-start gap-2 text-sm text-neutral-500">
+            <IconButton
+              className={clsx(
+                "flex size-8 items-center justify-center rounded-md text-neutral-500 transition-colors",
+                "hover:bg-neutral-100 hover:text-neutral-700",
+              )}
+              onClick={createNoteHandler}
+            >
+              <Expand />
+            </IconButton>
+            <Divider orientation="vertical" className="mx-1 my-2 h-5" />
+            <Popover
+              className="rounded-xl border border-neutral-200 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.12)]"
+              onClickOutside={() => {
+                draft.setTargetPickerOpen(false);
+              }}
+              open={draft.targetPickerOpen}
+              trigger={
+                <button
                   className={clsx(
                     "flex h-8 items-center gap-2 rounded-md px-2 text-center text-neutral-500 transition-colors",
                     "hover:bg-neutral-100 hover:text-neutral-700",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300",
                   )}
+                  onClick={() => {
+                    draft.setTargetPickerOpen(!draft.targetPickerOpen);
+                  }}
+                  type="button"
                 >
                   <span className="text-neutral-400">Add to</span>
                   <FileText className="text-neutral-400" />
                   <span className="max-w-[220px] truncate font-medium text-neutral-900">
-                    {targetNote?.title || DEFAULT_TITLE}
+                    {draft.targetNote?.title || DEFAULT_TITLE}
                   </span>
-                </IconButton>
-              </div>
-            }
-          >
-            <SearchNoteList
-              selectedId={targetNote?._id}
-              onChange={syncParent}
+                </button>
+              }
+            >
+              <SearchNoteList
+                onChange={draft.selectParent}
+                selectedId={draft.targetNote?._id}
+              />
+            </Popover>
+          </div>
+        }
+      >
+        <main className="h-full max-h-[70vh] cursor-text overflow-y-auto px-8 py-8 md:px-10">
+          <header className="mb-3">
+            <input
+              className={clsx(
+                "w-full border-none bg-transparent py-2 text-3xl font-semibold tracking-tight text-neutral-900 outline-none",
+                "placeholder:text-neutral-300",
+              )}
+              onChange={(event) => {
+                draft.syncTitle(event.target.value);
+              }}
+              placeholder={DEFAULT_TITLE}
+              type="text"
+              value={draft.title}
             />
-          </Popover>
-        </div>
-      }
-      trigger={
-        <Plus
-          onClick={() => {
-            onTrigger?.();
-            setOpen(true);
-          }}
-          className="size-full"
-        />
-      }
-    >
-      <main className="h-full max-h-[70vh] cursor-text overflow-y-auto px-8 py-8 md:px-10">
-        <header className="mb-3">
-          <input
-            value={title}
-            onChange={(event) => {
-              const nextTitle = event.target.value;
-              setTitle(nextTitle);
-              syncTitle(nextTitle);
-            }}
-            className={clsx(
-              "w-full border-none bg-transparent py-2 text-3xl font-semibold tracking-tight text-neutral-900 outline-none",
-              "placeholder:text-neutral-300",
-            )}
-            type="text"
-            placeholder={DEFAULT_TITLE}
+          </header>
+          <TiptapEditor
+            defaultValue={draft.content}
+            onChange={draft.syncContent}
           />
-        </header>
-        {Editor}
-      </main>
-    </Modal>
+        </main>
+      </Modal>
+    </>
   );
 };

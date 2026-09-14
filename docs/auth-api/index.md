@@ -11,7 +11,7 @@
 ## 模块文档
 
 - File 模块：[./modules/file.md](/e:/Code/D-NOTE/docs/auth-api/modules/file.md)
-- Post 模块：[./modules/post.md](/e:/Code/D-NOTE/docs/auth-api/modules/post.md)
+- Note 模块：[./modules/note.md](/e:/Code/D-NOTE/docs/auth-api/modules/note.md)
 
 ## 计划
 

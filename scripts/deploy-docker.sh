@@ -28,6 +28,79 @@ get_env_value() {
   ' .env 2>/dev/null || true
 }
 
+set_env_value() {
+  local key="$1"
+  local value="$2"
+  local tmp
+
+  tmp="$(mktemp)"
+
+  if awk -F= -v key="$key" '$1 == key { found = 1 } END { exit(found ? 0 : 1) }' .env; then
+    awk -F= -v key="$key" -v value="$value" '
+      $1 == key && !done {
+        print key "=" value
+        done = 1
+        next
+      }
+      $1 == key {
+        next
+      }
+      {
+        print
+      }
+    ' .env >"$tmp"
+  else
+    cat .env >"$tmp"
+    printf '%s=%s\n' "$key" "$value" >>"$tmp"
+  fi
+
+  mv "$tmp" .env
+}
+
+get_mapped_port() {
+  local service="$1"
+  local container_port="$2"
+  local mapped_port
+  mapped_port="$(docker compose port "$service" "$container_port" 2>/dev/null | tail -n 1 || true)"
+
+  if [ -n "$mapped_port" ]; then
+    printf '%s\n' "${mapped_port##*:}"
+  fi
+
+  return 0
+}
+
+preserve_port() {
+  local env_key="$1"
+  local service="$2"
+  local container_port="$3"
+  local default_port="$4"
+  local configured_port
+  configured_port="${!env_key:-$(get_env_value "$env_key" || true)}"
+
+  if [ -n "$configured_port" ]; then
+    log "using configured $env_key: $configured_port"
+    return
+  fi
+
+  local mapped_port
+  mapped_port="$(get_mapped_port "$service" "$container_port")"
+
+  if [ -z "$mapped_port" ]; then
+    log "$env_key is not set; using docker-compose default port $default_port"
+    return
+  fi
+
+  log "preserving existing $env_key mapping: $mapped_port"
+  set_env_value "$env_key" "$mapped_port"
+}
+
+preserve_ports() {
+  preserve_port WEB_PORT client 80 80
+  preserve_port SERVER_PORT server 4000 4000
+  preserve_port SOCKET_PORT server 4040 4040
+}
+
 resolve_healthcheck_url() {
   if [ -n "$HEALTHCHECK_URL" ]; then
     printf '%s\n' "$HEALTHCHECK_URL"
@@ -35,10 +108,10 @@ resolve_healthcheck_url() {
   fi
 
   local mapped_port
-  mapped_port="$(docker compose port client 80 2>/dev/null | tail -n 1 || true)"
+  mapped_port="$(get_mapped_port client 80)"
 
   if [ -n "$mapped_port" ]; then
-    printf 'http://127.0.0.1:%s/\n' "${mapped_port##*:}"
+    printf 'http://127.0.0.1:%s/\n' "$mapped_port"
     return
   fi
 
@@ -85,6 +158,8 @@ if [ ! -f "client/dist/index.html" ]; then
   printf '[docker-deploy] build the client before deploying: pnpm --dir client build\n' >&2
   exit 1
 fi
+
+preserve_ports
 
 log "building and starting client and server containers"
 docker compose up -d --build --remove-orphans client server

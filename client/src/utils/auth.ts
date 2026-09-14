@@ -1,6 +1,7 @@
 import { createAuthClient } from "better-auth/react";
 import { useSyncExternalStore } from "react";
 import { getApiBaseUrl } from "./env";
+import { isSafeInternalPath, routes } from "./routes";
 
 const baseUrl = getApiBaseUrl();
 
@@ -203,7 +204,7 @@ export const redirectToLogin = () => {
     `${window.location.pathname}${window.location.search}${window.location.hash}`,
   );
 
-  window.location.href = `/login?returnTo=${returnTo}`;
+  window.location.href = `${routes.login}?returnTo=${returnTo}`;
 };
 
 export const handleUnauthorized = async () => {
@@ -260,7 +261,7 @@ const buildSocialErrorCallbackURL = (callbackURL: string) => {
 
     if (targetURL.origin === window.location.origin) {
       const returnTo = `${targetURL.pathname}${targetURL.search}${targetURL.hash}`;
-      if (returnTo.startsWith("/")) {
+      if (isSafeInternalPath(returnTo)) {
         loginURL.searchParams.set("returnTo", returnTo);
       }
     }
@@ -282,9 +283,14 @@ export const signInWithEmail = async (
     });
 
     if (!result.error) {
+      const data = result.data as
+        | {
+            session?: { token?: string };
+            token?: string;
+          }
+        | undefined;
       const tokenFromSession =
-        ((result.data as { session?: { token?: string } } | undefined)?.session
-          ?.token as string | undefined) || getAccessToken();
+        data?.session?.token || data?.token || getAccessToken();
       if (tokenFromSession) {
         setAccessToken(tokenFromSession);
       }

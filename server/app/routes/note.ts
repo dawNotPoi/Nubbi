@@ -2,18 +2,19 @@ import { getUser } from "@/lib/auth";
 import requireAuth from "@/middleware/session";
 import express from "express";
 import { z } from "zod";
-import { createPost } from "../controller/post/create";
-import { deletePost } from "../controller/post/delete";
+import { createNote } from "../controller/note/create";
+import { deleteNote } from "../controller/note/delete";
 import {
   getDirectChildren,
-  getPostById,
-  getPosts,
-  getRencentPosts,
-  getRootPosts,
-  searchPosts,
-  validatePostUser,
-} from "../controller/post/query";
-import { updatePostContent, updatePostMeta } from "../controller/post/update";
+  getNoteAncestors,
+  getNoteById,
+  getNotes,
+  getRecentNotes,
+  getRootNotes,
+  searchNotes,
+  validateNoteUser,
+} from "../controller/note/query";
+import { updateNoteContent, updateNoteMeta } from "../controller/note/update";
 import { asyncHandler } from "../middleware/common";
 import { validate, validateQuery } from "../middleware/validator";
 import { successResponse } from "./utils";
@@ -36,8 +37,8 @@ router.post(
   ),
   asyncHandler(async (req, res) => {
     const { id } = await getUser(req);
-    const postData = req.body;
-    const result = await createPost({ ...postData, userId: id });
+    const noteData = req.body;
+    const result = await createNote({ ...noteData, userId: id });
     successResponse(res, result, "创建成功");
   }),
 );
@@ -47,17 +48,17 @@ router.put(
   requireAuth,
   validate(
     z.object({
-      postId: z.string().min(1, "文章ID不能为空"),
+      noteId: z.string().min(1, "笔记ID不能为空"),
       content: z.string(),
     }),
   ),
   asyncHandler(async (req, res) => {
-    const { postId, content } = req.body;
+    const { noteId, content } = req.body;
     const user = await getUser(req);
-    if (!validatePostUser(user.id, postId)) {
+    if (!(await validateNoteUser(user.id, noteId))) {
       throw Object.assign(new Error("Unauthorized"), { status: 401 });
     }
-    const result = await updatePostContent(postId, content);
+    const result = await updateNoteContent(noteId, content);
     successResponse(res, result, "内容更新成功");
   }),
 );
@@ -67,19 +68,22 @@ router.put(
   requireAuth,
   validate(
     z.object({
-      postId: z.string().min(1, "文章ID不能为空"),
-      parentId: z.string().optional(),
+      noteId: z.string().min(1, "笔记ID不能为空"),
+      title: z.string().optional(),
+      tags: z.array(z.string()).optional(),
+      status: z.enum(["Draft", "Published", "Archived"]).optional(),
+      parentId: z.string().nullable().optional(),
       meta: z.record(z.any()).optional(),
       cover: z.string().optional(),
     }),
   ),
   asyncHandler(async (req, res) => {
-    const { postId, ...properties } = req.body;
+    const { noteId, ...properties } = req.body;
     const user = await getUser(req);
-    if (!validatePostUser(user.id, postId)) {
+    if (!(await validateNoteUser(user.id, noteId))) {
       throw Object.assign(new Error("Unauthorized"), { status: 401 });
     }
-    const result = await updatePostMeta(postId, properties);
+    const result = await updateNoteMeta(noteId, properties);
     successResponse(res, result, "属性更新成功");
   }),
 );
@@ -91,7 +95,7 @@ router.get(
     if (!owner) {
       throw Object.assign(new Error("owner is required"), { status: 400 });
     }
-    const result = await getRootPosts(owner);
+    const result = await getRootNotes(owner);
     successResponse(res, result, "查询成功");
   }),
 );
@@ -115,19 +119,39 @@ router.get(
 );
 
 router.get(
+  "/ancestors",
+  requireAuth,
+  validateQuery(
+    z.object({
+      noteId: z.string().min(1, "笔记ID不能为空"),
+    }),
+  ),
+  asyncHandler(async (req, res) => {
+    const noteId = getSingleQueryValue(req.query.noteId);
+    if (!noteId) {
+      throw Object.assign(new Error("noteId is required"), { status: 400 });
+    }
+
+    const { id } = await getUser(req);
+    const result = await getNoteAncestors(noteId, id);
+    successResponse(res, result, "查询成功");
+  }),
+);
+
+router.get(
   "/detail",
   requireAuth,
   validateQuery(
     z.object({
-      postId: z.string().min(1, "文章ID不能为空"),
+      noteId: z.string().min(1, "笔记ID不能为空"),
     }),
   ),
   asyncHandler(async (req, res) => {
-    const postId = getSingleQueryValue(req.query.postId);
-    if (!postId) {
-      throw Object.assign(new Error("postId is required"), { status: 400 });
+    const noteId = getSingleQueryValue(req.query.noteId);
+    if (!noteId) {
+      throw Object.assign(new Error("noteId is required"), { status: 400 });
     }
-    const result = await getPostById(postId);
+    const result = await getNoteById(noteId);
     successResponse(res, result, "查询成功");
   }),
 );
@@ -137,28 +161,28 @@ router.delete(
   requireAuth,
   validate(
     z.object({
-      postId: z.string().refine((val) => val.length > 0, "文章ID不能为空"),
+      noteId: z.string().refine((val) => val.length > 0, "笔记ID不能为空"),
     }),
   ),
   asyncHandler(async (req, res) => {
-    const { postId } = req.body;
+    const { noteId } = req.body;
     const { id } = await getUser(req);
-    if (!validatePostUser(id, postId)) {
+    if (!(await validateNoteUser(id, noteId))) {
       throw Object.assign(new Error("Unauthorized"), { status: 401 });
     }
-    await deletePost(postId);
+    await deleteNote(noteId);
     successResponse(res, null, "删除成功");
   }),
 );
 
 router.get(
-  "/getPost",
+  "/getNote",
   asyncHandler(async (req, res) => {
     const userId = getSingleQueryValue(req.query.userId);
     if (!userId) {
       throw Object.assign(new Error("userId is required"), { status: 400 });
     }
-    const result = await getPosts(userId);
+    const result = await getNotes(userId);
     successResponse(res, result, "查询成功");
   }),
 );
@@ -168,7 +192,7 @@ router.get(
   requireAuth,
   asyncHandler(async (req, res) => {
     const owner = await getUser(req);
-    const result = await getRencentPosts(owner.id);
+    const result = await getRecentNotes(owner.id);
     successResponse(res, result, "查询成功");
   }),
 );
@@ -179,7 +203,7 @@ router.post(
   asyncHandler(async (req, res) => {
     const owner = await getUser(req);
     const { title } = req.body;
-    const result = await searchPosts(owner.id, title);
+    const result = await searchNotes(owner.id, title);
     successResponse(res, result, "查询成功");
   }),
 );

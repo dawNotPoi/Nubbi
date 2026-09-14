@@ -88,7 +88,7 @@ const createLocalUserMessage = (
 const getSourceKey = (messageId: string, source: NoteAiMessage["sources"][number]) =>
   source.type === "web"
     ? `${messageId}-web-${source.url}`
-    : `${messageId}-note-${source.postId}`;
+    : `${messageId}-note-${source.noteId}`;
 
 const copyText = async (text: string) => {
   if (navigator.clipboard?.writeText) {
@@ -180,7 +180,7 @@ const MessageBubble = ({ item }: { item: NoteAiMessage }) => {
                       return;
                     }
 
-                    navigate(`/note/${source.postId}`);
+                    navigate(`/note/${source.noteId}`);
                   }}
                 >
                   <div className="flex items-center gap-2 font-medium text-neutral-800">

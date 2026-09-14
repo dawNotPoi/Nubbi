@@ -1,5 +1,6 @@
 import { imgToGitCloud } from "@/api/file";
 import DragHandle from "@tiptap/extension-drag-handle-react";
+import { TableKit } from "@tiptap/extension-table";
 import { Placeholder } from "@tiptap/extensions";
 import { Markdown } from "@tiptap/markdown";
 import { EditorContent, useEditor } from "@tiptap/react";
@@ -47,6 +48,27 @@ const TiptapEditor = ({
       },
       showMermaidSourceWhenReadOnly,
     }),
+    TableKit.configure({
+      table: {
+        HTMLAttributes: {
+          class: "dn-editor__table",
+        },
+        cellMinWidth: 120,
+        lastColumnResizable: false,
+        renderWrapper: true,
+        resizable: true,
+      },
+      tableCell: {
+        HTMLAttributes: {
+          class: "dn-editor__table-cell",
+        },
+      },
+      tableHeader: {
+        HTMLAttributes: {
+          class: "dn-editor__table-header",
+        },
+      },
+    }),
     Placeholder.configure({
       placeholder: ({ node }) => {
         if (node.type.name === "codeBlock") {
@@ -80,6 +102,7 @@ const TiptapEditor = ({
       contentType: "markdown" as const,
     };
   }, [defaultValue]);
+  const latestContentRef = useRef(defaultValue ?? "");
 
   const editor = useEditor({
     extensions,
@@ -91,12 +114,12 @@ const TiptapEditor = ({
     },
     onUpdate: ({ editor: currentEditor }) => {
       const markdown = currentEditor.getMarkdown();
+      latestContentRef.current = markdown;
       onChange?.(markdown);
     },
     content: initialContent.content,
     contentType: initialContent.contentType,
   });
-  const latestContentRef = useRef(defaultValue ?? "");
 
   useEffect(() => {
     editor?.setEditable(editable);

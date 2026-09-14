@@ -11,6 +11,51 @@ export const debounceWrapper = <T extends (...args: any[]) => any>(
   };
 };
 
+export const debounceWithControls = <T extends (...args: any[]) => any>(
+  fn: T,
+  delay = 1000,
+) => {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  let lastArgs: Parameters<T> | undefined;
+  let lastThis: ThisParameterType<T> | undefined;
+
+  const debounced = function (
+    this: ThisParameterType<T>,
+    ...args: Parameters<T>
+  ) {
+    lastThis = this;
+    lastArgs = args;
+    if (timeoutId) clearTimeout(timeoutId);
+
+    timeoutId = setTimeout(() => {
+      timeoutId = undefined;
+      if (!lastArgs) return;
+      fn.apply(lastThis, lastArgs);
+      lastArgs = undefined;
+      lastThis = undefined;
+    }, delay);
+  };
+
+  debounced.flush = () => {
+    if (!timeoutId || !lastArgs) return;
+
+    clearTimeout(timeoutId);
+    timeoutId = undefined;
+    fn.apply(lastThis, lastArgs);
+    lastArgs = undefined;
+    lastThis = undefined;
+  };
+
+  debounced.cancel = () => {
+    if (timeoutId) clearTimeout(timeoutId);
+    timeoutId = undefined;
+    lastArgs = undefined;
+    lastThis = undefined;
+  };
+
+  return debounced;
+};
+
 // 格式化文件大小
 export const formatFileSize = (bytes: number): string => {
   if (bytes == null || bytes === undefined) return "--";

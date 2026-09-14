@@ -39,7 +39,7 @@ export type NoteAiSession = {
 export type NoteAiSource =
   | {
       type?: "note";
-      postId: string;
+      noteId: string;
       title: string;
       snippet: string;
     }
@@ -52,7 +52,7 @@ export type NoteAiSource =
 
 export type NoteAiNoteSource = {
   type?: "note";
-  postId: string;
+  noteId: string;
   title: string;
   snippet: string;
 };

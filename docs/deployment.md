@@ -44,7 +44,16 @@ Optional root `.env` values for Docker Compose:
 
 ```env
 WEB_PORT=80
+SERVER_PORT=4000
+SOCKET_PORT=4040
 ```
+
+`WEB_PORT` controls the host port mapped to the frontend container's port 80.
+`SERVER_PORT` maps the API container port 4000, and `SOCKET_PORT` maps the
+WebSocket container port 4040. Automatic deployments preserve existing
+`WEB_PORT`, `SERVER_PORT`, and `SOCKET_PORT` values when they are not set in
+GitHub Actions variables/secrets. Set a port explicitly when you want to change
+the public mapping.
 
 The frontend is built before it is uploaded to the server. The frontend Nginx
 container only serves the already-built `client/dist` files, proxies API routes

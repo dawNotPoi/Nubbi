@@ -1,13 +1,13 @@
-import post from "@/models/post";
+import note from "@/models/note";
 
 export type NoteAiSource = {
   type: "note";
-  postId: string;
+  noteId: string;
   title: string;
   snippet: string;
 };
 
-type PostCandidate = {
+type NoteCandidate = {
   _id: unknown;
   title?: string;
   content?: string;
@@ -58,7 +58,7 @@ const buildSnippet = (content: string, terms: string[]) => {
   return normalized.slice(start, end);
 };
 
-const scorePost = (candidate: PostCandidate, query: string, terms: string[]) => {
+const scoreNote = (candidate: NoteCandidate, query: string, terms: string[]) => {
   const title = String(candidate.title || "");
   const content = String(candidate.content || "");
   const meta = candidate.meta || {};
@@ -97,15 +97,15 @@ export const findRelevantNotes = async (
 
   if (!trimmedQuery) return [];
 
-  const posts = (await post
+  const notes = (await note
     .find({ userId })
     .select("title content meta updatedAt")
-    .lean()) as PostCandidate[];
+    .lean()) as NoteCandidate[];
 
-  const ranked = posts
+  const ranked = notes
     .map((candidate) => ({
       candidate,
-      score: scorePost(candidate, trimmedQuery, terms),
+      score: scoreNote(candidate, trimmedQuery, terms),
     }))
     .filter((item) => item.score > 0)
     .sort((left, right) => {
@@ -119,7 +119,7 @@ export const findRelevantNotes = async (
 
   return ranked.map(({ candidate }) => ({
     type: "note",
-    postId: String(candidate._id),
+    noteId: String(candidate._id),
     title: String(candidate.title || "Untitled Note"),
     snippet: buildSnippet(String(candidate.content || ""), terms),
   }));

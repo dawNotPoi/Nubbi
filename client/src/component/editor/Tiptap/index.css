@@ -177,6 +177,10 @@
   color: #c2551a;
 }
 
+.dn-editor .dn-editor__content :not(pre) > code {
+  white-space: nowrap;
+}
+
 .dn-editor .dn-editor__content pre {
   margin: 1.2rem 0;
 }
@@ -199,6 +203,68 @@
   margin: 1.85rem 0;
   border: none;
   border-top: 1px solid var(--editor-divider);
+}
+
+.dn-editor .dn-editor__content .tableWrapper {
+  margin: 1.2rem 0;
+  overflow-x: auto;
+  padding-bottom: 0.2rem;
+}
+
+.dn-editor .dn-editor__content table {
+  width: 100%;
+  min-width: 480px;
+  table-layout: fixed;
+  border-collapse: collapse;
+  border: 1px solid var(--editor-border-strong);
+  border-radius: 0.5rem;
+  background: #fffdf9;
+  box-shadow: var(--editor-shadow);
+}
+
+.dn-editor .dn-editor__content th,
+.dn-editor .dn-editor__content td {
+  position: relative;
+  min-width: 120px;
+  border: 1px solid var(--editor-border);
+  padding: 0.55rem 0.7rem;
+  vertical-align: top;
+  overflow-wrap: break-word;
+}
+
+.dn-editor .dn-editor__content th {
+  background: #f7f6f3;
+  color: var(--editor-heading);
+  font-weight: 650;
+}
+
+.dn-editor .dn-editor__content th p,
+.dn-editor .dn-editor__content td p {
+  margin: 0.15rem 0;
+}
+
+.dn-editor .dn-editor__content .selectedCell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: rgba(96, 165, 250, 0.14);
+  pointer-events: none;
+}
+
+.dn-editor .dn-editor__content .column-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -2px;
+  bottom: -1px;
+  z-index: 2;
+  width: 4px;
+  background: var(--editor-accent-strong);
+  pointer-events: none;
+}
+
+.dn-editor .dn-editor__content.resize-cursor {
+  cursor: col-resize;
 }
 
 .dn-editor .dn-editor__content p.is-editor-empty:first-child::before,
@@ -286,7 +352,19 @@
 .tippy-box[data-theme~="slash-command"] .tippy-content {
   border-radius: inherit;
   background: #fffdf9;
-  padding: 0.4rem;
+  padding: 0.25rem;
+}
+
+.dn-editor__slash-command-menu {
+  width: min(340px, calc(100vw - 32px));
+  max-height: min(408px, calc(100vh - 96px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.dn-editor__slash-command-menu::-webkit-scrollbar {
+  display: none;
 }
 
 .dn-editor__bubble-menu {

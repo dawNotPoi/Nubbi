@@ -10,6 +10,7 @@ import {
   Pilcrow,
   PictureInPictureIcon,
   Quote,
+  Table,
 } from "lucide-react";
 
 const allItems: {
@@ -72,6 +73,20 @@ const allItems: {
     icon: <Minus size={18} />,
     command: ({ editor, range }) => {
       editor.chain().focus().deleteRange(range).setHorizontalRule().run();
+    },
+  },
+  {
+    title: "Table",
+    description: "Insert a 3 x 3 table",
+    icon: <Table size={18} />,
+    command: ({ editor, range }) => {
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .setParagraph()
+        .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+        .run();
     },
   },
   {

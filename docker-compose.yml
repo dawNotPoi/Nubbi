@@ -4,7 +4,7 @@ services:
       context: ./client
       dockerfile: Dockerfile.runtime
     ports:
-      - "${WEB_PORT:-80}:80"
+      - "${WEB_PORT:-80}:80/tcp"
     restart: unless-stopped
 
   server:
@@ -12,6 +12,9 @@ services:
       context: ./server
     env_file:
       - ./server/.env
+    ports:
+      - "${SERVER_PORT:-4000}:4000/tcp"
+      - "${SOCKET_PORT:-4040}:4040/tcp"
     expose:
       - "4000"
       - "4040"

@@ -12,5 +12,8 @@ npm-debug.log
 server/storage
 .pnpm-store/
 
+# 忽略本地运行日志，避免提交输出或密钥
+.run-logs/
+
 
 

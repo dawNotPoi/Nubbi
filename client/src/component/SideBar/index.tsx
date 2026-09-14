@@ -1,4 +1,5 @@
 import { useAuth } from "@/hooks/useAuth";
+import { routes } from "@/utils/routes";
 import clsx from "clsx";
 import { useSetAtom } from "jotai";
 import { ChevronsLeft, FolderTree, House, Presentation } from "lucide-react";
@@ -60,15 +61,15 @@ const SideBar: React.FC = () => {
           </div>
         </div>
         <div className="flex mt-2 flex-col flex-1 gap-2 overflow-auto ">
-          <MenuItemContainer to="home">
+          <MenuItemContainer to={routes.home}>
             <House size={16} /> 主页
           </MenuItemContainer>
 
-          <MenuItemContainer to="file">
+          <MenuItemContainer to={routes.file}>
             <FolderTree size={16} />
             <span>文件</span>
           </MenuItemContainer>
-          <MenuItemContainer to="meetings">
+          <MenuItemContainer to={routes.meetings}>
             <Presentation size={16} />
             <span>会议</span>
           </MenuItemContainer>

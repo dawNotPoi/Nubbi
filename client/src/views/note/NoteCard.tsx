@@ -1,6 +1,6 @@
-import { PostWithContent } from "@/api/post";
+import { NoteWithContent } from "@/api/note";
 import ImgToGitupload from "@/component/upload/ImgToGitupload";
-import { Button, Form, Input, message, Modal, Tabs } from "antd";
+import { Button, Form, Input, Modal, Tabs } from "antd";
 import clsx from "clsx";
 import { useEffect, useMemo, useState } from "react";
 
@@ -19,7 +19,7 @@ export default function NoteCard({
   className,
   onUpdate,
 }: {
-  data: PostWithContent;
+  data: NoteWithContent;
   className?: string;
   onUpdate: (newData: Partial<Pick<typeof data, "title" | "cover">>) => void;
 }) {
@@ -45,15 +45,11 @@ export default function NoteCard({
     setIsModalOpen(false);
   };
 
-  const updatePost = (
+  const updateNote = (
     newData: Partial<Pick<typeof data, "title" | "cover">>,
   ) => {
-    setCardData((v) => {
-      const tmp = { ...v, ...newData };
-      onUpdate(tmp);
-      return tmp;
-    });
-    message.success("更新成功");
+    setCardData((value) => ({ ...value, ...newData }));
+    onUpdate(newData);
   };
 
   const tabs = useMemo(() => {
@@ -79,7 +75,7 @@ export default function NoteCard({
                   <div
                     key={index}
                     onClick={() => {
-                      updatePost({ cover: item });
+                      updateNote({ cover: item });
                     }}
                     style={{
                       width: "23%",
@@ -114,7 +110,7 @@ export default function NoteCard({
               <Form
                 onFinish={(data) => {
                   // TODO: 更新封面
-                  updatePost({ cover: data.link });
+                  updateNote({ cover: data.link });
                 }}
               >
                 <Form.Item name="link">
@@ -144,7 +140,7 @@ export default function NoteCard({
           <>
             <ImgToGitupload
               onFinish={(url: string) => {
-                updatePost({ cover: url });
+                updateNote({ cover: url });
               }}
               onPreRender={(preUrl: string) => {
                 setCardData((v) => {

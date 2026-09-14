@@ -4,7 +4,7 @@ import dayjs from "dayjs";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-export default function PostTable() {
+export default function NoteTable() {
   const [data] = useState([]);
   const [hoveredRowKey, setHoveredRowKey] = useState(null);
   const colums = [
@@ -75,7 +75,7 @@ export default function PostTable() {
               event.preventDefault();
               console.log(_id);
 
-              deletePost(_id);
+              deleteNote(_id);
             }}
             color={"blue"}
             style={{ cursor: "pointer" }}
@@ -87,8 +87,8 @@ export default function PostTable() {
     },
   ];
 
-  const deletePost = async (_id: any) => {
-    // return deletePostAPI(_id).then((res) => {
+  const deleteNote = async (_id: any) => {
+    // return deleteNoteAPI(_id).then((res) => {
     //   console.log(res);
     //   getList().then((res) => {
     //     setData(res);
@@ -96,8 +96,8 @@ export default function PostTable() {
     // });
   };
 
-  const createPost = async () => {
-    // return createPostAPI().then((res) => {
+  const createNote = async () => {
+    // return createNoteAPI().then((res) => {
     //   console.log(res.data.data._id);
     //   getList().then((res) => {
     //     setData(res);
@@ -112,7 +112,7 @@ export default function PostTable() {
       <header className="flex gap-4">
         <Button
           onClick={() => {
-            createPost().then((res) => {
+            createNote().then((res) => {
               navigate(`/note/${res}`);
             });
           }}
@@ -121,7 +121,7 @@ export default function PostTable() {
         </Button>
         <MarkdownUpload
           onFinish={(props) => {
-            createPost().then((res) => {
+            createNote().then((res) => {
               navigate(`/note/${res}`, {
                 state: { mdObject: props },
               });

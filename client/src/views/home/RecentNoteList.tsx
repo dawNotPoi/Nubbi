@@ -1,7 +1,7 @@
-import { Post } from "@/api/post";
+import { Note } from "@/api/note";
 import Image from "@/component/UI/Image";
 import { useAuth } from "@/hooks/useAuth";
-import { recentPostAtom } from "@/store/atom/postAtom";
+import { recentNoteAtom } from "@/store/atom/noteAtom";
 import clsx from "clsx";
 import dayjs from "dayjs";
 import { useAtomValue } from "jotai";
@@ -14,10 +14,10 @@ const AVATAR_CACHE_KEY = "home_recent_note_user_avatar";
 const NAME_CACHE_KEY = "home_recent_note_user_name";
 
 const NoteCard = ({
-  post,
+  note,
   avatarSrc,
 }: {
-  post: Post;
+  note: Note;
   avatarSrc?: string;
 }) => {
   const navigate = useNavigate();
@@ -25,7 +25,7 @@ const NoteCard = ({
   return (
     <li
       onClick={() => {
-        navigate("/note/" + post._id);
+        navigate("/note/" + note._id);
       }}
       className="min-w-[150px] max-w-[150px] cursor-pointer hover:border-sky-400 flex flex-col overflow-hidden border rounded-xl"
     >
@@ -40,10 +40,10 @@ const NoteCard = ({
           <div
             className={clsx(
               "text-[14px] h-[60px]",
-              !post.title && "text-zinc-500",
+              !note.title && "text-zinc-500",
             )}
           >
-            {post.title || "未命名文章"}
+            {note.title || "未命名笔记"}
           </div>
           <section className="text-[13px] text-gray-500 flex gap-1 items-center">
             <Image
@@ -51,7 +51,7 @@ const NoteCard = ({
               alt="user avatar"
               className="size-5 rounded-full border border-slate-200 bg-slate-100 object-cover"
             />
-            <span>{dayjs(post.updatedAt).format("YYYY-MM-DD")}</span>
+            <span>{dayjs(note.updatedAt).format("YYYY-MM-DD")}</span>
           </section>
         </header>
       </div>
@@ -86,7 +86,7 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
     data = [],
     isPending,
     isFetching,
-  } = useAtomValue(recentPostAtom);
+  } = useAtomValue(recentNoteAtom);
   const { user } = useAuth();
   const [offset, setOffset] = useState(0);
   const [maxOffset, setMaxOffset] = useState(0);
@@ -163,15 +163,15 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
               <NoteCardSkeleton key={`recent-note-skeleton-${index}`} />
             ))
           ) : hasNotes ? (
-            data.map((post) => (
+            data.map((note) => (
               <NoteCard
-                key={post._id}
-                post={post}
+                key={note._id}
+                note={note}
                 avatarSrc={cachedAvatar || user?.image || ""}
               />
             ))
           ) : (
-            <div className="text-gray-400 h-[100px]">暂无文章</div>
+            <div className="text-gray-400 h-[100px]">暂无笔记</div>
           )}
         </ul>
 

@@ -1,4 +1,6 @@
 import {
+  clearAuthState,
+  getCurrentSession,
   signInWithEmail,
   signInWithGitHub,
   signInWithGoogle,
@@ -7,16 +9,64 @@ import {
   useAuthRuntime,
   useSession,
 } from "@/utils/auth";
-import { useCallback, useState } from "react";
+import { routes } from "@/utils/routes";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export const useAuth = () => {
   const { data: session, refetch: refetchSession, isPending } = useSession();
   const { accessToken, initialized } = useAuthRuntime();
+  const recoveringSessionRef = useRef(false);
 
   const [loading, setLoading] = useState(false);
+  const [sessionRecovering, setSessionRecovering] = useState(false);
+  const [recoveredUser, setRecoveredUser] = useState<
+    { id: string; email?: string; name?: string; image?: string | null } | undefined
+  >();
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const user = session?.user ?? recoveredUser;
+  const isAuthenticated = !!user && !!accessToken;
+
+  useEffect(() => {
+    if (session?.user) {
+      setRecoveredUser(session.user);
+    }
+  }, [session?.user]);
+
+  useEffect(() => {
+    if (!accessToken) {
+      setRecoveredUser(undefined);
+    }
+  }, [accessToken]);
+
+  useEffect(() => {
+    if (!initialized || !accessToken || session?.user) {
+      return;
+    }
+
+    if (recoveringSessionRef.current) {
+      return;
+    }
+
+    recoveringSessionRef.current = true;
+    setSessionRecovering(true);
+    getCurrentSession()
+      .then((result) => {
+        const nextUser = result.session?.data?.user;
+        if (result.success && nextUser) {
+          setRecoveredUser(nextUser);
+          refetchSession();
+          return;
+        }
+
+          clearAuthState();
+      })
+      .finally(() => {
+        recoveringSessionRef.current = false;
+        setSessionRecovering(false);
+      });
+  }, [accessToken, initialized, refetchSession, session?.user]);
 
   const login = useCallback(
     async (email: string, password: string) => {
@@ -81,22 +131,22 @@ export const useAuth = () => {
     setError(null);
     const result = await signOut();
     setLoading(false);
-    navigate("/login");
+    navigate(routes.login);
     return result;
   }, [navigate]);
 
   return {
-    user: session?.user,
+    user,
     loading,
     error,
     initialized,
-    sessionPending: isPending,
+    sessionPending: isPending || sessionRecovering,
     hasAccessToken: !!accessToken,
     login,
     register,
     loginWithGitHub,
     loginWithGoogle,
     logout,
-    isAuthenticated: !!session?.user && !!accessToken,
+    isAuthenticated,
   };
 };

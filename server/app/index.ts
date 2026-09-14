@@ -14,7 +14,7 @@ import fileRouter from "./routes/file";
 import imageRouter from "./routes/image";
 import meetingRouter from "./routes/meeting";
 import noteAiRouter from "./routes/noteAi";
-import postRouter from "./routes/post";
+import noteRouter from "./routes/note";
 import summryRouter from "./routes/summary";
 
 import P2PHandler from "./socket/P2PHandler";
@@ -61,7 +61,7 @@ app.get("/", (req, res) => {
 
 //接口路由处理
 app.use("/auth", authRouter);
-app.use("/post", postRouter);
+app.use("/note", noteRouter);
 app.use("/download", express.static("static"));
 app.use("/file", fileRouter);
 app.use("/summary", summryRouter);

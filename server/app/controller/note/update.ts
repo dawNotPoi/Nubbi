@@ -1,4 +1,4 @@
-import post from "@/models/post";
+import note from "@/models/note";
 
 const stripSummaryFromProperties = <T extends { meta?: unknown }>(value: T): T => {
   if (!value.meta || typeof value.meta !== "object" || Array.isArray(value.meta)) {
@@ -9,8 +9,8 @@ const stripSummaryFromProperties = <T extends { meta?: unknown }>(value: T): T =
   return { ...value, meta };
 };
 
-export const updatePost = async (req) => {
-  return post
+export const updateNote = async (req) => {
+  return note
     .findByIdAndUpdate(
       req._id,
       {
@@ -23,9 +23,9 @@ export const updatePost = async (req) => {
     });
 };
 
-export const updatePostContent = async (postId: string, content: string) => {
-  return await post.findByIdAndUpdate(
-    postId,
+export const updateNoteContent = async (noteId: string, content: string) => {
+  return await note.findByIdAndUpdate(
+    noteId,
     {
       $set: {
         content,
@@ -35,11 +35,11 @@ export const updatePostContent = async (postId: string, content: string) => {
   );
 };
 
-export const updatePostMeta = async (postId: string, properties: any) => {
+export const updateNoteMeta = async (noteId: string, properties: any) => {
   const nextProperties = stripSummaryFromProperties(properties);
 
-  return await post.findByIdAndUpdate(
-    postId,
+  return await note.findByIdAndUpdate(
+    noteId,
     {
       $set: {
         ...nextProperties,
@@ -50,16 +50,16 @@ export const updatePostMeta = async (postId: string, properties: any) => {
 };
 
 export const addWatchs = async (id: string) => {
-  return await post.findByIdAndUpdate(id, { $inc: { watched: 1 } });
+  return await note.findByIdAndUpdate(id, { $inc: { watched: 1 } });
 };
 
 export const addLikes = async (id: string) => {
-  return await post.findByIdAndUpdate(id, { $inc: { like: 1 } });
+  return await note.findByIdAndUpdate(id, { $inc: { like: 1 } });
 };
 
-export const movePost = async (postId: string, newParentId: string) => {
-  return await post.findByIdAndUpdate(
-    postId,
+export const moveNote = async (noteId: string, newParentId: string) => {
+  return await note.findByIdAndUpdate(
+    noteId,
     {
       parentId: newParentId,
     },

@@ -11,7 +11,7 @@
 
 范围说明：
 
-- 本文重点覆盖 `Post`、`File`、`Meeting` 三个和当前鉴权边界最相关的模块。
+- 本文重点覆盖 `Note`、`File`、`Meeting` 三个和当前鉴权边界最相关的模块。
 - `/api/auth/*` 由 `better-auth` 框架托管，仓库里没有逐个 endpoint 的本地实现，因此这里只说明业务接口。
 - 除了特殊说明，标准成功包装是 `SuccessEnvelope<T>`，统一错误中间件包装是 `ErrorEnvelope`。
 
@@ -35,7 +35,7 @@ type ErrorEnvelope = {
 ## 领域类型速览
 
 ```ts
-type PostDocument = {
+type NoteDocument = {
   _id: string;
   userId: string;
   title: string;
@@ -52,9 +52,9 @@ type PostDocument = {
   updatedAt: string | Date;
 };
 
-type PostSummary = Omit<PostDocument, "content">;
+type NoteSummary = Omit<NoteDocument, "content">;
 
-type SearchPostResult = PostDocument & {
+type SearchNoteResult = NoteDocument & {
   pathLabel: string;
 };
 
@@ -118,16 +118,16 @@ type MeetingAccessResult = {
 
 | 方法 | 路径 | 鉴权要求 | 模块 |
 | --- | --- | --- | --- |
-| `POST` | `/post/create` | 需要登录 | Post |
-| `PUT` | `/post/content` | 需要登录 | Post |
-| `PUT` | `/post/properties` | 需要登录 | Post |
-| `GET` | `/post/roots` | 公开 | Post |
-| `GET` | `/post/children` | 需要登录 | Post |
-| `GET` | `/post/detail` | 需要登录 | Post |
-| `DELETE` | `/post/delete` | 需要登录 | Post |
-| `GET` | `/post/getPost` | 公开 | Post |
-| `GET` | `/post/recent` | 需要登录 | Post |
-| `POST` | `/post/search` | 需要登录 | Post |
+| `POST` | `/note/create` | 需要登录 | Note |
+| `PUT` | `/note/content` | 需要登录 | Note |
+| `PUT` | `/note/properties` | 需要登录 | Note |
+| `GET` | `/note/roots` | 公开 | Note |
+| `GET` | `/note/children` | 需要登录 | Note |
+| `GET` | `/note/detail` | 需要登录 | Note |
+| `DELETE` | `/note/delete` | 需要登录 | Note |
+| `GET` | `/note/getNote` | 公开 | Note |
+| `GET` | `/note/recent` | 需要登录 | Note |
+| `POST` | `/note/search` | 需要登录 | Note |
 | `POST` | `/file/init` | 需要登录 | File |
 | `POST` | `/file/uploadchunk` | 需要登录 | File |
 | `POST` | `/file/merge` | 需要登录 | File |
@@ -150,13 +150,13 @@ type MeetingAccessResult = {
 | `GET` | `/meeting/comments` | 公开 | Meeting |
 | `POST` | `/meeting/validateAccess` | 公开 | Meeting |
 
-## Post 模块
+## Note 模块
 
-### `POST /post/create`
+### `POST /note/create`
 
 - 鉴权要求：需要登录
-- 源码：[server/app/routes/post.ts](/e:/Code/D-NOTE/server/app/routes/post.ts)
-- 作用：创建文章，并把当前登录用户写入 `userId`
+- 源码：[server/app/routes/note.ts](/e:/Code/D-NOTE/server/app/routes/note.ts)
+- 作用：创建笔记，并把当前登录用户写入 `userId`
 
 请求参数：
 
@@ -172,7 +172,7 @@ type Body = {
 成功响应：
 
 ```ts
-type Response = SuccessEnvelope<PostDocument>;
+type Response = SuccessEnvelope<NoteDocument>;
 ```
 
 常见错误：
@@ -190,21 +190,21 @@ flowchart TD
   C -- 否 --> Z([返回 401])
   C -- 是 --> D[zod 校验 body]
   D --> E[getUser(req)]
-  E --> F[createPost 写入 userId]
-  F --> G([successResponse 返回文章])
+  E --> F[createNote 写入 userId]
+  F --> G([successResponse 返回笔记])
 ```
 
-### `PUT /post/content`
+### `PUT /note/content`
 
 - 鉴权要求：需要登录
-- 源码：[server/app/routes/post.ts](/e:/Code/D-NOTE/server/app/routes/post.ts)
-- 作用：更新文章正文内容
+- 源码：[server/app/routes/note.ts](/e:/Code/D-NOTE/server/app/routes/note.ts)
+- 作用：更新笔记正文内容
 
 请求参数：
 
 ```ts
 type Body = {
-  postId: string;
+  noteId: string;
   content: string;
 };
 ```
@@ -212,18 +212,18 @@ type Body = {
 成功响应：
 
 ```ts
-type Response = SuccessEnvelope<PostDocument | null>;
+type Response = SuccessEnvelope<NoteDocument | null>;
 ```
 
 常见错误：
 
 - `401` 未登录
-- `400` `postId` 或 `content` 缺失
-- `401` 文章归属校验失败
+- `400` `noteId` 或 `content` 缺失
+- `401` 笔记归属校验失败
 
 备注：
 
-- 当前实现里 `validatePostUser()` 是异步函数，但调用处没有 `await`，这是一个权限风险点。
+- 当前实现里 `validateNoteUser()` 是异步函数，但调用处没有 `await`，这是一个权限风险点。
 
 后端流程图：
 
@@ -232,24 +232,24 @@ flowchart TD
   A([收到请求]) --> B[requireAuth]
   B --> C{已登录?}
   C -- 否 --> Z([返回 401])
-  C -- 是 --> D[校验 postId 和 content]
-  D --> E{validatePostUser}
+  C -- 是 --> D[校验 noteId 和 content]
+  D --> E{validateNoteUser}
   E -- 否 --> Y([返回 Unauthorized])
-  E -- 是 --> F[updatePostContent]
+  E -- 是 --> F[updateNoteContent]
   F --> G([successResponse 返回更新结果])
 ```
 
-### `PUT /post/properties`
+### `PUT /note/properties`
 
 - 鉴权要求：需要登录
-- 源码：[server/app/routes/post.ts](/e:/Code/D-NOTE/server/app/routes/post.ts)
-- 作用：更新文章元信息，如 `parentId`、`meta`、`cover`
+- 源码：[server/app/routes/note.ts](/e:/Code/D-NOTE/server/app/routes/note.ts)
+- 作用：更新笔记元信息，如 `parentId`、`meta`、`cover`
 
 请求参数：
 
 ```ts
 type Body = {
-  postId: string;
+  noteId: string;
   parentId?: string;
   meta?: Record<string, unknown>;
   cover?: string;
@@ -259,18 +259,18 @@ type Body = {
 成功响应：
 
 ```ts
-type Response = SuccessEnvelope<PostDocument | null>;
+type Response = SuccessEnvelope<NoteDocument | null>;
 ```
 
 常见错误：
 
 - `401` 未登录
-- `400` `postId` 缺失
-- `401` 文章归属校验失败
+- `400` `noteId` 缺失
+- `401` 笔记归属校验失败
 
 备注：
 
-- 这里同样存在 `validatePostUser()` 未 `await` 的风险。
+- 这里同样存在 `validateNoteUser()` 未 `await` 的风险。
 
 后端流程图：
 
@@ -280,17 +280,17 @@ flowchart TD
   B --> C{已登录?}
   C -- 否 --> Z([返回 401])
   C -- 是 --> D[校验 body]
-  D --> E{validatePostUser}
+  D --> E{validateNoteUser}
   E -- 否 --> Y([返回 Unauthorized])
-  E -- 是 --> F[updatePostMeta]
+  E -- 是 --> F[updateNoteMeta]
   F --> G([successResponse 返回更新结果])
 ```
 
-### `GET /post/roots`
+### `GET /note/roots`
 
 - 鉴权要求：公开
-- 源码：[server/app/routes/post.ts](/e:/Code/D-NOTE/server/app/routes/post.ts)
-- 作用：根据 `owner` 查询根节点文章
+- 源码：[server/app/routes/note.ts](/e:/Code/D-NOTE/server/app/routes/note.ts)
+- 作用：根据 `owner` 查询根节点笔记
 
 请求参数：
 
@@ -303,7 +303,7 @@ type Query = {
 成功响应：
 
 ```ts
-type Response = SuccessEnvelope<PostSummary[]>;
+type Response = SuccessEnvelope<NoteSummary[]>;
 ```
 
 常见错误：
@@ -318,15 +318,15 @@ flowchart TD
   A([收到请求]) --> B[读取 query.owner]
   B --> C{owner 存在?}
   C -- 否 --> Z([返回 400])
-  C -- 是 --> D[getRootPosts(owner)]
+  C -- 是 --> D[getRootNotes(owner)]
   D --> E([successResponse 返回列表])
 ```
 
-### `GET /post/children`
+### `GET /note/children`
 
 - 鉴权要求：需要登录
-- 源码：[server/app/routes/post.ts](/e:/Code/D-NOTE/server/app/routes/post.ts)
-- 作用：查询某个父文章的直接子文章
+- 源码：[server/app/routes/note.ts](/e:/Code/D-NOTE/server/app/routes/note.ts)
+- 作用：查询某个父笔记的直接子笔记
 
 请求参数：
 
@@ -339,7 +339,7 @@ type Query = {
 成功响应：
 
 ```ts
-type Response = SuccessEnvelope<PostSummary[]>;
+type Response = SuccessEnvelope<NoteSummary[]>;
 ```
 
 常见错误：
@@ -359,30 +359,30 @@ flowchart TD
   E --> F([successResponse 返回列表])
 ```
 
-### `GET /post/detail`
+### `GET /note/detail`
 
 - 鉴权要求：需要登录
-- 源码：[server/app/routes/post.ts](/e:/Code/D-NOTE/server/app/routes/post.ts)
-- 作用：查询单篇文章详情
+- 源码：[server/app/routes/note.ts](/e:/Code/D-NOTE/server/app/routes/note.ts)
+- 作用：查询单篇笔记详情
 
 请求参数：
 
 ```ts
 type Query = {
-  postId: string;
+  noteId: string;
 };
 ```
 
 成功响应：
 
 ```ts
-type Response = SuccessEnvelope<PostDocument | null>;
+type Response = SuccessEnvelope<NoteDocument | null>;
 ```
 
 常见错误：
 
 - `401` 未登录
-- `400` 缺少 `postId`
+- `400` 缺少 `noteId`
 
 后端流程图：
 
@@ -391,22 +391,22 @@ flowchart TD
   A([收到请求]) --> B[requireAuth]
   B --> C{已登录?}
   C -- 否 --> Z([返回 401])
-  C -- 是 --> D[校验 query.postId]
-  D --> E[getPostById(postId)]
+  C -- 是 --> D[校验 query.noteId]
+  D --> E[getNoteById(noteId)]
   E --> F([successResponse 返回详情])
 ```
 
-### `DELETE /post/delete`
+### `DELETE /note/delete`
 
 - 鉴权要求：需要登录
-- 源码：[server/app/routes/post.ts](/e:/Code/D-NOTE/server/app/routes/post.ts)
-- 作用：递归删除文章及其子文章
+- 源码：[server/app/routes/note.ts](/e:/Code/D-NOTE/server/app/routes/note.ts)
+- 作用：递归删除笔记及其子笔记
 
 请求参数：
 
 ```ts
 type Body = {
-  postId: string;
+  noteId: string;
 };
 ```
 
@@ -419,12 +419,12 @@ type Response = SuccessEnvelope<null>;
 常见错误：
 
 - `401` 未登录
-- `400` 缺少 `postId`
-- `401` 文章归属校验失败
+- `400` 缺少 `noteId`
+- `401` 笔记归属校验失败
 
 备注：
 
-- 这里也依赖 `validatePostUser()`，当前调用没有 `await`。
+- 这里也依赖 `validateNoteUser()`，当前调用没有 `await`。
 
 后端流程图：
 
@@ -433,18 +433,18 @@ flowchart TD
   A([收到请求]) --> B[requireAuth]
   B --> C{已登录?}
   C -- 否 --> Z([返回 401])
-  C -- 是 --> D[校验 postId]
-  D --> E{validatePostUser}
+  C -- 是 --> D[校验 noteId]
+  D --> E{validateNoteUser}
   E -- 否 --> Y([返回 Unauthorized])
-  E -- 是 --> F[deletePost 递归删除]
+  E -- 是 --> F[deleteNote 递归删除]
   F --> G([successResponse 返回 null])
 ```
 
-### `GET /post/getPost`
+### `GET /note/getNote`
 
 - 鉴权要求：公开
-- 源码：[server/app/routes/post.ts](/e:/Code/D-NOTE/server/app/routes/post.ts)
-- 作用：根据 `userId` 查询叶子文章列表
+- 源码：[server/app/routes/note.ts](/e:/Code/D-NOTE/server/app/routes/note.ts)
+- 作用：根据 `userId` 查询叶子笔记列表
 
 请求参数：
 
@@ -457,7 +457,7 @@ type Query = {
 成功响应：
 
 ```ts
-type Response = SuccessEnvelope<PostDocument[]>;
+type Response = SuccessEnvelope<NoteDocument[]>;
 ```
 
 常见错误：
@@ -472,15 +472,15 @@ flowchart TD
   A([收到请求]) --> B[读取 query.userId]
   B --> C{userId 存在?}
   C -- 否 --> Z([返回 400])
-  C -- 是 --> D[getPosts(userId)]
+  C -- 是 --> D[getNotes(userId)]
   D --> E([successResponse 返回列表])
 ```
 
-### `GET /post/recent`
+### `GET /note/recent`
 
 - 鉴权要求：需要登录
-- 源码：[server/app/routes/post.ts](/e:/Code/D-NOTE/server/app/routes/post.ts)
-- 作用：查询当前用户最近更新的叶子文章
+- 源码：[server/app/routes/note.ts](/e:/Code/D-NOTE/server/app/routes/note.ts)
+- 作用：查询当前用户最近更新的叶子笔记
 
 请求参数：
 
@@ -491,7 +491,7 @@ type Query = {};
 成功响应：
 
 ```ts
-type Response = SuccessEnvelope<PostDocument[]>;
+type Response = SuccessEnvelope<NoteDocument[]>;
 ```
 
 常见错误：
@@ -507,15 +507,15 @@ flowchart TD
   B --> C{已登录?}
   C -- 否 --> Z([返回 401])
   C -- 是 --> D[getUser(req)]
-  D --> E[getRencentPosts(owner.id)]
+  D --> E[getRecentNotes(owner.id)]
   E --> F([successResponse 返回列表])
 ```
 
-### `POST /post/search`
+### `POST /note/search`
 
 - 鉴权要求：需要登录
-- 源码：[server/app/routes/post.ts](/e:/Code/D-NOTE/server/app/routes/post.ts)
-- 作用：按标题模糊搜索当前用户文章，并补充 `pathLabel`
+- 源码：[server/app/routes/note.ts](/e:/Code/D-NOTE/server/app/routes/note.ts)
+- 作用：按标题模糊搜索当前用户笔记，并补充 `pathLabel`
 
 请求参数：
 
@@ -528,7 +528,7 @@ type Body = {
 成功响应：
 
 ```ts
-type Response = SuccessEnvelope<SearchPostResult[]>;
+type Response = SuccessEnvelope<SearchNoteResult[]>;
 ```
 
 常见错误：
@@ -544,7 +544,7 @@ flowchart TD
   B --> C{已登录?}
   C -- 否 --> Z([返回 401])
   C -- 是 --> D[getUser(req)]
-  D --> E[searchPosts(owner.id, title)]
+  D --> E[searchNotes(owner.id, title)]
   E --> F[为结果构造 pathLabel]
   F --> G([successResponse 返回结果])
 ```

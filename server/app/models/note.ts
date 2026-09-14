@@ -1,6 +1,6 @@
 import mongoose from "@/lib/db";
 
-const postSchema = new mongoose.Schema(
+const noteSchema = new mongoose.Schema(
   {
     //对应账户
     userId: {
@@ -11,7 +11,7 @@ const postSchema = new mongoose.Schema(
     // 名称
     title: {
       type: String,
-      default: "New Post",
+      default: "New Note",
     },
     //   内容
     content: {
@@ -37,13 +37,13 @@ const postSchema = new mongoose.Schema(
     children: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Post",
+        ref: "Note",
         default: null,
       },
     ],
     parentId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Post",
+      ref: "Note",
       default: null,
     },
     date: {
@@ -61,4 +61,4 @@ const postSchema = new mongoose.Schema(
   }
 );
 
-export default mongoose.model("Post", postSchema);
+export default mongoose.model("Note", noteSchema);

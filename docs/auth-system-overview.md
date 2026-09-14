@@ -133,19 +133,19 @@
 
 当前项目的授权以“资源归属校验”为主，不是角色权限模型。
 
-### Post 模块
+### Note 模块
 
-文件：[server/app/routes/post.ts](/e:/Code/D-NOTE/server/app/routes/post.ts)
+文件：[server/app/routes/note.ts](/e:/Code/D-NOTE/server/app/routes/note.ts)
 
 主要策略：
 
 - 写接口大多先走 `requireAuth`
 - 再通过 `getUser(req)` 拿当前用户
-- 部分接口调用 `validatePostUser(user.id, postId)` 做文章归属校验
+- 部分接口调用 `validateNoteUser(user.id, noteId)` 做笔记归属校验
 
 注意点：
 
-- `validatePostUser(...)` 在当前代码里是异步函数，但调用处没有 `await`
+- `validateNoteUser(...)` 在当前代码里是异步函数，但调用处没有 `await`
 - 这会让条件判断失真，属于一个需要尽快修复的授权风险点
 
 ### File 模块
@@ -189,13 +189,13 @@
 ### 公开接口
 
 - `/api/auth/*` 认证框架自己的接口
-- 部分文章查询接口，如 `/post/roots`、`/post/getPost`
+- 部分笔记查询接口，如 `/note/roots`、`/note/getNote`
 - 部分会议接口，如 `/meeting/findById`、`/meeting/comments`、`/meeting/validateAccess`
 
 ### 受保护接口
 
 - 大部分文件管理接口
-- 文章创建、修改、删除、最近列表、搜索
+- 笔记创建、修改、删除、最近列表、搜索
 - 会议创建和“我的会议”
 - 受 `ProtectedRoute` 保护的前端业务页面
 
@@ -209,20 +209,20 @@
 | --- | --- | --- | --- |
 | `/api/auth/*` | `ALL` | 无需先登录 | 由 `better-auth` 接管，包含注册、登录、邮箱验证、OAuth 回调、获取 session、登出等认证能力 |
 
-### Post 模块
+### Note 模块
 
 | 接口 | 方法 | 鉴权要求 | 说明 |
 | --- | --- | --- | --- |
-| `/post/create` | `POST` | 需要登录 | 创建文章 |
-| `/post/content` | `PUT` | 需要登录 | 修改文章内容，按 `post.userId` 做归属校验 |
-| `/post/properties` | `PUT` | 需要登录 | 修改文章属性，按 `post.userId` 做归属校验 |
-| `/post/roots` | `GET` | 公开 | 根据 `owner` 查询根节点文章 |
-| `/post/children` | `GET` | 需要登录 | 查询子节点 |
-| `/post/detail` | `GET` | 需要登录 | 查询文章详情 |
-| `/post/delete` | `DELETE` | 需要登录 | 删除文章，按 `post.userId` 做归属校验 |
-| `/post/getPost` | `GET` | 公开 | 根据 `userId` 查询文章列表 |
-| `/post/recent` | `GET` | 需要登录 | 查询当前用户最近文章 |
-| `/post/search` | `POST` | 需要登录 | 搜索当前用户文章 |
+| `/note/create` | `POST` | 需要登录 | 创建笔记 |
+| `/note/content` | `PUT` | 需要登录 | 修改笔记内容，按 `note.userId` 做归属校验 |
+| `/note/properties` | `PUT` | 需要登录 | 修改笔记属性，按 `note.userId` 做归属校验 |
+| `/note/roots` | `GET` | 公开 | 根据 `owner` 查询根节点笔记 |
+| `/note/children` | `GET` | 需要登录 | 查询子节点 |
+| `/note/detail` | `GET` | 需要登录 | 查询笔记详情 |
+| `/note/delete` | `DELETE` | 需要登录 | 删除笔记，按 `note.userId` 做归属校验 |
+| `/note/getNote` | `GET` | 公开 | 根据 `userId` 查询笔记列表 |
+| `/note/recent` | `GET` | 需要登录 | 查询当前用户最近笔记 |
+| `/note/search` | `POST` | 需要登录 | 搜索当前用户笔记 |
 
 ### File 模块
 
@@ -272,8 +272,8 @@
 
 - `POST /meeting/vetMeeting`
 - `DELETE /meeting/delete`
-- `GET /post/roots`
-- `GET /post/getPost`
+- `GET /note/roots`
+- `GET /note/getNote`
 - 所有未经过 `requireAuth` 但又可能暴露业务数据的接口
 
 ## 401 失败处理
@@ -299,15 +299,15 @@
 
 ## 当前系统的风险点
 
-### 1. Post 路由存在异步授权判断漏洞
+### 1. Note 路由存在异步授权判断漏洞
 
-文件：[server/app/routes/post.ts](/e:/Code/D-NOTE/server/app/routes/post.ts)
+文件：[server/app/routes/note.ts](/e:/Code/D-NOTE/server/app/routes/note.ts)
 
-`validatePostUser()` 是异步函数，但被当成同步布尔值使用，容易导致未正确等待归属校验结果。
+`validateNoteUser()` 是异步函数，但被当成同步布尔值使用，容易导致未正确等待归属校验结果。
 
 ### 2. 部分业务接口是公开的
 
-例如文章根节点、文章列表、会议详情等接口没有统一登录保护。
+例如笔记根节点、笔记列表、会议详情等接口没有统一登录保护。
 
 这不一定是 bug，但需要明确它们是否本来就是产品设计上的“公开可读”。
 
@@ -350,6 +350,6 @@
 
 如果后续要继续演进，最值得优先做的事情是：
 
-1. 修复 `post` 模块里的异步授权判断。
+1. 修复 `note` 模块里的异步授权判断。
 2. 重新梳理会议相关接口的公开/私有边界。
 3. 视产品需求决定是否引入更明确的角色权限模型。

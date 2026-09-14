@@ -1,5 +1,6 @@
 import SideBar from "@/component/SideBar";
 import { useAuth } from "@/hooks/useAuth";
+import { resolveReturnTo, routes } from "@/utils/routes";
 import { PropsWithChildren } from "react";
 import {
   BrowserRouter,
@@ -16,7 +17,7 @@ import { LoginPage } from "./views/login";
 import MeetingAccessGuard from "./views/meeting-room/MeetingAccessGuard";
 import Meetings from "./views/meetings";
 import NoteAI from "./views/note-ai";
-import PostTable from "./views/PostTable";
+import NoteTable from "./views/NoteTable";
 import { ResetPasswordPage } from "./views/reset-password";
 
 const UserLayout = () => {
@@ -33,9 +34,10 @@ const UserLayout = () => {
 };
 
 const ProtectedRoute: React.FC<PropsWithChildren> = ({ children }) => {
-  const { initialized, isAuthenticated, sessionPending } = useAuth();
+  const { hasAccessToken, initialized, isAuthenticated, sessionPending } =
+    useAuth();
   const location = useLocation();
-  if (!initialized || sessionPending) {
+  if (!initialized || sessionPending || (hasAccessToken && !isAuthenticated)) {
     return null;
   }
   if (isAuthenticated) {
@@ -46,9 +48,46 @@ const ProtectedRoute: React.FC<PropsWithChildren> = ({ children }) => {
   );
   return (
     <Navigate
-      to={`/login?returnTo=${returnTo}`}
+      to={`${routes.login}?returnTo=${returnTo}`}
       state={{ from: location }}
       replace
+    />
+  );
+};
+
+const PublicOnlyRoute: React.FC<PropsWithChildren> = ({ children }) => {
+  const { hasAccessToken, initialized, isAuthenticated, sessionPending } =
+    useAuth();
+  const location = useLocation();
+
+  if (!initialized || sessionPending || (hasAccessToken && !isAuthenticated)) {
+    return null;
+  }
+
+  if (!isAuthenticated) {
+    return children;
+  }
+
+  const queryReturnTo = new URLSearchParams(location.search).get("returnTo");
+  const stateFrom = (
+    location.state as
+      | {
+          from?: {
+            pathname?: string;
+            search?: string;
+            hash?: string;
+          };
+        }
+      | undefined
+  )?.from;
+  const stateReturnTo = stateFrom
+    ? `${stateFrom.pathname || ""}${stateFrom.search || ""}${stateFrom.hash || ""}`
+    : "";
+
+  return (
+    <Navigate
+      replace
+      to={resolveReturnTo([queryReturnTo, stateReturnTo], routes.home)}
     />
   );
 };
@@ -58,8 +97,15 @@ export const RouteWrapper = () => {
     <BrowserRouter>
       <div className="App mx-auto overflow-hidden">
         <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="/login" element={<LoginPage />} />
+          <Route path="/" element={<Navigate to={routes.home} replace />} />
+          <Route
+            path={routes.login}
+            element={
+              <PublicOnlyRoute>
+                <LoginPage />
+              </PublicOnlyRoute>
+            }
+          />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/meeting/:roomId" element={<MeetingAccessGuard />} />
           <Route
@@ -71,11 +117,12 @@ export const RouteWrapper = () => {
           >
             <Route path="home" element={<Home />} />
             <Route path="meetings" element={<Meetings />} />
-            <Route path="table" element={<PostTable />} />
+            <Route path="table" element={<NoteTable />} />
             <Route path="file/*" element={<FileManager />} />
             <Route path="note-ai" element={<NoteAI />} />
             <Route path="note/:Id" element={<Note />} />
           </Route>
+          <Route path="*" element={<Navigate to={routes.home} replace />} />
         </Routes>
       </div>
     </BrowserRouter>

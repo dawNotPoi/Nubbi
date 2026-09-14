@@ -7,6 +7,7 @@ import {
   resetPasswordWithCode,
   verifyEmailWithCode,
 } from "@/utils/auth";
+import { resolveReturnTo, routes } from "@/utils/routes";
 import { Alert, Button, Divider, Form, Input, message } from "antd";
 import { useEffect, useMemo, useState } from "react";
 import { Github, Globe } from "lucide-react";
@@ -61,10 +62,7 @@ export const LoginPage = () => {
   const stateReturnTo = stateFrom
     ? `${stateFrom.pathname || ""}${stateFrom.search || ""}${stateFrom.hash || ""}`
     : "";
-  const returnTo =
-    (queryReturnTo && queryReturnTo.startsWith("/") ? queryReturnTo : "") ||
-    (stateReturnTo.startsWith("/") ? stateReturnTo : "") ||
-    "/home";
+  const returnTo = resolveReturnTo([queryReturnTo, stateReturnTo], routes.home);
   const callbackURL = `${window.location.origin}${returnTo}`;
 
   const callbackError = useMemo(

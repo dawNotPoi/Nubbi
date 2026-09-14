@@ -1,15 +1,18 @@
-import { Post, SearchPost, searchPosts } from "@/api/post";
+import { Note, SearchNote, searchNotes } from "@/api/note";
+import {
+  SidebarTreeItem,
+  SidebarTreeState,
+} from "@/component/SideBar/components";
 import { debounceWrapper } from "@/utils/common";
 import clsx from "clsx";
 import { useAtom } from "jotai";
 import { atomWithMutation } from "jotai-tanstack-query";
-import { useEffect, useMemo, useState } from "react";
 import { LoaderCircle, Search } from "lucide-react";
-import ItemBase from "./ItemBase";
+import { useEffect, useMemo, useState } from "react";
 
 const filterAtom = atomWithMutation(() => ({
   mutationKey: ["filterNotes"],
-  mutationFn: async ({ title }: { title: string }) => searchPosts(title),
+  mutationFn: async ({ title }: { title: string }) => searchNotes(title),
 }));
 
 const panelClassName = clsx(
@@ -26,14 +29,14 @@ export const SearchNoteList = ({
   onChange,
   selectedId,
 }: {
-  onChange?: (post: Post) => void;
+  onChange?: (note: Note) => void;
   selectedId?: string | null;
 }) => {
   const [searchValue, setSearchValue] = useState("");
   const [hasSearched, setHasSearched] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [{ mutate, data }] = useAtom(filterAtom);
-  const notes: SearchPost[] = hasSearched ? data?.data || [] : [];
+  const notes: SearchNote[] = hasSearched ? data?.data || [] : [];
 
   const debouncedSearch = useMemo(
     () =>
@@ -71,37 +74,41 @@ export const SearchNoteList = ({
           <Search className="shrink-0 text-[12px]" />
           <input
             className="flex-1 bg-transparent outline-none placeholder:text-neutral-400"
-            type="text"
-            placeholder="Search pages..."
-            value={searchValue}
             onChange={(event) => {
               setSearchValue(event.target.value);
             }}
+            placeholder="Search pages..."
+            type="text"
+            value={searchValue}
           />
-          {isSearching && (
+          {isSearching ? (
             <LoaderCircle className="shrink-0 animate-spin text-sm text-neutral-400" />
-          )}
+          ) : null}
         </div>
       </header>
       <main className="max-h-[280px] overflow-y-auto p-2">
         {isSearching ? (
-          <div className="px-3 py-8 text-center text-sm text-neutral-400" />
+          <SidebarTreeState depth={0} rows={4} type="loading" />
         ) : notes.length > 0 ? (
           <div className="space-y-1">
             {notes.map((note) => (
-              <ItemBase
+              <SidebarTreeItem
+                active={note._id === selectedId}
                 key={note._id}
-                post={note}
+                onSelect={() => {
+                  onChange?.(note);
+                }}
                 pathLabel={note.pathLabel}
-                selected={note._id === selectedId}
-                onClick={onChange}
+                title={note.title || "Untitled"}
               />
             ))}
           </div>
         ) : (
-          <div className="px-3 py-8 text-center text-sm text-neutral-400">
-            没有找到匹配的页面
-          </div>
+          <SidebarTreeState
+            depth={0}
+            message={hasSearched ? "No matching pages" : "Type to search pages"}
+            type="empty"
+          />
         )}
       </main>
     </div>

@@ -81,10 +81,10 @@ jobs:
       DEPLOY_PASSWORD: ${{ secrets.DEPLOY_PASSWORD || '' }}
       VITE_API_URL: ${{ vars.VITE_API_URL || secrets.VITE_API_URL || '' }}
       VITE_SOCKET_URL: ${{ vars.VITE_SOCKET_URL || secrets.VITE_SOCKET_URL || '' }}
-      WEB_PORT: ${{ vars.WEB_PORT || secrets.WEB_PORT || '80' }}
+      WEB_PORT: ${{ vars.WEB_PORT || secrets.WEB_PORT || '' }}
       MONGO_URI: ${{ secrets.MONGO_URI || '' }}
-      SERVER_PORT: ${{ vars.SERVER_PORT || secrets.SERVER_PORT || '4000' }}
-      SOCKET_PORT: ${{ vars.SOCKET_PORT || secrets.SOCKET_PORT || '4040' }}
+      SERVER_PORT: ${{ vars.SERVER_PORT || secrets.SERVER_PORT || '' }}
+      SOCKET_PORT: ${{ vars.SOCKET_PORT || secrets.SOCKET_PORT || '' }}
       BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET || '' }}
       BETTER_AUTH_URL: ${{ vars.BETTER_AUTH_URL || secrets.BETTER_AUTH_URL || '' }}
       CLIENT_URL: ${{ vars.CLIENT_URL || secrets.CLIENT_URL || '' }}
@@ -203,10 +203,7 @@ jobs:
           const rootEnv = {
             VITE_API_URL: process.env.VITE_API_URL,
             VITE_SOCKET_URL: process.env.VITE_SOCKET_URL,
-            WEB_PORT: process.env.WEB_PORT || '80',
             MONGO_URI: process.env.MONGO_URI,
-            SERVER_PORT: process.env.SERVER_PORT || '4000',
-            SOCKET_PORT: process.env.SOCKET_PORT || '4040',
             BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
             BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
             CLIENT_URL: process.env.CLIENT_URL,
@@ -231,6 +228,18 @@ jobs:
             SMTP_PORT: process.env.SMTP_PORT || '',
             SMTP_SECURE: process.env.SMTP_SECURE || '',
           };
+
+          if (process.env.WEB_PORT) {
+            rootEnv.WEB_PORT = process.env.WEB_PORT;
+          }
+
+          if (process.env.SERVER_PORT) {
+            rootEnv.SERVER_PORT = process.env.SERVER_PORT;
+          }
+
+          if (process.env.SOCKET_PORT) {
+            rootEnv.SOCKET_PORT = process.env.SOCKET_PORT;
+          }
 
           const serialize = (value) => JSON.stringify(String(value ?? ''));
           const render = (env) =>
@@ -295,7 +304,34 @@ jobs:
 
           "$RUNNER_TEMP/scp-run" \
             "$RUNNER_TEMP/d-note.root.env" \
-            "~/d-note-deploy/.env"
+            "~/d-note-deploy/.env.generated"
+
+          "$RUNNER_TEMP/ssh-run" \
+            "bash -s" <<'REMOTE'
+          set -Eeuo pipefail
+
+          cd ~/d-note-deploy
+
+          preserve_env_value() {
+            key="$1"
+
+            if [ ! -f .env ] || grep -q "^${key}=" .env.generated; then
+              return
+            fi
+
+            existing_value="$(awk -F= -v key="$key" '$1 == key { print; exit }' .env)"
+
+            if [ -n "$existing_value" ]; then
+              printf '%s\n' "$existing_value" >> .env.generated
+            fi
+          }
+
+          for key in WEB_PORT SERVER_PORT SOCKET_PORT; do
+            preserve_env_value "$key"
+          done
+
+          mv .env.generated .env
+          REMOTE
 
           "$RUNNER_TEMP/scp-run" \
             "$RUNNER_TEMP/d-note.server.env" \
