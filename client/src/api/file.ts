@@ -8,6 +8,38 @@ const resolveApiUrl = (url: string) =>
     ? url
     : `${baseUrl}${url.startsWith("/") ? "" : "/"}${url}`;
 
+const resolvePublicFileUrl = (url: string) => {
+  const absoluteUrl = resolveApiUrl(url);
+
+  if (
+    import.meta.env.DEV ||
+    typeof window === "undefined"
+  ) {
+    return absoluteUrl;
+  }
+
+  try {
+    const targetUrl = new URL(absoluteUrl);
+    const currentUrl = new URL(window.location.href);
+    if (!targetUrl.pathname.startsWith("/file/")) {
+      return absoluteUrl;
+    }
+
+    const isSameSiteApi =
+      targetUrl.protocol === currentUrl.protocol &&
+      targetUrl.hostname === currentUrl.hostname &&
+      targetUrl.port !== currentUrl.port;
+
+    if (isSameSiteApi) {
+      return `${currentUrl.origin}${targetUrl.pathname}${targetUrl.search}${targetUrl.hash}`;
+    }
+  } catch {
+    return absoluteUrl;
+  }
+
+  return absoluteUrl;
+};
+
 export interface FolderRecord {
   _id: string;
   name: string;
@@ -187,7 +219,7 @@ export const fetchFilePreviewStreamUrl = async (fileId: string) => {
   }
 
   return {
-    url: resolveApiUrl(result.data.url),
+    url: resolvePublicFileUrl(result.data.url),
     expiresAt: result.data.expiresAt,
   };
 };
@@ -216,7 +248,7 @@ export const fetchFileShareDownloadUrl = async (fileId: string) => {
   }
 
   return {
-    url: resolveApiUrl(result.data.url),
+    url: resolvePublicFileUrl(result.data.url),
     expiresAt: result.data.expiresAt,
   };
 };
