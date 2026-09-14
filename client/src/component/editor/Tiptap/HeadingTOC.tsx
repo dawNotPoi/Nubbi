@@ -14,6 +14,7 @@ interface HeadingElement {
 }
 
 const ACTIVE_HEADING_OFFSET = 96;
+const HEADING_ACTIVATION_TOLERANCE = 2;
 const SCROLL_END_TOLERANCE = 2;
 
 function getScrollRoot(editor: Editor): HTMLElement | null {
@@ -104,7 +105,8 @@ export default function HeadingTOC({
   }, []);
 
   const handleHeadingClick = useCallback(
-    (pos: number) => {
+    (pos: number, index: number) => {
+      setActiveId(index);
       scrollToHeading(editor, pos);
       if (isMobile) setOpen(false);
     },
@@ -141,7 +143,10 @@ export default function HeadingTOC({
       let nextActiveId = 0;
 
       headingElements.forEach(({ element, index }) => {
-        if (element.getBoundingClientRect().top <= readingLine) {
+        if (
+          element.getBoundingClientRect().top <=
+          readingLine + HEADING_ACTIVATION_TOLERANCE
+        ) {
           nextActiveId = index;
         }
       });
@@ -238,7 +243,7 @@ export default function HeadingTOC({
                 type="button"
                 title={h.text}
                 aria-label={`跳转到: ${h.text}`}
-                onClick={() => handleHeadingClick(h.pos)}
+                onClick={() => handleHeadingClick(h.pos, i)}
               />
             ))}
           </div>
@@ -263,7 +268,7 @@ export default function HeadingTOC({
                     }`}
                     style={{ paddingLeft: `${8 + (h.level - 1) * 12}px` }}
                     type="button"
-                    onClick={() => handleHeadingClick(h.pos)}
+                    onClick={() => handleHeadingClick(h.pos, i)}
                   >
                     {h.text}
                   </button>
