@@ -9,12 +9,13 @@ import {
   Routes,
   useLocation,
 } from "react-router-dom";
-import Blog from "./views/blog/Blog";
+import Blog from "./views/Blog";
 import FileManager from "./views/FileManage";
 import Home from "./views/Home";
 import { LoginPage } from "./views/Login";
 import MeetingAccessGuard from "./views/MeetingRoom/MeetingAccessGuard";
 import Meetings from "./views/Mettings";
+import NoteAI from "./views/NoteAI";
 import PostTable from "./views/PostTable";
 import { ResetPasswordPage } from "./views/ResetPassword";
 
@@ -23,7 +24,7 @@ const UserLayout = () => {
     <div className="flex h-screen overflow-hidden">
       <SideBar />
       <div className="flex-1 h-screen overflow-hidden">
-        <main className="h-screen overflow-y-auto pb-10">
+        <main className="h-screen overflow-y-auto pb-10 bg-background">
           <Outlet />
         </main>
       </div>
@@ -72,6 +73,8 @@ export const RouteWrapper = () => {
             <Route path="meetings" element={<Meetings />} />
             <Route path="table" element={<PostTable />} />
             <Route path="file/*" element={<FileManager />} />
+            <Route path="note-ai" element={<NoteAI />} />
+            <Route path="blog/:Id" element={<Blog />} />
             <Route path="note/:Id" element={<Blog />} />
           </Route>
         </Routes>

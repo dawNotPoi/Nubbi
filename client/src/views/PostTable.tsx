@@ -1,11 +1,11 @@
 import MarkdownUpload from "@/component/upload/MarkdownUpload";
 import { Button, DatePicker, Table, Tag } from "antd";
 import dayjs from "dayjs";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function PostTable() {
-  const [data, setData] = useState([]);
+  const [data] = useState([]);
   const [hoveredRowKey, setHoveredRowKey] = useState(null);
   const colums = [
     {
@@ -33,11 +33,6 @@ export default function PostTable() {
           </div>
         );
       },
-    },
-    {
-      title: "summary",
-      dataIndex: "summary",
-      key: "summary",
     },
     {
       title: "status",
@@ -111,11 +106,6 @@ export default function PostTable() {
     // });
   };
 
-  useEffect(() => {
-    // getList().then((res) => {
-    //   setData(res);
-    // });
-  }, []);
   const navigate = useNavigate();
   return (
     <div>
@@ -147,7 +137,7 @@ export default function PostTable() {
           rowKey={"_id"}
           dataSource={data}
           columns={colums}
-          onRow={(record, rowIndex) => {
+          onRow={(record) => {
             return {
               onMouseEnter: () => {
                 setHoveredRowKey(record._id);

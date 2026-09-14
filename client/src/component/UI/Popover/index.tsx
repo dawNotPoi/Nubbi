@@ -24,7 +24,7 @@ export interface PopoverProps {
 
 export interface PopoverTriggerProps {
   ref: (node: HTMLElement | null) => void;
-  onClick: (e?: any) => void;
+  onClick: () => void;
 }
 
 const Popover: FC<PopoverProps> = ({
@@ -113,7 +113,7 @@ const Popover: FC<PopoverProps> = ({
 
   const triggerProps: PopoverTriggerProps = {
     ref: setTrigger,
-    onClick: (e?: any) => {
+    onClick: () => {
       if (controledOpen !== undefined) return;
       setOpen((v) => !v);
     },

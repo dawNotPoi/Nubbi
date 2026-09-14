@@ -31,7 +31,7 @@ function FileExplorerImpl(
     onDeleteFiles?: (ids: FileId[]) => Promise<void>;
     onRenameFile?: (id: FileId, name: string) => Promise<void>;
   },
-  ref: React.Ref<FileExplorerHandle>
+  _ref: React.Ref<FileExplorerHandle>
 ) {
   return (
     <div className="space-y-3">

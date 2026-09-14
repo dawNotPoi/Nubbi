@@ -13,6 +13,7 @@ import authRouter from "./routes/auth";
 import fileRouter from "./routes/file";
 import imageRouter from "./routes/image";
 import meetingRouter from "./routes/meeting";
+import noteAiRouter from "./routes/noteAi";
 import postRouter from "./routes/post";
 import summryRouter from "./routes/summary";
 
@@ -64,6 +65,7 @@ app.use("/post", postRouter);
 app.use("/download", express.static("static"));
 app.use("/file", fileRouter);
 app.use("/summary", summryRouter);
+app.use("/note-ai", noteAiRouter);
 
 app.use("/meeting", meetingRouter);
 app.use("/image", imageRouter);

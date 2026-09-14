@@ -27,7 +27,6 @@ const ensureMermaid = () => {
 
 const MermaidPreview = ({ source }: { source: string }) => {
   const [svg, setSvg] = React.useState("");
-  const [error, setError] = React.useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -35,28 +34,41 @@ const MermaidPreview = ({ source }: { source: string }) => {
     const render = async () => {
       if (!source.trim()) {
         setSvg("");
-        setError(null);
         return;
       }
 
       try {
         ensureMermaid();
+        const parseResult = await mermaid.parse(source, {
+          suppressErrors: true,
+        });
+
+        if (cancelled) return;
+
+        if (parseResult === false) {
+          setSvg("");
+          return;
+        }
+
         const id = `mermaid-preview-${Math.random().toString(36).slice(2)}`;
         const result = await mermaid.render(id, source);
 
         if (cancelled) return;
 
+        if (
+          !result.svg.includes("<svg") ||
+          /syntax error|mermaid version/i.test(result.svg)
+        ) {
+          setSvg("");
+          return;
+        }
+
         setSvg(result.svg);
-        setError(null);
       } catch (renderError) {
         if (cancelled) return;
 
         setSvg("");
-        setError(
-          renderError instanceof Error
-            ? renderError.message
-            : "Mermaid render failed",
-        );
+        console.warn("Mermaid render failed", renderError);
       }
     };
 
@@ -66,14 +78,6 @@ const MermaidPreview = ({ source }: { source: string }) => {
       cancelled = true;
     };
   }, [source]);
-
-  if (error) {
-    return (
-      <div className="mermaidPreviewError rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
-        Mermaid 渲染失败: {error}
-      </div>
-    );
-  }
 
   if (!svg) {
     return null;

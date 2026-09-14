@@ -3,7 +3,7 @@ export interface MeetingType {
   _id: string;
   title: string;
   hostId: string;
-  startTime: number;
+  startTime: number | string | Date;
   createdAt: Date;
   duration: number;
   password?: string;

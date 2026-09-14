@@ -18,5 +18,9 @@ const getHash = (file: File) => {
 onmessage = function (event) {
   const { data } = event;
   console.log("worker", data);
+  if (data instanceof File) {
+    getHash(data).then((hash) => postMessage(hash));
+    return;
+  }
   postMessage("1");
 };

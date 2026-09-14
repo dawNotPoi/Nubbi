@@ -57,6 +57,9 @@ export const WrittingModal = ({
   }, [content]);
 
   const resetModal = () => {
+    draftPostRef.current = null;
+    titleRef.current = "";
+    contentRef.current = "";
     setOpen(false);
     setTargetPickerOpen(false);
     setTitle("");
@@ -70,6 +73,7 @@ export const WrittingModal = ({
       parentId: targetNote?._id,
       ...initialValues,
     });
+    draftPostRef.current = post;
     setDraftPost(post);
     createPostMutate(post);
     return post;
@@ -112,6 +116,8 @@ export const WrittingModal = ({
   );
 
   const syncTitle = (nextTitle: string) => {
+    titleRef.current = nextTitle;
+
     if (!draftPostRef.current) {
       createDraft({ title: nextTitle, content: contentRef.current });
       return;
@@ -125,6 +131,8 @@ export const WrittingModal = ({
   };
 
   const syncContent = (nextContent: string) => {
+    contentRef.current = nextContent;
+
     if (!draftPostRef.current) {
       createDraft({ title: titleRef.current, content: nextContent });
       return;
@@ -134,8 +142,10 @@ export const WrittingModal = ({
   };
 
   const createPostHandler = () => {
-    if (draftPost) {
-      navigate("note/" + draftPost._id);
+    const currentDraft = draftPostRef.current;
+
+    if (currentDraft) {
+      navigate("note/" + currentDraft._id);
       resetModal();
       return;
     }

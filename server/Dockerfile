@@ -1,10 +1,17 @@
-# 该node镜像包能极大减小镜像体积
-FROM node:18-alpine
-# 设置工作目录
-workdir /app
-# 将所有文件
-copy package*.json ./
-run npm install
-COPY . .
-expose 4000 4040
-cmd ["npm","start"]
+FROM node:20-alpine
+
+WORKDIR /app
+
+RUN corepack enable
+
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile --prod
+
+COPY tsconfig.json ./
+COPY app ./app
+
+RUN mkdir -p storage
+
+EXPOSE 4000 4040
+
+CMD ["pnpm", "start"]

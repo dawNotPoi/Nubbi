@@ -1,18 +1,22 @@
-import { newPost } from "@/api/post";
 import { useAuth } from "@/hooks/useAuth";
 import { createPostAtom } from "@/store/atom/postAtom";
 import clsx from "clsx";
 import { useAtomValue, useSetAtom } from "jotai";
-import { PanelLeftClose } from "lucide-react";
+import {
+  Bot,
+  ChevronsLeft,
+  FolderTree,
+  House,
+  Presentation,
+} from "lucide-react";
 import React from "react";
-import { TbWritingSign } from "react-icons/tb";
 import { useNavigate } from "react-router-dom";
 import { sideBarOpenedAtom } from "../../store/atom/common";
 import Image from "../UI/Image";
 import Popover from "../UI/Popover";
+import { IconButton, MenuItemContainer } from "./components";
 import NoteMenu from "./NoteMenu";
 import ResizeTab from "./ResizeTab";
-import { IconButton, MenuItemContainer } from "./components";
 
 const SideBar: React.FC = () => {
   const navigate = useNavigate();
@@ -21,10 +25,10 @@ const SideBar: React.FC = () => {
   const { user, logout } = useAuth();
   return (
     <ResizeTab
-      className={clsx("group/sidebar px-3 bg-normal/30 py-2 font-medium ")}
+      className={clsx("group/sidebar px-3 bg-sidebar py-2 font-medium ")}
     >
       <div className="h-full flex flex-col">
-        <MenuItemContainer className="flex gap-2 justify-between relative">
+        <div className="flex gap-2 justify-between relative">
           <Popover
             trigger={
               <div className="flex gap-2 items-center cursor-pointer">
@@ -57,42 +61,32 @@ const SideBar: React.FC = () => {
             }}
           >
             <IconButton
-              onClick={async () => {
-                const post = newPost();
-                createPost(post, {
-                  onSuccess: () => navigate("/blog/" + post._id),
-                });
-              }}
-              className="size-8"
-            >
-              <TbWritingSign className="size-full" />
-            </IconButton>
-            <IconButton
-              className="size-8"
               onClick={() => {
                 setSideBarOpened(false);
               }}
             >
-              <PanelLeftClose size={18} strokeWidth={1.9} />
+              <ChevronsLeft />
             </IconButton>
           </div>
-        </MenuItemContainer>
+        </div>
         <div className="flex mt-2 flex-col flex-1 gap-2 overflow-auto ">
-          {/* 主页 */}
-          <MenuItemContainer>
-            <header role="button" onClick={() => navigate("home")}>
-              仪表盘
-            </header>
+          <MenuItemContainer to="home">
+            <House size={16} /> 主页
           </MenuItemContainer>
-          {/* 笔记 */}
-          <NoteMenu />
-          {/* 文件 */}
-          <MenuItemContainer onClickCapture={() => navigate("file")}>
+
+          <MenuItemContainer to="file">
+            <FolderTree size={16} />
             <span>文件</span>
           </MenuItemContainer>
-          <MenuItemContainer onClickCapture={() => navigate("meetings")}>
+          <MenuItemContainer to="meetings">
+            <Presentation size={16} />
             <span>会议</span>
           </MenuItemContainer>
+          <MenuItemContainer to="note-ai">
+            <Bot size={16} />
+            <span>Note AI</span>
+          </MenuItemContainer>
+          <NoteMenu />
         </div>
       </div>
     </ResizeTab>

@@ -251,6 +251,25 @@ export const getAuthCallbackErrorMessage = (search: string) => {
   return rawError;
 };
 
+const buildSocialErrorCallbackURL = (callbackURL: string) => {
+  const loginURL = new URL("/login", window.location.origin);
+
+  try {
+    const targetURL = new URL(callbackURL, window.location.origin);
+
+    if (targetURL.origin === window.location.origin) {
+      const returnTo = `${targetURL.pathname}${targetURL.search}${targetURL.hash}`;
+      if (returnTo.startsWith("/")) {
+        loginURL.searchParams.set("returnTo", returnTo);
+      }
+    }
+  } catch {
+    // Fall back to the plain login page when callbackURL is malformed.
+  }
+
+  return loginURL.toString();
+};
+
 export const signInWithEmail = async (
   email: string,
   password: string,
@@ -309,10 +328,11 @@ export const signInWithGitHub = async (
   callbackURL = window.location.href,
 ): Promise<AuthActionResult> => {
   try {
+    const errorCallbackURL = buildSocialErrorCallbackURL(callbackURL);
     const result = await signIn.social({
       provider: "github",
       callbackURL,
-      errorCallbackURL: `${window.location.origin}/login`,
+      errorCallbackURL,
     });
     return toAuthResult(result, "GitHub 登录发起失败，请稍后重试。");
   } catch (error) {
@@ -330,10 +350,11 @@ export const signInWithGoogle = async (
   callbackURL = window.location.href,
 ): Promise<AuthActionResult> => {
   try {
+    const errorCallbackURL = buildSocialErrorCallbackURL(callbackURL);
     const result = await signIn.social({
       provider: "google",
       callbackURL,
-      errorCallbackURL: `${window.location.origin}/login`,
+      errorCallbackURL,
     });
     return toAuthResult(result, "Google 登录发起失败，请稍后重试。");
   } catch (error) {

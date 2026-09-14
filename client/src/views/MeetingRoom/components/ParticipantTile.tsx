@@ -139,7 +139,7 @@ export default function ParticipantTile({
   return (
     <li
       onClick={isSelectable ? () => onSelect(id) : undefined}
-      className={`relative aspect-video w-full overflow-hidden rounded-2xl border bg-white shadow-sm transition-all ${isSelectable ? "cursor-pointer hover:-translate-y-0.5 hover:shadow-md" : ""}`}
+      className={`relative aspect-video w-full overflow-hidden rounded-2xl border bg-white shadow-sm transition-all ${isActive ? "ring-2 ring-blue-400" : ""} ${isSelectable ? "cursor-pointer hover:-translate-y-0.5 hover:shadow-md" : ""}`}
     >
       {content}
       <footer className="absolute bottom-2 left-2 flex items-center gap-1 rounded-full bg-black/45 px-2.5 py-1 text-white backdrop-blur-sm">

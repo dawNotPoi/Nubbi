@@ -30,6 +30,7 @@ export interface InitUploadInstantData {
 }
 
 export interface InitUploadPendingData {
+  needUpload?: true;
   status: "UPLOADING";
   uploadId: string;
   uploadedChunks: number[];

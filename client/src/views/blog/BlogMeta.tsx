@@ -1,5 +1,5 @@
 import { Post } from "@/api/post";
-import { DatePicker, Input } from "antd";
+import { DatePicker } from "antd";
 import dayjs from "dayjs";
 import { useCallback, useEffect, useState } from "react";
 import { Select } from "./Select";
@@ -11,7 +11,7 @@ const typeOptions = ["Note", "Thinking", "Share"];
 type Property = {
   id: string;
   name: string;
-  type: "select" | "date" | "multi-select" | "input";
+  type: "select" | "date" | "multi-select";
   options?: string[];
 };
 
@@ -24,7 +24,6 @@ const formSchema: Property[] = [
   },
   { id: "date", name: "日期", type: "date" },
   { id: "tags", name: "标签", type: "multi-select", options: tagsOptions },
-  { id: "summary", name: "摘要", type: "input" },
   { id: "type", name: "类型", type: "select", options: typeOptions },
 ];
 
@@ -66,7 +65,7 @@ export default function BlogMeta({
             <label className="flex w-[200px] items-center rounded-sm p-2 text-slate-500 hover:bg-gray-100/60">
               {item.name}
             </label>
-            <div className=" min-h-10 flex-1 items-center hover:bg-gray-100/60">
+            <div className="min-h-10 flex-1 items-center hover:bg-gray-100/60">
               <InputRender
                 onChange={handlerFormChange}
                 property={item}
@@ -127,18 +126,6 @@ const InputRender = ({ property, value, onChange }: InputRenderProps) => {
             onChange?.(nextValue, property);
           }}
           options={property.options}
-        />
-      );
-    case "input":
-      return (
-        <Input
-          value={value ?? ""}
-          variant="borderless"
-          className="w-full"
-          onChange={(event) => {
-            onChange?.(event.target.value, property);
-          }}
-          placeholder={placeholder}
         />
       );
     default:

@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { bearer } from "better-auth/plugins";
+import log from "@/common/chalk";
 import { db } from "./db";
 import { createEmailVerificationCode } from "./emailVerification";
 import { sendPasswordResetEmail, sendVerificationEmail } from "./email";
@@ -13,12 +14,51 @@ if (!authDb) {
   throw new Error("Database connection is not ready");
 }
 
+const serializeAuthLogArg = (value: unknown) => {
+  if (value instanceof Error) {
+    return {
+      name: value.name,
+      message: value.message,
+      stack: value.stack,
+      cause: value.cause,
+    };
+  }
+
+  if (typeof value === "object" && value !== null) {
+    return value;
+  }
+
+  return String(value);
+};
+
 export const auth = betterAuth({
   database: mongodbAdapter(authDb),
   secret: env.BETTER_AUTH_SECRET,
   baseURL: env.BETTER_AUTH_URL,
   basePath: "/api/auth",
   trustedOrigins: [env.CLIENT_URL, env.BETTER_AUTH_URL],
+  logger: {
+    level: "debug",
+    log(level, message, ...args) {
+      const authArgs = args.map(serializeAuthLogArg);
+      const prefixedMessage = `[better-auth:${level}] ${message}`;
+
+      if (level === "error") {
+        log.error(prefixedMessage, ...authArgs);
+        return;
+      }
+
+      if (level === "warn") {
+        log.warn(prefixedMessage, ...authArgs);
+        return;
+      }
+
+      log.info(prefixedMessage, ...authArgs);
+    },
+  },
+  onAPIError: {
+    errorURL: `${env.CLIENT_URL}/login`,
+  },
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,

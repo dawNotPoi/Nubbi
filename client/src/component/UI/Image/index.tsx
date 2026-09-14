@@ -6,7 +6,7 @@ interface ImageProps extends ImgHTMLAttributes<HTMLImageElement> {
 }
 const Image = ({ src, defaultLink = "/default.jpg", ...props }: ImageProps) => {
   const [finalSrc, setFinalSrc] = useState(src || defaultLink);
-  const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+  const handleError = () => {
     if (defaultLink) {
       setFinalSrc(defaultLink);
     }

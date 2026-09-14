@@ -10,7 +10,7 @@ npm-debug.log
 .env.local
 
 server/storage
-
+.pnpm-store
 
 
 

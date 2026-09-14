@@ -1,0 +1,40 @@
+services:
+  client:
+    build:
+      context: ./client
+      args:
+        VITE_API_URL: "${VITE_API_URL:-}"
+        VITE_SOCKET_URL: "${VITE_SOCKET_URL:-}"
+        VITE_GITHUB_REPO: "${VITE_GITHUB_REPO:-}"
+        VITE_GITHUB_TOKEN: "${VITE_GITHUB_TOKEN:-}"
+    depends_on:
+      - server
+    ports:
+      - "${WEB_PORT:-80}:80"
+    restart: unless-stopped
+
+  server:
+    build:
+      context: ./server
+    env_file:
+      - ./server/.env
+    depends_on:
+      - mongo
+    expose:
+      - "4000"
+      - "4040"
+    volumes:
+      - server_storage:/app/storage
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    expose:
+      - "27017"
+
+volumes:
+  mongo_data:
+  server_storage:

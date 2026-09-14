@@ -9,7 +9,7 @@ import { FileTextOutlined, RightOutlined } from "@ant-design/icons";
 import clsx from "clsx";
 import { useAtom, useAtomValue } from "jotai";
 import { RiDeleteBinLine } from "react-icons/ri";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { WrittingModal } from "./WritingModal";
 
 const DEFAULT_TITLE = "未命名文档";
@@ -41,7 +41,7 @@ function NoteItem({
 }) {
   const { Id } = useParams();
   const [expandedNodes, setExpandedNodes] = useAtom(expandedNodesAtom);
-  const navigate = useNavigate();
+
   const { mutate: deletePost } = useAtomValue(deleteSinglePostAtom);
   const open = expandedNodes.includes(post._id);
 
@@ -66,6 +66,7 @@ function NoteItem({
   return (
     <div className={clsx(className, "mt-0.5")}>
       <MenuItemContainer
+        to={`note/${post._id}`}
         style={{ paddingLeft: level * 8 }}
         className={clsx(
           "group flex items-center rounded-md hover:bg-neutral-400/40",
@@ -73,8 +74,7 @@ function NoteItem({
         )}
       >
         <IconButton
-          onClick={(e) => {
-            e.stopPropagation();
+          onClick={() => {
             setOpen((v) => !v);
           }}
         >
@@ -87,10 +87,7 @@ function NoteItem({
             size={20}
           />
         </IconButton>
-        <span
-          className="ml-1 flex-1 cursor-pointer truncate"
-          onClick={() => navigate(`note/${post._id}`)}
-        >
+        <span className="ml-1 flex-1 cursor-pointer truncate">
           {post.title || DEFAULT_TITLE}
         </span>
 

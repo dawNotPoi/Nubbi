@@ -1,0 +1,26 @@
+:root {
+  /* Layout */
+  --sidebar: rgb(249, 248, 247);
+  --background: white;
+  --surface: #fbf8f3;
+  --panel: #fffdf9;
+
+  /* Structure */
+  --border: #ddd3c6;
+  --divider: #e7ded2;
+
+  /* Text */
+  --foreground: #2f2a24;
+  --muted: #6a6056;
+  --subtle: #95897c;
+  --inverse: #fffdf9;
+
+  /* Brand */
+  --primary: #2f7c85;
+  --primary-soft: #dcecef;
+
+  /* State */
+  --danger: #b76565;
+  --warning: #b98a3a;
+  --success: #5e8667;
+}

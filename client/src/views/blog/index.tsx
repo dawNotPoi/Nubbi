@@ -10,8 +10,8 @@ import { useAtom, useAtomValue } from "jotai";
 import { CheckCircle2, LoaderCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import "react-markdown-editor-lite/lib/index.css";
-import { useParams } from "react-router-dom";
-import "./blog.css";
+import { useNavigate, useParams } from "react-router-dom";
+import "./index.css";
 import BlogCard from "./BlogCard";
 import BlogMeta from "./BlogMeta";
 
@@ -64,6 +64,7 @@ function SaveIndicator({ status }: { status: SaveStatus }) {
 
 export default function Blog() {
   const { Id } = useParams();
+  const navigate = useNavigate();
   const { data, isLoading, refetch } = useAtomValue(postDetailAtom(Id!));
   const [contentMutation] = useAtom(updatePostContentAtom);
   const propertiesMutation = useAtomValue(updatePostPropertiesAtom);
@@ -135,10 +136,10 @@ export default function Blog() {
     titleDebouncing,
   ]);
 
-  const headerRouteLabel = useMemo(() => {
-    const titleLabel = (title || data?.title || DEFAULT_TITLE).trim();
-    return ["笔记", titleLabel].join(" / ");
-  }, [data?.title, title]);
+  const headerTitle = useMemo(
+    () => (title || data?.title || DEFAULT_TITLE).trim(),
+    [data?.title, title],
+  );
 
   const Editor = useMemo(() => {
     if (isLoading || !Id || !data) return null;
@@ -160,8 +161,16 @@ export default function Blog() {
     <div className="min-w-[800px]">
       <Header className="mb-4">
         <div className="flex items-center justify-between gap-4">
-          <div className="truncate text-sm text-neutral-500">
-            {headerRouteLabel}
+          <div className="flex min-w-0 items-center gap-2 text-sm">
+            <button
+              className="shrink-0 text-neutral-500 transition-colors hover:text-neutral-800"
+              onClick={() => navigate("/table")}
+              type="button"
+            >
+              笔记
+            </button>
+            <span className="shrink-0 text-neutral-300">/</span>
+            <span className="truncate text-neutral-500">{headerTitle}</span>
           </div>
           <div className="shrink-0">
             <SaveIndicator status={saveStatus} />

@@ -5,16 +5,15 @@ import { useAtomValue } from "jotai";
 import { useState } from "react";
 import { RiAddFill } from "react-icons/ri";
 import { useNavigate } from "react-router-dom";
-import { IconButton, MenuItemContainer } from "../components";
+import { IconButton } from "../components";
 import NoteItem from "./NoteItem";
 
 export default function NoteMenu() {
   const { data } = useSession();
   const user = data?.user.id;
-  const {
-    data: rootPosts,
-    isLoading,
-  } = useAtomValue(rootPostsAtom(user || ""));
+  const { data: rootPosts, isLoading } = useAtomValue(
+    rootPostsAtom(user || ""),
+  );
   const { mutate: createPost } = useAtomValue(createPostAtom);
   const [open, setOpen] = useState(true);
   const navigate = useNavigate();
@@ -23,12 +22,12 @@ export default function NoteMenu() {
     createPost(post, { onSuccess: () => navigate("note/" + post._id) });
   };
   return (
-    <div className="text-neutral-800 ">
-      <MenuItemContainer
+    <div>
+      <div
         onClick={() => {
           setOpen((v) => !v);
         }}
-        className="flex items-center group"
+        className="flex items-center group hover:bg-normal/40  rounded-md px-2 py-1 cursor-pointer  gap-2"
       >
         <span>笔记</span>
         {/* 根级添加/搜索按钮 */}
@@ -42,7 +41,7 @@ export default function NoteMenu() {
             <RiAddFill />
           </IconButton>
         </div>
-      </MenuItemContainer>
+      </div>
       {open &&
         (isLoading ? (
           <>loading</>

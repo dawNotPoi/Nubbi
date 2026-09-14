@@ -1,5 +1,11 @@
 import type { FileTableRow } from "./FileListTable/fileIcons";
 
+type FilePreviewRecord = Extract<FileTableRow, { kind: "file" }>;
+
+const isFilePreviewRecord = (
+  record?: FileTableRow | null,
+): record is FilePreviewRecord => record?.kind === "file";
+
 const ARCHIVE_EXTENSIONS = new Set([
   "zip",
   "rar",
@@ -109,9 +115,9 @@ export const getFileExtension = (name?: string) => {
 };
 
 export const getRecordMimeType = (
-  record?: Pick<FileTableRow, "kind" | "type"> | null,
+  record?: FileTableRow | null,
 ) => {
-  if (!record || record.kind !== "file") return "";
+  if (!isFilePreviewRecord(record)) return "";
   return record.type?.toLowerCase().trim() ?? "";
 };
 
@@ -119,7 +125,7 @@ export const normalizeMimeType = (mimeType?: string) =>
   (mimeType || "").toLowerCase().split(";")[0].trim();
 
 export const resolveFileMimeType = (
-  record?: Pick<FileTableRow, "kind" | "type"> | null,
+  record?: FileTableRow | null,
   responseContentType?: string,
 ) => normalizeMimeType(responseContentType) || getRecordMimeType(record);
 

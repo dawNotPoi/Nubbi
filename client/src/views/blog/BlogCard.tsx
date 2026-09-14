@@ -46,7 +46,7 @@ export default function BlogCard({
   };
 
   const updatePost = (
-    newData: Partial<Pick<typeof data, "title" | "cover">>
+    newData: Partial<Pick<typeof data, "title" | "cover">>,
   ) => {
     setCardData((v) => {
       const tmp = { ...v, ...newData };

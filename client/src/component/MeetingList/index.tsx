@@ -5,8 +5,8 @@ import MeetingSchedule from "./MeetingSchedule";
 
 export default function MeetingList() {
   const onPanelChange = (
-    value: Dayjs,
-    mode: CalendarProps<Dayjs>["mode"],
+    _value: Dayjs,
+    _mode: CalendarProps<Dayjs>["mode"],
   ) => {};
 
   return (

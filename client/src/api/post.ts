@@ -9,7 +9,6 @@ export interface Post {
   meta?: {
     date?: number;
     status?: string;
-    summary?: string;
     tags?: string[];
     type?: string;
     [key: string]: any;
@@ -27,7 +26,7 @@ export interface SearchPost extends Post {
 export const newPost = (post?: Partial<PostWithContent>): PostWithContent => ({
   _id: new ObjectId().toHexString(),
   title: "",
-  meta: { date: Date.now(), status: "Draft", summary: "", tags: [], type: "" },
+  meta: { date: Date.now(), status: "Draft", tags: [], type: "" },
   children: [],
   cover: "",
   content: "",
@@ -71,7 +70,6 @@ export async function updatePostProperties(
   properties: {
     title?: string;
     tags?: string[];
-    summary?: string;
     status?: "Draft" | "Published" | "Archived";
     parentId?: string;
     meta?: Record<string, any>;

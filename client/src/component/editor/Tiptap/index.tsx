@@ -17,7 +17,7 @@ import "./index.css";
 const EMPTY_DOC = {
   type: "doc",
   content: [{ type: "paragraph" }],
-} as const;
+};
 
 const TiptapEditor = ({
   defaultValue,

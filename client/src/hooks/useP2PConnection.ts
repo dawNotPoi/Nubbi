@@ -183,7 +183,7 @@ const useP2PConnection = () => {
   );
 
   const connectToPeer = useCallback(
-    (roomId: string, stream: MediaStream | null, currentUser?: CurrentUserInfo) => {
+    (roomId: string, stream: MediaStream | null, _currentUser?: CurrentUserInfo) => {
       if (!roomId) return;
 
       const previousStream = localStreamRef.current;

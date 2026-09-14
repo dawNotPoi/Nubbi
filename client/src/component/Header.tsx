@@ -1,6 +1,6 @@
 import clsx from "clsx";
 import { useAtom } from "jotai";
-import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { ChevronsRight } from "lucide-react";
 import type { PropsWithChildren } from "react";
 import { sideBarOpenedAtom } from "../store/atom/common";
 
@@ -24,15 +24,9 @@ export const Header = ({
         }}
         title={sideBarOpened ? "收起侧边栏" : "展开侧边栏"}
       >
-        {sideBarOpened ? (
-          <PanelLeftClose size={20} strokeWidth={1.9} />
-        ) : (
-          <PanelLeftOpen size={20} strokeWidth={1.9} />
-        )}
+        {!sideBarOpened && <ChevronsRight size={20} strokeWidth={1.9} />}
       </button>
-      <div className="min-w-0 flex-1">
-        {children}
-      </div>
+      <div className="min-w-0 flex-1">{children}</div>
     </header>
   );
 };

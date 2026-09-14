@@ -84,7 +84,7 @@ const DImage = Image.extend<DImageOptions>({
       new Plugin({
         key: new PluginKey("imageUploadHandler"),
         props: {
-          handlePaste: (view, event) => {
+          handlePaste: (_view, event) => {
             const items = Array.from(event.clipboardData?.items || []);
             const imageItem = items.find((item) =>
               item.type.startsWith("image")
