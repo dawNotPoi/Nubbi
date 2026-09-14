@@ -41,7 +41,7 @@ export class Uploader {
   private mergeStarted = false;
   private hash = "";
   private name = "";
-  private size = 5;
+  private size: number;
   public progress = 0;
   private uploadId: string | null = null;
   private totalChunksSize = 0;
@@ -68,7 +68,17 @@ export class Uploader {
     this.name = options.file.name;
     this.onChange = options.onChange;
     this.onFinish = options.onFinish;
+    this.size = Uploader.chunkSizeMB(options.file.size);
     this.totalChunksSize = this.splitFileToChunks(this.file).length;
+  }
+
+  // < 100MB → 5MB chunks, 100MB–1GB → 10MB, > 1GB → 20MB
+  private static chunkSizeMB(fileSize: number): number {
+    const GB = 1024 * 1024 * 1024;
+    const MB100 = 100 * 1024 * 1024;
+    if (fileSize >= GB) return 20;
+    if (fileSize >= MB100) return 10;
+    return 5;
   }
 
   private fail(error?: unknown) {
