@@ -22,6 +22,7 @@ export interface HttpRuntimeConfig {
   apiUrl: string;
   host: string;
   port: number;
+  // 允许的 Host 白名单；空数组表示不校验 Host 头（默认公开）。
   allowedHosts: string[];
   allowedOrigins: string[];
 }

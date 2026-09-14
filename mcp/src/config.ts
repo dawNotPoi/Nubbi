@@ -2,7 +2,6 @@ import type { HttpRuntimeConfig, StdioRuntimeConfig } from "./types.js";
 
 const DEFAULT_API_URL = "http://localhost:4000";
 const DEFAULT_HOST = "0.0.0.0";
-const DEFAULT_ALLOWED_HOSTS = ["localhost", "127.0.0.1", "[::1]"];
 
 const readList = (value: string | undefined): string[] =>
   value
@@ -56,8 +55,8 @@ export const readHttpConfig = (
     apiUrl: normalizeApiUrl(env.NUBBI_API_URL ?? DEFAULT_API_URL),
     host: env.MCP_HOST?.trim() || DEFAULT_HOST,
     port: parsePort(env.MCP_PORT),
-    allowedHosts:
-      allowedHosts.length > 0 ? allowedHosts : [...DEFAULT_ALLOWED_HOSTS],
+    // 留空表示不校验 Host 头（默认公开），显式填写才启用白名单。
+    allowedHosts,
     allowedOrigins,
   };
 };

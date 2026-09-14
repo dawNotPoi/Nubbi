@@ -29,14 +29,16 @@ services:
       context: .
       dockerfile: mcp/Dockerfile
     environment:
-      MCP_ALLOWED_HOSTS: "${MCP_ALLOWED_HOSTS:-localhost,127.0.0.1}"
+      # 留空表示不校验 Host 头（默认公开）；需要白名单时在根 .env 设置 MCP_ALLOWED_HOSTS。
+      MCP_ALLOWED_HOSTS: "${MCP_ALLOWED_HOSTS:-}"
       MCP_ALLOWED_ORIGINS: "${MCP_ALLOWED_ORIGINS:-}"
       MCP_HOST: 0.0.0.0
       MCP_PORT: 3100
       MCP_TRANSPORT: http
       NUBBI_API_URL: http://server:4000
     ports:
-      - "${MCP_BIND_ADDRESS:-127.0.0.1}:${MCP_PORT:-3100}:3100/tcp"
+      # 默认 0.0.0.0 便于开发测试直接远程访问；生产环境建议在根 .env 设置 MCP_BIND_ADDRESS=127.0.0.1。
+      - "${MCP_BIND_ADDRESS:-0.0.0.0}:${MCP_PORT:-3100}:3100/tcp"
     expose:
       - "3100"
     depends_on:
