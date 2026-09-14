@@ -3,10 +3,6 @@ packages:
   - server
   - mcp
   - website
-  - assistant/api
-  - assistant/web
-  - assistant/mobile
-  - assistant/shared
 
 overrides:
   mongodb: 6.21.0

@@ -18,22 +18,7 @@ server/storage
 .run-logs/
 .claude/worktrees/
 
-# Assistant 运行时配置、数据与构建产物
-assistant/config/mcp.json
-assistant/config/model.json
-assistant/config/skills.json
-assistant/data/*.json
-assistant/data/*.jsonl
-assistant/data/codex/
 /data/codex/
-assistant/mobile/.expo/
-assistant/mobile/dist/
-assistant/api/dist/
-assistant/web/dist/
-assistant/api/node_modules/
-assistant/web/node_modules/
-assistant/mobile/node_modules/
-assistant/**/*.tsbuildinfo
 
 
 
