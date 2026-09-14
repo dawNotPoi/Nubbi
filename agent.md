@@ -57,7 +57,8 @@ review 做的事：
 
 ### 第五步：commit
 
-确认 changes 已更新后再执行 `git commit`。
+- 确认 changes 已更新后再执行 `git commit`
+- **commit 由用户决定**，除非用户明确说"commit"，否则不主动提交
 
 ## 命令
 
@@ -85,9 +86,18 @@ pnpm agent review --today      # Review 今天所有提交
 
 ### Git 提交
 - [ ] 格式：`<type>(<scope>): <subject>`
-- [ ] type 正确：feat/fix/refactor/docs/style/test/chore
-- [ ] scope 正确：server/client/shared/config/agent
-- [ ] subject 祈使句现在时，≤50 字符
+- [ ] **type 用英文**：`feat` / `fix` / `refactor` / `docs` / `style` / `test` / `chore`
+- [ ] **scope 用英文**：`server` / `client` / `shared` / `config` / `agent`
+- [ ] **subject 用中文**，简明描述做了什么，≤ 50 字
+
+**示例：**
+```
+feat(server): 新增用户登录接口
+fix(client): 修复登录按钮点击无响应
+refactor(shared): 抽取公共验证逻辑为独立工具函数
+docs(agent): 补全工作流第四步说明
+chore(config): 升级 vite 至 5.4
+```
 
 ### 技术栈约束
 - [ ] 服务端：Express 4.x + Mongoose 8.x + Zod 3.x + Better-Auth 1.x

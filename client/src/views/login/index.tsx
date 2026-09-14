@@ -212,12 +212,13 @@ export const LoginPage = () => {
   };
 
   const onLoginFinish = async (values: LoginFormData) => {
-    const result = await login(values.email, values.password);
+    const result = await login(values.email.trim(), values.password);
     if (!result.success) {
       if (result.error?.code === "EMAIL_NOT_VERIFIED") {
         setVerificationEmail(values.email.trim());
         setVerificationCode("");
         setView("verifyEmail");
+        return;
       }
       message.error(result.error?.message || "登录失败");
       return;

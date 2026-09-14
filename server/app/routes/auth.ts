@@ -15,9 +15,15 @@ import {
   createAccountDeletionCode,
 } from "@/lib/accountDeletionVerification";
 import { db } from "@/lib/db";
-import { consumeEmailVerificationCode } from "@/lib/emailVerification";
+import {
+  consumeEmailVerificationCode,
+  createEmailVerificationAttempt,
+  EMAIL_VERIFICATION_COOLDOWN_SECONDS,
+  getEmailVerificationRemainingSeconds,
+} from "@/lib/emailVerification";
 import {
   consumePasswordResetCode,
+  createPasswordResetAttempt,
   getPasswordResetRemainingSeconds,
   PASSWORD_RESET_COOLDOWN_SECONDS,
   PASSWORD_RESET_EXPIRES_IN_SECONDS,
@@ -365,14 +371,31 @@ router.post(
       });
     }
 
-    await auth.api.sendVerificationEmail({
-      body: {
-        email,
-      },
-      headers: req.headers as HeadersInit,
-    });
+    const remainingSeconds = await getEmailVerificationRemainingSeconds(email);
+    if (remainingSeconds > 0) {
+      return errorResponse(res, 429, "验证码发送过于频繁，请稍后再试", {
+        remainingSeconds,
+      });
+    }
 
-    successResponse(res, null, "验证码已发送");
+    // 先写入占位记录，防止对不存在邮箱的无限请求；
+    // 若邮箱存在，sendVerificationEmail 回调会用真实记录覆盖它
+    await createEmailVerificationAttempt(email);
+
+    try {
+      await auth.api.sendVerificationEmail({
+        body: { email },
+        headers: req.headers as HeadersInit,
+      });
+    } catch {
+      // 不向客户端暴露邮箱是否存在
+    }
+
+    successResponse(
+      res,
+      { cooldownSeconds: EMAIL_VERIFICATION_COOLDOWN_SECONDS },
+      "验证码已发送",
+    );
   }),
 );
 
@@ -482,6 +505,10 @@ router.post(
         remainingSeconds,
       });
     }
+
+    // 先写入占位记录保证冷却对不存在的邮箱同样生效；
+    // 若邮箱存在，sendResetPassword 回调会用真实记录覆盖它
+    await createPasswordResetAttempt(email);
 
     await auth.api.requestPasswordReset({
       body: {
