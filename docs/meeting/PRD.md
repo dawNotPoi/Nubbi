@@ -70,7 +70,8 @@
 
 ### 会议列表 `/meetings`
 - `client/src/views/meetings/` — 会议列表、创建会议
-- 使用组件：`component/MeetingList/`（Meetingmanage, RecentMeeting, MeetingSchedule, addMeeting）
+- 页面采用统一的蓝灰主题：顶部展示页面标题、说明和创建会议主操作，下面依次展示近期会议与会议管理。
+- 使用组件：`component/MeetingList/`（Meetingmanage, RecentMeeting, CreateMeetingModal, MeetingSchedule, addMeeting）
 
 ### 视频会议室 `/meeting/:roomId`
 - `client/src/views/meeting-room/index.tsx` — 主视频组件
@@ -121,6 +122,7 @@
 |------|------|------|
 | Meetingmanage | `component/MeetingList/` | 会议管理列表 |
 | RecentMeeting | `component/MeetingList/` | 最近会议卡片 |
+| CreateMeetingModal | `component/MeetingList/` | 会议页与首页共用的创建会议弹窗 |
 | MeetingSchedule | `component/MeetingList/` | 会议时间表 |
 | addMeeting | `component/MeetingList/` | 创建会议表单 |
 

@@ -7,6 +7,7 @@ import type { ReactElement } from "react";
 import type { MeetingActions } from "./types";
 
 /** 会议审批状态 → 标签样式映射 */
+const statusMap = {
   unreviewd: {
     label: "待审批",
     className: "border-amber-200 bg-amber-50 text-amber-700",

@@ -1,188 +1,94 @@
-import { Modal } from "@/component/UI/Dialog";
-import { useAuth } from "@/hooks/useAuth";
-import { createMeetingAtom, MeetingAtom } from "@/store/atom/meetingAtom";
-import { Button, DatePicker, Input, message, Select } from "antd";
+import { MeetingAtom } from "@/store/atom/meetingAtom";
+import { Button } from "antd";
+import clsx from "clsx";
 import dayjs from "dayjs";
 import { useAtomValue } from "jotai";
-import { Calendars, Plus } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { CalendarDays, CalendarOff, Plus } from "lucide-react";
+import { useMemo, useState, type ReactElement } from "react";
 import { useNavigate } from "react-router-dom";
-import CardWrapper from "../../views/home/CardWrapper";
+import { CreateMeetingModal } from "./create-meeting-modal";
 
-const AddMeetingModal = ({
-  open,
-  onClose,
-  openModal,
-}: {
-  open: boolean;
-  onClose: () => void;
-  openModal: () => void;
-}) => {
-  const { user } = useAuth();
-  const defaultTitle = `${user?.name || "我"}的会议`;
-  const [formData, setFormData] = useState({
-    title: defaultTitle,
-    startTime: dayjs().valueOf(),
-    duration: 30,
-    password: "",
-  });
-
-  useEffect(() => {
-    if (!open) return;
-
-    setFormData({
-      title: defaultTitle,
-      startTime: dayjs().valueOf(),
-      duration: 30,
-      password: "",
-    });
-  }, [defaultTitle, open]);
-
-  const creteMeetingMutation = useAtomValue(createMeetingAtom);
-  const createMeeting = () => {
-    creteMeetingMutation.mutate(formData, {
-      onError: () => {
-        message.error("网络异常");
-      },
-      onSuccess: (res) => {
-        if (res.code === 1) {
-          message.success("创建会议成功");
-          onClose();
-          return;
-        }
-
-        message.error(res.message || "创建会议失败");
-      },
-    });
-  };
-  return (
-    <Modal
-      open={open}
-      onCancel={onClose}
-      onOk={() => {
-        createMeeting();
-      }}
-      okText="确定"
-      showClose
-      className="md:mt-[50vh] md:translate-y-[-50%]"
-      trigger={
-        <button
-          onClick={openModal}
-          className=" bg-sky-600 p-0.5 rounded-[20%] text-white "
-        >
-          <Plus size={20} />
-        </button>
-      }
-    >
-      <div>
-        <header className="text-[20px] font-bold">添加会议</header>
-        <form className="mt-2 space-y-2">
-          <section className="flex gap-4 items-center">
-            <div>标题</div>
-            <div className="flex-1">
-              <Input
-                value={formData.title}
-                placeholder="请输入会议标题"
-                onChange={(e) =>
-                  setFormData((v) => ({
-                    ...v,
-                    title: e.target.value,
-                  }))
-                }
-              />
-            </div>
-          </section>
-          <section className="flex gap-4  items-center">
-            <div>开始</div>
-            <div className="flex-1">
-              <DatePicker
-                className="w-full"
-                defaultValue={dayjs(formData.startTime)}
-                showTime
-                showMinute
-                showHour
-                onChange={(val) => {
-                  const date = dayjs(val);
-                  setFormData((v) => ({
-                    ...v,
-                    startTime: date.valueOf(),
-                  }));
-                }}
-              />
-            </div>
-          </section>
-          <section className="flex gap-4  items-center">
-            <div>时间</div>
-            <div className="flex-1">
-              <Select
-                value={formData.duration}
-                onChange={(val) =>
-                  setFormData((v) => ({
-                    ...v,
-                    duration: val,
-                  }))
-                }
-                className="w-full"
-                options={[
-                  {
-                    label: "30分钟",
-                    value: 30,
-                  },
-                  {
-                    label: "45分钟",
-                    value: 30,
-                  },
-                  {
-                    label: "1小时",
-                    value: 60,
-                  },
-                  {
-                    label: "2小时",
-                    value: 120,
-                  },
-                ]}
-              />
-            </div>
-          </section>
-          <section className="flex gap-4 items-center">
-            <div>密码</div>
-            <div className="flex-1">
-              <Input.Password
-                placeholder="可选，留空表示无密码"
-                value={formData.password}
-                onChange={(e) =>
-                  setFormData((v) => ({
-                    ...v,
-                    password: e.target.value,
-                  }))
-                }
-              />
-            </div>
-          </section>
-        </form>
-      </div>
-    </Modal>
-  );
+type RecentMeetingsProps = {
+  className?: string;
+  showCreateAction?: boolean;
 };
-const RecentMeetings = ({ className }: { className?: string }) => {
+
+type RecentMeetingEmptyProps = {
+  onCreate: () => void;
+};
+
+const weekDayLabels = [
+  "星期日",
+  "星期一",
+  "星期二",
+  "星期三",
+  "星期四",
+  "星期五",
+  "星期六",
+] as const;
+
+/**
+ * 把 dayjs 的星期序号转换为中文星期名称。
+ * @param weekDay 星期序号，星期日为 0。
+ * @returns 中文星期名称。
+ */
+const getWeekDayLabel = (weekDay: number): string =>
+  weekDayLabels[weekDay] || "";
+
+/**
+ * 渲染近期会议的空状态，并保留直接创建会议的入口。
+ * @param onCreate 打开创建会议弹窗的回调。
+ * @returns 近期会议空状态。
+ */
+const RecentMeetingEmpty = ({
+  onCreate,
+}: RecentMeetingEmptyProps): ReactElement => (
+  <div className="flex min-h-[280px] items-center justify-center rounded-xl border border-border-row bg-bg-panel px-6 py-12 text-center">
+    <div className="flex flex-col items-center">
+      <CalendarOff className="text-text-subtle" size={48} strokeWidth={1.5} />
+      <p className="mt-4 font-medium text-text-primary">未来一周没有会议</p>
+      <p className="mt-1 text-sm text-text-muted">创建会议，开始记录与协作。</p>
+      <Button
+        className="mt-5"
+        icon={<Plus size={16} />}
+        onClick={onCreate}
+        type="primary"
+      >
+        创建会议
+      </Button>
+    </div>
+  </div>
+);
+
+/**
+ * 展示未来一周内尚未结束的会议。
+ * @param className 附加样式类名。
+ * @param showCreateAction 是否在区块标题处显示创建会议按钮。
+ * @returns 近期会议区块。
+ */
+const RecentMeetings = ({
+  className,
+  showCreateAction = true,
+}: RecentMeetingsProps): ReactElement => {
   const { data: meetings } = useAtomValue(MeetingAtom);
-  const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
+  const [createOpen, setCreateOpen] = useState(false);
   const upcomingWeekMeetings = useMemo(() => {
     const now = dayjs();
     const windowStart = now.startOf("day");
     const windowEnd = windowStart.add(7, "day").endOf("day");
 
     return (meetings || [])
-      .filter((item) => {
-        const start = dayjs(item.startTime);
-        const end = start.add(item.duration, "minute");
+      .filter((meeting) => {
+        const start = dayjs(meeting.startTime);
+        const end = start.add(meeting.duration, "minute");
 
         return (
           start.isValid() &&
-          !item.endedAt &&
+          !meeting.endedAt &&
           end.isAfter(now) &&
-          (start.isAfter(windowStart) || start.isSame(windowStart)) &&
-          (start.isBefore(windowEnd) || start.isSame(windowEnd))
+          !start.isBefore(windowStart) &&
+          !start.isAfter(windowEnd)
         );
       })
       .sort(
@@ -190,109 +96,62 @@ const RecentMeetings = ({ className }: { className?: string }) => {
           dayjs(left.startTime).valueOf() - dayjs(right.startTime).valueOf(),
       );
   }, [meetings]);
-  const NoCotent = () => {
-    return (
-      <div className="h-[300px] flex items-center justify-center">
-        <div className="flex flex-col gap-4 items-center text-zinc-500">
-          <Calendars size={60} />
-          <p>未来一周内没有会议</p>
-          <div>
-            <button className="text-sky-700 flex gap-1 items-center">
-              <Plus size={20} />
-              <span
-                onClick={() => {
-                  setOpen(true);
-                }}
-              >
-                创建会议
-              </span>
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
-  const turnIntoWeek = (weekDay: number) => {
-    switch (weekDay) {
-      case 1:
-        return "星期一";
-      case 2:
-        return "星期二";
-      case 3:
-        return "星期三";
-      case 4:
-        return "星期四";
-      case 5:
-        return "星期五";
-      case 6:
-        return "星期六";
-      case 7:
-        return "星期日";
-      default:
-        return "";
-    }
-  };
-
-  const naviagte = useNavigate();
-  const navigateToMeeting = (meetingId: string) => {
-    naviagte(`/meeting/${meetingId}`);
-  };
   return (
-    <>
-      <CardWrapper
-        className={className}
-        header={
-          <div className="flex w-full  items-center gap-2">
-            <Calendars /> <span>近期会议</span>
-            <div className="flex-1"></div>
-            <AddMeetingModal
-              openModal={() => setOpen(true)}
-              open={open}
-              onClose={() => setOpen(false)}
-            />
-          </div>
-        }
-      >
-        <div className="max-h-[400px] overflow-y-auto rounded-md border">
-          {upcomingWeekMeetings.length > 0 ? (
-            upcomingWeekMeetings.map((item) => (
-              <div key={item._id} className="flex flex-col gap-1 p-2 sm:flex-row">
-                <div className="w-full px-2 py-1 text-sm text-text-muted sm:w-[200px] sm:p-2">
-                  {turnIntoWeek(dayjs(item.startTime).day())}
-                  <span className="ml-2">
-                    {dayjs(item.startTime).format("MM-DD")}
-                  </span>
-                </div>
-                <div className="mx-1 hidden w-1 rounded-xl bg-sky-500 sm:block" />
-                <div className="flex-1 flex cursor-pointer group hover:bg-zinc-50 rounded-md py-2 px-2">
-                  <div className="flex-1">
-                    <p>{item.title}</p>
-                    <span className="text-zinc-500 text-[14px] mt-4">
-                      {dayjs(item.startTime).format("hh:ss")}-
-                      {dayjs(item.startTime)
-                        .add(item.duration, "minute")
-                        .format("hh:ss")}
-                    </span>
-                  </div>
-                  <div className="flex items-center sm:hidden sm:group-hover:flex">
-                    <Button
-                      onClick={() => {
-                        navigateToMeeting(item._id);
-                      }}
-                    >
-                      进入会议
-                    </Button>
-                  </div>
-                </div>
+    <section className={clsx("min-w-0", className)}>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="flex items-center gap-2 text-base font-semibold text-text-primary">
+          <CalendarDays className="text-text-muted" size={19} />
+          近期会议
+        </h2>
+        {showCreateAction ? (
+          <Button
+            icon={<Plus size={15} />}
+            onClick={() => setCreateOpen(true)}
+          >
+            创建会议
+          </Button>
+        ) : null}
+      </div>
+
+      {upcomingWeekMeetings.length > 0 ? (
+        <div className="max-h-[400px] overflow-y-auto rounded-xl border border-border-row bg-white scrollbar-thin scrollbar-thumb-border">
+          {upcomingWeekMeetings.map((meeting) => (
+            <article
+              className="grid gap-3 border-b border-border-row px-4 py-4 last:border-b-0 hover:bg-bg-hover sm:grid-cols-[116px_minmax(0,1fr)_auto] sm:items-center"
+              key={meeting._id}
+            >
+              <div className="text-sm text-text-muted">
+                {getWeekDayLabel(dayjs(meeting.startTime).day())}
+                <span className="ml-2">
+                  {dayjs(meeting.startTime).format("MM-DD")}
+                </span>
               </div>
-            ))
-          ) : (
-            <NoCotent />
-          )}
+              <div className="min-w-0 border-l-2 border-accent-border pl-4">
+                <p className="truncate font-medium text-text-primary">
+                  {meeting.title || "未命名会议"}
+                </p>
+                <p className="mt-1 text-sm text-text-muted">
+                  {dayjs(meeting.startTime).format("HH:mm")} – {dayjs(meeting.startTime)
+                    .add(meeting.duration, "minute")
+                    .format("HH:mm")}
+                </p>
+              </div>
+              <Button onClick={() => navigate(`/meeting/${meeting._id}`)}>
+                进入会议
+              </Button>
+            </article>
+          ))}
         </div>
-      </CardWrapper>
-    </>
+      ) : (
+        <RecentMeetingEmpty onCreate={() => setCreateOpen(true)} />
+      )}
+
+      <CreateMeetingModal
+        onClose={() => setCreateOpen(false)}
+        open={createOpen}
+      />
+    </section>
   );
 };
 

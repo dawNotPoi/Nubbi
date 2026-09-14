@@ -17,6 +17,7 @@ type MeetingManageProps = PropsWithChildren<{
  * @param variant 渲染模式。
  * @param className 附加类名。
  * @param children 弹窗模式的触发元素。
+ * @returns 会议管理页面区块或弹窗入口。
  */
 const Meetingmanage = ({
   children,
@@ -31,7 +32,7 @@ const Meetingmanage = ({
     <MeetingManageContent
       className={clsx(
         isPage &&
-          "rounded-lg border border-border-row bg-white p-4 shadow-soft sm:rounded-lg sm:p-6",
+          "rounded-xl border border-border-row bg-white p-4 shadow-soft sm:p-6",
         className,
       )}
       meetings={meetingManage.meetings}
