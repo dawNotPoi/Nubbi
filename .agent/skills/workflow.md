@@ -57,7 +57,8 @@
 1. **更新 changes**：确保 `docs/changes/YYYY-MM-DD.md` 已覆盖本次变更
 2. **展示暂存区统计**：执行 `git status`，列出所有改动文件，区分已暂存和未暂存
 3. **询问是否加入暂存区**：询问用户需要将哪些未暂存的改动 `git add`
-4. **让用户确认提交**：展示完整的 commit message，**让用户最终确认**后再执行 `git commit`
+4. **让用户确认提交**：展示完整的 commit message，**让用户最终确认**后再执行
+5. **一次执行**：用户确认后，`git add` 和 `git commit` 合并为一条 shell 调用
 
 - commit 格式见 `.agent/rules/core.md` 中的「提交规范」
 - **commit 由用户决定**，除非用户明确说"commit"，否则不主动提交
