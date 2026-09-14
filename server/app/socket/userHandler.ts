@@ -1,5 +1,5 @@
 import log from "@/common/chalk";
-import { createComment, getCommentList, reply } from "../control/comment";
+import { createComment, getCommentList, reply } from "../controller/comment";
 
 const userHandlers = (io, socket) => {
   socket.on("secrectMessage", ({ toId, msg }) => {

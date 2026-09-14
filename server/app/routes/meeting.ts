@@ -4,13 +4,20 @@ import { asyncHandler } from "../middleware/common";
 import meeting from "../models/meeting";
 import { successResponse } from "./utils";
 const router = express.Router();
+
 router.post(
   "/create",
   requireAuth,
   asyncHandler(async (req, res) => {
     const hostId = (req as any).user.id;
-    const { title, startTime, duration } = req.body;
-    const result = await meeting.create({ title, startTime, duration, hostId });
+    const { title, startTime, duration, password } = req.body;
+    const result = await meeting.create({
+      title,
+      startTime,
+      duration,
+      hostId,
+      password: password?.trim?.() || "",
+    });
     successResponse(res, result);
   })
 );
@@ -23,7 +30,6 @@ router.get(
     const result = await meeting.find({
       hostId: hostId,
     });
-
     successResponse(res, result);
   })
 );
@@ -101,7 +107,35 @@ router.get(
   asyncHandler(async (req, res) => {
     const { id } = req.query;
     const result = await meeting.findById(id);
+    if (!result) {
+      successResponse(res, null);
+      return;
+    }
     successResponse(res, result);
+  })
+);
+
+router.post(
+  "/validateAccess",
+  asyncHandler(async (req, res) => {
+    const { id, password = "" } = req.body;
+    const result = await meeting.findById(id);
+
+    if (!result) {
+      successResponse(res, {
+        passed: false,
+        reason: "NOT_FOUND",
+      });
+      return;
+    }
+
+    const meetingPassword = result.password || "";
+    const passed = !meetingPassword || meetingPassword === password;
+
+    successResponse(res, {
+      passed,
+      reason: passed ? "OK" : "INVALID_PASSWORD",
+    });
   })
 );
 

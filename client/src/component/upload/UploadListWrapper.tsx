@@ -32,7 +32,7 @@ export default function UploadListWrapper({
     <div
       ref={wrapperRef}
       className={clsx(
-        "fixed rounded-xl flex flex-col top-4 right-[10%] w-[700px] bg-white shadow-md  h-[400px] p-4",
+        "fixed z-50 rounded-xl flex flex-col top-4 right-[10%] w-[700px] bg-white shadow-md h-[400px] p-4",
         open ? "block" : "hidden"
       )}
     >

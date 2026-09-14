@@ -1,223 +1,278 @@
-import { asyncHandler } from "./../middleware/common";
-
-import log from "@/common/chalk";
-import { getUser } from "@/lib/auth";
 import requireAuth from "@/middleware/session";
-import File from "@/models/file";
+
+import { File } from "@/models/file/file";
+import { Folder } from "@/models/file/folder";
+import { UploadTask } from "@/models/file/uploadTask";
 import express from "express";
 import fse from "fs-extra";
 import multer from "multer";
 import path from "path";
+import { pipeline } from "stream/promises";
+import { asyncHandler, AuthRequest } from "./../middleware/common";
 import { successResponse } from "./utils";
-
 const router = express.Router();
-// file upload
-const uploadPath = "./source";
-const finalDir = "./static";
-const downloadPath = "http://localhost:4000/file";
-if (!fse.pathExistsSync(uploadPath)) {
-  fse.mkdirSync(uploadPath);
-}
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadPath);
-  },
-});
-const upload = multer({ storage });
-const tempDir = "temp";
-if (!fse.pathExistsSync(tempDir)) {
-  fse.mkdirSync(tempDir);
-}
+// 基础存储路径配置
+// 配置 Multer 临时缓存区（分片到达服务器后的首站）
+const upload = multer({ dest: "storage/temp_multer/" });
+const UPLOAD_TEMP_DIR = path.join(process.cwd(), "storage/temp"); // 临时分片目录
+const UPLOAD_FINAL_DIR = path.join(process.cwd(), "storage/uploads"); // 最终文件目录
+// 确保目录存在
+if (!fse.existsSync(UPLOAD_TEMP_DIR))
+  fse.mkdirSync(UPLOAD_TEMP_DIR, { recursive: true });
+if (!fse.existsSync(UPLOAD_FINAL_DIR))
+  fse.mkdirSync(UPLOAD_FINAL_DIR, { recursive: true });
 
-const validateFile = async (user, fileId) => {
-  const file = await File.findById(fileId);
-  if (!file) {
-    throw Object.assign(new Error("文件不存在"), { status: 404 });
-  }
-  if (file.userId !== user.id) {
-    throw Object.assign(new Error("Unauthorized"), { status: 401 });
-  }
-};
+/**
+ * -------------------------------------------------------
+ * 1. 初始化上传 (Init Upload)
+ * 鉴权
+ * 逻辑：秒传校验 -> 断点续传校验 -> 创建新任务
+ * -------------------------------------------------------
+ */
 
-//处理分片上传
 router.post(
-  "/upload",
-  upload.single("file"),
-  asyncHandler((req, res) => {
-    //获取到上传文件的hash值和分片对应的index
-    const { hash, index } = req.body;
-    //创建临时文件夹
-    let tempFileDir = path.resolve(tempDir, hash);
-    if (!fse.pathExistsSync(tempFileDir)) {
-      fse.mkdirSync(tempFileDir);
-    }
-    //移动上传分片到临时文件夹
-    const tempChunkDir = path.resolve(tempFileDir, index);
-    let multerChunkPath = path.resolve(req.file!.path);
-    if (!fse.existsSync(tempChunkDir)) {
-      fse.moveSync(multerChunkPath, tempChunkDir);
-    } else {
-      fse.removeSync(multerChunkPath);
-    }
-    successResponse(res, true);
-  })
-);
-
-//处理文件删除
-router.delete(
-  "/delete",
+  "/init",
   requireAuth,
-  asyncHandler(async (req, res) => {
-    const { _id } = req.body;
-    const user = await getUser(req);
-    await validateFile(user, _id);
-    const result = await File.findByIdAndDelete({ _id });
-    successResponse(res, result);
-  })
-);
-
-//检验文件
-router.get(
-  "/checkFile",
-  asyncHandler(async (req, res) => {
-    const { hash, name } = req.query as { hash: string; name: string };
-    const result = await File.findOne({ hash: hash });
-    if (result) {
-      await File.create({
-        hash,
-        name,
-        path: result?.path,
-        type: name.split(".").pop(),
-      });
-      successResponse(res, { needUpload: false });
-    } else {
-      successResponse(res, { needUpload: true });
-    }
-  })
-);
-
-//检验分片
-router.get(
-  "/checkChunks",
-  asyncHandler(async (req, res) => {
-    const { hash } = req.query;
-    const result = await File.findOne({ hash });
-    if (result) {
-      const tempFileDir = path.resolve(tempDir, hash);
-      const uploadedChunk = fse.readdirSync(tempFileDir);
-      log.info(uploadedChunk); //打印上传过的切片
-      successResponse(res, uploadedChunk);
-    } else {
-      successResponse(res, false);
-    }
-  })
-);
-
-//文件合并操作,需要处理一下文件分片是否存在的问题
-router.get(
-  "/merge",
-  requireAuth,
-  asyncHandler(async (req, res) => {
-    const { hash, name } = req.query as { hash: string; name: string };
-    // 文件最终存储路径
-    const filePath = path.resolve(finalDir, hash);
-    fse.mkdir(filePath);
-    //获取临时文件分片路径
-    let tempFileDir = path.resolve(tempDir, hash);
-    const chunkPaths = fse.readdirSync(tempFileDir);
-    let mergeTasks: Promise<void>[] = [];
-    for (let index = 0; index < chunkPaths.length; index++) {
-      mergeTasks.push(
-        new Promise((resolve) => {
-          // 当前遍历的切片路径
-          const chunkPath = path.resolve(tempFileDir, index + "");
-          // 将当前遍历的切片切片追加到文件中
-          fse.appendFileSync(filePath, fse.readFileSync(chunkPath));
-          // 删除当前遍历的切片
-          resolve();
-        })
-      );
-    }
-    await Promise.all(mergeTasks);
-    // 等待所有切片追加到文件后，删除临时文件夹
-    fse.removeSync(tempFileDir);
-    const extname = path.extname(name);
-    const user = await getUser(req);
+  asyncHandler(async (req: AuthRequest, res) => {
     try {
-      await File.create({
-        userId: user.id,
-        hash,
-        name,
-        type: extname,
+      const { fileName, fileHash, totalSize, totalChunksSize, folderId } =
+        req.body;
+      console.log(req.body);
+
+      const userId = req.user?.id; // Better Auth 注入的用户 ID
+      // A. 权限校验：如果指定了 folderId，确保该文件夹属于用户
+      if (folderId) {
+        const folder = await Folder.findOne({ _id: folderId, ownerId: userId });
+        if (!folder)
+          return res.status(403).json({ message: "无权访问该文件夹" });
+      }
+      // B. 全局秒传 (Instant Upload)
+      // 只要库里有 hash 且状态正常，直接“盗链”其物理路径
+      const globalFile = await File.findOne({
+        hash: fileHash,
+        status: "active",
+      });
+      // 检查物理文件是否真的还存在（防御性编程）
+      if (globalFile) {
+        if (fse.existsSync(globalFile.storagePath)) {
+          const newFile = await File.create({
+            name: fileName,
+            extension: path.extname(fileName),
+            mimeType: globalFile.mimeType || "application/octet-stream",
+            size: totalSize,
+            hash: fileHash,
+            folderId: folderId || null,
+            ownerId: userId,
+            storagePath: globalFile.storagePath, // 核心：引用现有的路径
+            status: "active",
+          });
+          successResponse(res, { needUpload: false }, "restored");
+        }
+      }
+
+      // C. 断点续传 (Resumable Upload)
+      // 检查当前用户是否有未完成的任务
+      let task = await UploadTask.findOne({ fileHash, ownerId: userId });
+      if (!task) {
+        // D. 创建新任务
+        const taskTempDir = path.join(UPLOAD_TEMP_DIR, fileHash);
+        if (!fse.existsSync(taskTempDir)) fse.mkdirSync(taskTempDir);
+        task = await UploadTask.create({
+          fileHash,
+          fileName,
+          folderId: folderId || null,
+          totalSize,
+          totalChunks: totalChunksSize,
+          tempDir: taskTempDir,
+          ownerId: userId,
+          uploadedChunks: [],
+        });
+        console.log(task);
+      }
+      // 返回给前端：任务ID + 已上传的分片索引（前端用这个过滤不用传的片）
+      successResponse(res, {
+        status: "UPLOADING",
+        uploadId: task._id,
+        uploadedChunks: task.uploadedChunks,
       });
     } catch (error) {
       console.error(error);
+      res.status(500).json({ message: "初始化失败" });
     }
-    res.send({
-      msg: "合并成功",
-      success: true,
-    });
-  })
+  }),
 );
 
-router.get(
+/**
+ * 2. 分片上传 (Chunk)
+ */
+router.post(
+  "/uploadchunk",
+  requireAuth,
+  upload.single("chunk"),
+  asyncHandler(async (req, res) => {
+    const { uploadId, chunkIndex } = req.body;
+    const userId = req.user?.id;
+    if (!req.file) return res.status(400).send("No chunk file");
+
+    const task = await UploadTask.findOne({ _id: uploadId, ownerId: userId });
+    if (!task) {
+      await fse.remove(req.file.path);
+      return res.status(404).send("Task expired");
+    }
+
+    // 将分片移动到任务私有目录
+    const chunkPath = path.join(task.tempDir, chunkIndex.toString());
+    await fse.move(req.file.path, chunkPath, { overwrite: true });
+
+    // 记录进度
+    await UploadTask.updateOne(
+      { _id: uploadId },
+      { $addToSet: { uploadedChunks: Number(chunkIndex) } },
+    );
+    res.json({ success: true });
+  }),
+);
+
+/**
+ * 3. 完成合并 (Complete)
+ */
+router.post(
+  "/merge",
+  requireAuth,
+  asyncHandler(async (req: AuthRequest, res) => {
+    const { uploadId } = req.body;
+    const userId = req.user?.id;
+    const task = await UploadTask.findOne({ _id: uploadId, ownerId: userId });
+
+    if (task && task.totalChunks < task.uploadedChunks.length) {
+      UploadTask.deleteOne({ _id: uploadId });
+      return res.status(400).send("upload error retry");
+    }
+    if (!task || task.uploadedChunks.length !== task.totalChunks) {
+      return res.status(400).send("Chunks incomplete");
+    }
+
+    const finalFilename = `${task.fileHash}${path.extname(task.fileName)}`;
+    const finalPath = path.join(UPLOAD_FINAL_DIR, finalFilename);
+
+    // 再次确认全局秒传（防止并发合并）
+    const globalExists = await File.findOne({
+      hash: task.fileHash,
+      status: "active",
+    });
+    if (!globalExists || !(await fse.pathExists(finalPath))) {
+      // 执行流式合并
+      console.log("0");
+      await fse.ensureFile(finalPath);
+      console.log("1");
+      const writeStream = fse.createWriteStream(finalPath);
+      console.log("2");
+      for (let i = 0; i < task.totalChunks; i++) {
+        const chunkPath = path.join(task.tempDir, i.toString());
+        await pipeline(fse.createReadStream(chunkPath), writeStream, {
+          end: i === task.totalChunks - 1,
+        });
+      }
+    }
+    // 清理
+    await fse.remove(task.tempDir);
+    await UploadTask.deleteOne({ _id: uploadId });
+    // 写入 File 记录
+    const fileDoc = await File.create({
+      name: task.fileName,
+      size: task.totalSize,
+      hash: task.fileHash,
+      folderId: task.folderId,
+      ownerId: task.ownerId,
+      storagePath: finalPath,
+      status: "active",
+    });
+    res.json({ success: true, file: fileDoc });
+  }),
+);
+
+/**
+ * 文件删除接口
+ */
+router.post(
+  "/delete",
+  requireAuth,
+  asyncHandler(async (req: AuthRequest, res) => {
+    const { fileId } = req.body;
+    const userId = req.user?.id;
+    // 1. 查找并确认文件归属权
+    const file = await File.findOne({ _id: fileId, ownerId: userId });
+
+    if (!file) {
+      return res.status(404).json({ message: "文件不存在或无权操作" });
+    }
+
+    const { storagePath, hash } = file;
+
+    // 2. 从数据库中删除该用户的 File 记录
+    await File.deleteOne({ _id: fileId });
+
+    // 3. 【关键】引用计数检查：是否还有其他用户引用了这个物理文件？
+    const otherReferences = await File.countDocuments({
+      storagePath: storagePath,
+      // 如果你支持“回收站”功能，这里要确保回收站里的文件也算引用
+    });
+
+    if (otherReferences === 0) {
+      // 4. 没有任何人引用了，安全删除物理文件
+      // 建议：在生产环境中，物理删除可以放入异步任务或延迟执行
+      if (await fse.pathExists(storagePath)) {
+        await fse.remove(storagePath);
+        console.log(`物理文件已删除: ${storagePath} (Hash: ${hash})`);
+      }
+    } else {
+      console.log(`保留物理文件，仍有 ${otherReferences} 个引用。`);
+    }
+    res.json({ success: true, message: "文件删除成功" });
+  }),
+);
+
+// 文件列表接口
+router.post(
   "/list",
   requireAuth,
   asyncHandler(async (req, res) => {
-    const user = await getUser(req);
-    const { parentId } = req.query;
-    const result = await File.find({ userId: user.id, parentId }).sort({
-      name: 1,
+    const userId = req.user?.id;
+    const { parentId } = req.body;
+    // 1. 处理 parentId
+    // 约定：如果前端传 "root" 或者不传，则查询 parentId 为 null 的根目录
+    const currentParentId = !parentId || parentId === "root" ? null : parentId;
+    // 2. 并发查询文件夹和文件 (提升响应速度)
+    const [subFolders, files] = await Promise.all([
+      Folder.find({
+        ownerId: userId,
+        parentId: currentParentId,
+      }).sort({ name: 1 }), // 文件夹按名称排序
+      File.find({
+        ownerId: userId,
+        folderId: currentParentId,
+        status: "active",
+      }).sort({ createdAt: -1 }), // 文件按上传时间倒序
+    ]);
+    successResponse(res, {
+      folders: subFolders,
+      files: files,
     });
-    successResponse(res, result);
-  })
+  }),
 );
 
 router.post(
-  "/createfloder",
+  "/createfolder",
   requireAuth,
-  asyncHandler(async (req, res) => {
-    const user = await getUser(req);
+  asyncHandler(async (req: AuthRequest, res) => {
     const { name, parentId } = req.body;
-    const result = await File.create({
-      userId: user.id,
+    const userId = req.user?.id;
+    const folder = await Folder.create({
       name,
-      parentId,
+      parentId: parentId || null,
+      ownerId: userId,
     });
-    successResponse(res, result);
-  })
+    successResponse(res, folder);
+  }),
 );
-
-router.post(
-  "/rename",
-  requireAuth,
-  asyncHandler(async (req, res) => {
-    try {
-      const { _id, name } = req.body;
-      const result = await File.updateOne({ _id }, { name });
-      successResponse(res, result);
-    } catch (error) {
-      log.error(error);
-    }
-  })
-);
-
-router.get(
-  "/:Id",
-  asyncHandler(async (req, res) => {
-    const { Id } = req.params;
-    const result = await File.findById(Id);
-
-    if (!result) throw new Error("文件失效");
-    const filePath = path.resolve(finalDir, result.hash);
-    log.info(filePath);
-    if (fse.existsSync(filePath)) {
-      res.download(filePath, result.name);
-    } else {
-      await File.deleteOne({ _id: Id });
-      throw new Error("文件失效");
-    }
-  })
-);
-
 export default router;

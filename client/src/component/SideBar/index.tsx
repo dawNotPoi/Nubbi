@@ -89,7 +89,7 @@ const SideBar: React.FC = () => {
           <MenuItemContainer onClickCapture={() => navigate("file")}>
             <span>文件</span>
           </MenuItemContainer>
-          <MenuItemContainer onClickCapture={() => navigate("meeting")}>
+          <MenuItemContainer onClickCapture={() => navigate("meetings")}>
             <span>会议</span>
           </MenuItemContainer>
           <MenuItemContainer onClickCapture={() => navigate("/live/test")}>

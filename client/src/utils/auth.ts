@@ -3,6 +3,7 @@ const baseUrl = import.meta.env.VITE_API_URL;
 export const authClient = createAuthClient({
   baseURL: baseUrl,
 });
+console.log(import.meta.env.VITE_API_URL);
 
 export const { signIn, signUp, useSession, getSession } = authClient;
 
@@ -19,7 +20,7 @@ export const signInWithEmail = async (email: string, password: string) => {
 export const signUpWithEmail = async (
   email: string,
   password: string,
-  name: string
+  name: string,
 ) => {
   try {
     const result = await signUp.email({
@@ -38,11 +39,13 @@ export const signUpWithEmail = async (
 };
 
 // GitHub 登录
-export const signInWithGitHub = async () => {
+export const signInWithGitHub = async (
+  callbackURL = window.location.href,
+) => {
   try {
     const result = await signIn.social({
       provider: "github",
-      callbackURL: window.location.origin,
+      callbackURL,
       errorCallbackURL: window.location.origin + "/login",
     });
     return { success: true, data: result };
@@ -53,11 +56,13 @@ export const signInWithGitHub = async () => {
 };
 
 // Google 登录
-export const signInWithGoogle = async () => {
+export const signInWithGoogle = async (
+  callbackURL = window.location.href,
+) => {
   try {
     const result = await signIn.social({
       provider: "google",
-      callbackURL: window.location.origin,
+      callbackURL,
       errorCallbackURL: window.location.origin + "/login",
     });
     return { success: true, data: result };

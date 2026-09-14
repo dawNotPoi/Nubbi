@@ -14,7 +14,20 @@ export function errorHandler(err, req, res, next) {
   });
 }
 
+type AsyncRequestHandler = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => Promise<any>;
 export const asyncHandler =
-  (fn) => (req: Request, res: Response, next: NextFunction) => {
+  (fn: AsyncRequestHandler) =>
+  (req: AuthRequest, res: Response, next: NextFunction) => {
     Promise.resolve(fn(req, res, next)).catch(next);
   };
+
+export interface AuthRequest extends Request {
+  user?: {
+    id: string;
+    email: string;
+  };
+}

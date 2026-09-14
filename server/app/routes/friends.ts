@@ -1,5 +1,5 @@
 import express from "express";
-import { createSummary } from "../control/summary";
+import { createSummary } from "../controller/summary";
 import { asyncHandler } from "../middleware/common";
 import friends from "../models/friends";
 const router = express.Router();
@@ -21,7 +21,7 @@ router.post(
           message: error,
         });
       });
-  })
+  }),
 );
 
 export default router;

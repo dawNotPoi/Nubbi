@@ -36,11 +36,11 @@ interface PostTreeCache {
 export const postCacheAtom = atomWithStorage<PostCache>("post-cache", {});
 export const postTreeCacheAtom = atomWithStorage<PostTreeCache>(
   "post-tree-cache",
-  {}
+  {},
 );
 export const expandedNodesAtom = atomWithStorage<Set<string>>(
   "expanded-nodes",
-  new Set()
+  new Set(),
 );
 export const selectedPostIdAtom = atom<string | null>(null);
 
@@ -56,8 +56,8 @@ export const rootPostsAtom = atomFamily((owner: string) =>
       staleTime: 5 * 60 * 1000, // 5分钟内不重新请求
       gcTime: 10 * 60 * 1000, // 10分钟内保留在内存
     }),
-    () => queryClient
-  )
+    () => queryClient,
+  ),
 );
 // 文章子级查询
 export const postChildrenAtom = atomFamily((postId: string) =>
@@ -67,7 +67,7 @@ export const postChildrenAtom = atomFamily((postId: string) =>
       const response = await getDirectChildren(postId);
       return response.data;
     },
-  }))
+  })),
 );
 
 export const recentPostAtom = atomWithQuery(() => ({
@@ -88,7 +88,7 @@ export const postDetailAtom = atomFamily((postId: string) =>
     },
     staleTime: 2 * 60 * 1000, // 2分钟内不重新请求
     gcTime: 5 * 60 * 1000,
-  }))
+  })),
 );
 
 // 创建文章的 mutation atom
@@ -144,11 +144,9 @@ export const deleteSinglePostAtom = atomWithMutation(() => ({
     console.log(queryKey);
     await queryClient.cancelQueries({ queryKey });
     const previousPosts = queryClient.getQueryData<Post[]>(queryKey);
-    console.log(previousPosts);
-
     // 先从本地缓存中过滤掉要删除的文章
     queryClient.setQueryData<Post[]>(queryKey, (old = []) =>
-      (old as Post[]).filter((post: Post) => post._id !== postId)
+      (old as Post[]).filter((post: Post) => post._id !== postId),
     );
     return { previousPosts };
   },
@@ -200,8 +198,8 @@ export const updatePostPropertiesAtom = atomWithMutation(() => ({
     const previousPosts = queryClient.getQueryData<Post[]>(queryKey);
     queryClient.setQueryData<Post[]>(queryKey, (old = []) =>
       (old as Post[]).map((post: Post) =>
-        post._id === postId ? { ...post, ...properties } : post
-      )
+        post._id === postId ? { ...post, ...properties } : post,
+      ),
     );
     return { previousPosts };
   },

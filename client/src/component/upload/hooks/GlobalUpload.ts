@@ -25,9 +25,11 @@ export const useGlobalUpload = () => {
       return (
         task &&
         task.name === file.name &&
-        [UploadStatus.pending, UploadStatus.uploading, UploadStatus.paused].includes(
-          task.status
-        )
+        [
+          UploadStatus.pending,
+          UploadStatus.uploading,
+          UploadStatus.paused,
+        ].includes(task.status)
       );
     });
     if (hasSameNameTask) {
@@ -50,7 +52,7 @@ export const useGlobalUpload = () => {
       file: file,
       onChange: (status, progress) => {
         store.set(uploadTaskAtomFamily(taskId), (prevTask) =>
-          prevTask ? { ...prevTask, status, progress } : null
+          prevTask ? { ...prevTask, status, progress } : null,
         );
       },
       onFinish: () => {
@@ -60,7 +62,7 @@ export const useGlobalUpload = () => {
     });
     // 绑定 instance
     store.set(uploadTaskAtomFamily(taskId), (prevTask) =>
-      prevTask ? { ...prevTask, instance } : null
+      prevTask ? { ...prevTask, instance } : null,
     );
     instance.upload();
   };

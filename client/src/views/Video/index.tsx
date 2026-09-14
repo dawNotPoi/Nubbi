@@ -13,8 +13,10 @@ import {
 } from "react-icons/bi";
 import { SlScreenDesktop } from "react-icons/sl";
 import { TbMicrophoneFilled } from "react-icons/tb";
+import { useParams } from "react-router-dom";
 
 export default function Video() {
+  const { roomId = "room1" } = useParams();
   const {
     mediaStream,
     devices,
@@ -38,12 +40,12 @@ export default function Video() {
   useEffect(() => {
     if (mediaStream) {
       updateVideo(mediaStream);
-      connectToPeer("room1", mediaStream);
+      connectToPeer(roomId, mediaStream);
     }
     return () => {
       destroyPeerConnections();
     };
-  }, [mediaStream]);
+  }, [connectToPeer, destroyPeerConnections, mediaStream, roomId]);
 
   const handlerSwitchDevice = async (
     kind: "audioinput" | "videoinput",

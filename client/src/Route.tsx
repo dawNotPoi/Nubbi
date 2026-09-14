@@ -11,11 +11,12 @@ import {
 } from "react-router-dom";
 import { useSession } from "./utils/auth";
 import Blog from "./views/blog/Blog";
-import FileManager from "./views/FileManager";
+import FileManager from "./views/FileManage";
 import Home from "./views/Home";
 import { LoginPage } from "./views/Login";
+import Meetings from "./views/Mettings";
+import MeetingAccessGuard from "./views/Mettings/components/MeetingAccessGuard";
 import PostTable from "./views/PostTable";
-import Video from "./views/Video";
 
 const UserLayout = () => {
   return (
@@ -51,7 +52,7 @@ export const RouteWrapper = () => {
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/live/:roomId" element={<Video />} />
+          <Route path="/meeting/:roomId" element={<MeetingAccessGuard />} />
           <Route
             element={
               <ProtectedRoute>
@@ -60,8 +61,9 @@ export const RouteWrapper = () => {
             }
           >
             <Route path="home" element={<Home />} />
+            <Route path="meetings" element={<Meetings />} />
             <Route path="table" element={<PostTable />} />
-            <Route path="file" element={<FileManager />} />
+            <Route path="file/*" element={<FileManager />} />
             <Route path="note/:Id" element={<Blog />} />
           </Route>
         </Routes>

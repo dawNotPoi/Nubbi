@@ -40,18 +40,18 @@ export const useAuth = () => {
     []
   );
 
-  const loginWithGitHub = useCallback(async () => {
+  const loginWithGitHub = useCallback(async (callbackURL?: string) => {
     setLoading(true);
     setError(null);
-    const result = await signInWithGitHub();
+    const result = await signInWithGitHub(callbackURL);
     setLoading(false);
     return result;
   }, []);
 
-  const loginWithGoogle = useCallback(async () => {
+  const loginWithGoogle = useCallback(async (callbackURL?: string) => {
     setLoading(true);
     setError(null);
-    const result = await signInWithGoogle();
+    const result = await signInWithGoogle(callbackURL);
 
     setLoading(false);
     return result;

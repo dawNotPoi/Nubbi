@@ -1,6 +1,6 @@
 export const debounceWrapper = <T extends (...args: any[]) => any>(
   fn: T,
-  delay = 1000
+  delay = 1000,
 ) => {
   let timeoutId: ReturnType<typeof setTimeout>;
   return function (this: ThisParameterType<T>, ...args: Parameters<T>) {
@@ -13,6 +13,7 @@ export const debounceWrapper = <T extends (...args: any[]) => any>(
 
 // 格式化文件大小
 export const formatFileSize = (bytes: number): string => {
+  if (bytes == null || bytes === undefined) return "--";
   if (bytes === 0) return "0 B";
   const k = 1024;
   const sizes = ["B", "KB", "MB", "GB", "TB"];

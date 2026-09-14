@@ -1,5 +1,5 @@
 import express from "express";
-import { createSummary, findSummary } from "../control/summary";
+import { createSummary, findSummary } from "../controller/summary";
 import { asyncHandler } from "../middleware/common";
 const router = express.Router();
 
@@ -19,7 +19,7 @@ router.post(
         message: error,
       });
     }
-  })
+  }),
 );
 
 router.post(
@@ -38,6 +38,6 @@ router.post(
         message: error,
       });
     }
-  })
+  }),
 );
 export default router;

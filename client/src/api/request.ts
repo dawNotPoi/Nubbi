@@ -16,7 +16,7 @@ export default async function request<T>(
   url: string,
   body?: any,
   method = "post",
-  init?: any
+  init?: any,
 ): Promise<{
   code: 0 | 1;
   data: T;
@@ -56,19 +56,24 @@ export default async function request<T>(
   }
 }
 
-export function requestWithNoJson<T>(
+export async function requestWithNoJson<T>(
   url: string,
   body?: any,
   method = "post",
-  init?: any
+  init?: any,
 ): Promise<{
   code: 0 | 1;
   data: T;
   message: string;
 }> {
+  const token = await getAuthToken();
   //header文件由外部传入，设置json格式会导致不兼容formdata
   const config = {
     method,
+    credentials: "include",
+    headers: {
+      ...(token && { Authorization: `Bearer ${token}` }), // 添加认证头
+    },
     ...init,
   };
   if (body) config.body = body;
@@ -79,7 +84,7 @@ export function requestWithNoJson<T>(
 export function Get<T = any>(
   url: string,
   params?: { [key: string]: any },
-  options?: any
+  options?: any,
 ): Promise<{
   code: 0 | 1;
   data: T;
@@ -97,7 +102,9 @@ export function Get<T = any>(
         searchParams.append(key, value);
       }
     });
-    ResultUrl += `?${searchParams.toString()}`;
+    if (searchParams.toString()) {
+      ResultUrl += `?${searchParams.toString()}`;
+    }
   }
 
   return fetch(ResultUrl, {

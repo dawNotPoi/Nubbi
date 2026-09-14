@@ -11,7 +11,6 @@ const envSchema = z.object({
   // Frontend base url (used for auth redirects)
   CLIENT_URL: z.string().optional().default("http://localhost:5173"),
   // Override better-auth error redirect url (absolute or path relative to CLIENT_URL)
-  BETTER_AUTH_ERROR_URL: z.string().optional(),
   AUTH_GITHUB_ID: z.string(),
   AUTH_GITHUB_SECRET: z.string(),
   AUTH_GOOLE_ID: z.string(),

@@ -1,37 +1,75 @@
-import request, { Get, requestWithNoJson } from "./request";
+import request, { requestWithNoJson } from "./request";
+
+export interface FolderRecord {
+  _id: string;
+  name: string;
+  parentId?: string | null;
+  ownerId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface FileRecord {
+  _id: string;
+  name: string;
+  size?: number | string;
+  type?: string;
+  updatedAt?: string;
+  createdAt?: string;
+}
+
+export interface FileListData {
+  folders: FolderRecord[];
+  files: FileRecord[];
+}
+
+export interface InitUploadInstantData {
+  needUpload: false;
+}
+
+export interface InitUploadPendingData {
+  status: "UPLOADING";
+  uploadId: string;
+  uploadedChunks: number[];
+}
+
+export type InitUploadTaskData = InitUploadInstantData | InitUploadPendingData;
 
 export const listFiles = async (parentId?: string) => {
-  return Get("file/list", { parentId });
+  return request<FileListData>("file/list", { parentId });
 };
 
-export const createFloder = async (name: string, parentId?: string) => {
-  return request("file/createfloder", { parentId, name });
+export const createFloder = async (name?: string, parentId?: string) => {
+  return request<FolderRecord>("file/createfolder", { parentId, name });
 };
 
 export async function deleteFile(_id: string) {
   return request("file/delete", { _id }, "delete");
 }
 
-export async function checkFile(hash: string, name: string) {
-  return Get("file/checkFile", { hash, name });
-}
-
 export async function renameFile(_id: string, name: string) {
   return request("file/rename", { _id, name });
 }
 
-export const uploadChunk = async (formdata: FormData) => {
-  return requestWithNoJson("/file/upload", formdata);
+//初始化上传任务,hash检验
+export const initUploadTask = async (param: {
+  fileName: string;
+  fileHash: string;
+  totalSize: string;
+  totalChunksSize: string;
+  folderId?: string;
+}) => {
+  return request<InitUploadTaskData>("file/init", param);
 };
 
-export const mergeChunk = async ({
-  hash,
-  name,
-}: {
-  hash: string;
-  name: string;
-}) => {
-  return Get("/file/merge", { hash, name });
+//上传分片
+export const uploadChunk = async (formdata: FormData) => {
+  return requestWithNoJson("/file/uploadchunk", formdata);
+};
+
+//分片合并
+export const mergeChunk = async (uploadId: string) => {
+  return request("/file/merge", { uploadId });
 };
 
 export const imgToGitCloud = async (file: File): Promise<string> => {
@@ -43,8 +81,6 @@ export const imgToGitCloud = async (file: File): Promise<string> => {
   function getBase64(file: File) {
     return new Promise((resolve, reject) => {
       reader.onload = function (event) {
-        console.log("test", event);
-
         const fileContent = event.target?.result as string;
         if (!fileContent) {
           reject(new Error("文件为空"));

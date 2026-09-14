@@ -17,6 +17,10 @@ const meetingSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    password: {
+      type: String,
+      default: "",
+    },
   },
   {
     timestamps: true,

@@ -1,4 +1,4 @@
-import RecentMeeting from "./RecentMeeting";
+import RecentMeeting from "../../component/MeetingList/RecentMeeting";
 import RecentNoteList from "./RecentNoteList";
 
 export default function Home() {

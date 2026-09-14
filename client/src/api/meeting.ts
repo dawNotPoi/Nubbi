@@ -6,6 +6,12 @@ export interface MeetingType {
   startTime: number;
   createdAt: Date;
   duration: number;
+  password?: string;
+}
+
+export interface MeetingAccessResult {
+  passed: boolean;
+  reason: "OK" | "INVALID_PASSWORD" | "NOT_FOUND";
 }
 
 export async function getMeeting() {
@@ -13,7 +19,9 @@ export async function getMeeting() {
 }
 
 export async function createMeeting(
-  data: Pick<MeetingType, "title" | "startTime" | "duration">
+  data: Pick<MeetingType, "title" | "startTime" | "duration"> & {
+    password?: string;
+  }
 ) {
   return request(`meeting/create`, data);
 }
@@ -32,4 +40,15 @@ export async function vetMeeting(id: string, status: "approved" | "rejected") {
 
 export async function getAdminMeeting() {
   return Get<MeetingType[]>(`meeting/findAllMeeting`, { hostId: "dawn" });
+}
+
+export async function getMeetingById(id: string) {
+  return Get<MeetingType | null>("meeting/findById", { id });
+}
+
+export async function validateMeetingAccess(id: string, password?: string) {
+  return request<MeetingAccessResult>("meeting/validateAccess", {
+    id,
+    password: password ?? "",
+  });
 }

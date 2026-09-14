@@ -1,4 +1,4 @@
-import { checkFile, mergeChunk, uploadChunk } from "../api/file";
+﻿import { initUploadTask, mergeChunk, uploadChunk } from "../api/file";
 import Worker from "./worker?worker";
 
 export enum UploadStatus {
@@ -16,29 +16,32 @@ export enum ChunkStatus {
 }
 
 type Chunk = {
-  formData: FormData;
+  formData?: FormData;
   retries: number;
   status: ChunkStatus;
-  index: number;
+  chunkIndex: number;
+  file: Blob;
 };
 
-//哈希计算占据的进度百分比,使用整数
+//鍝堝笇璁＄畻鍗犳嵁鐨勮繘搴︾櫨鍒嗘瘮,浣跨敤鏁存暟
 const HASH_PERCENTAGE = 10;
 
-//文件上传类,用于管理文件上传的状态
+//鏂囦欢涓婁紶绫?鐢ㄤ簬绠＄悊鏂囦欢涓婁紶鐨勭姸鎬?
 export class Uploader {
-  private file: File; //上传的文件数据
+  private file: File; //涓婁紶鐨勬枃浠舵暟鎹?
   private chunks: Chunk[] = [];
   private status: UploadStatus = UploadStatus.pending;
-  private RestSize = 6; //分片上传限制 一般浏览器允许同时存在的请求数为6
-  private finishedCount = 0; //已上传分片数量
+  private RestSize = 6; //鍒嗙墖涓婁紶闄愬埗 涓€鑸祻瑙堝櫒鍏佽鍚屾椂瀛樺湪鐨勮姹傛暟涓?
+  private finishedCount = 0; //宸蹭笂浼犲垎鐗囨暟閲?
   private hash = "";
   private name = "";
-  private size = 5; //分片大小 MB
+  private size = 5; //鍒嗙墖澶у皬 MB
   public progress = 0;
-  //上传状态改变时触发
+  private uploadId: string | null = null;
+  private totalChunksSize = 0;
+  //涓婁紶鐘舵€佹敼鍙樻椂瑙﹀彂
   private onChange?: (status: UploadStatus, progress: number) => void;
-  //上传完成时触发
+  //涓婁紶瀹屾垚鏃惰Е鍙?
   private onFinish?: () => void;
   constructor(options: {
     file: File;
@@ -49,16 +52,17 @@ export class Uploader {
     this.name = options.file.name;
     this.onChange = options?.onChange;
     this.onFinish = options?.onFinish;
+    this.totalChunksSize = this.splitFileToChunks(this.file).length;
   }
 
-  //计算文件hash
+  //璁＄畻鏂囦欢hash
   private getHash(file: File): Promise<string> {
     return new Promise((resolve) => {
       const worker = new Worker();
       worker.onmessage = (event) => {
         const { data } = event;
         if (data?.percentage) {
-          this.progress = Math.round((data.percentage * HASH_PERCENTAGE) / 100); // Hash计算占总进度20%
+          this.progress = Math.round((data.percentage * HASH_PERCENTAGE) / 100); // Hash璁＄畻鍗犳€昏繘搴?0%
           this.onChange?.(this.status, this.progress);
         }
         if (data?.hash) {
@@ -69,13 +73,8 @@ export class Uploader {
       worker.postMessage(file);
     });
   }
-  // 进行文件分片
-  private splitFileToChunk(
-    file: File,
-    hash: string,
-    name: string,
-    size = this.size
-  ) {
+  // 杩涜鏂囦欢鍒嗙墖
+  private splitFileToChunks(file: File, size = this.size) {
     const chunkSize = 1024 * 1024 * size;
     const chunks: Chunk[] = [];
     for (
@@ -83,27 +82,18 @@ export class Uploader {
       start < file.size;
       start += chunkSize, index++
     ) {
-      const blob = file.slice(start, start + chunkSize); //超过部分，取到结尾
-      const formData = new FormData();
-      console.log(blob);
-      formData.append("file", blob);
-      formData.append("hash", hash);
-      formData.append("name", name);
-      formData.append("type", "file");
-      formData.append("index", index.toString());
-      formData.append("size", chunkSize.toString());
-      formData.append("start", start.toString());
+      const blob = file.slice(start, start + chunkSize); //瓒呰繃閮ㄥ垎锛屽彇鍒扮粨灏?
       chunks.push({
-        formData,
         retries: 0,
         status: ChunkStatus.pending,
-        index: index,
+        chunkIndex: index,
+        file: blob,
       });
     }
     return chunks;
   }
 
-  //后续要看一下，可能存在并发控制问题
+  //鍚庣画瑕佺湅涓€涓嬶紝鍙兘瀛樺湪骞跺彂鎺у埗闂
   private async start() {
     if (this.status !== UploadStatus.uploading) return;
     const len = this.chunks.length;
@@ -113,24 +103,25 @@ export class Uploader {
     const uploadNext = async () => {
       if (stopped || this.status !== UploadStatus.uploading) return;
       const chunk = this.chunks.find(
-        (item) => item.status === ChunkStatus.pending
+        (item) => item.status === ChunkStatus.pending,
       );
       if (!chunk) return;
       activeCount++;
-      console.log(chunk);
       try {
-        const res = await uploadChunk(chunk.formData);
+        await uploadChunk(chunk.formData!);
         chunk.status = ChunkStatus.success;
         this.finishedCount++;
-        // 更新进度
+        // 鏇存柊杩涘害
         const UPLOAD_PERCENTAGE = 100 - HASH_PERCENTAGE;
         this.progress =
           HASH_PERCENTAGE +
           Math.round((this.finishedCount / len) * UPLOAD_PERCENTAGE);
         this.onChange?.(this.status, this.progress);
-        // 检查是否全部完成
+        console.log(this.finishedCount, len);
+
+        // 妫€鏌ユ槸鍚﹀叏閮ㄥ畬鎴?
         if (this.finishedCount === len) {
-          await mergeChunk({ hash: this.hash, name: this.name });
+          await mergeChunk(this.uploadId!);
           this.status = UploadStatus.success;
           this.progress = 100;
           this.onChange?.(this.status, this.progress);
@@ -146,17 +137,17 @@ export class Uploader {
           stopped = true;
           return;
         } else {
-          chunk.status = ChunkStatus.pending; // 失败重试
+          chunk.status = ChunkStatus.pending; // 澶辫触閲嶈瘯
         }
       } finally {
         activeCount--;
-        // 继续上传下一个
+        // 缁х画涓婁紶涓嬩竴涓?
         if (!stopped && this.status === UploadStatus.uploading) {
           uploadNext();
         }
       }
     };
-    // 启动最大并发数的上传
+    // 鍚姩鏈€澶у苟鍙戞暟鐨勪笂浼?
     for (let i = 0; i < Math.min(maxConcurrency, len); i++) {
       uploadNext();
     }
@@ -177,18 +168,50 @@ export class Uploader {
     this.status = UploadStatus.uploading;
     this.onChange?.(this.status, this.progress);
     this.hash = await this.getHash(this.file);
-    const { data: checkRes } = await checkFile(this.hash, this.name);
-    console.log(checkRes);
-    //不需要再次上传
-    if (checkRes.needUpload == false) {
+    const { data } = await initUploadTask({
+      fileName: this.name,
+      fileHash: this.hash,
+      totalSize: this.file.size + "",
+      totalChunksSize: this.totalChunksSize + "",
+    });
+    //涓嶉渶瑕佸啀娆′笂浼?
+    if (data?.needUpload == false) {
       this.status = UploadStatus.success;
       this.progress = 100;
       this.onChange?.(this.status, this.progress);
       this.onFinish?.();
       return;
     }
-    //不存在则开始上传
-    this.chunks = this.splitFileToChunk(this.file, this.hash, this.name);
-    this.start();
+    //涓嶅瓨鍦ㄥ垯寮€濮嬩笂浼?
+    if (!("uploadId" in data)) return;
+    this.uploadId = data.uploadId;
+    const uploadedChunksIndex = data.uploadedChunks;
+    const AllChunks = this.splitFileToChunks(this.file);
+    this.chunks = AllChunks.filter((_, index) => {
+      if (uploadedChunksIndex.includes(index)) return false;
+      return true;
+    }).map((chunk) => {
+      const formData = new FormData();
+      formData.append("chunk", chunk.file);
+      formData.append("hash", this.hash);
+      formData.append("name", this.name);
+      formData.append("chunkIndex", chunk.chunkIndex + "");
+      formData.append("uploadId", data.uploadId);
+      return {
+        ...chunk,
+        formData,
+      };
+    });
+
+    //鍏ㄩ儴涓婁紶瀹屾垚璇锋眰鍚堝苟
+    if (this.chunks.length === 0) {
+      await mergeChunk(this.uploadId!);
+      this.status = UploadStatus.success;
+      this.progress = 100;
+      this.onChange?.(this.status, this.progress);
+      this.onFinish?.();
+    } else this.start();
   }
 }
+
+

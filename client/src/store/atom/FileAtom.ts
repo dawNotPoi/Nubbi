@@ -1,59 +1,58 @@
-import { atom } from "jotai";
-import { atomWithMutation } from "jotai-tanstack-query";
+﻿import { atom } from "jotai";
+import { atomWithMutation, atomWithQuery } from "jotai-tanstack-query";
 import { atomFamily } from "jotai/utils";
-import { createFloder, deleteFile, listFiles } from "../../api/file";
 import { queryClient } from "../../AppProvider";
+import { createFloder, deleteFile, listFiles } from "../../api/file";
 import { Uploader, UploadStatus } from "../../utils/file";
 
-export const listFilesAtom = atomWithMutation(() => ({
-  mutationKey: ["files"],
-  mutationFn: async (parentId?: string) => {
-    return listFiles(parentId);
-  },
-}));
+interface BreadcrumbItem {
+  id: string;
+  name: string;
+}
+
+export const breadcrumbsAtom = atom<BreadcrumbItem[]>([]);
+
+// 当前所在目录 id（面包屑最后一项；根目录为 undefined）
+export const currentFolderIdAtom = atom((get) => {
+  const crumbs = get(breadcrumbsAtom);
+  return crumbs[crumbs.length - 1]?.id;
+});
+
+export const listFilesAtom = atomWithQuery((get) => {
+  const parentId = get(currentFolderIdAtom);
+  return {
+    // 按目录维度缓存列表，便于精确刷新
+    queryKey: ["files", parentId ?? "root"],
+    queryFn: () => listFiles(parentId),
+  };
+});
 
 export const createFloderMutationAtom = atomWithMutation(() => ({
   mutationFn: async ({
     parentId,
-    name,
+    name = "新建文件夹",
   }: {
-    parentId: string;
-    name: string;
+    parentId?: string;
+    name?: string;
   }) => {
-    const res = await createFloder(parentId, name);
-    return res;
+    return createFloder(name, parentId);
+  },
+  onSuccess: (_data, variables) => {
+    // 新建成功后仅刷新当前目录列表
+    queryClient.invalidateQueries({
+      queryKey: ["files", variables.parentId ?? "root"],
+    });
   },
 }));
 
 export const deleteFileAtom = atomWithMutation(() => ({
   mutationFn: deleteFile,
-  // 乐观更新：先从本地缓存移除，失败则回滚
-  onMutate: async (fileId) => {
-    const queryKey = ["files"];
-    await queryClient.cancelQueries({ queryKey });
-    const previousFiles = queryClient.getQueryData<any[]>(queryKey);
-    // 先从本地缓存中过滤掉要删除的文件
-    queryClient.setQueryData<any[]>(queryKey, (old = []) =>
-      (old as any[]).filter((file) => file._id !== fileId)
-    );
-    return { previousFiles };
-  },
-  onError: (error, variables, context) => {
-    const queryKey = ["files"];
-    // 回滚本地缓存
-    if (context?.previousFiles) {
-      queryClient.setQueryData(queryKey, context.previousFiles);
-    }
-    console.error("删除文件失败:", error);
-  },
-  onSuccess: (data, variables, context) => {
-    const queryKey = ["files"];
-    queryClient.invalidateQueries({ queryKey });
-    console.log("文件删除成功:", variables);
+  onSuccess: () => {
+    // 刷新所有目录维度的文件列表
+    queryClient.invalidateQueries({ queryKey: ["files"] });
   },
 }));
 
-// 上传任务接口
 export interface UploadTask {
   id: string;
   name: string;
@@ -62,10 +61,8 @@ export interface UploadTask {
   instance: Uploader;
 }
 
-// 上传任务队列
 export const uploadTasksAtom = atom<string[]>([]);
 
-// 创建任务原子族
-export const uploadTaskAtomFamily = atomFamily((taskId: string) =>
-  atom<UploadTask | null>(null)
+export const uploadTaskAtomFamily = atomFamily((_id: String) =>
+  atom<UploadTask | null>(null),
 );

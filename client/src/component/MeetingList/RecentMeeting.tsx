@@ -6,7 +6,7 @@ import { useAtomValue } from "jotai";
 import { Calendars, Plus } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import CardWrapper from "./CardWrapper";
+import CardWrapper from "../../views/Home/CardWrapper";
 
 const AddMeetingModal = ({
   open,
@@ -21,6 +21,7 @@ const AddMeetingModal = ({
     title: "",
     startTime: dayjs().valueOf(),
     duration: 30,
+    password: "",
   });
   const creteMeetingMutation = useAtomValue(createMeetingAtom);
   const createMeeting = () => {
@@ -82,7 +83,7 @@ const AddMeetingModal = ({
                   const date = dayjs(val);
                   setFormData((v) => ({
                     ...v,
-                    date: date.valueOf(),
+                    startTime: date.valueOf(),
                   }));
                 }}
               />
@@ -96,7 +97,7 @@ const AddMeetingModal = ({
                 onChange={(val) =>
                   setFormData((v) => ({
                     ...v,
-                    time: val,
+                    duration: val,
                   }))
                 }
                 className="w-full"
@@ -121,12 +122,27 @@ const AddMeetingModal = ({
               />
             </div>
           </section>
+          <section className="flex gap-4 items-center">
+            <div>密码</div>
+            <div className="flex-1">
+              <Input.Password
+                placeholder="可选，留空表示无密码"
+                value={formData.password}
+                onChange={(e) =>
+                  setFormData((v) => ({
+                    ...v,
+                    password: e.target.value,
+                  }))
+                }
+              />
+            </div>
+          </section>
         </form>
       </div>
     </Modal>
   );
 };
-const RecentMeeting = ({ className }: { className?: string }) => {
+const RecentMeetings = ({ className }: { className?: string }) => {
   const { data: meetings } = useAtomValue(MeetingAtom);
   const [open, setOpen] = useState(false);
   const NoCotent = () => {
@@ -235,4 +251,4 @@ const RecentMeeting = ({ className }: { className?: string }) => {
   );
 };
 
-export default RecentMeeting;
+export default RecentMeetings;
