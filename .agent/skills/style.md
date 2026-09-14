@@ -21,6 +21,7 @@
 - 间距用 Tailwind scale（`p-3` `gap-4`），不写 `style={{ padding: '...' }}`
 - 圆形图标按钮：`<button className="size-10 grid place-items-center rounded-full">`
 - 固定宽度图标容器避免跳动：`size-10` / `size-12`
+- 表单元素统一高度；操作按钮（如验证码）固定宽度 `shrink-0`，输入框 `min-w-0 flex-1`
 - 滚动条：`scrollbar-thin scrollbar-thumb-border`
 
 ## 组件选用
