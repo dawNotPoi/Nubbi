@@ -8,7 +8,12 @@ import {
   Share2,
   Trash2,
 } from "lucide-react";
-import type { MouseEvent, ReactNode } from "react";
+import {
+  forwardRef,
+  type ButtonHTMLAttributes,
+  type MouseEvent,
+  type ReactNode,
+} from "react";
 import type { FileTableRow } from "./fileIcons";
 
 interface FileActionsProps {
@@ -92,22 +97,24 @@ const FileActions = ({
   );
 };
 
-const ControlButton = ({
-  title,
-  children,
-  onClick,
-}: {
+interface ControlButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   title: string;
   children: ReactNode;
-  onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
-}) => (
-  <button
-    className="rounded-md p-1 hover:bg-gray-200"
-    title={title}
-    onClick={onClick}
-  >
-    {children}
-  </button>
+}
+
+const ControlButton = forwardRef<HTMLButtonElement, ControlButtonProps>(
+  ({ title, children, className = "", ...props }, ref) => (
+    <button
+      ref={ref}
+      className={`rounded-md p-1 hover:bg-gray-200 ${className}`}
+      title={title}
+      {...props}
+    >
+      {children}
+    </button>
+  ),
 );
+
+ControlButton.displayName = "ControlButton";
 
 export default FileActions;
