@@ -29,6 +29,9 @@ const conversationSchema = new Schema<StoredConversation>({
       promptTokens: { type: Number, default: 0 },
       completionTokens: { type: Number, default: 0 },
       totalTokens: { type: Number, default: 0 },
+      // prompt 缓存命中/未命中 token 数，Provider 未返回时缺省。
+      promptCacheHitTokens: { type: Number },
+      promptCacheMissTokens: { type: Number },
     }, { _id: false }),
   },
 }, {

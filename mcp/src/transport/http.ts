@@ -48,7 +48,10 @@ export const createHttpApp = (config: HttpRuntimeConfig): Express => {
   const app = express();
   app.disable("x-powered-by");
   app.use(express.json({ limit: "3mb", type: ["application/json", "application/*+json"] }));
-  app.use(hostHeaderValidation(config.allowedHosts));
+  // MCP_ALLOWED_HOSTS 留空时不启用 Host 头校验（默认公开）；显式填写才按白名单拦截。
+  if (config.allowedHosts.length > 0) {
+    app.use(hostHeaderValidation(config.allowedHosts));
+  }
   app.use((request: Request, response: Response, next: NextFunction): void => {
     const origin = request.get("origin");
     if (origin && !isAllowedOrigin(origin, config.allowedOrigins)) {

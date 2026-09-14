@@ -62,7 +62,7 @@ MCP_TRANSPORT=http \
 NUBBI_API_URL=http://localhost:4000 \
 MCP_HOST=0.0.0.0 \
 MCP_PORT=3100 \
-MCP_ALLOWED_HOSTS=localhost,127.0.0.1,mcp.example.com \
+MCP_ALLOWED_HOSTS= \
 MCP_ALLOWED_ORIGINS=https://app.example.com \
 node mcp/dist/http.js
 ```

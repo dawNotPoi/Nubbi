@@ -1,6 +1,7 @@
 import { executeToolCalls, skillToolName } from "./tool-executor.js";
 import { requestModel } from "../model/model.js";
 import type { ExecutorResult, ProviderExecutorInput } from "../runtime/provider-executor.js";
+import { SESSION_CACHE_STATS_TOOL, sessionCacheStatsToolDefinition } from "../runtime/tool-gateway.js";
 import type { Skill } from "./skills.js";
 import type { MessagePart, ModelMessage, ModelTool } from "../types.js";
 
@@ -70,6 +71,8 @@ export const runAgent = async (
   input: ProviderExecutorInput,
 ): Promise<ExecutorResult> => {
   const modelTools = input.tools.map((tool) => tool.modelTool);
+  // 添加内置会话统计工具，模型可查询当前会话的缓存命中率。
+  modelTools.push(sessionCacheStatsToolDefinition);
   // 添加 skill 选择工具，模型通过它按需激活技能。
   if (input.skills.length) modelTools.push(skillTool(input.skills));
   const messages: ModelMessage[] = [
@@ -85,8 +88,8 @@ export const runAgent = async (
   const parts: MessagePart[] = [];
   // 本 Run 已激活的 Skill 集合，避免重复激活。
   const activeSkills = new Set<string>();
-  // 跨多轮累计 token 用量。
-  const usage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
+  // 跨多轮累计 token 用量：复用会话层传入的引用对象，内置统计工具可实时读取。
+  const usage = input.runUsage ?? { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
   // 有真实用量时返回对象，否则返回 null（如 Provider 未上报 usage）。
   const usageOrNull = () => (usage.totalTokens > 0 ? usage : null);
 
@@ -108,6 +111,12 @@ export const runAgent = async (
       usage.promptTokens += reply.usage.promptTokens;
       usage.completionTokens += reply.usage.completionTokens;
       usage.totalTokens += reply.usage.totalTokens;
+      if (reply.usage.promptCacheHitTokens !== undefined) {
+        usage.promptCacheHitTokens = (usage.promptCacheHitTokens ?? 0) + reply.usage.promptCacheHitTokens;
+      }
+      if (reply.usage.promptCacheMissTokens !== undefined) {
+        usage.promptCacheMissTokens = (usage.promptCacheMissTokens ?? 0) + reply.usage.promptCacheMissTokens;
+      }
     }
     // 原样保留模型返回的 assistant 消息，供后续轮次继续传递。
     messages.push(reply.assistantMessage);

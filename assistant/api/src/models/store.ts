@@ -29,6 +29,8 @@ const toConversation = (document: HydratedDocument<StoredConversation>): Convers
         promptTokens: document.tokenUsage.promptTokens ?? 0,
         completionTokens: document.tokenUsage.completionTokens ?? 0,
         totalTokens: document.tokenUsage.totalTokens ?? 0,
+        promptCacheHitTokens: document.tokenUsage.promptCacheHitTokens,
+        promptCacheMissTokens: document.tokenUsage.promptCacheMissTokens,
       }
     : undefined,
 });
@@ -52,6 +54,8 @@ export const listConversations = async (): Promise<Omit<Conversation, "messages"
           promptTokens: document.tokenUsage.promptTokens ?? 0,
           completionTokens: document.tokenUsage.completionTokens ?? 0,
           totalTokens: document.tokenUsage.totalTokens ?? 0,
+          promptCacheHitTokens: document.tokenUsage.promptCacheHitTokens,
+          promptCacheMissTokens: document.tokenUsage.promptCacheMissTokens,
         }
       : undefined,
   }));
@@ -137,25 +141,34 @@ export const setCodexThreadId = async (id: string, threadId: string): Promise<vo
 };
 
 /**
- * 累计对话的 token 用量（prompt/completion/total 各自累加）。
+ * 累计对话的 token 用量（prompt/completion/total 与缓存 token 各自累加）。
+ * 缓存字段缺失时跳过 $inc，避免把 undefined 写入数据库。
  * @param id 对话的唯一 ID。
  * @param usage 本次 Run 的用量增量。
  * @returns 无返回值；对话不存在时抛出异常。
  */
 export const accumulateTokenUsage = async (
   id: string,
-  usage: { promptTokens: number; completionTokens: number; totalTokens: number },
+  usage: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+    promptCacheHitTokens?: number;
+    promptCacheMissTokens?: number;
+  },
 ): Promise<void> => {
-  const result = await ConversationModel.updateOne(
-    { id },
-    {
-      $inc: {
-        "tokenUsage.promptTokens": usage.promptTokens,
-        "tokenUsage.completionTokens": usage.completionTokens,
-        "tokenUsage.totalTokens": usage.totalTokens,
-      },
-    },
-  ).exec();
+  const increment: Record<string, number> = {
+    "tokenUsage.promptTokens": usage.promptTokens,
+    "tokenUsage.completionTokens": usage.completionTokens,
+    "tokenUsage.totalTokens": usage.totalTokens,
+  };
+  if (usage.promptCacheHitTokens !== undefined) {
+    increment["tokenUsage.promptCacheHitTokens"] = usage.promptCacheHitTokens;
+  }
+  if (usage.promptCacheMissTokens !== undefined) {
+    increment["tokenUsage.promptCacheMissTokens"] = usage.promptCacheMissTokens;
+  }
+  const result = await ConversationModel.updateOne({ id }, { $inc: increment }).exec();
   if (!result.matchedCount) throw new Error("对话不存在");
 };
 

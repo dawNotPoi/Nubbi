@@ -35,6 +35,7 @@ export const reduceEvent = (parts: MessagePart[], event: StreamEvent): MessagePa
   if (event.type === "tool-start") {
     return [...parts, {
       type: "tool",
+      callId: event.callId,
       server: event.server,
       tool: event.tool,
       arguments: event.arguments,
@@ -43,18 +44,27 @@ export const reduceEvent = (parts: MessagePart[], event: StreamEvent): MessagePa
     }];
   }
   if (event.type === "tool-result") {
+    // 优先用 callId 精确定位；历史事件无 callId 时回退到“server+tool+运行中”匹配。
     let index = -1;
     for (let candidate = parts.length - 1; candidate >= 0; candidate -= 1) {
       const part = parts[candidate];
-      if (part?.type === "tool" && part.server === event.server
-        && part.tool === event.tool && part.status === "running") {
+      if (part?.type !== "tool" || part.status !== "running") continue;
+      if (event.callId !== undefined) {
+        if (part.callId === event.callId) { index = candidate; break; }
+      } else if (part.server === event.server && part.tool === event.tool) {
         index = candidate;
         break;
       }
     }
     return parts.map((part, partIndex) =>
       partIndex === index && part.type === "tool"
-        ? { ...part, result: event.result, status: "done" }
+        ? {
+            ...part,
+            result: event.result,
+            success: event.success,
+            durationMs: event.durationMs,
+            status: "done",
+          }
         : part,
     );
   }

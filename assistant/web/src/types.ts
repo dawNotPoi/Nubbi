@@ -6,11 +6,15 @@ export type ConversationSummary = {
   tokenUsage?: TokenUsage;
 };
 
-/** 累计的 token 用量（prompt / completion / total）。 */
+/** 累计的 token 用量（prompt / completion / total 与缓存统计）。 */
 export type TokenUsage = {
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
+  // prompt 缓存命中的 token 数（Provider 未返回时缺失）。
+  promptCacheHitTokens?: number;
+  // prompt 缓存未命中的 token 数（Provider 未返回时缺失）。
+  promptCacheMissTokens?: number;
 };
 
 /** 消息内的内容块：文本、Skill、工具审批/执行记录或错误，逐块渲染。 */
@@ -33,6 +37,8 @@ export type MessagePart =
       arguments: Record<string, unknown>;
       result: string;
       success?: boolean;
+      // 工具实际执行耗时（毫秒，不含审批等待）；历史消息可能缺失。
+      durationMs?: number;
       // status 为“运行中/完成”，仅客户端用于展示进度。
       status?: "running" | "done";
     }
@@ -141,14 +147,14 @@ export type StreamEvent = (
       tool: string;
       arguments: Record<string, unknown>;
     }
-  | { type: "tool-result"; callId?: string; server: string; tool: string; result: string; success?: boolean }
+  | { type: "tool-result"; callId?: string; server: string; tool: string; result: string; success?: boolean; durationMs?: number }
   | ApprovalRequest
   | { type: "approval-resolved"; approvalId: string; approved: boolean }
   | { type: "text-delta"; text: string }
   | { type: "reasoning-delta"; text: string }
   | { type: "run-started"; provider: "openai-compatible" | "codex-subscription" }
   | { type: "context-status"; usedTokens: number; maxTokens: number; truncated: boolean }
-  | { type: "token-usage"; promptTokens: number; completionTokens: number; totalTokens: number }
+  | { type: "token-usage"; promptTokens: number; completionTokens: number; totalTokens: number; promptCacheHitTokens?: number; promptCacheMissTokens?: number }
   | { type: "assistant-message"; messageId: string }
   | { type: "run-completed"; messageId: string }
   | { type: "run-failed"; messageId: string; message: string; cancelled: boolean }

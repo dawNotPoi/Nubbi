@@ -100,8 +100,9 @@ ChatGPT 登录和订阅凭据只由 Assistant API 所在机器上的 Codex CLI �
 1. 客户端创建或选择对话，通过 SSE 发送消息并接收增量事件。
 2. OpenAI-compatible 模式由 LangGraph 状态图执行；ChatGPT 订阅模式由 Codex App Server 执行线程和轮次。
 3. 文本、Skill、工具状态、审批结果和错误作为消息 part 回传并持久化。
-4. 同一对话同一时间只允许一个生成任务，不同对话可以并发。
-5. 客户端断开、用户停止生成或审批超时后，API 终止对应轮次并清理待审批项。
+4. 工具调用以独立 part 随助手消息持久化，与对话绑定；历史对话加载时按消息原样还原完整调用链，无需额外接口。
+5. 同一对话同一时间只允许一个生成任务，不同对话可以并发。
+6. 客户端断开、用户停止生成或审批超时后，API 终止对应轮次并清理待审批项。
 
 ## 审批事件协议
 
@@ -112,6 +113,20 @@ ChatGPT 登录和订阅凭据只由 Assistant API 所在机器上的 Codex CLI �
 | `approval-resolved` | SSE API → 客户端 | 更新审批结果并关闭交互界面 |
 
 审批 ID 只在当前待处理调用中有效。重复提交、未知 ID 或已结束审批必须返回冲突或不存在。
+
+## 工具调用链路展示
+
+Web 端对话内以紧凑卡片展示每次工具调用，参考 DeepSeek Harness 的消息流样式：
+
+- 卡片头部：状态标记（运行中 / 成功 / 失败）+ Server / 工具名 + 耗时（`durationMs`，历史消息缺失时不展示）。
+- 参数区：JSON 可折叠展示，默认收起；过大参数由服务端截断为 preview。
+- 结果区：可折叠展示，失败结果以错误色呈现。
+- 运行中卡片显示进度标记，结束后由 `tool-result` 事件更新为终态。
+
+数据与扩展性约定：
+
+- 每次调用以 `callId` 为唯一键，贯穿 `tool-start` / `tool-result` 事件与持久化 tool part；未来新增按 Run 回放链路时，可直接按 `conversationId + runId` 聚合 `run_events` 或按 `callId` 关联消息 part，无需迁移历史数据。
+- 链路展示只读依赖已持久化的消息 part 与 `run_events`，不新增专用存储。
 
 ## 配置与数据
 
@@ -158,6 +173,8 @@ Assistant 以 `RuntimeSession` 作为单次对话运行入口。Session 负责�
 
 所有运行事件携带 `eventId`、`runId`、`conversationId`、`sequence` 和 `timestamp`。事件覆盖 Run 生命周期、Skill 激活、工具调用、审批、工具结果与最终消息。`text-delta` 仅通过 SSE 实时发送，不写入运行日志；最终文本随消息和终止事件持久化。
 
+`tool-result` 事件携带 `durationMs`（工具实际执行耗时，不含审批等待），同时写入持久化的 tool part；历史消息没有该字段时前端不展示耗时。事件携带 `callId`，客户端按 callId 关联 `tool-start` 与 `tool-result`，并发调用同一工具时不会错配。
+
 语义事件以独立文档写入 MongoDB `run_events` 集合，会话与最终消息写入 `conversations` 集合。API 启动时，缺少终止事件的历史 Run 被追加标记为 `abandoned`，但不恢复模型请求或待审批操作。
 
 ### ContextBuilder
@@ -167,6 +184,8 @@ ContextBuilder 将已保存的消息转换成 Provider 无关上下文，保留�
 ### Tool Gateway
 
 Tool Gateway 是所有外部工具调用的唯一执行入口，统一负责工具查找、JSON Schema 参数校验、审批策略、调用、结果标准化和事件记录。
+
+内置只读工具 `assistant_session_cache_stats`：模型可在对话中查询当前会话的 prompt 缓存命中率。数据来自模型 API usage 的 `prompt_cache_hit_tokens` / `prompt_cache_miss_tokens`（如 DeepSeek），按对话累计持久化；返回 `{ hit_tokens, miss_tokens, hit_rate }`，`hit_rate` 为 0~1 浮点数。Provider 未返回缓存字段或 Codex 订阅模式（暂不采集 usage）时命中率返回 0。
 
 - `readOnlyHint=true` 的工具可自动执行。
 - 创建、修改、破坏性工具逐次审批。

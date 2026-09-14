@@ -27,6 +27,8 @@ export type AgentEvent =
       tool: string;
       result: string;
       success: boolean;
+      // 工具实际执行耗时（毫秒，不含审批等待）；历史事件可能缺失。
+      durationMs?: number;
     }
   | {
       type: "approval-request";
@@ -57,6 +59,8 @@ export type RuntimeEventPayload = AgentEvent
       promptTokens: number;
       completionTokens: number;
       totalTokens: number;
+      promptCacheHitTokens?: number;
+      promptCacheMissTokens?: number;
     }
   | { type: "assistant-message"; messageId: string }
   | { type: "run-completed"; messageId: string }

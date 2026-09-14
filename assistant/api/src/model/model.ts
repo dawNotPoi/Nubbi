@@ -63,6 +63,10 @@ export type ModelUsage = {
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
+  // prompt 缓存命中的 token 数（DeepSeek 等 Provider 返回，可能缺失）。
+  promptCacheHitTokens?: number;
+  // prompt 缓存未命中的 token 数（DeepSeek 等 Provider 返回，可能缺失）。
+  promptCacheMissTokens?: number;
 };
 
 /** requestModel 的完整返回结构：文本、推理内容、工具调用与可回传的 assistant 消息。 */
@@ -83,12 +87,22 @@ const parseNonStreaming = (json: unknown): ModelReply => {
   const parsed = responseSchema.safeParse(json);
   if (!parsed.success) throw new Error("模型返回了无法解析的响应");
   const message = parsed.data.choices[0]!.message;
-  const raw = json as { usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } };
+  const raw = json as {
+    usage?: {
+      prompt_tokens?: number;
+      completion_tokens?: number;
+      total_tokens?: number;
+      prompt_cache_hit_tokens?: number;
+      prompt_cache_miss_tokens?: number;
+    };
+  };
   const usage = raw.usage
     ? {
         promptTokens: raw.usage.prompt_tokens ?? 0,
         completionTokens: raw.usage.completion_tokens ?? 0,
         totalTokens: raw.usage.total_tokens ?? 0,
+        promptCacheHitTokens: raw.usage.prompt_cache_hit_tokens,
+        promptCacheMissTokens: raw.usage.prompt_cache_miss_tokens,
       }
     : null;
   const toolCalls: ModelToolCall[] = (message.tool_calls ?? []).map((call) => ({
@@ -202,7 +216,13 @@ export const requestModel = async (
     if (!data || data === "[DONE]") return;
     let payload: {
       choices?: Array<{ delta?: StreamDelta }>;
-      usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+      usage?: {
+        prompt_tokens?: number;
+        completion_tokens?: number;
+        total_tokens?: number;
+        prompt_cache_hit_tokens?: number;
+        prompt_cache_miss_tokens?: number;
+      };
     };
     try {
       payload = JSON.parse(data) as typeof payload;
@@ -215,6 +235,8 @@ export const requestModel = async (
         promptTokens: payload.usage.prompt_tokens ?? 0,
         completionTokens: payload.usage.completion_tokens ?? 0,
         totalTokens: payload.usage.total_tokens ?? 0,
+        promptCacheHitTokens: payload.usage.prompt_cache_hit_tokens,
+        promptCacheMissTokens: payload.usage.prompt_cache_miss_tokens,
       };
     }
     const delta = payload.choices?.[0]?.delta;
