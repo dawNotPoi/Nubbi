@@ -3,19 +3,58 @@
 ## 工作流
 
 ```
-git commit → pnpm agent review → 审查 + 记录 + 更新 PRD
+沟通方案 → 更新 PRD → 编写代码 → review → 更新 changes → commit
 ```
 
-**审查时做的事**：
+### 第一步：沟通 & 更新 PRD
+
+1. 与用户确认功能需求或修复方案，达成一致后再动代码
+2. 如涉及 API、组件接口或数据模型变动，**先**更新 `docs/<module>/PRD.md`，再开始编码
+3. 读 `docs/<module>/PRD.md` 理解现有架构和可复用组件，避免重复造轮子
+
+### 第二步：编写代码
+
+1. 遵循下方「审查检查清单」和「代码约束」
+2. 按模块索引确认文件放置位置
+
+### 第三步：review
+
+代码改动完成后执行：
+
+```bash
+pnpm agent review              # review 最近一次提交
+pnpm agent review <hash>       # review 指定提交
+pnpm agent review --today      # review 今天所有提交
+```
+
+review 做的事：
 1. 对照下方检查清单逐项审查代码
 2. 按模块索引匹配变更涉及哪些模块
-3. 结果写入 `docs/changes/YYYY-MM-DD.md`
-4. 如 API/组件/数据模型有变，更新对应 `docs/<module>/PRD.md`
+3. 将结果写入 `docs/changes/YYYY-MM-DD.md`（见第四步）
 
-**开发时做的事**：
-1. 读 `docs/<module>/PRD.md` 理解模块架构和可复用组件
-2. 遵循下方约束编写代码
-3. 完成后 `pnpm agent review`
+### 第四步：更新 changes（commit 前必做）
+
+在 `docs/changes/YYYY-MM-DD.md` 中追加本次变更记录：
+
+```markdown
+## [HH:mm] commit: `<hash>` - <message>
+
+**提交者**: <author>
+**变更文件**:
+- path/to/file.ts（新建/修改）
+
+**Review 结果**: ✅ 通过 / ⚠️ 警告 / ❌ 未通过
+
+### 变更摘要
+- 简述改动内容和原因
+```
+
+- 文件不存在时按 `docs/changes/_TEMPLATE.md` 新建
+- changes 文件自身的 commit 不需要在 changes 里再记录
+
+### 第五步：commit
+
+确认 changes 已更新后再执行 `git commit`。
 
 ## 命令
 
