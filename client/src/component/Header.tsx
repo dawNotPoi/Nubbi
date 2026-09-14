@@ -18,7 +18,12 @@ export const Header = ({
       )}
     >
       <button
-        className="flex items-center justify-center rounded-md text-neutral-500 opacity-0 transition-all duration-200 hover:bg-neutral-100 hover:text-neutral-800 group-hover:opacity-100"
+        className={clsx(
+          "flex items-center justify-center rounded-md text-neutral-500 transition-all duration-200 hover:bg-neutral-100 hover:text-neutral-800",
+          sideBarOpened
+            ? "opacity-0 group-hover:opacity-100"
+            : "opacity-100",
+        )}
         onClick={() => {
           setSideBarOpened(!sideBarOpened);
         }}
