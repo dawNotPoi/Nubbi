@@ -1,9 +1,11 @@
 import { message } from "antd";
-import { useSetAtom, useStore } from "jotai";
+import { useAtomValue, useSetAtom, useStore } from "jotai";
+import { useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { queryClient } from "../../../AppProvider";
 import {
   UploadTask,
+  hasActiveUploadAtom,
   uploadTaskAtomFamily,
   uploadTasksAtom,
 } from "../../../store/atom/FileAtom";
@@ -13,6 +15,17 @@ import { Uploader, UploadStatus } from "../../../utils/file";
 export const useGlobalUpload = () => {
   const setUploadTasks = useSetAtom(uploadTasksAtom);
   const store = useStore();
+  const hasActiveUpload = useAtomValue(hasActiveUploadAtom);
+
+  useEffect(() => {
+    if (!hasActiveUpload) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [hasActiveUpload]);
   const createUploadTask = (file: File) => {
     // 简单的上传前检测：空文件和同名未完成任务
     if (!file || file.size === 0) {

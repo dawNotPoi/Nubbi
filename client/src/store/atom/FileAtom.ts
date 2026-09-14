@@ -101,3 +101,15 @@ export const uploadTasksAtom = atom<string[]>([]);
 export const uploadTaskAtomFamily = atomFamily((_id: string) =>
   atom<UploadTask | null>(null),
 );
+
+export const hasActiveUploadAtom = atom((get) => {
+  const ids = get(uploadTasksAtom);
+  return ids.some((id) => {
+    const task = get(uploadTaskAtomFamily(id));
+    return (
+      task &&
+      (task.status === UploadStatus.uploading ||
+        task.status === UploadStatus.paused)
+    );
+  });
+});
