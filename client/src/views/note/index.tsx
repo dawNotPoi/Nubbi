@@ -18,8 +18,8 @@ import "react-markdown-editor-lite/lib/index.css";
 import { useParams } from "react-router-dom";
 import "./index.css";
 import NoteBreadcrumb from "./NoteBreadcrumb";
-import NoteCard from "./NoteCard";
-import NoteMeta from "./NoteMeta";
+import NoteCover from "./NoteCover";
+import NoteTags from "./NoteTags";
 
 const DEFAULT_TITLE = "未命名文档";
 const NOTE_DISPLAY_MODE_KEY = "note-display-mode";
@@ -249,26 +249,44 @@ export default function Note() {
           </div>
         </div>
       </Header>
-      <NoteCard data={data} onUpdate={updateProperties} />
       <main className="mt-10 w-full items-center">
         <div
           className={`note-editor-shell mx-auto ${
             displayMode === "split" ? "note-editor-shell--wide" : ""
           }`}
         >
-          <input
-            className="w-full px-2  text-5xl font-extrabold outline-none"
-            onChange={(event) => {
-              setTitle(event.target.value);
-            }}
-            placeholder={DEFAULT_TITLE}
-            value={title}
-          />
-          <NoteMeta
-            className="mt-4 -z-10"
-            data={data}
-            onUpdate={updateProperties}
-          />
+          <NoteCover data={data} mode="cover" onUpdate={updateProperties} />
+          <div className="group/title relative">
+            {(!data.cover || data.tags.length === 0) ? (
+              <div className="pointer-events-none absolute left-1 top-0 z-50 -translate-y-full pb-2 opacity-0 transition-opacity group-hover/title:opacity-100 group-focus-within/title:opacity-100">
+                <div className="pointer-events-auto flex items-center gap-2">
+                  {!data.cover ? (
+                    <NoteCover
+                      data={data}
+                      mode="trigger"
+                      onUpdate={updateProperties}
+                    />
+                  ) : null}
+                  {data.tags.length === 0 ? (
+                    <NoteTags
+                      data={data}
+                      mode="trigger"
+                      onUpdate={updateProperties}
+                    />
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+            <NoteTags data={data} mode="tags" onUpdate={updateProperties} />
+            <input
+              className="w-full px-2 text-5xl font-extrabold outline-none"
+              onChange={(event) => {
+                setTitle(event.target.value);
+              }}
+              placeholder={DEFAULT_TITLE}
+              value={title}
+            />
+          </div>
           {editorContent}
         </div>
       </main>

@@ -104,6 +104,7 @@ export function Select({
   placeholder = "Empty",
   creatable = false,
   onDeleteOption,
+  variant = "field",
 }: {
   className?: string;
   value?: string | string[];
@@ -113,6 +114,7 @@ export function Select({
   placeholder?: string;
   creatable?: boolean;
   onDeleteOption?: (value: string) => void;
+  variant?: "field" | "inline";
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -213,8 +215,9 @@ export function Select({
     setOpen(false);
   };
 
+  const isInline = variant === "inline";
   const triggerContent = open ? (
-    <div className="flex min-h-9 items-center gap-2">
+    <div className={clsx("flex items-center gap-2", isInline ? "min-h-7" : "min-h-9")}>
       <div className="flex flex-1 flex-wrap items-center gap-1.5">
         {selectedValues.map((item) => {
           const option = displayOptions.find(
@@ -284,12 +287,15 @@ export function Select({
             }
           }}
           placeholder={selectedValues.length ? undefined : placeholder}
-          className="min-w-[24px] flex-1 border-none bg-transparent py-1 text-sm text-stone-700 outline-none"
+          className={clsx(
+            "min-w-[24px] flex-1 border-none bg-transparent text-sm text-stone-700 outline-none",
+            isInline ? "py-0.5" : "py-1",
+          )}
         />
       </div>
     </div>
   ) : (
-    <div className="flex min-h-9 items-center gap-2">
+    <div className={clsx("flex items-center gap-2", isInline ? "min-h-7" : "min-h-9")}>
       <div className="flex flex-1 flex-wrap items-center gap-1.5">
         {selectedValues.length ? (
           selectedValues.map((item) => {
@@ -314,7 +320,7 @@ export function Select({
             );
           })
         ) : (
-          <span className="text-sm text-stone-400">{placeholder}</span>
+          <span className={clsx("text-sm", isInline ? "text-current" : "text-stone-400")}>{placeholder}</span>
         )}
       </div>
     </div>
@@ -331,10 +337,13 @@ export function Select({
         <div
           onClick={() => setOpen(true)}
           className={clsx(
-            "w-full rounded-lg border border-transparent px-2 py-1.5 transition",
+            "rounded-lg border border-transparent transition",
+            isInline ? "inline-flex max-w-full" : "w-full px-2 py-1.5",
             open
               ? "border-stone-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
-              : "hover:bg-stone-50",
+              : isInline
+                ? ""
+                : "hover:bg-stone-50",
             className,
           )}
         >
@@ -343,6 +352,20 @@ export function Select({
       }
     >
       <div className="w-full rounded-xl border border-stone-200 bg-white p-2 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+        {mode === "multiple" && selectedValues.length > 0 ? (
+          <div className="mb-2 flex justify-end">
+            <button
+              type="button"
+              onClick={() => {
+                emitChange([]);
+                setOpen(false);
+              }}
+              className="rounded px-2 py-1 text-sm text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700"
+            >
+              移除
+            </button>
+          </div>
+        ) : null}
         <div className="space-y-1">
           {filteredOptions.length ? (
             filteredOptions.map((option, index) => {
