@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { bearer } from "better-auth/plugins";
+import { AsyncLocalStorage } from "async_hooks";
 import log from "@/common/chalk";
 import { db } from "./db";
 import { createEmailVerificationCode } from "./emailVerification";
@@ -29,6 +30,15 @@ const serializeAuthLogArg = (value: unknown) => {
   }
 
   return String(value);
+};
+
+const verifiedRegisterStorage = new AsyncLocalStorage<{ email: string }>();
+
+const normalizeEmail = (email: string) => email.trim().toLowerCase();
+
+const isVerifiedRegisterEmail = (email: string) => {
+  const verifiedRegister = verifiedRegisterStorage.getStore();
+  return verifiedRegister?.email === normalizeEmail(email);
 };
 
 export const auth = betterAuth({
@@ -79,6 +89,10 @@ export const auth = betterAuth({
     sendOnSignUp: true,
     expiresIn: 60 * 60 * 24,
     sendVerificationEmail: async ({ user, token }) => {
+      if (isVerifiedRegisterEmail(user.email)) {
+        return;
+      }
+
       const verificationCode = await createEmailVerificationCode(
         user.email,
         token,
@@ -88,6 +102,23 @@ export const auth = betterAuth({
       if (!result.success) {
         throw new Error("Failed to send verification email");
       }
+    },
+  },
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => {
+          if (!isVerifiedRegisterEmail(user.email)) {
+            return;
+          }
+
+          return {
+            data: {
+              emailVerified: true,
+            },
+          };
+        },
+      },
     },
   },
   account: {
@@ -117,6 +148,31 @@ export const auth = betterAuth({
   },
   plugins: [bearer()],
 });
+
+export const signUpVerifiedEmailWithPassword = async ({
+  email,
+  password,
+  name,
+  headers,
+}: {
+  email: string;
+  password: string;
+  name: string;
+  headers?: HeadersInit;
+}) =>
+  verifiedRegisterStorage.run(
+    { email: normalizeEmail(email) },
+    async () =>
+      auth.api.signUpEmail({
+        body: {
+          email,
+          password,
+          name,
+          callbackURL: env.CLIENT_URL,
+        },
+        headers,
+      }),
+  );
 
 export async function getUser(
   req: any,

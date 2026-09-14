@@ -2,9 +2,18 @@ import { useAuth } from "@/hooks/useAuth";
 import { routes } from "@/utils/routes";
 import clsx from "clsx";
 import { useSetAtom } from "jotai";
-import { ChevronsLeft, FolderTree, House, Presentation } from "lucide-react";
-import React from "react";
+import {
+  ChevronsLeft,
+  FolderTree,
+  House,
+  LogOut,
+  Presentation,
+  Trash2,
+} from "lucide-react";
+import React, { useState } from "react";
 import { sideBarOpenedAtom } from "../../store/atom/common";
+import { Modal } from "antd";
+import AccountDeletionModal from "../AccountDeletionModal";
 import Image from "../UI/Image";
 import Popover from "../UI/Popover";
 import { IconButton, MenuItemContainer } from "./components";
@@ -14,6 +23,19 @@ import ResizeTab from "./ResizeTab";
 const SideBar: React.FC = () => {
   const setSideBarOpened = useSetAtom(sideBarOpenedAtom);
   const { user, logout } = useAuth();
+  const [deletionModalOpen, setDeletionModalOpen] = useState(false);
+
+  const handleRequestAccountDeletion = () => {
+    Modal.confirm({
+      title: "确认注销账号？",
+      content: "注销会删除账号、登录会话以及个人数据。继续后需要邮箱验证码验证。",
+      okText: "继续验证",
+      cancelText: "取消",
+      okButtonProps: { danger: true },
+      onOk: () => setDeletionModalOpen(true),
+    });
+  };
+
   return (
     <ResizeTab
       className={clsx("group/sidebar px-3 bg-sidebar py-2 font-medium ")}
@@ -34,12 +56,20 @@ const SideBar: React.FC = () => {
             }
           >
             {
-              <div className="py-2 w-[120px]">
+              <div className="w-[144px] space-y-1 p-1.5">
                 <button
-                  className="px-2 py-2 w-full hover:bg-normal/60 text-slate-700  text-center"
+                  className="flex h-9 w-full items-center gap-2 rounded-md px-2 text-left text-sm text-red-600 transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200"
+                  onClick={handleRequestAccountDeletion}
+                >
+                  <Trash2 size={15} />
+                  <span>注销账号</span>
+                </button>
+                <button
+                  className="flex h-9 w-full items-center gap-2 rounded-md px-2 text-left text-sm text-slate-700 transition-colors hover:bg-normal/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300"
                   onClick={logout}
                 >
-                  退出登录
+                  <LogOut size={15} />
+                  <span>退出登录</span>
                 </button>
               </div>
             }
@@ -76,6 +106,11 @@ const SideBar: React.FC = () => {
           <NoteMenu />
         </div>
       </div>
+      <AccountDeletionModal
+        open={deletionModalOpen}
+        userEmail={user?.email}
+        onClose={() => setDeletionModalOpen(false)}
+      />
     </ResizeTab>
   );
 };

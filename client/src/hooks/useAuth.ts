@@ -1,11 +1,13 @@
 import {
   clearAuthState,
+  deleteAccountWithCode,
   getCurrentSession,
+  registerWithCode,
+  sendAccountDeletionCode,
   signInWithEmail,
   signInWithGitHub,
   signInWithGoogle,
   signOut,
-  signUpWithEmail,
   useAuthRuntime,
   useSession,
 } from "@/utils/auth";
@@ -134,10 +136,20 @@ export const useAuth = () => {
   );
 
   const register = useCallback(
-    async (email: string, password: string, username: string) => {
+    async (
+      email: string,
+      password: string,
+      username: string,
+      code: string,
+    ) => {
       setLoading(true);
       setError(null);
-      const result = await signUpWithEmail(email, password, username);
+      const result = await registerWithCode({
+        email,
+        password,
+        username,
+        code,
+      });
       if (!result.success) {
         setError(result.error?.message || "注册失败");
       }
@@ -184,6 +196,34 @@ export const useAuth = () => {
     return result;
   }, [navigate]);
 
+  const requestAccountDeletionCode = useCallback(async () => {
+    setError(null);
+    const result = await sendAccountDeletionCode();
+    if (!result.success) {
+      setError(result.error?.message || "注销验证码发送失败");
+    }
+    return result;
+  }, []);
+
+  const deleteAccount = useCallback(
+    async (code: string) => {
+      setLoading(true);
+      setError(null);
+      const result = await deleteAccountWithCode(code);
+      setLoading(false);
+
+      if (!result.success) {
+        setError(result.error?.message || "账号注销失败");
+        return result;
+      }
+
+      setRecoveredUser(undefined);
+      navigate(routes.login, { replace: true });
+      return result;
+    },
+    [navigate],
+  );
+
   return {
     user,
     loading,
@@ -196,6 +236,8 @@ export const useAuth = () => {
     loginWithGitHub,
     loginWithGoogle,
     logout,
+    requestAccountDeletionCode,
+    deleteAccount,
     isAuthenticated,
   };
 };

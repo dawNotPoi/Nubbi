@@ -55,6 +55,78 @@ export const sendVerificationEmail = async (
   }
 };
 
+export const sendRegisterVerificationEmail = async (
+  to: string,
+  verificationCode: string,
+) => {
+  const mailOptions = {
+    from: env.EMAIL_FROM,
+    to,
+    subject: "注册邮箱验证码",
+    html: `
+      <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
+        <h2 style="color: #333; text-align: center;">注册邮箱验证码</h2>
+        <p style="color: #666; line-height: 1.6;">
+          您好，请在注册页面输入下面的 6 位数字验证码完成账号注册。
+        </p>
+        <div style="margin: 30px 0; text-align: center;">
+          <div style="display: inline-block; padding: 14px 24px; border-radius: 8px; background: #f5f7ff; border: 1px solid #dbe4ff; font-size: 28px; font-weight: 700; letter-spacing: 6px; color: #1d4ed8;">
+            ${verificationCode}
+          </div>
+        </div>
+        <p style="color: #999; font-size: 12px; text-align: center;">
+          验证码 10 分钟内有效。如果不是您本人操作，请忽略这封邮件。
+        </p>
+      </div>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log("Register verification email sent:", to);
+    return { success: true };
+  } catch (error) {
+    console.error("Register verification email failed:", error);
+    return { success: false, error };
+  }
+};
+
+export const sendAccountDeletionVerificationEmail = async (
+  to: string,
+  verificationCode: string,
+) => {
+  const mailOptions = {
+    from: env.EMAIL_FROM,
+    to,
+    subject: "注销账号验证码",
+    html: `
+      <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
+        <h2 style="color: #b91c1c; text-align: center;">注销账号验证码</h2>
+        <p style="color: #666; line-height: 1.6;">
+          您正在申请注销账号。请在页面中输入下面的 6 位数字验证码完成二次确认。
+        </p>
+        <div style="margin: 30px 0; text-align: center;">
+          <div style="display: inline-block; padding: 14px 24px; border-radius: 8px; background: #fff1f2; border: 1px solid #fecdd3; font-size: 28px; font-weight: 700; letter-spacing: 6px; color: #be123c;">
+            ${verificationCode}
+          </div>
+        </div>
+        <p style="color: #999; font-size: 12px; text-align: center;">
+          验证码 10 分钟内有效。注销后账号和个人数据将被删除。如果不是您本人操作，请立即忽略这封邮件并检查账号安全。
+        </p>
+      </div>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log("Account deletion verification email sent:", to);
+    return { success: true };
+  } catch (error) {
+    console.error("Account deletion verification email failed:", error);
+    return { success: false, error };
+  }
+};
+
 export const sendPasswordResetEmail = async (to: string, resetCode: string) => {
   const mailOptions = {
     from: env.EMAIL_FROM,
