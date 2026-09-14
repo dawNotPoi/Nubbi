@@ -1,4 +1,6 @@
 import {
+  FILE_STATS_QUERY_KEY,
+  fetchFileStats,
   fileDirectoryQueryKey,
   listFiles,
   type FileBreadcrumb,
@@ -8,10 +10,16 @@ import {
 import { useGlobalUpload } from "@/component/upload/hooks/GlobalUpload";
 import {
   FILE_PAGE_SIZE,
-  type FileSortMode,
   resolveSort,
+  type FileSelectModifiers,
+  type FileSortMode,
 } from "@/features/file/model";
+import {
+  readFilePreferences,
+  writeFilePreferences,
+} from "@/features/file/preferences";
 import { activeUploadCountAtom } from "@/store/atom/FileAtom";
+import { isArchivePreviewBlocked } from "@/views/file-manage/components/filePreviewUtils";
 import {
   buildFilePath,
   getFolderIdFromSplat,
@@ -34,17 +42,24 @@ export function useFileManagerController() {
   const parentId = getFolderIdFromSplat(splat);
   const navigate = useNavigate();
   const location = useLocation();
+  const [preferences] = useState(readFilePreferences);
   const [search, setSearchState] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [category, setCategoryState] = useState<FileCategory>("all");
-  const [sortMode, setSortModeState] = useState<FileSortMode>("updated-desc");
+  const [category, setCategoryState] = useState<FileCategory>(
+    preferences?.category ?? "all",
+  );
+  const [sortMode, setSortModeState] = useState<FileSortMode>(
+    preferences?.sortMode ?? "updated-desc",
+  );
   const [offset, setOffset] = useState(0);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [anchorId, setAnchorId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [moveOpen, setMoveOpen] = useState(false);
   const [moveTargets, setMoveTargets] = useState<FileListItem[]>([]);
   const [previewItem, setPreviewItem] = useState<FileListItem | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [draggingItems, setDraggingItems] = useState<FileListItem[] | null>(null);
   const [messageApi, messageHolder] = message.useMessage();
   const [modalApi, modalHolder] = Modal.useModal();
   const activeUploads = useAtomValue(activeUploadCountAtom);
@@ -59,6 +74,7 @@ export function useFileManagerController() {
   useEffect(() => {
     setOffset(0);
     setSelectedIds([]);
+    setAnchorId(null);
     setEditingId(null);
   }, [parentId]);
 
@@ -82,6 +98,13 @@ export function useFileManagerController() {
     refetchOnWindowFocus: false,
   });
 
+  const statsQuery = useQuery({
+    queryKey: [FILE_STATS_QUERY_KEY],
+    queryFn: fetchFileStats,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+  });
+
   const data = query.data?.data;
   const items = data?.items ?? EMPTY_ITEMS;
   const fallbackBreadcrumbs: FileBreadcrumb[] = [
@@ -91,10 +114,26 @@ export function useFileManagerController() {
   const breadcrumbs = data?.breadcrumbs?.length
     ? data.breadcrumbs
     : fallbackBreadcrumbs;
+  const currentFolderName = breadcrumbs.at(-1)?.name ?? "全部文件";
   const selectedItems = useMemo(() => {
     const selected = new Set(selectedIds);
     return items.filter((item) => selected.has(item._id));
   }, [items, selectedIds]);
+  const previewableItems = useMemo(
+    () =>
+      items.filter(
+        (item): item is Extract<FileListItem, { kind: "file" }> =>
+          item.kind === "file" && !isArchivePreviewBlocked(item),
+      ),
+    [items],
+  );
+  const previewIndex = previewItem
+    ? previewableItems.findIndex((item) => item._id === previewItem._id)
+    : -1;
+  const previewPosition =
+    previewIndex >= 0
+      ? { index: previewIndex, total: previewableItems.length }
+      : undefined;
 
   useEffect(() => {
     if (!data?.breadcrumbs) return;
@@ -102,7 +141,10 @@ export function useFileManagerController() {
     if (location.pathname !== canonicalPath) navigate(canonicalPath, { replace: true });
   }, [data?.breadcrumbs, location.pathname, navigate]);
 
-  const clearSelection = () => setSelectedIds([]);
+  const clearSelection = () => {
+    setSelectedIds([]);
+    setAnchorId(null);
+  };
   const resetQuery = () => {
     setSearchState("");
     setDebouncedQuery("");
@@ -110,6 +152,7 @@ export function useFileManagerController() {
     setSortModeState("updated-desc");
     setOffset(0);
     clearSelection();
+    writeFilePreferences({ category: "all", sortMode: "updated-desc" });
   };
   const actions = useFileManagerActions({
     items,
@@ -146,6 +189,81 @@ export function useFileManagerController() {
     setEditingId(null);
   };
 
+  /**
+   * 处理行点击选择：Shift 连续选择、Ctrl/Cmd 切换选择、普通点击单选。
+   * @param id 被点击的行 ID。
+   * @param modifiers 事件携带的修饰键状态。
+   * @returns 无返回值。
+   */
+  const select = (id: string, modifiers: FileSelectModifiers = {}) => {
+    const index = items.findIndex((item) => item._id === id);
+    if (index < 0) return;
+    const anchorIndex = anchorId
+      ? items.findIndex((item) => item._id === anchorId)
+      : -1;
+
+    if (modifiers.shiftKey && anchorIndex >= 0) {
+      const start = Math.min(anchorIndex, index);
+      const end = Math.max(anchorIndex, index);
+      const range = items.slice(start, end + 1).map((item) => item._id);
+      setSelectedIds((current) =>
+        modifiers.toggleKey
+          ? Array.from(new Set([...current, ...range]))
+          : range,
+      );
+      return;
+    }
+    if (modifiers.toggleKey) {
+      setSelectedIds((current) =>
+        current.includes(id)
+          ? current.filter((item) => item !== id)
+          : [...current, id],
+      );
+    } else {
+      setSelectedIds([id]);
+    }
+    setAnchorId(id);
+  };
+
+  /**
+   * 把文件上传到指定目录并打开上传面板。
+   * @param files 待上传文件列表。
+   * @param folderId 目标目录 ID，null 表示根目录。
+   * @param folderName 目标目录名称，用于上传面板展示。
+   * @returns 无返回值。
+   */
+  const uploadTo = (
+    files: File[],
+    folderId: string | null,
+    folderName?: string,
+  ) => {
+    if (files.length === 0) return;
+    createUploadTasks(files, folderId ?? undefined, folderName);
+    setUploadOpen(true);
+  };
+
+  /**
+   * 把当前拖拽的行移动到目标目录，拖拽状态在调用后清空。
+   * @param targetFolderId 目标目录 ID，null 表示根目录。
+   * @returns 移动完成的 Promise。
+   */
+  const dropItemsOnFolder = async (targetFolderId: string | null) => {
+    const targets = draggingItems;
+    setDraggingItems(null);
+    if (!targets || targets.length === 0) return;
+    if (targets.some((item) => item._id === targetFolderId)) return;
+    await actions.moveItems(targets, targetFolderId);
+  };
+
+  const previewPrev = () => {
+    if (previewIndex > 0) setPreviewItem(previewableItems[previewIndex - 1]);
+  };
+  const previewNext = () => {
+    if (previewIndex >= 0 && previewIndex < previewableItems.length - 1) {
+      setPreviewItem(previewableItems[previewIndex + 1]);
+    }
+  };
+
   return {
     ...actions,
     ...access,
@@ -154,7 +272,9 @@ export function useFileManagerController() {
     category,
     clearSelection,
     contextHolders: createElement(Fragment, null, messageHolder, modalHolder),
+    currentFolderName,
     data,
+    draggingItems,
     editingId,
     items,
     moveOpen,
@@ -163,11 +283,13 @@ export function useFileManagerController() {
     offset,
     parentId,
     previewItem,
+    previewPosition,
     query,
     search,
     selectedIds,
     selectedItems,
     sortMode,
+    stats: statsQuery.data,
     uploadOpen,
     navigateBreadcrumb,
     setEditingId,
@@ -175,15 +297,34 @@ export function useFileManagerController() {
     setOffset: changePage,
     setPreviewItem,
     setUploadOpen,
-    setCategory: (next: FileCategory) => updateQuery(() => setCategoryState(next)),
+    setCategory: (next: FileCategory) => {
+      writeFilePreferences({ category: next });
+      updateQuery(() => setCategoryState(next));
+    },
     setSearch: (next: string) => updateQuery(() => setSearchState(next)),
-    setSortMode: (next: FileSortMode) => updateQuery(() => setSortModeState(next)),
-    selectOnly: (id: string) => setSelectedIds([id]),
-    toggle: (id: string, checked: boolean) =>
-      setSelectedIds((current) => checked
-        ? Array.from(new Set([...current, id]))
-        : current.filter((item) => item !== id)),
-    toggleAll: (checked: boolean) => setSelectedIds(checked ? items.map((item) => item._id) : []),
-    upload: (files: File[]) => { createUploadTasks(files, parentId); setUploadOpen(true); },
+    setSortMode: (next: FileSortMode) => {
+      writeFilePreferences({ sortMode: next });
+      updateQuery(() => setSortModeState(next));
+    },
+    select,
+    startItemDrag: (targets: FileListItem[]) => setDraggingItems(targets),
+    endItemDrag: () => setDraggingItems(null),
+    dropItemsOnFolder,
+    uploadTo,
+    previewPrev,
+    previewNext,
+    toggle: (id: string, checked: boolean) => {
+      setAnchorId(id);
+      setSelectedIds((current) =>
+        checked
+          ? Array.from(new Set([...current, id]))
+          : current.filter((item) => item !== id),
+      );
+    },
+    toggleAll: (checked: boolean) => {
+      setAnchorId(null);
+      setSelectedIds(checked ? items.map((item) => item._id) : []);
+    },
+    upload: (files: File[]) => uploadTo(files, parentId ?? null, currentFolderName),
   };
 }

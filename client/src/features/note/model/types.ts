@@ -24,13 +24,6 @@ export type UpdateNoteContentVariables = {
   noteId: string;
 };
 
-export type UpdateNoteContentVariables = {
-  baseContentRevision?: number;
-  clientMutationId?: string;
-  content: string;
-  noteId: string;
-};
-
 export type PatchNoteCacheVariables = {
   noteId: string;
   parentId: string | null | undefined;

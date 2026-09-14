@@ -40,12 +40,13 @@ export async function getMeeting(): Promise<ApiResponse<MeetingType[]>> {
   return Get<MeetingType[]>(`meeting/findMyMeeting`);
 }
 
+/** @param data 会议表单。@returns 服务端返回的公开会议，供创建成功后邀请使用。 */
 export async function createMeeting(
   data: Pick<MeetingType, "title" | "startTime" | "duration"> & {
     password?: string;
   }
-): Promise<ApiResponse<unknown>> {
-  return request(`meeting/create`, data);
+): Promise<ApiResponse<MeetingType>> {
+  return request<MeetingType>(`meeting/create`, data);
 }
 
 export async function deleteMeeting(

@@ -13,3 +13,5 @@ mcp/.env
 server/storage
 npm-debug.log
 package-lock.json
+turn/.env
+turn/certs

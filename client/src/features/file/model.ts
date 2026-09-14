@@ -15,6 +15,12 @@ export type FileSortMode =
   | "name-asc"
   | "name-desc";
 
+/** 行选择时的修饰键状态 */
+export type FileSelectModifiers = {
+  shiftKey?: boolean;
+  toggleKey?: boolean;
+};
+
 export const CATEGORY_OPTIONS: Array<{ value: FileCategory; label: string }> = [
   { value: "all", label: "全部类型" },
   { value: "folder", label: "文件夹" },
@@ -63,6 +69,25 @@ export const formatFileDate = (value?: string | null) => {
   return date.year() === today.year()
     ? date.format("M 月 D 日")
     : date.format("YYYY-MM-DD");
+};
+
+/** 时间列的完整时间戳，用作悬停提示 */
+export const formatFileFullDate = (value?: string | null) => {
+  if (!value) return "";
+  const date = dayjs(value);
+  return date.isValid() ? date.format("YYYY-MM-DD HH:mm:ss") : "";
+};
+
+/** 把文件名拆成主名与扩展名，便于主名省略时仍保留扩展名 */
+export const splitFileName = (name: string): { base: string; extension: string } => {
+  const lastDot = name.lastIndexOf(".");
+  if (lastDot <= 0 || lastDot === name.length - 1) {
+    return { base: name, extension: "" };
+  }
+  return {
+    base: name.slice(0, lastDot),
+    extension: name.slice(lastDot + 1),
+  };
 };
 
 export const getFileTypeLabel = (item: FileListItem) => {

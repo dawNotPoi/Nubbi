@@ -14,6 +14,8 @@ services:
       dockerfile: server/Dockerfile
     env_file:
       - ./server/.env
+      - path: ./turn/.env
+        required: false
     ports:
       - "${SERVER_PORT:-4000}:4000/tcp"
       - "${SOCKET_PORT:-4040}:4040/tcp"
@@ -22,6 +24,36 @@ services:
       - "4040"
     volumes:
       - server_storage:/app/server/storage
+    restart: unless-stopped
+
+  turn:
+    build:
+      context: ./turn
+      dockerfile: Dockerfile
+    profiles: [meeting]
+    env_file:
+      - path: ./turn/.env
+        required: false
+    volumes:
+      - ./turn/certs:/run/turn-certs:ro
+    ports:
+      - "3478:3478/tcp"
+      - "3478:3478/udp"
+      - "5349:5349/tcp"
+      - "49160-49200:49160-49200/udp"
+    read_only: true
+    tmpfs:
+      - /tmp:mode=1777,size=16m
+      - /var/lib/coturn:uid=65534,gid=65534,mode=0700,size=4m
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: [CMD-SHELL, "turnutils_stunclient -p 3478 127.0.0.1 2>&1 | grep -q 'UDP reflexive addr'"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped
 
   mcp:

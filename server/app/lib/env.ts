@@ -1,5 +1,9 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+import { fileURLToPath } from "node:url";
 import { z } from "zod";
+
+// 本地开发与 Compose 使用同一份 TURN 配置；显式进程环境仍具有最高优先级。
+dotenv.config({ path: [fileURLToPath(new URL("../../../turn/.env", import.meta.url)), ".env"] });
 
 /** 将空字符串转为 undefined，避免空环境变量被当作有效值 */
 const emptyToUndefined = (value: unknown) => {
@@ -67,6 +71,9 @@ const envSchema = z.object({
   MONGO_DB_NAME: optionalString().default("Nubbi"),
   SERVER_PORT: portNumber("SERVER_PORT", 4000),
   SOCKET_PORT: portNumber("SOCKET_PORT", 4040),
+  MEETING_STUN_URLS: optionalString(),
+  MEETING_TURN_URLS: optionalString(),
+  MEETING_TURN_SECRET: optionalString(),
   TRUST_PROXY_HOPS: boundedInteger(0, 0, 5),
   BETTER_AUTH_SECRET: requiredString("BETTER_AUTH_SECRET"),
   BETTER_AUTH_URL: requiredString("BETTER_AUTH_URL"),

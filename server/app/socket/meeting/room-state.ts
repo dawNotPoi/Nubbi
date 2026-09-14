@@ -2,6 +2,7 @@ import type { AuthenticatedUser } from "@/lib/authUser";
 import type { Server, Socket } from "socket.io";
 import type { RoomMedia } from "./schemas";
 import type { RoomUserInfo } from "./types";
+import { removePeerNegotiations } from "./peer-negotiation-state";
 
 /** socketId → roomId 的映射 */
 const socketRooms = new Map<string, string>();
@@ -42,6 +43,7 @@ export function upsertRoomUser(input: {
     image: input.actor.image || "",
     isVideoEnabled: input.media?.isVideoEnabled ?? false,
     isAudioEnabled: input.media?.isAudioEnabled ?? false,
+    isScreenSharing: input.media?.isScreenSharing ?? false,
   };
 
   const users =
@@ -54,6 +56,7 @@ export function upsertRoomUser(input: {
 
 /** 移除房间成员，返回其所在房间 ID（若存在） */
 export function removeRoomUser(socketId: string): string | null {
+  removePeerNegotiations(socketId);
   const roomId = socketRooms.get(socketId);
   if (!roomId) return null;
 
@@ -104,6 +107,8 @@ export async function endMeetingRoom(
     memberSocket.leave(roomId);
     removeRoomUser(memberSocket.id);
   });
+  // 短断成员不在活动 Socket 列表里，也必须清除房间身份及连接代次。
+  for (const user of getRoomUsers(roomId)) removeRoomUser(user.peerId);
   roomUsers.delete(roomId);
 }
 

@@ -3,6 +3,7 @@ import {
   deleteFile,
   deleteTargetsBatch,
   FILE_LIST_QUERY_KEY,
+  FILE_STATS_QUERY_KEY,
   fileDirectoryQueryKey,
   moveFileItemsBatch,
   renameFile,
@@ -38,6 +39,8 @@ export function useFileManagerActions(options: UseFileManagerActionsOptions) {
   const refreshDirectory = (parentId: string | null | undefined) =>
     queryClient.invalidateQueries({ queryKey: fileDirectoryQueryKey(parentId) });
   const refreshSourceDirectory = () => refreshDirectory(options.parentId);
+  const refreshStats = () =>
+    queryClient.invalidateQueries({ queryKey: [FILE_STATS_QUERY_KEY] });
   const removeDescendantCaches = (folderIds: string[]) => {
     const affected = new Set(folderIds);
     if (affected.size === 0) return;
@@ -99,7 +102,7 @@ export function useFileManagerActions(options: UseFileManagerActionsOptions) {
     if (removedTopLevelCount >= options.items.length && options.offset > 0) {
       options.setOffset(Math.max(0, options.offset - FILE_PAGE_SIZE));
     }
-    await refreshSourceDirectory();
+    await Promise.all([refreshSourceDirectory(), refreshStats()]);
   };
 
   const deleteOne = (item: FileListItem) => {
@@ -160,10 +163,20 @@ export function useFileManagerActions(options: UseFileManagerActionsOptions) {
     options.setMoveOpen(true);
   };
 
-  const moveTo = async (targetFolderId: string | null) => {
+  /**
+   * 批量移动指定条目到目标目录，供移动对话框与拖拽复用。
+   * @param targets 待移动的文件或文件夹。
+   * @param targetFolderId 目标目录 ID，null 表示根目录。
+   * @returns 是否至少移动成功一批。
+   */
+  const moveItems = async (
+    targets: FileListItem[],
+    targetFolderId: string | null,
+  ) => {
+    if (targets.length === 0) return false;
     try {
-      const targets = options.moveTargets.map(({ _id, kind }) => ({ id: _id, kind }));
-      const response = await moveFileItemsBatch(targets, targetFolderId);
+      const payload = targets.map(({ _id, kind }) => ({ id: _id, kind }));
+      const response = await moveFileItemsBatch(payload, targetFolderId);
       if (response.code !== 1) throw new Error(response.message || "移动失败");
       const { moved, skipped, failed } = response.data;
       if (failed.length || skipped.length) {
@@ -184,5 +197,17 @@ export function useFileManagerActions(options: UseFileManagerActionsOptions) {
     }
   };
 
-  return { createFolder, creating, deleteOne, deleteSelected, moveTo, openMove, rename };
+  const moveTo = (targetFolderId: string | null) =>
+    moveItems(options.moveTargets, targetFolderId);
+
+  return {
+    createFolder,
+    creating,
+    deleteOne,
+    deleteSelected,
+    moveItems,
+    moveTo,
+    openMove,
+    rename,
+  };
 }

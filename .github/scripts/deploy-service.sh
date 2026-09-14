@@ -61,65 +61,12 @@ for name in "${required_vars[@]}"; do
   fi
 done
 
-node <<'NODE'
-const fs = require('fs');
-const path = require('path');
-
-const rootEnv = {
-  VITE_API_URL: process.env.VITE_API_URL,
-  VITE_AUTH_URL: process.env.VITE_AUTH_URL,
-  VITE_SOCKET_URL: process.env.VITE_SOCKET_URL,
-  MONGO_URI: process.env.MONGO_URI,
-  BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
-  BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
-  CLIENT_URL: process.env.CLIENT_URL,
-  AUTH_GITHUB_ID: process.env.AUTH_GITHUB_ID,
-  AUTH_GITHUB_SECRET: process.env.AUTH_GITHUB_SECRET,
-  AUTH_GOOGLE_ID: process.env.AUTH_GOOGLE_ID,
-  AUTH_GOOGLE_SECRET: process.env.AUTH_GOOGLE_SECRET,
-  AUTH_GOOLE_ID: process.env.AUTH_GOOLE_ID || '',
-  AUTH_GOOLE_SECRET: process.env.AUTH_GOOLE_SECRET || '',
-  EMAIL_USER: process.env.EMAIL_USER,
-  EMAIL_PASS: process.env.EMAIL_PASS,
-  EMAIL_FROM: process.env.EMAIL_FROM || '',
-  EMAIL_SERVICE: process.env.EMAIL_SERVICE || '',
-  AI_CONFIG_SECRET: process.env.AI_CONFIG_SECRET || '',
-  GH_IMAGE_REPO: process.env.GH_IMAGE_REPO || '',
-  GH_IMAGE_TOKEN: process.env.GH_IMAGE_TOKEN || '',
-  GH_IMAGE_BRANCH: process.env.GH_IMAGE_BRANCH || 'main',
-  WEB_SEARCH_PROVIDER: process.env.WEB_SEARCH_PROVIDER || '',
-  WEB_SEARCH_API_KEY: process.env.WEB_SEARCH_API_KEY || '',
-  WEB_SEARCH_BASE_URL: process.env.WEB_SEARCH_BASE_URL || '',
-  SMTP_HOST: process.env.SMTP_HOST || '',
-  SMTP_PORT: process.env.SMTP_PORT || '',
-  SMTP_SECURE: process.env.SMTP_SECURE || '',
-};
-
-for (const key of [
-  'WEB_PORT',
-  'SERVER_PORT',
-  'SOCKET_PORT',
-  'MCP_PORT',
-  'MCP_BIND_ADDRESS',
-  'MCP_ALLOWED_HOSTS',
-  'MCP_ALLOWED_ORIGINS',
-]) {
-  if (process.env[key]) rootEnv[key] = process.env[key];
-}
-
-const serialize = (value) => JSON.stringify(String(value ?? ''));
-const render = (env) =>
-  Object.entries(env)
-    .map(([key, value]) => `${key}=${serialize(value)}`)
-    .join('\n') + '\n';
-
-const content = render(rootEnv);
-fs.writeFileSync(path.join(process.env.RUNNER_TEMP, 'nubbi.root.env'), content);
-fs.writeFileSync(path.join(process.env.RUNNER_TEMP, 'nubbi.server.env'), content);
-NODE
+node .github/scripts/render-deploy-env.cjs
 
 tar \
   --exclude='.git' \
+  --exclude='turn/.env' \
+  --exclude='turn/certs' \
   --exclude='.tmp' \
   --exclude='client/node_modules' \
   --exclude='server/node_modules' \
@@ -153,8 +100,16 @@ if [ -f ~/nubbi-deploy/server/.env ]; then
   cp -f ~/nubbi-deploy/server/.env ~/nubbi-deploy.next/server/.env
 fi
 
-# A server-only or MCP-only release does not download a new client artifact.
-# Keep the currently deployed client build available for future Compose operations.
+# TURN 配置与私钥不随发布包分发，目录切换时只保留服务器现有内容。
+mkdir -p ~/nubbi-deploy.next/turn/certs
+if [ -f ~/nubbi-deploy/turn/.env ]; then
+  cp -p ~/nubbi-deploy/turn/.env ~/nubbi-deploy.next/turn/.env
+fi
+if [ -d ~/nubbi-deploy/turn/certs ]; then
+  cp -aL ~/nubbi-deploy/turn/certs/. ~/nubbi-deploy.next/turn/certs/
+fi
+
+# 后端或 MCP 单独发布时，保留当前客户端构建产物。
 if [ ! -f ~/nubbi-deploy.next/client/dist/index.html ] && [ -d ~/nubbi-deploy/client/dist ]; then
   mkdir -p ~/nubbi-deploy.next/client/dist
   cp -a ~/nubbi-deploy/client/dist/. ~/nubbi-deploy.next/client/dist/

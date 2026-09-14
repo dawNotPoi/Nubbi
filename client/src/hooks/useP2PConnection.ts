@@ -21,6 +21,7 @@ export type { RoomUserInfo } from "./meeting/p2p/types";
 
 const SOCKET_URL = getSocketBaseUrl();
 
+/** @returns 信令会话、独立媒体状态和会议操作；卸载时统一释放连接。 */
 const useP2PConnection = (): UseP2PConnectionResult => {
   const socketRef = useRef<Socket | null>(null);
   const connectedRoomRef = useRef("");
@@ -30,13 +31,25 @@ const useP2PConnection = (): UseP2PConnectionResult => {
   const [meetingComments, setMeetingComments] = useState<MeetingComment[]>([]);
   const [meetingEndedAt, setMeetingEndedAt] = useState(0);
   const [reconnectEpoch, setReconnectEpoch] = useState(0);
-  const peerManager = usePeerManager({ socketRef, setRemoteStreams });
+  const [transportConnected, setTransportConnected] = useState(false);
+  const [iceWarning, setIceWarning] = useState("");
+  const clientSessionIdRef = useRef("");
+  if (!clientSessionIdRef.current) clientSessionIdRef.current = crypto.randomUUID();
+  const { manager: peerManager, peerStatuses } = usePeerManager({ socketRef, setRemoteStreams });
+  // 主动重建不依赖 Socket 是否恢复旧 ID，用新的客户端会话代次让双方清除旧连接。
+  const reconnect = useCallback((): void => {
+    clientSessionIdRef.current = crypto.randomUUID();
+    peerManager.destroyAllPeers();
+    socketRef.current?.disconnect().connect();
+  }, [peerManager]);
   const socketActions = useSocketActions({
     socketRef,
     connectedRoomRef,
     setLocalPeerId,
     setRoomUsers,
-    ensurePeerConnection: peerManager.ensurePeerConnection,
+    peerManager,
+    setIceWarning,
+    clientSessionIdRef,
   });
 
   const connectToPeer = useCallback(
@@ -74,6 +87,8 @@ const useP2PConnection = (): UseP2PConnectionResult => {
     socketRef.current = socket;
 
     return registerMeetingSocketEvents({
+      clientSessionIdRef,
+      setTransportConnected,
       socket,
       connectedRoomRef,
       peerManager,
@@ -86,6 +101,8 @@ const useP2PConnection = (): UseP2PConnectionResult => {
   }, [handleMeetingEnded, handleSocketReconnect, peerManager]);
 
   return {
+    transportConnected,
+    reconnect,
     ...socketActions,
     connectToPeer,
     remoteStreams,
@@ -95,7 +112,9 @@ const useP2PConnection = (): UseP2PConnectionResult => {
     reconnectEpoch,
     localPeerId,
     destroyPeerConnections,
-    peersRef: peerManager.peersRef,
+    peerStatuses,
+    retryPeer: peerManager.retryPeer,
+    iceWarning,
   };
 };
 

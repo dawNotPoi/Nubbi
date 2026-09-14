@@ -1,6 +1,5 @@
 import {
   authorizeMeetingJoin,
-  findRealtimeMeetingComments,
 } from "@/controller/meeting/realtime";
 import logger from "@/common/logger";
 import { runMeetingMutation } from "@/services/meeting/mutation-guard";
@@ -11,7 +10,6 @@ import {
   getRoomUsers,
   getSocketRoom,
   leaveRoom,
-  removeRoomUser,
   scheduleMeetingRoomExpiration,
   syncRoomUsers,
   upsertRoomUser,
@@ -24,8 +22,12 @@ import {
 import type { JoinMeetingResponse } from "./types";
 import { acknowledge } from "./acknowledgement";
 import { ensureMeetingRoomActive } from "./room-access";
+import { publishCommentSnapshot } from "./comment-snapshot";
+import { createMeetingIceConfiguration } from "@/services/meeting/ice-configuration";
+import { cancelMemberDeparture, scheduleMemberDeparture } from "./member-recovery";
+import { isCurrentNegotiation } from "./peer-negotiation-state";
 
-/** 构造加入失败响应 */
+/** @param reason 入会失败原因。@returns 不暴露成员信息的失败响应。 */
 const failedJoin = (
   reason: Extract<JoinMeetingResponse, { ok: false }>["reason"],
 ): JoinMeetingResponse => ({
@@ -35,7 +37,7 @@ const failedJoin = (
   roomUsers: [],
 });
 
-/** 处理加入会议房间请求：校验权限、加入房间、同步成员 */
+/** @param io 信令服务。@param socket 请求连接。@param payload 待校验请求。@returns 权限检查和成员登记结果。 */
 async function joinMeeting(
   io: Server,
   socket: Socket,
@@ -55,6 +57,7 @@ async function joinMeeting(
     });
     if (!access.ok) return failedJoin(access.reason);
     if (!getSocketActor(socket)) return failedJoin("UNAUTHORIZED");
+    const iceServers = createMeetingIceConfiguration(actor.id);
     scheduleMeetingRoomExpiration(
       io,
       parsed.data.roomId,
@@ -62,9 +65,11 @@ async function joinMeeting(
     );
 
     const previousRoomId = getSocketRoom(socket.id);
-    if (previousRoomId && previousRoomId !== parsed.data.roomId) {
+    const previousClientSessionId: unknown = socket.data.meetingClientSessionId;
+    if (previousRoomId && (previousRoomId !== parsed.data.roomId || previousClientSessionId !== parsed.data.clientSessionId)) {
       leaveRoom(io, socket, previousRoomId);
     }
+    socket.data.meetingClientSessionId = parsed.data.clientSessionId;
 
     const existedInRoom =
       getRoomUsers(parsed.data.roomId).some(
@@ -81,6 +86,7 @@ async function joinMeeting(
       actor,
       media: parsed.data.media,
     });
+    cancelMemberDeparture(socket.id);
     const clients =
       io.sockets.adapter.rooms.get(parsed.data.roomId) ??
       new Set<string>();
@@ -93,26 +99,16 @@ async function joinMeeting(
     }
     syncRoomUsers(io, parsed.data.roomId);
 
-    const comments = await findRealtimeMeetingComments(
-      parsed.data.roomId,
-    ).catch((error: unknown) => {
-      logger.warn("会议评论同步失败，可在入会后重试", {
-        roomId: parsed.data.roomId,
-        socketId: socket.id,
-        error,
-      });
-      return null;
-    });
-    if (comments) socket.emit("meeting-comments-sync", comments);
     return {
       ok: true,
+      iceServers,
       existingPeers,
       roomUsers: getRoomUsers(parsed.data.roomId),
     };
   });
 }
 
-/** 注册会议成员相关的 Socket 事件（加入/同步/信令/断开） */
+/** @param io 信令服务。@param socket 已认证连接。@returns 无；注册加入、状态同步和代次校验信令。 */
 export function registerMeetingMembershipEvents(
   io: Server,
   socket: Socket,
@@ -124,7 +120,11 @@ export function registerMeetingMembershipEvents(
       callback?: unknown,
     ) => {
       void joinMeeting(io, socket, payload)
-        .then((response) => acknowledge(callback, response))
+        .then((response) => {
+          acknowledge(callback, response);
+          const roomId = getSocketRoom(socket.id);
+          if (response.ok && roomId) publishCommentSnapshot(socket, roomId);
+        })
         .catch((error: unknown) => {
           logger.error("加入会议房间失败", { socketId: socket.id, error });
           acknowledge(callback, failedJoin("JOIN_FAILED"));
@@ -162,12 +162,16 @@ export function registerMeetingMembershipEvents(
       const roomId = getSocketRoom(socket.id);
       if (!roomId) return;
       if (!areSocketsInSameRoom(socket.id, parsed.data.targetId)) return;
+      if (!isCurrentNegotiation(socket.id, parsed.data.targetId, parsed.data.connectionId)) return;
       if (!(await ensureMeetingRoomActive(io, roomId))) return;
       if (!socket.connected || !getSocketActor(socket)) return;
       if (!areSocketsInSameRoom(socket.id, parsed.data.targetId)) return;
+      if (!isCurrentNegotiation(socket.id, parsed.data.targetId, parsed.data.connectionId)) return;
 
       io.to(parsed.data.targetId).emit("signal", {
         senderId: socket.id,
+        clientSessionId: io.sockets.sockets.get(parsed.data.targetId)?.data.meetingClientSessionId,
+        connectionId: parsed.data.connectionId,
         signal: parsed.data.signal,
       });
     })().catch((error: unknown) => {
@@ -175,10 +179,5 @@ export function registerMeetingMembershipEvents(
     });
   });
 
-  socket.on("disconnect", () => {
-    const roomId = removeRoomUser(socket.id);
-    if (!roomId) return;
-    socket.to(roomId).emit("user-left", socket.id);
-    syncRoomUsers(io, roomId);
-  });
+  socket.on("disconnect", (reason) => scheduleMemberDeparture(io, socket, reason));
 }

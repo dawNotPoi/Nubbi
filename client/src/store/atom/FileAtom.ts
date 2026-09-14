@@ -12,6 +12,7 @@ export interface UploadTask {
   name: string;
   size: number;
   folderId?: string;
+  folderName?: string;
   uploadId?: string;
   progress: number;
   speed: number;

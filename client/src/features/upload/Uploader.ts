@@ -4,6 +4,7 @@ import {
   mergeChunk,
 } from "@/api/file";
 import { calculateFileHash } from "./hash";
+import { FULL_HASH_THRESHOLD_BYTES } from "./hashPolicy";
 import { ChunkUploadRunner } from "./chunkRunner";
 import {
   UploadStatus,
@@ -41,6 +42,7 @@ export class Uploader {
     private readonly options: UploadCallbacks & {
       file: File;
       folderId?: string;
+      folderName?: string;
     },
   ) {
     this.chunkSize = getChunkSize(options.file.size);
@@ -141,10 +143,16 @@ export class Uploader {
     try {
       this.resetController();
       this.setStatus(UploadStatus.hashing, { progress: 0, error: undefined });
+      // 大文件使用抽样哈希，读取量固定且几乎瞬间完成，不把哈希进度映射到进度条，
+      // 避免进度 0→10% 跳变后长时间停滞；小文件仍按完整哈希进度平滑推进。
+      const sampledHash = this.options.file.size >= FULL_HASH_THRESHOLD_BYTES;
       this.hash = await calculateFileHash(
         this.options.file,
         this.abortController.signal,
-        (percentage) => this.emit({ progress: Math.round(percentage / 10) }),
+        (percentage) => {
+          if (sampledHash) return;
+          this.emit({ progress: Math.round(percentage / 10) });
+        },
       );
       this.setStatus(UploadStatus.initializing, { progress: 10 });
       const response = await initUploadTask({
@@ -169,6 +177,7 @@ export class Uploader {
         name: this.options.file.name,
         size: this.options.file.size,
         folderId: this.options.folderId,
+        folderName: this.options.folderName,
         chunkSize: this.chunkSize,
         totalChunks: this.totalChunks,
         expiresAt: response.data.expiresAt,

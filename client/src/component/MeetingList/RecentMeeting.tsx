@@ -7,6 +7,7 @@ import { CalendarDays, CalendarOff, Plus } from "lucide-react";
 import { useMemo, useState, type ReactElement } from "react";
 import { useNavigate } from "react-router-dom";
 import { CreateMeetingModal } from "./create-meeting-modal";
+import { MeetingInvitationButton } from "@/features/meeting/meeting-invitation";
 
 type RecentMeetingsProps = {
   className?: string;
@@ -137,9 +138,10 @@ const RecentMeetings = ({
                     .format("HH:mm")}
                 </p>
               </div>
+              <div className="flex flex-wrap gap-2"><MeetingInvitationButton id={meeting._id} title={meeting.title} startTime={meeting.startTime} />
               <Button onClick={() => navigate(`/meeting/${meeting._id}`)}>
                 进入会议
-              </Button>
+              </Button></div>
             </article>
           ))}
         </div>

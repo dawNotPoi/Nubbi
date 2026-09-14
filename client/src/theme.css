@@ -45,6 +45,12 @@
 .file-row { min-height: 44px; border-bottom: 1px solid var(--border-row); transition: background 120ms ease; }
 .file-row:hover, .file-row:focus-within { background: var(--bg-hover); }
 .file-row.is-selected { background: var(--bg-selected); }
+.file-row.is-dragging { opacity: .45; }
+.file-row.is-drop-target, .file-row.is-drop-target:hover { background: var(--bg-selected); box-shadow: inset 2px 0 0 var(--accent-border); }
+.file-row.is-file-drop-target, .file-row.is-file-drop-target:hover { background: var(--accent-bg); box-shadow: inset 2px 0 0 var(--accent-border); }
+.file-row:focus-visible { outline: none; background: var(--bg-hover); }
+.file-head-sort { display: inline-flex; height: 100%; min-width: 0; align-items: center; gap: 4px; border: 0; background: none; color: inherit; font-size: 14px; text-align: left; }
+.file-head-sort:hover { color: var(--text-primary); }
 .file-row-check, .file-row-actions { opacity: 0; transition: opacity 120ms ease; }
 .file-row:hover .file-row-check, .file-row:focus-within .file-row-check,
 .file-row.is-selected .file-row-check, .file-row:hover .file-row-actions,

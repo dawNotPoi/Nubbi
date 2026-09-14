@@ -5,6 +5,7 @@ import dayjs from "dayjs";
 import { Clock3, MessageSquareText, Trash2 } from "lucide-react";
 import type { ReactElement } from "react";
 import type { MeetingActions } from "./types";
+import { MeetingInvitationButton } from "@/features/meeting/meeting-invitation";
 
 /** 会议审批状态 → 标签样式映射 */
 const statusMap = {
@@ -130,6 +131,9 @@ export const MeetingCard = ({
             </>
           ) : null}
 
+          {!meeting.endedAt ? (
+            <MeetingInvitationButton id={meeting._id} title={meeting.title} startTime={meeting.startTime} />
+          ) : null}
           {!meeting.endedAt ? (
             <Button type="primary" onClick={() => onJoin(meeting._id)}>
               加入会议

@@ -1,5 +1,5 @@
 import { queryClient } from "@/utils/queryClient";
-import { fileDirectoryQueryKey } from "@/api/file";
+import { FILE_STATS_QUERY_KEY, fileDirectoryQueryKey } from "@/api/file";
 import {
   type UploadTask,
   uploadTaskAtomFamily,
@@ -20,9 +20,10 @@ export const useGlobalUpload = () => {
 
   const removeRestoredPlaceholder = (file: File) => {
     const ids = store.get(uploadTasksAtom);
-    let restoredTarget: { matched: boolean; folderId?: string } = {
-      matched: false,
-    };
+    let restoredTarget: { matched: boolean; folderId?: string; folderName?: string } =
+      {
+        matched: false,
+      };
     ids.forEach((id) => {
       const task = store.get(uploadTaskAtomFamily(id));
       if (
@@ -31,7 +32,11 @@ export const useGlobalUpload = () => {
         task.size === file.size
       ) {
         if (!restoredTarget.matched) {
-          restoredTarget = { matched: true, folderId: task.folderId };
+          restoredTarget = {
+            matched: true,
+            folderId: task.folderId,
+            folderName: task.folderName,
+          };
         }
         store.set(uploadTasksAtom, (items) =>
           items.filter((item) => item !== id),
@@ -42,7 +47,11 @@ export const useGlobalUpload = () => {
     return restoredTarget;
   };
 
-  const createUploadTask = (file: File, folderId?: string) => {
+  const createUploadTask = (
+    file: File,
+    folderId?: string,
+    folderName?: string,
+  ) => {
     if (!file || file.size === 0) {
       void message.warning("文件为空，无法上传");
       return;
@@ -56,6 +65,9 @@ export const useGlobalUpload = () => {
     const targetFolderId = restoredTarget.matched
       ? restoredTarget.folderId
       : folderId;
+    const targetFolderName = restoredTarget.matched
+      ? restoredTarget.folderName
+      : folderName;
     const hasDuplicate = store.get(uploadTasksAtom).some((id) => {
       const task = store.get(uploadTaskAtomFamily(id));
       return Boolean(
@@ -76,6 +88,7 @@ export const useGlobalUpload = () => {
       name: file.name,
       size: file.size,
       folderId: targetFolderId,
+      folderName: targetFolderName,
       progress: 0,
       speed: 0,
       status: UploadStatus.pending,
@@ -87,6 +100,7 @@ export const useGlobalUpload = () => {
     const instance = new Uploader({
       file,
       folderId: targetFolderId,
+      folderName: targetFolderName,
       onChange: (snapshot) => {
         store.set(uploadTaskAtomFamily(taskId), (previous) =>
           previous ? { ...previous, ...snapshot } : null,
@@ -96,6 +110,7 @@ export const useGlobalUpload = () => {
         void queryClient.invalidateQueries({
           queryKey: fileDirectoryQueryKey(targetFolderId),
         });
+        void queryClient.invalidateQueries({ queryKey: [FILE_STATS_QUERY_KEY] });
         void message.success(`${file.name} 上传完成`);
       },
     });
@@ -105,7 +120,11 @@ export const useGlobalUpload = () => {
     void instance.upload();
   };
 
-  const createUploadTasks = (files: File[], folderId?: string) => {
+  const createUploadTasks = (
+    files: File[],
+    folderId?: string,
+    folderName?: string,
+  ) => {
     const currentTasks = store
       .get(uploadTasksAtom)
       .map((id) => store.get(uploadTaskAtomFamily(id)))
@@ -127,7 +146,9 @@ export const useGlobalUpload = () => {
       0,
       MAX_ACTIVE_TASKS - unfinished + resumable,
     );
-    files.slice(0, available).forEach((file) => createUploadTask(file, folderId));
+    files.slice(0, available).forEach((file) =>
+      createUploadTask(file, folderId, folderName),
+    );
     if (files.length > available) {
       void message.warning(`最多保留 ${MAX_ACTIVE_TASKS} 个未完成上传任务`);
     }

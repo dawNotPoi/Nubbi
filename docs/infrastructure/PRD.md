@@ -31,6 +31,10 @@
 
 ### 实时通信
 
+仓库使用独立 `turn/` 管理 coturn。Compose 的 `meeting` profile 可单独启动 TURN；存在 `turn/.env` 时后端部署同时启动该服务。后端和 coturn 共用这份专用配置，不向 coturn 注入数据库、OAuth 等其他密钥。配置及 TLS 私钥不入库、不进入发布包，滚动替换发布目录时保留服务器现有文件。本地与生产使用同一套脚本，实际地址必须显式提供；缺少认证配置时拒绝启动。
+
+会议连接启用 Socket.IO 15 秒短断恢复并重新认证；会议成员宽限、连接代次由会议模块维护。当前仍是单进程内存状态，不承诺跨实例或重启恢复。ICE 通过 `MEETING_STUN_URLS`、`MEETING_TURN_URLS`、`MEETING_TURN_SECRET` 配置，密钥只存在于服务端，TURN 地址与密钥必须成对提供。
+
 | 文件 | 用途 |
 |------|------|
 | `socket/user-handler.ts` | 用户在线人数状态 |

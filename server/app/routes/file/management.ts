@@ -8,6 +8,7 @@ import {
   deleteManagedBatch,
   deleteManagedItem,
   getManagedFileList,
+  getManagedFileStats,
   moveManagedBatch,
   moveManagedItem,
 } from "@/controller/file/management";
@@ -44,6 +45,12 @@ fileRoutes.get("/list", {
   query: fileListQuerySchema,
   message: "query success",
   handler: ({ actor, query }) => getManagedFileList(actor.id, query),
+});
+
+fileRoutes.get("/stats", {
+  action: "read",
+  message: "query success",
+  handler: ({ actor }) => getManagedFileStats(actor.id),
 });
 
 fileRoutes.post("/move", {

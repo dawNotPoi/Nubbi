@@ -63,6 +63,15 @@ export interface FileBreadcrumb {
   name: string;
 }
 
+/** 文件页存储用量统计 */
+export interface FileStats {
+  usedBytes: number;
+  reservedBytes: number;
+  quotaBytes: number;
+  fileCount: number;
+  folderCount: number;
+}
+
 export interface FileListData extends PaginatedResult<FileListItem> {
   breadcrumbs: FileBreadcrumb[];
 }
@@ -86,6 +95,7 @@ export interface BatchMoveResult {
 }
 
 export const FILE_LIST_QUERY_KEY = "file-list";
+export const FILE_STATS_QUERY_KEY = "file-stats";
 export const fileDirectoryQueryKey = (parentId?: string | null) =>
   [FILE_LIST_QUERY_KEY, parentId ?? "root"] as const;
 
@@ -95,6 +105,15 @@ export const listFiles = async (params: FileListParams = {}) => {
     throw new Error(response.message || "文件列表加载失败");
   }
   return response;
+};
+
+/** 读取当前用户的存储用量与配额 */
+export const fetchFileStats = async () => {
+  const response = await Get<FileStats>("/file/stats");
+  if (response.code !== 1) {
+    throw new Error(response.message || "存储用量加载失败");
+  }
+  return response.data;
 };
 
 export const createFloder = (name?: string, parentId?: string) =>

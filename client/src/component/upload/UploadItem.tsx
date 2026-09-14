@@ -61,7 +61,10 @@ export default function UploadItem({
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-sm text-text-primary">{task.name}</p>
-          <p className="text-xs text-text-subtle">{formatBytes(task.size)}</p>
+          <p className="text-xs text-text-subtle">
+            {formatBytes(task.size)}
+            {task.folderName ? ` · 上传到 ${task.folderName}` : ""}
+          </p>
         </div>
         <span className="shrink-0 text-xs text-text-muted">
           {statusText[task.status]}
