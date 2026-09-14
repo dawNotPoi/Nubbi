@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "index.ts",
   "type": "module",
+  "packageManager": "pnpm@10.12.4",
   "scripts": {
     "dev": "nodemon --exec tsx app/index.ts",
     "start": "tsx app/index.ts",
