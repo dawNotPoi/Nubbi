@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import { X } from "lucide-react";
 import {
   cloneElement,
   createContext,
@@ -187,48 +188,55 @@ export const Modal = ({
                   tabIndex={-1}
                   ref={contentRef}
                   className={clsx(
-                    "relative mx-auto mt-[10vh] w-[min(90vw,520px)] rounded-md bg-white shadow-lg outline-none",
+                    "relative mx-auto mt-[10vh] w-[min(90vw,320px)] rounded-md bg-white shadow-lg outline-none",
                     className
                   )}
                   style={{ zIndex: z + 1 }}
-                  onMouseDown={(e) => {
-                    e.stopPropagation();
-                  }}
                 >
-                  <div className="flex items-center justify-between  px-4 py-3">
+                  <div className="flex items-center justify-between  px-4 pt-2">
                     <div className="font-medium">{title}</div>
                     {showClose && (
                       <button
                         aria-label="Close"
-                        className="rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-black "
-                        onClick={() => isTop && setOpen(false)}
+                        className="rounded p-1 text-gray-500 hover:bg-gray-100 "
+                        onClick={() => {
+                          if (isTop) {
+                            setOpen(false);
+                            onCancel?.();
+                          }
+                        }}
                       >
-                        x
+                        <X size={20} />
                       </button>
                     )}
                   </div>
-                  <div className="px-4 py-3">{children}</div>
+                  <div className="px-4 ">{children}</div>
                   <div className="flex justify-end gap-2  px-4 py-3">
-                    <button
-                      className="rounded px-3 py-1.5 hover:bg-gray-100"
-                      onClick={() => {
-                        if (!isTop) return;
-                        onCancel?.();
-                        setOpen(false);
-                      }}
-                    >
-                      {cancelText}
-                    </button>
-                    <button
-                      className="rounded  px-3 py-1.5 text-white hover:opacity-90"
-                      onClick={async () => {
-                        if (!isTop) return;
-                        await onOk?.();
-                        setOpen(false);
-                      }}
-                    >
-                      {okText}
-                    </button>
+                    {cancelText && (
+                      <button
+                        className="rounded px-3 bg-sky-500 py-1.5 hover:bg-gray-100"
+                        onClick={() => {
+                          if (!isTop) return;
+                          onCancel?.();
+                          setOpen(false);
+                        }}
+                      >
+                        {cancelText}
+                      </button>
+                    )}
+                    {okText && (
+                      <button
+                        className="rounded  px-3 py-1.5 bg-sky-600 text-white hover:opacity-90"
+                        onClick={async () => {
+                          if (!isTop) return;
+                          await onOk?.();
+                          onCancel?.();
+                          setOpen(false);
+                        }}
+                      >
+                        {okText}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

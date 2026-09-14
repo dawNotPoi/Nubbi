@@ -1,5 +1,5 @@
 import { AppProvider } from "./AppProvider";
-import { RouteWrapper } from "./Route/Route";
+import { RouteWrapper } from "./Route";
 function App() {
   return (
     <AppProvider>

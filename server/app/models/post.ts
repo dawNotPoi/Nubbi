@@ -18,22 +18,6 @@ const postSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-
-    //   标签
-    tags: {
-      type: [String],
-      default: [],
-    },
-    //   摘要
-    summary: {
-      type: String,
-      default: "",
-    },
-    //   状态
-    status: {
-      type: String,
-      default: "Draft",
-    },
     watched: {
       type: Number,
       default: 0,

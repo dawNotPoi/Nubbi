@@ -70,10 +70,9 @@ export const getPostStats = async () => {
 export const getTagStats = async () => {
   const posts = await post.find({}, "tags");
   const tagCount: { [key: string]: number } = {};
-
   posts.forEach((post) => {
-    if (post.tags && Array.isArray(post.tags)) {
-      post.tags.forEach((tag) => {
+    if (post.meta.tags && Array.isArray(post.meta.tags)) {
+      post.meta.tags.forEach((tag) => {
         if (tag && tag.trim()) {
           const cleanTag = tag.trim();
           tagCount[cleanTag] = (tagCount[cleanTag] || 0) + 1;
@@ -97,8 +96,25 @@ export const getPosts = async (userId: string) => {
   });
 };
 
+export const getRencentPosts = async (userId: string) => {
+  return await post
+    .find({
+      userId: userId,
+      $or: [{ children: { $exists: false } }, { children: { $size: 0 } }],
+    })
+    .sort({ updatedAt: -1 });
+};
+
 export const validatePostUser = async (userId: string, postId: string) => {
   const Result = await post.findById(postId);
   if (Result?.userId === userId) return true;
   else return false;
+};
+
+export const searchPosts = async (userId: string, title: string) => {
+  const Result = await post.find({
+    userId: userId,
+    title: { $regex: title, $options: "i" },
+  });
+  return Result;
 };

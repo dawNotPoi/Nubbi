@@ -1,30 +1,32 @@
+import requireAuth from "@/middleware/session";
 import express from "express";
 import { asyncHandler } from "../middleware/common";
 import meeting from "../models/meeting";
 import { successResponse } from "./utils";
-import log from "@/common/chalk";
-import { query } from "winston";
 const router = express.Router();
 router.post(
   "/create",
+  requireAuth,
   asyncHandler(async (req, res) => {
-    const { title, startTime, duration, hostId } = req.body;
+    const hostId = (req as any).user.id;
+    const { title, startTime, duration } = req.body;
     const result = await meeting.create({ title, startTime, duration, hostId });
     successResponse(res, result);
   })
 );
 
-
 router.get(
   "/findMyMeeting",
+  requireAuth,
   asyncHandler(async (req, res) => {
-    const { hostId } = req.query;
+    const hostId = (req as any).user.id;
     const result = await meeting.find({
-      hostId: hostId
-    })
+      hostId: hostId,
+    });
+
     successResponse(res, result);
   })
-)
+);
 
 router.post(
   "/findByPage",
@@ -52,46 +54,18 @@ router.post(
   })
 );
 
-
 router.post(
   "/vetMeeting",
   asyncHandler(async (req, res) => {
-    const { id, status } = req.body
+    const { id, status } = req.body;
     try {
-      const result = await meeting.updateOne({ _id: id }, { status })
+      const result = await meeting.updateOne({ _id: id }, { status });
       successResponse(res, {
-        data: result
-      })
+        data: result,
+      });
     } catch (error) {
       throw error;
     }
-  })
-)
-
-
-router.post(
-  "/findMyMeeting",
-  asyncHandler(async (req, res) => {
-    const { page = 1, pageSize = 10, ...query } = req.body;
-    const skip = (page - 1) * pageSize;
-    const total = await meeting.countDocuments(query);
-    const result = await meeting
-      .find({
-        ...query,
-      })
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(pageSize);
-
-    successResponse(res, {
-      data: result,
-      pagination: {
-        total,
-        page: Number(page),
-        pageSize: Number(pageSize),
-        totalPages: Math.ceil(total / pageSize),
-      },
-    });
   })
 );
 
@@ -101,9 +75,7 @@ router.get(
     const result = await meeting.find().sort({ createdAt: -1 });
     successResponse(res, result);
   })
-)
-
-
+);
 
 router.delete(
   "/delete",
@@ -131,6 +103,6 @@ router.get(
     const result = await meeting.findById(id);
     successResponse(res, result);
   })
-)
+);
 
 export default router;

@@ -5,11 +5,15 @@ export interface Post {
   auther?: string;
   _id: string;
   title: string;
-  tags?: string[];
-  summary?: string;
-  status: "Draft" | "Published" | "Archived";
   parentId?: string | null;
-  meta?: Record<string, any>;
+  meta?: {
+    date?: number;
+    status?: string;
+    summary?: string;
+    tags?: string[];
+    type?: string;
+    [key: string]: any;
+  };
   createdAt?: string;
   updatedAt?: string;
   children: Post[];
@@ -18,11 +22,8 @@ export interface Post {
 
 export const newPost = (post?: Partial<PostWithContent>): PostWithContent => ({
   _id: new ObjectId().toHexString(),
-  title: "未命名文章",
-  tags: [],
-  summary: "",
-  status: "Draft",
-  meta: {},
+  title: "",
+  meta: { date: Date.now(), status: "Draft", summary: "", tags: [], type: "" },
   children: [],
   cover: "",
   content: "",
@@ -43,6 +44,11 @@ export async function createPost(data: PostWithContent) {
 // 获取根级文章
 export const getRootPosts = async (owner: string) => {
   return Get<Post[]>("post/roots", { owner });
+};
+
+//获取最近修改的文章
+export const getRencentPosts = async () => {
+  return Get<Post[]>("post/recent");
 };
 
 // 获取直接子文章
@@ -89,4 +95,7 @@ export async function findPost(postId: string) {
   return Get<Post>("post/find", { postId });
 }
 
-export async function updatePost(postId: string, data: Post) {}
+//搜索文章
+export async function searchPosts(title: string) {
+  return request<Post[]>("post/search", { title });
+}

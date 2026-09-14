@@ -2,16 +2,16 @@ import { newPost, Post, PostWithContent } from "@/api/post";
 import { Modal } from "@/component/UI/Dialog";
 import { Divider } from "@/component/UI/Divider";
 import Popover from "@/component/UI/Popover";
-import CustomEditor from "@/component/editor/yoopta/YooptaEditor";
+import TiptapEditor from "@/component/editor/Tiptap";
 import { createPostAtom } from "@/store/atom/postAtom";
 import { FileTextOutlined } from "@ant-design/icons";
 import { useAtomValue } from "jotai";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { MdOpenInFull } from "react-icons/md";
 import { RiAddFill } from "react-icons/ri";
 import { useNavigate } from "react-router-dom";
 import { IconButton } from "../../components";
-import { SearchNodeList } from "./SearchNodeList";
+import { SearchNoteList } from "./SearchNodeList";
 
 export const WrittingModal = ({
   parent,
@@ -59,11 +59,24 @@ export const WrittingModal = ({
       },
     });
   };
+
+  const Editor = useMemo(
+    () => (
+      <TiptapEditor
+        defaultValue={content}
+        onChange={(value) => {
+          setContent(value);
+        }}
+      />
+    ),
+    []
+  );
+
   return (
     <>
       <Modal
         open={open}
-        className="max-w-3xl md:max-w-4xl lg:max-w-5xl w-full"
+        className="max-w-3xl md:max-w-4xl lg:max-w-5xl w-full h-[80%] min-h-[300px] "
         onCancel={() => {
           setOpen(false);
           setTitle("");
@@ -85,16 +98,20 @@ export const WrittingModal = ({
             <Popover
               trigger={
                 <div>
-                  <IconButton className="text-center flex gap-1 items-center">
+                  <IconButton className="text-center flex gap-2 items-center">
                     <span>Add to</span> <FileTextOutlined />
                     <span className="text-black  font-bold">
-                      {targetNote?.title || ""}
+                      {targetNote?.title || "未命名文章"}
                     </span>
                   </IconButton>
                 </div>
               }
             >
-              <SearchNodeList />
+              <SearchNoteList
+                onChange={(post) => {
+                  setTargetNote(post);
+                }}
+              />
             </Popover>
           </div>
         }
@@ -108,7 +125,7 @@ export const WrittingModal = ({
           />
         }
       >
-        <main className="px-10 max-h-[70vh] cursor-text h-full overflow-y-auto ">
+        <main className="px-10 max-h-[70vh] cursor-text h-full py-10 overflow-y-auto">
           <header>
             <input
               value={title}
@@ -118,12 +135,7 @@ export const WrittingModal = ({
               placeholder="未命名文章"
             />
           </header>
-          <CustomEditor
-            defaultValue={content}
-            onChange={(value) => {
-              setContent(value);
-            }}
-          />
+          {Editor}
         </main>
       </Modal>
     </>

@@ -1,0 +1,14 @@
+{
+  "name": "D-Note",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "client": "cd client&&npm run dev",
+    "server":"cd server&&npm run dev"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.12.4"
+}

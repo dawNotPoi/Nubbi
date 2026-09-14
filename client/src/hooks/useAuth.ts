@@ -10,7 +10,8 @@ import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export const useAuth = () => {
-  const { data: session } = useSession();
+  const { data: session, refetch: refetchSession } = useSession();
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -18,9 +19,12 @@ export const useAuth = () => {
     setLoading(true);
     setError(null);
     const result = await signInWithEmail(email, password);
+    if (!result.error) {
+      await refetchSession();
+    }
     setLoading(false);
     return result;
-  }, []);
+  }, [refetchSession]);
 
   const register = useCallback(
     async (email: string, password: string, username: string) => {
@@ -58,12 +62,12 @@ export const useAuth = () => {
     setError(null);
     const result = await signOut();
     setLoading(false);
-    navigate("/");
+    navigate("/login");
     return result;
   }, []);
 
   return {
-    user: session?.user || null,
+    user: session?.user,
     loading,
     error,
     login,

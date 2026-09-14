@@ -6,6 +6,7 @@ import {
   deletePost,
   getDirectChildren,
   getPostDetail,
+  getRencentPosts,
   getRootPosts,
   Post,
   PostWithContent,
@@ -43,9 +44,6 @@ export const expandedNodesAtom = atomWithStorage<Set<string>>(
 );
 export const selectedPostIdAtom = atom<string | null>(null);
 
-// 缓存过期时间（5分钟）
-const CACHE_EXPIRY = 5 * 60 * 1000;
-
 // 根级文章查询
 export const rootPostsAtom = atomFamily((owner: string) =>
   atomWithQuery(
@@ -71,6 +69,15 @@ export const postChildrenAtom = atomFamily((postId: string) =>
     },
   }))
 );
+
+export const recentPostAtom = atomWithQuery(() => ({
+  queryKey: ["post"],
+  queryFn: async () => {
+    const response = await getRencentPosts();
+    return response.data || [];
+  },
+}));
+
 // 文章详情查询（带缓存）
 export const postDetailAtom = atomFamily((postId: string) =>
   atomWithQuery(() => ({
@@ -167,9 +174,6 @@ export const updatePostContentAtom = atomWithMutation(() => ({
   mutationFn: ({ postId, content }: { postId: string; content: string }) => {
     return updatePostContent(postId, content);
   },
-  onSuccess: (data, variables, context) => {
-    console.log("文章更新成功:", data);
-  },
   onError: (error) => {
     console.error("更新文章失败:", error);
   },
@@ -190,6 +194,7 @@ export const updatePostPropertiesAtom = atomWithMutation(() => ({
   },
   // 乐观更新 先更新数据，后拉取，失败则回退
   onMutate: async ({ postId, properties, parentId }) => {
+    console.log(properties);
     const queryKey = parentId ? ["posts", parentId] : ["posts"];
     await queryClient.cancelQueries({ queryKey });
     const previousPosts = queryClient.getQueryData<Post[]>(queryKey);

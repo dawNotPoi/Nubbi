@@ -1,8 +1,6 @@
 import {
-  cloneElement,
   CSSProperties,
   FC,
-  isValidElement,
   ReactNode,
   useCallback,
   useEffect,
@@ -19,6 +17,8 @@ export interface PopoverProps {
   onOpen?: () => void;
   onClose?: () => void;
   coords?: { top: number; left: number };
+  open?: boolean;
+  onClickOutside?: () => void;
 }
 
 export interface PopoverTriggerProps {
@@ -35,8 +35,13 @@ const Popover: FC<PopoverProps> = ({
   onClose,
   style,
   className,
+  onClickOutside,
+  open: controledOpen,
 }) => {
   const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (controledOpen !== undefined) setOpen(controledOpen);
+  }, [controledOpen]);
   const triggerRef = useRef<HTMLElement | null>(null);
   const popRef = useRef<HTMLDivElement | null>(null);
   const [pos, setPos] = useState<{ top: number; left: number }>({
@@ -86,8 +91,12 @@ const Popover: FC<PopoverProps> = ({
     function onDocClick(e: MouseEvent) {
       const trg = triggerRef.current;
       const pop = popRef.current;
+      console.log("clickinsdie");
       if (trg && trg.contains(e.target as Node)) return;
       if (pop && pop.contains(e.target as Node)) return;
+      console.log("clickoutsite");
+
+      onClickOutside?.();
       setOpen(false);
     }
     window.addEventListener("mousedown", onDocClick);
@@ -103,51 +112,20 @@ const Popover: FC<PopoverProps> = ({
   const triggerProps: PopoverTriggerProps = {
     ref: setTrigger,
     onClick: (e?: any) => {
+      if (controledOpen !== undefined) return;
       setOpen((v) => !v);
     },
   };
-  //   const triggerNode = typeof trigger === "function"
-  //     ? (trigger as (p: PopoverTriggerProps) => ReactNode)(triggerProps)
-  //     : isValidElement(trigger)
-  //     ? cloneElement(trigger as any, {
-  //         ref: (node: any) => {
-  //           // preserve original ref if exists
-  //           const origRef: any = (trigger as any).ref;
-  //           setTrigger(node);
-  //           if (typeof origRef === "function") origRef(node);
-  //           else if (origRef && typeof origRef === "object") (origRef as any).current = node;
-  //         },
-  //         onClick: (e: any) => {
-  //           // call original onClick if existed
-  //           const origOnClick = (trigger as any).props?.onClick;
-  //           origOnClick && origOnClick(e);
-  //           triggerProps.onClick(e);
-  //         },
-  //         "aria-expanded": open,
-  //       })
-  //     : (
-  //       <button type="button" onClick={triggerProps.onClick} ref={setTrigger}>
-  //         {trigger}
-  //       </button>
-  //     );
 
-  const triggerNode =
-    typeof trigger === "function" ? (
-      (trigger as (props: PopoverTriggerProps) => ReactNode)(triggerProps)
-    ) : isValidElement(trigger) ? (
-      cloneElement(trigger, {
-        ref: (node: any) => {
-          setTrigger(node as HTMLElement | null);
-        },
-        onClick: (e: any) => {
-          triggerProps.onClick(e);
-        },
-      })
-    ) : (
-      <button onClick={triggerProps.onClick} ref={setTrigger}>
-        {trigger}
-      </button>
-    );
+  const triggerNode = (
+    <div
+      className="hover:cursor-pointer"
+      onClick={triggerProps.onClick}
+      ref={setTrigger}
+    >
+      {trigger}
+    </div>
+  );
 
   const popContent = (
     <div

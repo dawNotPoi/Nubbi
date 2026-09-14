@@ -43,6 +43,7 @@ export const signInWithGitHub = async () => {
     const result = await signIn.social({
       provider: "github",
       callbackURL: window.location.origin,
+      errorCallbackURL: window.location.origin + "/login",
     });
     return { success: true, data: result };
   } catch (error) {
@@ -57,6 +58,7 @@ export const signInWithGoogle = async () => {
     const result = await signIn.social({
       provider: "google",
       callbackURL: window.location.origin,
+      errorCallbackURL: window.location.origin + "/login",
     });
     return { success: true, data: result };
   } catch (error) {

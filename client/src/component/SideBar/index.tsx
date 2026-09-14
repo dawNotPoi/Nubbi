@@ -26,43 +26,14 @@ const SideBar: React.FC = () => {
         <MenuItemContainer className="flex gap-2 justify-between relative">
           <Popover
             trigger={
-              <div className="flex w-full">
-                <div className="flex gap-2 items-center cursor-pointer">
-                  <Image
-                    className="rounded size-7"
-                    src={user?.image || ""}
-                    defaultLink="/default.jpg"
-                    alt={user?.name}
-                  />
-                  <span>{user?.name}</span>
-                </div>
-                <div className="flex-1" />
-                <div
-                  className="flex "
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
-                >
-                  <IconButton
-                    onClick={async () => {
-                      const post = newPost();
-                      createPost(post, {
-                        onSuccess: () => navigate("/blog/" + post._id),
-                      });
-                    }}
-                    className="size-8"
-                  >
-                    <TbWritingSign className="size-full" />
-                  </IconButton>
-                  <IconButton
-                    className="size-8"
-                    onClick={() => {
-                      setSideBarOpened(false);
-                    }}
-                  >
-                    <TbLayoutSidebarLeftCollapse className="size-full" />
-                  </IconButton>
-                </div>
+              <div className="flex gap-2 items-center cursor-pointer">
+                <Image
+                  className="rounded size-7"
+                  src={user?.image || ""}
+                  defaultLink="/default.jpg"
+                  alt={user?.name}
+                />
+                <span>{user?.name}</span>
               </div>
             }
           >
@@ -77,11 +48,38 @@ const SideBar: React.FC = () => {
               </div>
             }
           </Popover>
+          <div className="flex-1" />
+          <div
+            className="flex "
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+          >
+            <IconButton
+              onClick={async () => {
+                const post = newPost();
+                createPost(post, {
+                  onSuccess: () => navigate("/blog/" + post._id),
+                });
+              }}
+              className="size-8"
+            >
+              <TbWritingSign className="size-full" />
+            </IconButton>
+            <IconButton
+              className="size-8"
+              onClick={() => {
+                setSideBarOpened(false);
+              }}
+            >
+              <TbLayoutSidebarLeftCollapse className="size-full" />
+            </IconButton>
+          </div>
         </MenuItemContainer>
         <div className="flex mt-2 flex-col flex-1 gap-2 overflow-auto ">
           {/* 主页 */}
           <MenuItemContainer>
-            <header role="button" onClick={() => navigate("")}>
+            <header role="button" onClick={() => navigate("home")}>
               仪表盘
             </header>
           </MenuItemContainer>
@@ -91,7 +89,10 @@ const SideBar: React.FC = () => {
           <MenuItemContainer onClickCapture={() => navigate("file")}>
             <span>文件</span>
           </MenuItemContainer>
-          <MenuItemContainer onClickCapture={() => navigate("/video")}>
+          <MenuItemContainer onClickCapture={() => navigate("meeting")}>
+            <span>会议</span>
+          </MenuItemContainer>
+          <MenuItemContainer onClickCapture={() => navigate("/live/test")}>
             <span>视频测试页</span>
           </MenuItemContainer>
         </div>

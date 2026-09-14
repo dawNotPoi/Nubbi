@@ -9,27 +9,24 @@ import {
   getDirectChildren,
   getPostById,
   getPosts,
+  getRencentPosts,
   getRootPosts,
+  searchPosts,
   validatePostUser,
 } from "../control/post/query";
 import { updatePostContent, updatePostMeta } from "../control/post/update";
 import { asyncHandler } from "../middleware/common";
 import { validate, validateQuery } from "../middleware/validator";
 import { successResponse } from "./utils";
-
 const router = express.Router();
-
 // 创建文章
 router.post(
   "/create",
   requireAuth,
   validate(
     z.object({
-      title: z.string().min(1, "标题不能为空").max(200, "标题不能超过200字符"),
+      title: z.string(),
       content: z.string().optional(),
-      tags: z.array(z.string()).optional(),
-      summary: z.string().max(500, "摘要不能超过500字符").optional(),
-      status: z.enum(["Draft", "Published", "Archived"]).default("Draft"),
       parentId: z.string().optional(),
       meta: z.record(z.any()).optional(),
     })
@@ -69,14 +66,6 @@ router.put(
   validate(
     z.object({
       postId: z.string().min(1, "文章ID不能为空"),
-      title: z
-        .string()
-        .min(1, "标题不能为空")
-        .max(200, "标题不能超过200字符")
-        .optional(),
-      tags: z.array(z.string()).optional(),
-      summary: z.string().max(500, "摘要不能超过500字符").optional(),
-      status: z.enum(["Draft", "Published", "Archived"]).optional(),
       parentId: z.string().optional(),
       meta: z.record(z.any()).optional(),
       cover: z.string().optional(),
@@ -160,6 +149,29 @@ router.get(
   asyncHandler(async (req, res) => {
     const { userId } = req.query;
     const result = await getPosts(userId);
+    successResponse(res, result, "查询成功");
+  })
+);
+
+//查询最近修改文章
+router.get(
+  "/recent",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const owner = await getUser(req);
+    const result = await getRencentPosts(owner.id);
+    successResponse(res, result, "查询成功");
+  })
+);
+
+//根据标题过滤文章
+router.post(
+  "/search",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const owner = await getUser(req);
+    const { title } = req.body;
+    const result = await searchPosts(owner.id, title);
     successResponse(res, result, "查询成功");
   })
 );

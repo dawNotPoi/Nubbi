@@ -7,7 +7,6 @@ import { Server } from "socket.io";
 import log from "./common/chalk";
 import { auth } from "./lib/auth";
 import env from "./lib/env";
-import { initMediasoup } from "./lib/media";
 import { errorHandler } from "./middleware/common";
 import admin from "./routes/admin";
 import commentRouter from "./routes/comment";
@@ -26,6 +25,7 @@ const PORT = env.SERVER_PORT || 4000;
 // socket端口
 const SOCKETPORT = env.SOCKET_PORT || 4040;
 
+//跨域处理
 const corsOptions = {
   origin: ["http://localhost:3000", "http://localhost:5173"], // 替换为前端实际域名
   credentials: true, // 允许携带凭证（如 cookies）
@@ -81,14 +81,9 @@ server.listen(PORT, () => {
 socketIO.on("connection", (socket) => {
   log.info(`⚡: ${socket.id} 用户已连接!`);
   userHandlers(socketIO, socket);
-  // ICEServerHandlers(socketIO, socket);
-  // mediaHandler(socketIO, socket);
+
   P2PHandler(socketIO, socket);
   socket.on("disconnect", () => {
     log.info(`🔥: ${socket.id} 用户已断开连接!`);
   });
-});
-
-initMediasoup().then(() => {
-  log.success("mediasoup worker init");
 });

@@ -6,7 +6,7 @@ import clsx from "clsx";
 import { useAtomValue } from "jotai";
 import { useState } from "react";
 import { RiDeleteBinLine } from "react-icons/ri";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { WrittingModal } from "./WritingModal";
 
 function NoteItem({
@@ -18,6 +18,7 @@ function NoteItem({
   level?: number;
   className?: string;
 }) {
+  const { Id } = useParams();
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   // 获取当前节点的子文章
@@ -50,7 +51,10 @@ function NoteItem({
     <div className={clsx(className, "mt-0.5 ")}>
       <MenuItemContainer
         style={{ paddingLeft: level * 8 }}
-        className="flex items-center group hover:bg-neutral-400/20 rounded-md"
+        className={clsx(
+          "flex items-center group hover:bg-neutral-400/40 rounded-md",
+          post._id == Id && "bg-neutral-400/10"
+        )}
       >
         <IconButton>
           <FileTextOutlined className="group-hover:hidden" />
@@ -69,7 +73,7 @@ function NoteItem({
           className="ml-1 flex-1 truncate cursor-pointer"
           onClick={() => navigate(`note/${post._id}`)}
         >
-          {post.title}
+          {post.title || "未命名文章"}
         </span>
 
         {/* 删除按钮 */}
@@ -81,7 +85,11 @@ function NoteItem({
         </IconButton>
         {/* 添加按钮 */}
         <IconButton className="hidden group-hover:block size-6">
-          <WrittingModal onTrigger={() => setOpen(true)} parent={post} />
+          <WrittingModal
+            parent={post}
+            onTrigger={() => setOpen(true)}
+            parent={post}
+          />
         </IconButton>
       </MenuItemContainer>
       {open && <ChildrenRender></ChildrenRender>}

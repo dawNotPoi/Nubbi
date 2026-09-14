@@ -1,14 +1,16 @@
 import { newPost } from "@/api/post";
 import { createPostAtom, rootPostsAtom } from "@/store/atom/postAtom";
+import { useSession } from "@/utils/auth";
 import { useAtomValue } from "jotai";
 import { useState } from "react";
 import { RiAddFill } from "react-icons/ri";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { IconButton, MenuItemContainer } from "../components";
 import NoteItem from "./NoteItem";
 
 export default function NoteMenu() {
-  const { user } = useParams();
+  const { data } = useSession();
+  const user = data?.user.id;
   const {
     data: rootPosts,
     refetch,
@@ -25,7 +27,6 @@ export default function NoteMenu() {
     <div className="text-neutral-800 ">
       <MenuItemContainer
         onClick={() => {
-          // refetch();
           setOpen((v) => !v);
         }}
         className="flex items-center group"

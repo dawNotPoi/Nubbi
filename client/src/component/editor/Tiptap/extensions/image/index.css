@@ -1,0 +1,14 @@
+.ProseMirror-selectednode .img-mark::before {
+  content: "";
+  position: absolute;
+  inset: -1px; /* 控制遮罩比内容大出 6px */
+  background: rgba(59, 130, 246, 0.1);
+  border: 2px solid skyblue;
+  border-radius: 8px;
+  pointer-events: none; /* 极其重要：点击穿透 */
+}
+
+.ProseMirror-selectednode .img-mark {
+  position: relative;
+  overflow: hidden;
+}

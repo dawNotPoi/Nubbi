@@ -1,0 +1,66 @@
+/* Notion 浅色模式背景 */
+pre {
+  line-height: 1.5;
+  font-family: "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+  color: #37352f;
+  /* 语法高亮细节 - 仿 Notion 配色 */
+  .hljs-comment,
+  .hljs-quote {
+    color: #9b9a97; /* 注释：灰色 */
+    font-style: italic;
+  }
+
+  .hljs-keyword,
+  .hljs-selector-tag,
+  .hljs-addition {
+    color: #0b6e99; /* 关键字：深蓝色 */
+  }
+
+  .hljs-number,
+  .hljs-string,
+  .hljs-meta .hljs-meta-string,
+  .hljs-literal,
+  .hljs-doctag,
+  .hljs-regexp {
+    color: #d9730d; /* 字符串/数字：橙色 */
+  }
+
+  .hljs-title,
+  .hljs-section,
+  .hljs-name,
+  .hljs-selector-id,
+  .hljs-selector-class {
+    color: #690; /* 函数/类名：绿色 */
+  }
+
+  .hljs-variable,
+  .hljs-template-variable,
+  .hljs-attribute,
+  .hljs-tag,
+  .hljs-attr {
+    color: #bf360c; /* 属性/变量：棕红色 */
+  }
+
+  .hljs-bullet,
+  .hljs-symbol,
+  .hljs-link,
+  .hljs-meta,
+  .hljs-selector-attr,
+  .hljs-selector-pseudo {
+    color: #5d4037;
+  }
+
+  .hljs-built_in,
+  .hljs-deletion {
+    color: #bc115b; /* 内置函数：紫红色 */
+  }
+
+  .hljs-emphasis {
+    font-style: italic;
+  }
+
+  .hljs-strong {
+    font-weight: bold;
+  }
+}

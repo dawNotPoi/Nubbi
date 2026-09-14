@@ -13,7 +13,6 @@ export const auth = betterAuth({
   baseURL: env.BETTER_AUTH_URL,
   basePath: "/api/auth",
   trustedOrigins: ["*"],
-
   emailAndPassword: {
     enabled: true,
     // requireEmailVerification: true, // 启用邮箱验证
@@ -22,7 +21,13 @@ export const auth = betterAuth({
     verificationTokenExpiresIn: 60 * 60 * 24, // 24小时
     passwordResetTokenExpiresIn: 60 * 60, // 1小时
   },
-
+  account: {
+    accountLinking: {
+      enabled: true,
+      // 选填：如果想要更严格，可以要求必须先验证邮箱才能合并
+      // ensureEmailVerified: true,
+    },
+  },
   socialProviders: {
     github: {
       clientId: env.AUTH_GITHUB_ID,
@@ -58,14 +63,10 @@ export const auth = betterAuth({
 export async function getUser(
   req: any
 ): Promise<{ id: string; email?: string; name?: string }> {
-  console.log("fi");
   if (req.user) return req.user;
   const session = await auth.api.getSession({ headers: req.headers as any });
-  console.log(session);
-
   if (!session?.user)
     throw Object.assign(new Error("Unauthorized"), { status: 401 });
   req.user = session.user;
-
   return req.user;
 }
