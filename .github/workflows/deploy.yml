@@ -3,7 +3,7 @@ name: Deploy
 on:
   push:
     branches:
-      - master
+      - deploy
   pull_request:
     branches:
       - master
@@ -14,7 +14,7 @@ on:
       branch:
         description: Branch to deploy
         required: false
-        default: master
+        default: deploy
 
 concurrency:
   group: deploy-${{ github.event.inputs.branch || github.ref_name }}
@@ -79,9 +79,9 @@ jobs:
     env:
       DEPLOY_BRANCH: ${{ github.event.inputs.branch || github.ref_name }}
       DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER || 'root' }}
       DEPLOY_PORT: ${{ secrets.DEPLOY_PORT || '22' }}
-      DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+      DEPLOY_PASSWORD: ${{ secrets.DEPLOY_PASSWORD || '' }}
       VITE_API_URL: ${{ vars.VITE_API_URL || 'http://127.0.0.1:4000' }}
       VITE_SOCKET_URL: ${{ vars.VITE_SOCKET_URL || 'http://127.0.0.1:4040' }}
       WEB_PORT: ${{ vars.WEB_PORT || '80' }}
@@ -112,23 +112,58 @@ jobs:
       SMTP_PORT: ${{ vars.SMTP_PORT || '' }}
       SMTP_SECURE: ${{ vars.SMTP_SECURE || '' }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch || github.ref }}
+
       - name: Configure SSH
         run: |
           test -n "$DEPLOY_HOST"
-          test -n "$DEPLOY_USER"
-          test -n "$DEPLOY_PATH"
           mkdir -p ~/.ssh
-          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
+          if [ -n "${{ secrets.DEPLOY_SSH_KEY }}" ]; then
+            printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+            chmod 600 ~/.ssh/deploy_key
+          elif [ -z "${{ secrets.DEPLOY_PASSWORD }}" ]; then
+            printf '[deploy] missing DEPLOY_SSH_KEY or DEPLOY_PASSWORD\n' >&2
+            exit 1
+          fi
           ssh-keyscan -p "$DEPLOY_PORT" "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Install sshpass
+        if: ${{ secrets.DEPLOY_SSH_KEY == '' && secrets.DEPLOY_PASSWORD != '' }}
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+
+      - name: Prepare SSH helpers
+        shell: bash
+        run: |
+          cat > "$RUNNER_TEMP/ssh-run" <<'SH'
+          #!/usr/bin/env bash
+          set -Eeuo pipefail
+          if [ -f "$HOME/.ssh/deploy_key" ]; then
+            exec ssh -i "$HOME/.ssh/deploy_key" -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" "$@"
+          fi
+          exec sshpass -p "$DEPLOY_PASSWORD" ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" "$@"
+          SH
+
+          cat > "$RUNNER_TEMP/scp-run" <<'SH'
+          #!/usr/bin/env bash
+          set -Eeuo pipefail
+          source_path="$1"
+          target_path="$2"
+          if [ -f "$HOME/.ssh/deploy_key" ]; then
+            exec scp -i "$HOME/.ssh/deploy_key" -P "$DEPLOY_PORT" "$source_path" "$DEPLOY_USER@$DEPLOY_HOST:$target_path"
+          fi
+          exec sshpass -p "$DEPLOY_PASSWORD" scp -P "$DEPLOY_PORT" "$source_path" "$DEPLOY_USER@$DEPLOY_HOST:$target_path"
+          SH
+
+          chmod +x "$RUNNER_TEMP/ssh-run" "$RUNNER_TEMP/scp-run"
 
       - name: Sync environment files
         shell: bash
         run: |
           required_vars=(
             DEPLOY_HOST
-            DEPLOY_USER
-            DEPLOY_PATH
             VITE_API_URL
             VITE_SOCKET_URL
             MONGO_URI
@@ -200,18 +235,63 @@ jobs:
           fs.writeFileSync(serverEnvPath, content);
           NODE
 
-          ssh -i ~/.ssh/deploy_key -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
-            "mkdir -p '$DEPLOY_PATH/server'"
+      - name: Upload release bundle
+        shell: bash
+        run: |
+          tar \
+            --exclude='.git' \
+            --exclude='client/node_modules' \
+            --exclude='client/dist' \
+            --exclude='server/node_modules' \
+            --exclude='server/storage' \
+            --exclude='.pnpm-store' \
+            -czf "$RUNNER_TEMP/d-note-release.tgz" .
 
-          scp -i ~/.ssh/deploy_key -P "$DEPLOY_PORT" \
+          "$RUNNER_TEMP/ssh-run" \
+            "rm -rf ~/d-note-deploy.next && mkdir -p ~/d-note-deploy.next ~/d-note-deploy/server"
+
+          "$RUNNER_TEMP/scp-run" \
+            "$RUNNER_TEMP/d-note-release.tgz" \
+            "~/d-note-release.tgz"
+
+          "$RUNNER_TEMP/ssh-run" \
+            "bash -s" <<'REMOTE'
+          set -Eeuo pipefail
+
+          tar -xzf ~/d-note-release.tgz -C ~/d-note-deploy.next
+          rm -f ~/d-note-release.tgz
+
+          if [ -f ~/d-note-deploy/.env ]; then
+            cp -f ~/d-note-deploy/.env ~/d-note-deploy.next/.env
+          fi
+
+          mkdir -p ~/d-note-deploy.next/server
+          if [ -f ~/d-note-deploy/server/.env ]; then
+            cp -f ~/d-note-deploy/server/.env ~/d-note-deploy.next/server/.env
+          fi
+
+          rm -rf ~/d-note-deploy.prev
+          if [ -d ~/d-note-deploy ]; then
+            mv ~/d-note-deploy ~/d-note-deploy.prev
+          fi
+          mv ~/d-note-deploy.next ~/d-note-deploy
+          REMOTE
+
+      - name: Upload environment files
+        shell: bash
+        run: |
+          "$RUNNER_TEMP/ssh-run" \
+            "mkdir -p ~/d-note-deploy/server"
+
+          "$RUNNER_TEMP/scp-run" \
             "$RUNNER_TEMP/d-note.root.env" \
-            "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/.env"
+            "~/d-note-deploy/.env"
 
-          scp -i ~/.ssh/deploy_key -P "$DEPLOY_PORT" \
+          "$RUNNER_TEMP/scp-run" \
             "$RUNNER_TEMP/d-note.server.env" \
-            "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/server/.env"
+            "~/d-note-deploy/server/.env"
 
       - name: Run deploy script
         run: |
-          ssh -i ~/.ssh/deploy_key -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
-            "cd '$DEPLOY_PATH' && git fetch origin '$DEPLOY_BRANCH' && git checkout '$DEPLOY_BRANCH' && git pull --ff-only origin '$DEPLOY_BRANCH' && DEPLOY_BRANCH='$DEPLOY_BRANCH' bash scripts/deploy-docker.sh '$DEPLOY_BRANCH'"
+          "$RUNNER_TEMP/ssh-run" \
+            "cd ~/d-note-deploy && SKIP_GIT_UPDATE=1 DEPLOY_BRANCH='$DEPLOY_BRANCH' bash scripts/deploy-docker.sh '$DEPLOY_BRANCH'"

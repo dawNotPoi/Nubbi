@@ -18,21 +18,30 @@ require_command() {
 
 cd "$APP_DIR"
 
-require_command git
 require_command docker
 
 log "deploying branch: $BRANCH"
-git fetch origin "$BRANCH"
-git checkout "$BRANCH"
-git pull --ff-only origin "$BRANCH"
+if [ "${SKIP_GIT_UPDATE:-0}" = "1" ]; then
+  log "skipping git update"
+else
+  require_command git
+  git fetch origin "$BRANCH"
+  git checkout "$BRANCH"
+  git pull --ff-only origin "$BRANCH"
+fi
 
 if [ ! -f "server/.env" ]; then
   printf '[docker-deploy] missing server/.env\n' >&2
   exit 1
 fi
 
-log "building and starting containers"
-docker compose up -d --build --remove-orphans
+if [ ! -f ".env" ]; then
+  printf '[docker-deploy] missing .env\n' >&2
+  exit 1
+fi
+
+log "building and starting client and server containers"
+docker compose up -d --build --remove-orphans client server
 
 if command -v curl >/dev/null 2>&1; then
   log "health checking: $HEALTHCHECK_URL"
