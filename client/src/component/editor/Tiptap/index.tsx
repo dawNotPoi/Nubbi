@@ -7,11 +7,16 @@ import StarterKit from "@tiptap/starter-kit";
 import { message } from "antd";
 import clsx from "clsx";
 import { Move } from "lucide-react";
-import { useState } from "react";
+import { useMemo } from "react";
 import { CodeBlock } from "./extensions/code-block";
 import image from "./extensions/image";
 import { SlashCommandExtension } from "./extensions/slash-command";
 import "./index.css";
+
+const EMPTY_DOC = {
+  type: "doc",
+  content: [{ type: "paragraph" }],
+} as const;
 
 const TiptapEditor = ({
   defaultValue,
@@ -22,7 +27,6 @@ const TiptapEditor = ({
   className?: string;
   onChange?: (markdown: string) => void;
 }) => {
-  const [content, setContent] = useState(defaultValue || "");
   const extensions = [
     StarterKit.configure({
       codeBlock: false,
@@ -30,14 +34,15 @@ const TiptapEditor = ({
     Markdown,
     CodeBlock.configure({
       onCopy: () => {
-        message.success("复制成功( •̀ ω •́ )✧");
+        message.success("复制成功");
       },
     }),
     Placeholder.configure({
       placeholder: ({ node }) => {
         if (node.type.name === "codeBlock") {
           return "";
-        } else return "Write,press '/' for commands";
+        }
+        return "Write,press '/' for commands";
       },
     }),
     image.configure({
@@ -46,18 +51,32 @@ const TiptapEditor = ({
         return url;
       },
     }),
-
     SlashCommandExtension,
   ];
 
+  const initialContent = useMemo(() => {
+    const content = defaultValue?.trim() ?? "";
+    if (content.length === 0) {
+      return {
+        content: EMPTY_DOC,
+        contentType: "json" as const,
+      };
+    }
+
+    return {
+      content: defaultValue,
+      contentType: "markdown" as const,
+    };
+  }, [defaultValue]);
+
   const editor = useEditor({
-    extensions: extensions,
+    extensions,
     onUpdate: ({ editor }) => {
       const markdown = editor.getMarkdown();
       onChange?.(markdown);
     },
-    content: content,
-    contentType: "markdown",
+    content: initialContent.content,
+    contentType: initialContent.contentType,
   });
 
   return (
@@ -70,7 +89,7 @@ const TiptapEditor = ({
         onNodeChange={() => {}}
         editor={editor}
       >
-        <div className="items-center flex h-[20px] px-2 text-zinc-400">
+        <div className="flex h-[20px] items-center px-2 text-zinc-400">
           <Move size={15} />
         </div>
       </DragHandle>

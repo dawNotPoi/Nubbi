@@ -1,4 +1,4 @@
-﻿import { listFiles } from "@/api/file";
+import { getFileDownloadUrl, listFiles } from "@/api/file";
 import { useGlobalUpload } from "@/component/upload/hooks/GlobalUpload";
 import UploadListWrapper from "@/component/upload/UploadListWrapper";
 import {
@@ -8,12 +8,13 @@ import {
   listFilesAtom,
 } from "@/store/atom/FileAtom";
 import { UploadOutlined } from "@ant-design/icons";
-import { Button } from "antd";
+import { Button, message } from "antd";
 import { useAtomValue, useSetAtom } from "jotai";
 import { RotateCw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import FileListTable from "./components/FileListTable";
+import type { FileTableRow } from "./components/FileListTable/fileIcons";
 import FolderBreadcrumbs from "./components/FolderBreadcrumbs";
 import { buildFilePath, isSameCrumbs, type CrumbItem } from "./routePath";
 
@@ -23,20 +24,15 @@ const FileManager = () => {
   const folderId = useAtomValue(currentFolderIdAtom);
   const crumbs = useAtomValue(breadcrumbsAtom);
   const setCrumbs = useSetAtom(breadcrumbsAtom);
-  const {
-    data: files,
-    refetch,
-    isLoading,
-    isFetching,
-    isPending,
-  } = useAtomValue(listFilesAtom);
+  const { data: files, refetch, isFetching } = useAtomValue(listFilesAtom);
   const { mutate: createFolderMutation } = useAtomValue(
     createFloderMutationAtom,
   );
 
   const { createUploadTask } = useGlobalUpload();
+  const [messageApi, contextHolder] = message.useMessage();
 
-  const handleOpenFolder = (folder: any) => {
+  const handleOpenFolder = (folder: { _id?: string; name?: string }) => {
     if (!folder?._id) return;
 
     const nextCrumbs = [
@@ -49,6 +45,23 @@ const FileManager = () => {
 
     setCrumbs(nextCrumbs);
     navigate(buildFilePath(nextCrumbs));
+  };
+
+  const handleDownload = (record: FileTableRow) => {
+    if (record.kind !== "file") return;
+
+    window.open(getFileDownloadUrl(record._id), "_blank", "noopener,noreferrer");
+  };
+
+  const handleShare = async (record: FileTableRow) => {
+    if (record.kind !== "file") return;
+
+    try {
+      await navigator.clipboard.writeText(getFileDownloadUrl(record._id));
+      messageApi.success("已复制下载链接");
+    } catch {
+      messageApi.error("复制失败，请稍后重试");
+    }
   };
 
   // 纯 id 链接直达时，逐层回查真实文件夹名
@@ -92,6 +105,7 @@ const FileManager = () => {
 
   return (
     <div className="p-2">
+      {contextHolder}
       <header className="flex gap-2  pb-4">
         <Button onClick={() => setOpen(true)}>传输</Button>
         <Button onClick={() => createFolderMutation({ parentId: folderId })}>
@@ -120,6 +134,8 @@ const FileManager = () => {
             list={files?.data}
             onOpenFolder={handleOpenFolder}
             isLoading={isFetching}
+            onDownload={handleDownload}
+            onShare={handleShare}
           />
         </main>
       </div>

@@ -1,15 +1,25 @@
 import { Post } from "@/api/post";
+import Image from "@/component/UI/Image";
+import { useAuth } from "@/hooks/useAuth";
 import { recentPostAtom } from "@/store/atom/postAtom";
 import clsx from "clsx";
 import dayjs from "dayjs";
 import { useAtomValue } from "jotai";
 import { ChevronLeft, ChevronRight, Clock, Notebook } from "lucide-react";
-
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import CardWrapper from "./CardWrapper";
 
-const NoteCard = ({ post }: { post: Post }) => {
+const AVATAR_CACHE_KEY = "home_recent_note_user_avatar";
+const NAME_CACHE_KEY = "home_recent_note_user_name";
+
+const NoteCard = ({
+  post,
+  avatarSrc,
+}: {
+  post: Post;
+  avatarSrc?: string;
+}) => {
   const navigate = useNavigate();
   return (
     <li
@@ -20,7 +30,7 @@ const NoteCard = ({ post }: { post: Post }) => {
     >
       <header className="relative mb-[16px]">
         <div className="h-[40px] bg-slate-50"></div>
-        <div className="absolute bottom-0 rounded-md overflow-hidden translate-x-6 translate-y-[14px]  size-[25px] ">
+        <div className="absolute bottom-0 rounded-md overflow-hidden translate-x-6 translate-y-[14px] size-[25px]">
           <Notebook />
         </div>
       </header>
@@ -29,16 +39,18 @@ const NoteCard = ({ post }: { post: Post }) => {
           <div
             className={clsx(
               "text-[14px] h-[60px]",
-              !post.title && "text-zinc-500"
+              !post.title && "text-zinc-500",
             )}
           >
             {post.title || "未命名文章"}
           </div>
           <section className="text-[13px] text-gray-500 flex gap-1 items-center">
-            <div className="rounded-full inline-block size-fit px-1 border-2 ">
-              未
-            </div>
-            {dayjs(post.updatedAt).format("YYYY-MM-DD")}
+            <Image
+              src={avatarSrc}
+              alt="user avatar"
+              className="size-5 rounded-full border border-slate-200 bg-slate-100 object-cover"
+            />
+            <span>{dayjs(post.updatedAt).format("YYYY-MM-DD")}</span>
           </section>
         </header>
       </div>
@@ -48,25 +60,46 @@ const NoteCard = ({ post }: { post: Post }) => {
 
 const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
   const { data } = useAtomValue(recentPostAtom);
+  const { user } = useAuth();
   const [offset, setOffset] = useState(0);
   const [maxOffset, setMaxOffset] = useState(0);
-  let wrapperRef = useRef<HTMLDivElement>(null);
-  let ListRef = useRef<HTMLUListElement>(null);
+  const [cachedAvatar, setCachedAvatar] = useState("");
+  const [cachedName, setCachedName] = useState("");
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
   const hasNotes = !!data?.length;
 
-  //更新最大宽度
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const avatar = user?.image || localStorage.getItem(AVATAR_CACHE_KEY) || "";
+    const name = user?.name || localStorage.getItem(NAME_CACHE_KEY) || "";
+
+    setCachedAvatar(avatar);
+    setCachedName(name);
+
+    if (user?.image) {
+      localStorage.setItem(AVATAR_CACHE_KEY, user.image);
+    }
+
+    if (user?.name) {
+      localStorage.setItem(NAME_CACHE_KEY, user.name);
+    }
+  }, [user?.image, user?.name]);
+
   useEffect(() => {
     const updateMax = () => {
-      if (!wrapperRef.current || !ListRef.current || !hasNotes) {
+      if (!wrapperRef.current || !listRef.current || !hasNotes) {
         setMaxOffset(0);
         setOffset(0);
         return;
       }
-      const listwidth = ListRef.current.scrollWidth;
-      const wrapperwidth = wrapperRef.current.offsetWidth;
-      const max = Math.max(listwidth - wrapperwidth, 0);
+      const listWidth = listRef.current.scrollWidth;
+      const wrapperWidth = wrapperRef.current.offsetWidth;
+      const max = Math.max(listWidth - wrapperWidth, 0);
       setMaxOffset(max);
     };
+
     updateMax();
     window.addEventListener("resize", updateMax);
     return () => window.removeEventListener("resize", updateMax);
@@ -74,8 +107,8 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
 
   const canScrollLeft = hasNotes && offset > 0;
   const canScrollRight = hasNotes && offset < maxOffset;
-
   if (!data) return null;
+
   return (
     <CardWrapper
       className={className}
@@ -86,41 +119,47 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
         </>
       }
     >
-      <div ref={wrapperRef} className="overflow-hidden group relative  ">
+      <div ref={wrapperRef} className="overflow-hidden group relative">
         <ul
-          ref={ListRef}
+          ref={listRef}
           style={{
             transform: `translateX(-${offset}px)`,
             transition: "all 0.3s",
           }}
-          className=" gap-4 flex  left-0"
+          className="gap-4 flex left-0"
         >
-          {data?.length > 0 ? (
-            data.map((post) => <NoteCard post={post} key={post._id} />)
+          {data.length > 0 ? (
+            data.map((post) => (
+              <NoteCard
+                key={post._id}
+                post={post}
+                avatarSrc={cachedAvatar || user?.image || ""}
+              />
+            ))
           ) : (
             <div className="text-gray-400 h-[100px]">暂无文章</div>
           )}
         </ul>
 
         {canScrollLeft && (
-          <div className="z-20 h-full  absolute left-0 top-0 bg-gradient-to-r from-white to-white/5  flex flex-col justify-center">
+          <div className="z-20 h-full absolute left-0 top-0 bg-gradient-to-r from-white to-white/5 flex flex-col justify-center">
             <button
               onClick={() => {
                 setOffset((v) => (v - 450 <= 0 ? 0 : v - 450));
               }}
-              className="cursor-pointer group-hover:opacity-100 hover:border-sky-400  opacity-0  p-2 rounded-full bg-white border flex items-center justify-center"
+              className="cursor-pointer group-hover:opacity-100 hover:border-sky-400 opacity-0 p-2 rounded-full bg-white border flex items-center justify-center"
             >
               <ChevronLeft size={14} />
             </button>
           </div>
         )}
         {canScrollRight && (
-          <div className="z-20 h-full absolute right-0 top-0 bg-gradient-to-l from-white to-white/5  flex flex-col justify-center">
+          <div className="z-20 h-full absolute right-0 top-0 bg-gradient-to-l from-white to-white/5 flex flex-col justify-center">
             <button
               onClick={() => {
                 setOffset((v) => (v + 450 > maxOffset ? maxOffset : v + 450));
               }}
-              className="cursor-pointer  group-hover:opacity-100  opacity-0  p-2 rounded-full bg-white border flex items-center justify-center hover:border-sky-400 "
+              className="cursor-pointer group-hover:opacity-100 opacity-0 p-2 rounded-full bg-white border flex items-center justify-center hover:border-sky-400"
             >
               <ChevronRight size={14} />
             </button>

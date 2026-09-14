@@ -20,6 +20,10 @@ export interface Post {
   cover: string;
 }
 
+export interface SearchPost extends Post {
+  pathLabel?: string;
+}
+
 export const newPost = (post?: Partial<PostWithContent>): PostWithContent => ({
   _id: new ObjectId().toHexString(),
   title: "",
@@ -97,5 +101,5 @@ export async function findPost(postId: string) {
 
 //搜索文章
 export async function searchPosts(title: string) {
-  return request<Post[]>("post/search", { title });
+  return request<SearchPost[]>("post/search", { title });
 }

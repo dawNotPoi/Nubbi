@@ -112,9 +112,52 @@ export const validatePostUser = async (userId: string, postId: string) => {
 };
 
 export const searchPosts = async (userId: string, title: string) => {
-  const Result = await post.find({
-    userId: userId,
-    title: { $regex: title, $options: "i" },
-  });
-  return Result;
+  const result = await post
+    .find({
+      userId: userId,
+      title: { $regex: title, $options: "i" },
+    })
+    .lean();
+
+  const postCache = new Map<string, { title: string; parentId?: string | null }>();
+
+  const getParentInfo = async (postId: string) => {
+    if (postCache.has(postId)) {
+      return postCache.get(postId)!;
+    }
+
+    const parentPost = await post.findById(postId).select("title parentId").lean();
+    const parentInfo = {
+      title: parentPost?.title || "未命名文档",
+      parentId: parentPost?.parentId ? String(parentPost.parentId) : null,
+    };
+    postCache.set(postId, parentInfo);
+    return parentInfo;
+  };
+
+  const buildPathLabel = async (parentId?: any) => {
+    if (!parentId) return "";
+
+    const titles: string[] = [];
+    let currentParentId: string | null = String(parentId);
+
+    while (currentParentId) {
+      const parentInfo = await getParentInfo(currentParentId);
+      titles.unshift(parentInfo.title);
+      currentParentId = parentInfo.parentId ?? null;
+    }
+
+    if (titles.length === 0) return "";
+    if (titles.length <= 2) {
+      return titles.join("/");
+    }
+    return [titles[0], "...", titles[titles.length - 1]].join("/");
+  };
+
+  return Promise.all(
+    result.map(async (item) => ({
+      ...item,
+      pathLabel: await buildPathLabel(item.parentId),
+    })),
+  );
 };

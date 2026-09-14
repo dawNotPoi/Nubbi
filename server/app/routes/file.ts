@@ -275,4 +275,29 @@ router.post(
     successResponse(res, folder);
   }),
 );
+
+router.get(
+  "/download/:fileId",
+  requireAuth,
+  asyncHandler(async (req: AuthRequest, res) => {
+    const { fileId } = req.params;
+    const userId = req.user?.id;
+
+    const file = await File.findOne({
+      _id: fileId,
+      ownerId: userId,
+      status: "active",
+    });
+
+    if (!file) {
+      return res.status(404).json({ message: "文件不存在或无权访问" });
+    }
+
+    if (!(await fse.pathExists(file.storagePath))) {
+      return res.status(404).json({ message: "文件资源不存在" });
+    }
+
+    return res.download(file.storagePath, file.name);
+  }),
+);
 export default router;

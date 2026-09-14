@@ -1,68 +1,109 @@
-import { Post, searchPosts } from "@/api/post";
+import { Post, SearchPost, searchPosts } from "@/api/post";
+import { debounceWrapper } from "@/utils/common";
+import clsx from "clsx";
 import { useAtom } from "jotai";
 import { atomWithMutation } from "jotai-tanstack-query";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FaSearch } from "react-icons/fa";
+import { RiLoader4Line } from "react-icons/ri";
 import ItemBase from "./ItemBase";
+
 const filterAtom = atomWithMutation(() => ({
   mutationKey: ["filterNotes"],
-  mutationFn: async ({ title }: { title: string }) => {
-    return searchPosts(title);
-  },
+  mutationFn: async ({ title }: { title: string }) => searchPosts(title),
 }));
+
+const panelClassName = clsx(
+  "w-[320px] overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-[0_16px_40px_rgba(15,23,42,0.12)]",
+  "text-sm text-neutral-700",
+);
+
+const searchBoxClassName = clsx(
+  "flex items-center gap-2 rounded-lg border border-transparent bg-neutral-100 px-3 py-2 text-neutral-500 transition-colors",
+  "focus-within:border-neutral-200 focus-within:bg-white focus-within:ring-2 focus-within:ring-neutral-200/80",
+);
+
 export const SearchNoteList = ({
   onChange,
+  selectedId,
 }: {
   onChange?: (post: Post) => void;
+  selectedId?: string | null;
 }) => {
   const [searchValue, setSearchValue] = useState("");
+  const [hasSearched, setHasSearched] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [{ mutate, data }] = useAtom(filterAtom);
-  const Notes = data?.data || [];
+  const notes: SearchPost[] = hasSearched ? data?.data || [] : [];
 
-  const FilterMenu = ({ Notes }: { Notes: Post[] }) => {
-    //两种模式,有filterValue时显示搜索结果,无filterValue时显示所有文章,层级显示
-    return (
-      <div>
-        {Notes.map((note) => {
-          return <ItemBase onClick={onChange} key={note._id} post={note} />;
-        })}
-      </div>
-    );
-  };
+  const debouncedSearch = useMemo(
+    () =>
+      debounceWrapper((title: string) => {
+        mutate(
+          { title },
+          {
+            onSettled: () => {
+              setIsSearching(false);
+            },
+          },
+        );
+      }, 250),
+    [mutate],
+  );
 
-  const RenderList = () => {
-    // if (searchValue.length == 0) {
-    //   return <div>树级菜单</div>;
-    // }
-    if (Notes.length > 0) {
-      return <FilterMenu Notes={Notes} />;
-    } else {
-      return (
-        <div>
-          <span className="text-zinc-400">No Results</span>
-        </div>
-      );
+  useEffect(() => {
+    const trimmedValue = searchValue.trim();
+
+    if (trimmedValue.length === 0) {
+      setHasSearched(false);
+      setIsSearching(false);
+      return;
     }
-  };
+
+    setHasSearched(true);
+    setIsSearching(true);
+    debouncedSearch(trimmedValue);
+  }, [searchValue, debouncedSearch]);
+
   return (
-    <div className="w-[300px] relative scrollbar-thumb-emerald-950 max-h-[300px] overflow-y-auto">
-      <div className="w-full absolute"></div>
-      <header className="w-full my-2 px-2 ">
-        <div className="border rounded-md text-gray-500  focus-within:ring-2 px-1 py-1 flex text-sm items-center gap-2">
-          <FaSearch className="inline-block" />
+    <div className={panelClassName}>
+      <header className="border-b border-neutral-100 p-2">
+        <div className={searchBoxClassName}>
+          <FaSearch className="shrink-0 text-[12px]" />
           <input
-            className="flex-1 outline-none"
-            type="search"
+            className="flex-1 bg-transparent outline-none placeholder:text-neutral-400"
+            type="text"
+            placeholder="Search pages..."
             value={searchValue}
-            onChange={(e) => {
-              setSearchValue(e.target.value);
-              mutate({ title: e.target.value });
+            onChange={(event) => {
+              setSearchValue(event.target.value);
             }}
-          ></input>
+          />
+          {isSearching && (
+            <RiLoader4Line className="shrink-0 animate-spin text-sm text-neutral-400" />
+          )}
         </div>
       </header>
-      <main className="p-2">
-        <RenderList />
+      <main className="max-h-[280px] overflow-y-auto p-2">
+        {isSearching ? (
+          <div className="px-3 py-8 text-center text-sm text-neutral-400" />
+        ) : notes.length > 0 ? (
+          <div className="space-y-1">
+            {notes.map((note) => (
+              <ItemBase
+                key={note._id}
+                post={note}
+                pathLabel={note.pathLabel}
+                selected={note._id === selectedId}
+                onClick={onChange}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="px-3 py-8 text-center text-sm text-neutral-400">
+            没有找到匹配的页面
+          </div>
+        )}
       </main>
     </div>
   );

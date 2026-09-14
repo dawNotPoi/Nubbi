@@ -13,7 +13,6 @@ export default function NoteMenu() {
   const user = data?.user.id;
   const {
     data: rootPosts,
-    refetch,
     isLoading,
   } = useAtomValue(rootPostsAtom(user || ""));
   const { mutate: createPost } = useAtomValue(createPostAtom);

@@ -15,16 +15,19 @@ import {
 } from "../../api/post";
 import { queryClient } from "../../AppProvider";
 
-// 文章缓存管理
+type PostPropertiesInput = Parameters<typeof updatePostProperties>[1];
+
+const postListQueryKey = (parentId?: string | null) =>
+  parentId ? ["posts", parentId] : ["posts", "root"];
+
 interface PostCache {
   [postId: string]: {
     data: PostWithContent | Post;
     timestamp: number;
-    isDetail: boolean; // 是否包含完整内容
+    isDetail: boolean;
   };
 }
 
-// 文章树结构缓存
 interface PostTreeCache {
   [parentId: string]: {
     children: Post[];
@@ -32,37 +35,35 @@ interface PostTreeCache {
   };
 }
 
-// 基础状态
 export const postCacheAtom = atomWithStorage<PostCache>("post-cache", {});
 export const postTreeCacheAtom = atomWithStorage<PostTreeCache>(
   "post-tree-cache",
   {},
 );
-export const expandedNodesAtom = atomWithStorage<Set<string>>(
+export const expandedNodesAtom = atomWithStorage<string[]>(
   "expanded-nodes",
-  new Set(),
+  [],
 );
 export const selectedPostIdAtom = atom<string | null>(null);
 
-// 根级文章查询
 export const rootPostsAtom = atomFamily((owner: string) =>
   atomWithQuery(
     () => ({
-      queryKey: ["posts"],
+      queryKey: postListQueryKey(),
       queryFn: async () => {
         const response = await getRootPosts(owner);
         return response.data || [];
       },
-      staleTime: 5 * 60 * 1000, // 5分钟内不重新请求
-      gcTime: 10 * 60 * 1000, // 10分钟内保留在内存
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
     }),
     () => queryClient,
   ),
 );
-// 文章子级查询
+
 export const postChildrenAtom = atomFamily((postId: string) =>
   atomWithQuery(() => ({
-    queryKey: ["post", postId],
+    queryKey: postListQueryKey(postId),
     queryFn: async () => {
       const response = await getDirectChildren(postId);
       return response.data;
@@ -78,7 +79,6 @@ export const recentPostAtom = atomWithQuery(() => ({
   },
 }));
 
-// 文章详情查询（带缓存）
 export const postDetailAtom = atomFamily((postId: string) =>
   atomWithQuery(() => ({
     queryKey: ["post", "detail", postId],
@@ -86,133 +86,167 @@ export const postDetailAtom = atomFamily((postId: string) =>
       const response = await getPostDetail(postId);
       return response.data;
     },
-    staleTime: 2 * 60 * 1000, // 2分钟内不重新请求
+    staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
   })),
 );
 
-// 创建文章的 mutation atom
 export const createPostAtom = atomWithMutation(() => ({
-  mutationFn: (post: PostWithContent) => {
-    return createPost(post);
-  },
-  // 乐观更新
+  mutationFn: (post: PostWithContent) => createPost(post),
   onMutate: async (post) => {
-    const { parentId } = post;
-    const queryKey = parentId ? ["posts", parentId] : ["posts"];
+    const queryKey = postListQueryKey(post.parentId);
     await queryClient.cancelQueries({ queryKey });
     const previousPosts = queryClient.getQueryData<PostWithContent[]>(queryKey);
+
     queryClient.setQueryData<PostWithContent[]>(queryKey, (old = []) => [
-      // 插入最顶部
       post,
       ...(old as PostWithContent[]),
     ]);
+
     return { previousPosts };
   },
   onError: (error, variables, context) => {
     console.error("create Post error", error);
 
-    const { parentId } = variables;
-    const queryKey = parentId ? ["posts", parentId] : ["posts"];
-    // 回退
+    const queryKey = postListQueryKey(variables.parentId);
     if (context?.previousPosts) {
       queryClient.setQueryData(queryKey, context.previousPosts);
     }
   },
-  onSuccess: (data, variables, context) => {
-    const { parentId } = variables;
-    const queryKey = parentId ? ["posts", parentId] : ["posts"];
-    // 成功后，不要拉取了,后导致列表闪回
-    // queryClient.invalidateQueries({ queryKey });
+  onSuccess: (_data, variables) => {
+    queryClient.setQueryData<PostWithContent[]>(
+      postListQueryKey(variables.parentId),
+      (old = []) =>
+        (old as PostWithContent[]).map((post) =>
+          post._id === variables._id ? { ...post, ...variables } : post,
+        ),
+    );
   },
 }));
 
-//单个文章删除
 export const deleteSinglePostAtom = atomWithMutation(() => ({
   mutationFn: ({
     postId,
-    parentId,
   }: {
     postId: string;
     parentId?: string | null;
-  }) => {
-    return deletePost(postId);
-  },
-  // 实现乐观更新：删除文章时，先从本地缓存移除，失败则回滚
+  }) => deletePost(postId),
   onMutate: async ({ postId, parentId }) => {
-    const queryKey = parentId ? ["posts", parentId] : ["posts"];
-    console.log(queryKey);
+    const queryKey = postListQueryKey(parentId);
     await queryClient.cancelQueries({ queryKey });
     const previousPosts = queryClient.getQueryData<Post[]>(queryKey);
-    // 先从本地缓存中过滤掉要删除的文章
+
     queryClient.setQueryData<Post[]>(queryKey, (old = []) =>
       (old as Post[]).filter((post: Post) => post._id !== postId),
     );
+
     return { previousPosts };
   },
   onError: (error, variables, context) => {
-    const { parentId } = variables;
-    const queryKey = parentId ? ["posts", parentId] : ["posts"];
-    // 回滚本地缓存
+    const queryKey = postListQueryKey(variables.parentId);
     if (context?.previousPosts) {
       queryClient.setQueryData(queryKey, context.previousPosts);
     }
     console.error("删除文章失败:", error);
   },
-  onSuccess: (data, variables, context) => {
-    const { parentId } = variables;
-    const queryKey = parentId ? ["posts", parentId] : ["posts"];
-    // queryClient.invalidateQueries({ queryKey: queryKey });
-    console.log("文章删除成功:", variables);
+  onSuccess: (_data, variables) => {
+    const queryKey = postListQueryKey(variables.parentId);
+    queryClient.invalidateQueries({ queryKey });
   },
 }));
 
-// 更新文章内容
 export const updatePostContentAtom = atomWithMutation(() => ({
-  mutationFn: ({ postId, content }: { postId: string; content: string }) => {
-    return updatePostContent(postId, content);
-  },
+  mutationFn: ({ postId, content }: { postId: string; content: string }) =>
+    updatePostContent(postId, content),
   onError: (error) => {
     console.error("更新文章失败:", error);
   },
 }));
 
-// 更新文章属性
 export const updatePostPropertiesAtom = atomWithMutation(() => ({
   mutationFn: ({
     postId,
     properties,
-    parentId,
   }: {
     postId: string;
-    properties: Partial<Post>;
-    parentId?: string;
-  }) => {
-    return updatePostProperties(postId, properties);
-  },
-  // 乐观更新 先更新数据，后拉取，失败则回退
+    properties: PostPropertiesInput;
+    parentId?: string | null;
+  }) => updatePostProperties(postId, properties),
   onMutate: async ({ postId, properties, parentId }) => {
-    console.log(properties);
-    const queryKey = parentId ? ["posts", parentId] : ["posts"];
-    await queryClient.cancelQueries({ queryKey });
-    const previousPosts = queryClient.getQueryData<Post[]>(queryKey);
-    queryClient.setQueryData<Post[]>(queryKey, (old = []) =>
-      (old as Post[]).map((post: Post) =>
-        post._id === postId ? { ...post, ...properties } : post,
-      ),
+    const currentQueryKey = postListQueryKey(parentId);
+    const nextParentId = properties.parentId ?? parentId;
+    const nextQueryKey = postListQueryKey(nextParentId);
+    const detailQueryKey = ["post", "detail", postId];
+    await queryClient.cancelQueries({ queryKey: currentQueryKey });
+    if (JSON.stringify(currentQueryKey) !== JSON.stringify(nextQueryKey)) {
+      await queryClient.cancelQueries({ queryKey: nextQueryKey });
+    }
+    await queryClient.cancelQueries({ queryKey: detailQueryKey });
+    const previousPosts = queryClient.getQueryData<Post[]>(currentQueryKey);
+    const previousNextPosts = queryClient.getQueryData<Post[]>(nextQueryKey);
+    const previousDetail = queryClient.getQueryData<PostWithContent>(detailQueryKey);
+    const currentPost =
+      previousPosts?.find((post) => post._id === postId) ??
+      previousDetail ??
+      null;
+    const nextPost =
+      currentPost == null
+        ? null
+        : ({
+            ...currentPost,
+            ...properties,
+            parentId: nextParentId ?? null,
+          } as PostWithContent);
+
+    if (parentId !== nextParentId) {
+      queryClient.setQueryData<Post[]>(currentQueryKey, (old = []) =>
+        (old as Post[]).filter((post: Post) => post._id !== postId),
+      );
+      if (nextPost) {
+        queryClient.setQueryData<Post[]>(nextQueryKey, (old = []) => {
+          const nextList = (old as Post[]).filter((post) => post._id !== postId);
+          return [nextPost, ...nextList];
+        });
+      }
+    } else {
+      queryClient.setQueryData<Post[]>(currentQueryKey, (old = []) =>
+        (old as Post[]).map((post: Post) =>
+          post._id === postId ? { ...post, ...properties } : post,
+        ),
+      );
+    }
+    queryClient.setQueryData<PostWithContent>(detailQueryKey, (old) =>
+      old ? { ...old, ...properties } : old,
     );
-    return { previousPosts };
+
+    return { previousPosts, previousNextPosts, previousDetail, nextParentId };
   },
-  onError: (err, variables, context) => {
+  onError: (_error, variables, context) => {
     if (context?.previousPosts) {
-      const { parentId } = variables;
-      const queryKey = parentId ? ["posts", parentId] : ["posts"];
-      queryClient.setQueryData(queryKey, context.previousPosts);
+      queryClient.setQueryData(
+        postListQueryKey(variables.parentId),
+        context.previousPosts,
+      );
+    }
+    if (context?.previousNextPosts) {
+      queryClient.setQueryData(
+        postListQueryKey(context.nextParentId),
+        context.previousNextPosts,
+      );
+    }
+    if (context?.previousDetail) {
+      queryClient.setQueryData(
+        ["post", "detail", variables.postId],
+        context.previousDetail,
+      );
     }
   },
-  onSuccess: (data, variables, context) => {
-    const { parentId } = variables;
-    const queryKey = parentId ? ["posts", parentId] : ["posts"];
-    queryClient.invalidateQueries({ queryKey: queryKey });
+  onSuccess: (_data, variables) => {
+    const currentQueryKey = postListQueryKey(variables.parentId);
+    const nextQueryKey = postListQueryKey(variables.properties.parentId ?? variables.parentId);
+    queryClient.invalidateQueries({ queryKey: currentQueryKey });
+    if (JSON.stringify(currentQueryKey) !== JSON.stringify(nextQueryKey)) {
+      queryClient.invalidateQueries({ queryKey: nextQueryKey });
+    }
   },
 }));

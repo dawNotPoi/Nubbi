@@ -1,4 +1,5 @@
 import request, { requestWithNoJson } from "./request";
+const baseUrl = import.meta.env.VITE_API_URL;
 
 export interface FolderRecord {
   _id: string;
@@ -116,4 +117,8 @@ export const imgToGitCloud = async (file: File): Promise<string> => {
     console.log("文件格式错误");
     return "";
   }
+};
+
+export const getFileDownloadUrl = (fileId: string) => {
+  return `${baseUrl}/file/download/${fileId}`;
 };

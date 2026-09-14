@@ -1,13 +1,34 @@
 import { Post } from "@/api/post";
 import { IconButton, MenuItemContainer } from "@/component/SideBar/components";
-import { deleteSinglePostAtom, postChildrenAtom } from "@/store/atom/postAtom";
+import {
+  deleteSinglePostAtom,
+  expandedNodesAtom,
+  postChildrenAtom,
+} from "@/store/atom/postAtom";
 import { FileTextOutlined, RightOutlined } from "@ant-design/icons";
 import clsx from "clsx";
-import { useAtomValue } from "jotai";
-import { useState } from "react";
+import { useAtom, useAtomValue } from "jotai";
 import { RiDeleteBinLine } from "react-icons/ri";
 import { useNavigate, useParams } from "react-router-dom";
 import { WrittingModal } from "./WritingModal";
+
+const DEFAULT_TITLE = "未命名文档";
+
+function NoteChildren({ postId, level }: { postId: string; level: number }) {
+  const { data: children, isLoading } = useAtomValue(postChildrenAtom(postId));
+
+  if (isLoading) {
+    return <div className="ml-4 text-xs text-gray-400">加载中...</div>;
+  }
+
+  if (!children || children.length === 0) {
+    return <div className="ml-8 py-1 text-gray-400">暂无文档</div>;
+  }
+
+  return children.map((child) => (
+    <NoteItem key={child._id} post={child} level={level + 1} />
+  ));
+}
 
 function NoteItem({
   post,
@@ -19,80 +40,71 @@ function NoteItem({
   className?: string;
 }) {
   const { Id } = useParams();
-  const [open, setOpen] = useState(false);
+  const [expandedNodes, setExpandedNodes] = useAtom(expandedNodesAtom);
   const navigate = useNavigate();
-  // 获取当前节点的子文章
-
   const { mutate: deletePost } = useAtomValue(deleteSinglePostAtom);
+  const open = expandedNodes.includes(post._id);
+
   const deletePostHandler = (postId: string) => {
     deletePost({ postId, parentId: post.parentId });
   };
 
-  const ChildrenRender = () => {
-    const { data: children, isLoading } = useAtomValue(
-      postChildrenAtom(post._id)
-    );
-    return (
-      <>
-        {isLoading ? (
-          <div className="ml-4 text-xs text-gray-400">加载中...</div>
-        ) : children && children?.length > 0 ? (
-          children?.map((child) => (
-            <NoteItem key={child._id} post={child} level={level + 1} />
-          ))
-        ) : (
-          <div className="ml-8 text-gray-400 py-1">暂无文章</div>
-        )}
-      </>
-    );
+  const setOpen = (nextOpen: boolean | ((prev: boolean) => boolean)) => {
+    setExpandedNodes((prev) => {
+      const currentOpen = prev.includes(post._id);
+      const resolvedOpen =
+        typeof nextOpen === "function" ? nextOpen(currentOpen) : nextOpen;
+
+      if (resolvedOpen) {
+        return currentOpen ? prev : [...prev, post._id];
+      }
+
+      return prev.filter((id) => id !== post._id);
+    });
   };
 
   return (
-    <div className={clsx(className, "mt-0.5 ")}>
+    <div className={clsx(className, "mt-0.5")}>
       <MenuItemContainer
         style={{ paddingLeft: level * 8 }}
         className={clsx(
-          "flex items-center group hover:bg-neutral-400/40 rounded-md",
-          post._id == Id && "bg-neutral-400/10"
+          "group flex items-center rounded-md hover:bg-neutral-400/40",
+          post._id === Id && "bg-neutral-400/10",
         )}
       >
-        <IconButton>
+        <IconButton
+          onClick={(e) => {
+            e.stopPropagation();
+            setOpen((v) => !v);
+          }}
+        >
           <FileTextOutlined className="group-hover:hidden" />
           <RightOutlined
-            onClick={() => {
-              setOpen((v) => !v);
-            }}
             className={clsx(
-              "hidden group-hover:block transition-all",
-              open && "rotate-90"
+              "hidden transition-all group-hover:block",
+              open && "rotate-90",
             )}
             size={20}
           />
         </IconButton>
         <span
-          className="ml-1 flex-1 truncate cursor-pointer"
+          className="ml-1 flex-1 cursor-pointer truncate"
           onClick={() => navigate(`note/${post._id}`)}
         >
-          {post.title || "未命名文章"}
+          {post.title || DEFAULT_TITLE}
         </span>
 
-        {/* 删除按钮 */}
         <IconButton
-          className="hidden group-hover:block size-6"
+          className="hidden size-6 group-hover:block"
           onClick={() => deletePostHandler(post._id)}
         >
           <RiDeleteBinLine className="size-full" />
         </IconButton>
-        {/* 添加按钮 */}
-        <IconButton className="hidden group-hover:block size-6">
-          <WrittingModal
-            parent={post}
-            onTrigger={() => setOpen(true)}
-            parent={post}
-          />
+        <IconButton className="hidden size-6 group-hover:block">
+          <WrittingModal parent={post} onTrigger={() => setOpen(true)} />
         </IconButton>
       </MenuItemContainer>
-      {open && <ChildrenRender></ChildrenRender>}
+      {open && <NoteChildren postId={post._id} level={level} />}
     </div>
   );
 }
