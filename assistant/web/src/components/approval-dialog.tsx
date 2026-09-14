@@ -2,7 +2,12 @@ import { ShieldCheck, X } from "lucide-react";
 import type { ApprovalRequest } from "../types";
 import { Button } from "./ui/button";
 
-/** 工具审批弹窗：展示服务器、工具与参数，让用户决定是否允许一次。 */
+/**
+ * 工具审批弹窗：展示服务器、工具与参数，让用户决定是否允许一次。
+ * @param props.approval 待处理的审批请求，为 null 时不渲染。
+ * @param props.onDecision 用户决定回调，参数为是否允许。
+ * @returns 审批弹窗视图；无审批时返回 null。
+ */
 export const ApprovalDialog = ({
   approval,
   onDecision,

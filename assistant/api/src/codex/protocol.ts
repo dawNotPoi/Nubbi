@@ -80,11 +80,20 @@ export type ServerRequestHandler = (
   params: unknown,
 ) => Promise<unknown>;
 
-/** 类型守卫：判断值是否为普通对象（非数组、非 null）。 */
+/**
+ * 类型守卫：判断值是否为普通对象（非数组、非 null）。
+ * @param value 任意未知类型的值。
+ * @returns 值为普通对象时返回 true，并收窄类型为 JsonObject。
+ */
 export const isRecord = (value: unknown): value is JsonObject =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
-/** 从对象中安全读取字符串字段，类型不对时返回 null。 */
+/**
+ * 从对象中安全读取字符串字段，类型不对时返回 null。
+ * @param value 目标对象。
+ * @param key 要读取的字段名。
+ * @returns 字段存在且为字符串时返回其值，否则返回 null。
+ */
 export const readString = (value: unknown, key: string): string | null => {
   if (!isRecord(value)) return null;
   return typeof value[key] === "string" ? value[key] : null;

@@ -25,7 +25,11 @@ const responseSchema = z.object({
   })).min(1),
 });
 
-/** 模型返回的工具参数是 JSON 字符串，解析失败时降级为空对象，避免整个请求失败。 */
+/**
+ * 模型返回的工具参数是 JSON 字符串，解析失败时降级为空对象，避免整个请求失败。
+ * @param source 模型返回的工具参数 JSON 字符串。
+ * @returns 解析后的参数对象；解析失败时为空对象。
+ */
 const parseArguments = (source: string): Record<string, unknown> => {
   try {
     const value: unknown = JSON.parse(source);
@@ -40,6 +44,11 @@ const parseArguments = (source: string): Record<string, unknown> => {
 /**
  * 调用 OpenAI 兼容的 /chat/completions 接口。
  * 返回拆分后的内容、结构化工具调用以及供多轮对话回传的 assistant 消息。
+ * @param messages 多轮对话消息历史。
+ * @param tools 可用工具定义，为空时省略 tools 参数。
+ * @param signal 取消信号，用于中止请求。
+ * @param config 模型配置（Base URL、API Key、模型名与温度策略）。
+ * @returns 响应内容、解析后的工具调用列表与原始 assistant 消息。
  */
 export const requestModel = async (
   messages: ModelMessage[],
@@ -52,6 +61,10 @@ export const requestModel = async (
   }
   const headers = new Headers({ "Content-Type": "application/json" });
   if (config.apiKey) headers.set("Authorization", `Bearer ${config.apiKey}`);
+  // 应用用户自定义请求头，可覆盖默认的 Content-Type / Authorization。
+  for (const [name, value] of Object.entries(config.headers ?? {})) {
+    headers.set(name, value);
+  }
   // 去掉末尾斜杠，避免拼出双斜杠路径。
   const response = await fetch(`${config.baseUrl.replace(/\/+$/, "")}/chat/completions`, {
     method: "POST",
@@ -62,8 +75,8 @@ export const requestModel = async (
       // 没有可用工具时不传 tools，避免部分 Provider 报错。
       tools: tools.length ? tools : undefined,
       tool_choice: tools.length ? "auto" : undefined,
-      // 固定较低温度，保证个人助手的回答更稳定、少随机。
-      temperature: 0.3,
+      // 固定较低温度，保证个人助手的回答更稳定、少随机；用户可自定义。
+      temperature: config.temperature ?? 0.3,
     }),
     signal,
   });

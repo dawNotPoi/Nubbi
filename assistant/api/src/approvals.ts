@@ -22,6 +22,8 @@ const approvalTimeoutMs = 5 * 60 * 1000;
 /**
  * 发起一次工具审批并挂起等待用户决定。
  * 返回 approvalId 供外部通过 HTTP 回调决定，超时或取消都归为拒绝。
+ * @param input 审批信息：所属线程、服务/工具名、参数与事件回调。
+ * @returns 审批 ID 与用户最终决定（超时/取消视为拒绝）。
  */
 export const requestApproval = async (input: ApprovalInput): Promise<{
   approvalId: string;
@@ -55,7 +57,12 @@ export const requestApproval = async (input: ApprovalInput): Promise<{
   return { approvalId, approved };
 };
 
-/** 由 HTTP 审批接口调用，找到对应的挂起审批并落地用户决定。 */
+/**
+ * 由 HTTP 审批接口调用，找到对应的挂起审批并落地用户决定。
+ * @param approvalId 待处理的审批 ID。
+ * @param approved 用户的决定（允许或拒绝）。
+ * @returns 找到并处理返回 resolved，找不到或已结束返回 missing。
+ */
 export const resolveApproval = (
   approvalId: string,
   approved: boolean,
@@ -66,7 +73,11 @@ export const resolveApproval = (
   return "resolved";
 };
 
-/** 结束某线程（Run）下所有挂起审批，用于取消生成或 Run 结束时清理。 */
+/**
+ * 结束某线程（Run）下所有挂起审批，用于取消生成或 Run 结束时清理。
+ * @param threadId 要清理审批的线程（Run）ID。
+ * @returns 无返回值。
+ */
 export const cancelThreadApprovals = (threadId: string): void => {
   [...pending.entries()]
     .filter(([, item]) => item.threadId === threadId)

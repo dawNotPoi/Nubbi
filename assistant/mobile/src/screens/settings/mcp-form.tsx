@@ -8,6 +8,15 @@ import { fromMcpDraft, toMcpDraft, type HeaderDraft } from "./mcp-draft";
 import { Notice } from "./notice";
 import { settingsStyles as styles } from "./styles";
 
+/**
+ * MCP 服务编辑表单：字段编辑、请求头管理与测试/保存操作。
+ * @param props.server 待编辑的服务配置，null 表示新增。
+ * @param props.busy 是否处于加载中。
+ * @param props.onBack 返回列表页的回调。
+ * @param props.onSave 保存回调。
+ * @param props.onTest 测试连接回调。
+ * @returns MCP 编辑表单视图。
+ */
 export const McpForm = ({
   server,
   busy,
@@ -24,6 +33,11 @@ export const McpForm = ({
   const [draft, setDraft] = useState(() => toMcpDraft(server));
   const [message, setMessage] = useState("");
 
+  /**
+   * 执行保存或测试：先校验草稿，再调用对应回调。
+   * @param action 要执行的操作（保存或测试）。
+   * @returns 操作完成后的 Promise。
+   */
   const run = async (action: "save" | "test"): Promise<void> => {
     try {
       setMessage("");
@@ -35,6 +49,12 @@ export const McpForm = ({
     }
   };
 
+  /**
+   * 更新指定索引请求头的字段。
+   * @param index 请求头在草稿数组中的索引。
+   * @param patch 要合并的字段更新。
+   * @returns 无返回值。
+   */
   const updateHeader = (index: number, patch: Partial<HeaderDraft>): void => {
     setDraft({
       ...draft,

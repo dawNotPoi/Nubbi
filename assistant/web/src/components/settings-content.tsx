@@ -3,7 +3,22 @@ import type { McpServerConfig } from "../types";
 import { ModelSettingsPanel } from "./model-settings-panel";
 import { Button } from "./ui/button";
 
-/** 设置内容区：按当前 section 渲染模型设置或 MCP 服务列表。 */
+/**
+ * 设置内容区：按当前 section 渲染模型设置或 MCP 服务列表。
+ * @param props.token 配置管理密钥。
+ * @param props.section 当前展示的分区（模型或 MCP）。
+ * @param props.servers MCP 服务列表。
+ * @param props.loading 是否加载中。
+ * @param props.notice 成功提示文案。
+ * @param props.error 错误提示文案。
+ * @param props.onSectionChange 切换分区回调。
+ * @param props.onCreate 新增 MCP 回调。
+ * @param props.onEdit 编辑 MCP 回调。
+ * @param props.onToggle 启停 MCP 回调。
+ * @param props.onTest 测试 MCP 回调。
+ * @param props.onRemove 删除 MCP 回调。
+ * @returns 设置内容区视图。
+ */
 export const SettingsContent = ({
   token,
   section,

@@ -20,7 +20,12 @@ import {
   type TurnResponse,
 } from "./protocol.js";
 
-/** 创建新的 Codex 线程，只读沙箱、审批交给用户，工具只提供动态工具。 */
+/**
+ * 创建新的 Codex 线程，只读沙箱、审批交给用户，工具只提供动态工具。
+ * @param modelConfig 模型配置，用于指定模型与系统提示。
+ * @param tools MCP 工具列表，转换为动态工具随线程创建传入。
+ * @returns 新建线程的 ID。
+ */
 const startThread = async (
   modelConfig: StoredModelConfig,
   tools: McpTool[],
@@ -44,6 +49,10 @@ const startThread = async (
 /**
  * 续接已有线程；续接失败（如本地 Codex 数据被清理）时回退为新线程。
  * 返回是否新建，供调用方决定是否注入历史上下文。
+ * @param currentId 已保存的 Codex 线程 ID，可空。
+ * @param modelConfig 模型配置，用于创建新线程时使用。
+ * @param tools MCP 工具列表，仅在新建线程时使用。
+ * @returns 解析后的线程 ID 与是否新建的标记。
  */
 const resolveThread = async (
   currentId: string | undefined,
@@ -71,6 +80,10 @@ const resolveThread = async (
 /**
  * 挂起等待当前 turn 完成：
  * 监听 Codex 的流式文本增量与 turn/completed 通知，支持中途取消。
+ * @param threadId 正在运行的 Codex 线程 ID。
+ * @param signal 取消信号，中止时拒绝 promise。
+ * @param emit 事件回调，用于推送流式文本增量。
+ * @returns promise 与手动取消函数；promise 解析为累积的流式文本。
  */
 const waitForTurn = (
   threadId: string,
@@ -114,6 +127,8 @@ const waitForTurn = (
  * Codex Provider 执行入口：
  * 确保登录 → 续接/新建线程 → 注册动态工具上下文 → 启动 turn 并等待完成。
  * 流式文本通过事件推送，最终把纯文本拼成消息 parts 返回。
+ * @param input Provider 执行上下文，包含对话、模型配置、工具网关与取消信号。
+ * @returns 最终助手消息的内容块数组（文本 / 工具执行 / 错误等）。
  */
 export const runCodex = async (input: ProviderExecutorInput): Promise<MessagePart[]> => {
   installDynamicToolHandler();

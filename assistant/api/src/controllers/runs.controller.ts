@@ -16,12 +16,22 @@ import type { RuntimeEvent } from "../types.js";
 export class RunsController {
   constructor(@Inject(RunsService) private readonly runs: RunsService) {}
 
+  /**
+   * 停止指定对话的生成任务。
+   * @param conversationId 对话的唯一 ID。
+   * @returns 无返回值。
+   */
   @Post("conversations/:id/generations/stop")
   @HttpCode(204)
   stop(@Param("id") conversationId: string): void {
     this.runs.stop(conversationId);
   }
 
+  /**
+   * 查询对话的全部 Run 摘要。
+   * @param conversationId 对话的唯一 ID。
+   * @returns Run 摘要列表；对话不存在时抛 404。
+   */
   @Get("conversations/:id/runs")
   async list(@Param("id") conversationId: string): Promise<RunSummary[]> {
     if (!await this.runs.getConversation(conversationId)) {
@@ -30,6 +40,11 @@ export class RunsController {
     return this.runs.list(conversationId);
   }
 
+  /**
+   * 查询指定 Run 的全部事件。
+   * @param runId Run 的唯一 ID。
+   * @returns 该 Run 的事件列表；没有事件时抛 404。
+   */
   @Get("runs/:id/events")
   async events(@Param("id") runId: string): Promise<RuntimeEvent[]> {
     const events = await this.runs.events(runId);

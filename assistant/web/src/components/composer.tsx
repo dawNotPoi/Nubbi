@@ -2,7 +2,13 @@ import { SendHorizontal, Square } from "lucide-react";
 import { useState, type KeyboardEvent } from "react";
 import { Button } from "./ui/button";
 
-/** 底部输入区：支持 Enter 发送、Shift+Enter 换行，生成中切换为停止按钮。 */
+/**
+ * 底部输入区：支持 Enter 发送、Shift+Enter 换行，生成中切换为停止按钮。
+ * @param props.generating 是否正在生成，生成中禁用输入并显示停止按钮。
+ * @param props.onSend 发送消息回调。
+ * @param props.onStop 停止生成回调。
+ * @returns 输入区视图。
+ */
 export const Composer = ({
   generating,
   onSend,
@@ -14,6 +20,10 @@ export const Composer = ({
 }) => {
   const [value, setValue] = useState("");
 
+  /**
+   * 发送当前输入框内容并清空草稿。
+   * @returns 发送完成后的 Promise。
+   */
   const submit = async (): Promise<void> => {
     const content = value.trim();
     if (!content || generating) return;
@@ -21,6 +31,11 @@ export const Composer = ({
     await onSend(content);
   };
 
+  /**
+   * 键盘事件处理：未组合输入时回车发送，Shift+回车换行。
+   * @param event 文本域键盘事件。
+   * @returns 无返回值。
+   */
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>): void => {
     if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
       event.preventDefault();

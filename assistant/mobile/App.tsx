@@ -8,6 +8,10 @@ import { SettingsScreen } from "./src/screens/settings-screen";
 import { readApiUrl } from "./src/storage";
 import { colors } from "./src/theme";
 
+/**
+ * 应用根组件：用安全区域容器包裹整个应用。
+ * @returns 应用根视图。
+ */
 export default function App() {
   // 安全区域容器包裹整个应用，避免刘海屏/底部手势区域遮挡内容。
   return (
@@ -17,6 +21,10 @@ export default function App() {
   );
 }
 
+/**
+ * 应用主体：读取 API 地址，按状态展示加载页、连接页或聊天页。
+ * @returns 当前状态对应的主界面视图。
+ */
 function AppContent() {
   // baseUrl 为 null 表示还在读取本地存储，此时展示加载态。
   const [baseUrl, setBaseUrl] = useState<string | null>(null);

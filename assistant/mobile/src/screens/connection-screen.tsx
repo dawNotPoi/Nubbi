@@ -13,6 +13,12 @@ import { Button, Field } from "../components/controls";
 import { normalizeApiUrl, saveApiUrl } from "../storage";
 import { colors } from "../theme";
 
+/**
+ * 连接页：输入并校验 API 地址，成功后回调 onConnected 进入聊天页。
+ * @param props.initialUrl 上次保存的地址，作为输入框初始值。
+ * @param props.onConnected 连接成功后的回调，参数为规范化地址。
+ * @returns 连接表单视图。
+ */
 export const ConnectionScreen = ({
   initialUrl,
   onConnected,
@@ -24,7 +30,10 @@ export const ConnectionScreen = ({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  // 校验并保存地址，成功后回调父组件进入聊天页。
+  /**
+   * 校验并保存地址，成功后回调父组件进入聊天页。
+   * @returns 连接流程完成后的 Promise。
+   */
   const connect = async (): Promise<void> => {
     setBusy(true);
     setError("");

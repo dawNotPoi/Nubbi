@@ -3,7 +3,21 @@ import { Button, Checkbox, Field } from "../../components/controls";
 import type { CodexAccount, DeviceLogin, ModelConfig } from "../../types";
 import { settingsStyles as styles } from "./styles";
 
-/** 按当前 Provider 渲染对应的登录/密钥字段：API Key 或 ChatGPT 订阅。 */
+/**
+ * 按当前 Provider 渲染对应的登录/密钥字段：API Key 或 ChatGPT 订阅。
+ * @param props.config 当前模型配置。
+ * @param props.setConfig 更新配置的回调。
+ * @param props.apiKey 输入的 API Key 值。
+ * @param props.setApiKey 更新 API Key 输入的回调。
+ * @param props.clearApiKey 是否清除服务端已保存的 Key。
+ * @param props.setClearApiKey 更新清除标记的回调。
+ * @param props.account Codex 账号信息。
+ * @param props.login 设备码登录信息。
+ * @param props.busy 是否处于加载中。
+ * @param props.onLogin 发起登录的回调。
+ * @param props.onLogout 退出登录的回调。
+ * @returns Provider 对应的登录/密钥字段视图。
+ */
 export const ModelProviderFields = ({
   config,
   setConfig,

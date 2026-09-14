@@ -34,7 +34,13 @@ type StreamingReply = {
   hijack: () => void;
 };
 
-/** 按 SSE（Server-Sent Events）协议格式写出一条事件，连接已结束则直接跳过。 */
+/**
+ * 按 SSE（Server-Sent Events）协议格式写出一条事件，连接已结束则直接跳过。
+ * @param response 底层 Node HTTP 响应对象。
+ * @param event 事件类型名，客户端据此分发。
+ * @param data 事件负载，序列化为 JSON 写入 data 字段。
+ * @returns 无返回值。
+ */
 const sendEvent = (response: ServerResponse, event: string, data: unknown): void => {
   if (response.writableEnded || response.destroyed) return;
   response.write(`event: ${event}\n`);
@@ -51,16 +57,29 @@ export class ConversationsController {
     @Inject(ConversationsService) private readonly conversations: ConversationsService,
   ) {}
 
+  /**
+   * 列出全部对话。
+   * @returns 对话摘要列表。
+   */
   @Get()
   list(): Promise<Omit<Conversation, "messages">[]> {
     return this.conversations.list();
   }
 
+  /**
+   * 创建一个新对话。
+   * @returns 新建的对话对象。
+   */
   @Post()
   create(): Promise<Conversation> {
     return this.conversations.create();
   }
 
+  /**
+   * 获取指定对话。
+   * @param id 对话的唯一 ID。
+   * @returns 对话对象；不存在时抛 404。
+   */
   @Get(":id")
   async get(@Param("id") id: string): Promise<Conversation> {
     const conversation = await this.conversations.get(id);
@@ -68,6 +87,11 @@ export class ConversationsController {
     return conversation;
   }
 
+  /**
+   * 删除指定对话；正在生成中的对话返回 409。
+   * @param id 对话的唯一 ID。
+   * @returns 无返回值；不存在时抛 404。
+   */
   @Delete(":id")
   @HttpCode(204)
   async delete(@Param("id") id: string): Promise<void> {
@@ -77,6 +101,13 @@ export class ConversationsController {
     if (!await this.conversations.delete(id)) throw new NotFoundException("对话不存在");
   }
 
+  /**
+   * 发送用户消息并以 SSE 流式返回助手输出。
+   * @param conversationId 对话的唯一 ID。
+   * @param input 请求体，含消息内容。
+   * @param reply 手动控制的 Fastify 响应。
+   * @returns 无返回值，结果通过 SSE 流式写入。
+   */
   @Post(":id/messages")
   async send(
     @Param("id") conversationId: string,

@@ -4,6 +4,10 @@ import type { McpServerConfig } from "../../types";
 export type HeaderDraft = { key: string; value: string };
 export type McpDraft = Omit<McpServerConfig, "headers"> & { headers: HeaderDraft[] };
 
+/**
+ * 生成空的表单草稿。
+ * @returns 全空的 MCP 表单草稿。
+ */
 const emptyMcp = (): McpDraft => ({
   id: "",
   name: "",
@@ -12,12 +16,20 @@ const emptyMcp = (): McpDraft => ({
   headers: [],
 });
 
-/** 服务端配置 → 表单草稿（headers 展开为数组）。 */
+/**
+ * 服务端配置 → 表单草稿（headers 展开为数组）。
+ * @param server 服务端保存的 MCP 配置，可空。
+ * @returns 可用于表单编辑的草稿；server 为空时返回空草稿。
+ */
 export const toMcpDraft = (server: McpServerConfig | null): McpDraft => server
   ? { ...server, headers: Object.entries(server.headers).map(([key, value]) => ({ key, value })) }
   : emptyMcp();
 
-/** 表单草稿 → 服务端配置，做基础校验并过滤空请求头。 */
+/**
+ * 表单草稿 → 服务端配置，做基础校验并过滤空请求头。
+ * @param draft 表单编辑中的草稿。
+ * @returns 校验通过的服务端配置；必填缺失或格式非法时抛出异常。
+ */
 export const fromMcpDraft = (draft: McpDraft): McpServerConfig => {
   const id = draft.id.trim();
   const name = draft.name.trim();

@@ -6,6 +6,11 @@ import {
 } from "./models/conversation.js";
 import type { Conversation, Message, MessagePart } from "./types.js";
 
+/**
+ * 将数据库文档转换为对外暴露的对话结构，并复制 parts 防止调用方修改库内对象。
+ * @param document Mongoose 查询返回的对话文档。
+ * @returns 对外安全的对话对象。
+ */
 const toConversation = (document: HydratedDocument<StoredConversation>): Conversation => ({
   id: document.id,
   title: document.title,
@@ -21,7 +26,10 @@ const toConversation = (document: HydratedDocument<StoredConversation>): Convers
   codexThreadId: document.codexThreadId,
 });
 
-/** 列出全部对话；省略消息内容，仅用于侧栏展示与选择。 */
+/**
+ * 列出全部对话；省略消息内容，仅用于侧栏展示与选择。
+ * @returns 不含消息内容的对话列表，按更新时间倒序。
+ */
 export const listConversations = async (): Promise<Omit<Conversation, "messages">[]> => {
   const documents = await ConversationModel.find({}, { messages: 0 })
     .sort({ updatedAt: -1 })
@@ -35,6 +43,10 @@ export const listConversations = async (): Promise<Omit<Conversation, "messages"
   }));
 };
 
+/**
+ * 创建一个标题为“新对话”的空对话。
+ * @returns 新建的对话对象。
+ */
 export const createConversation = async (): Promise<Conversation> => {
   const now = new Date().toISOString();
   const document = await ConversationModel.create({
@@ -47,16 +59,33 @@ export const createConversation = async (): Promise<Conversation> => {
   return toConversation(document);
 };
 
+/**
+ * 按 ID 获取对话。
+ * @param id 对话的唯一 ID。
+ * @returns 对话对象；不存在时返回 null。
+ */
 export const getConversation = async (id: string): Promise<Conversation | null> => {
   const document = await ConversationModel.findOne({ id }).exec();
   return document ? toConversation(document) : null;
 };
 
+/**
+ * 按 ID 删除对话。
+ * @param id 对话的唯一 ID。
+ * @returns 是否确实删除了对话。
+ */
 export const deleteConversation = async (id: string): Promise<boolean> => {
   const result = await ConversationModel.deleteOne({ id }).exec();
   return result.deletedCount === 1;
 };
 
+/**
+ * 向对话追加一条消息；首条用户消息会截取前 24 字符作为对话标题。
+ * @param id 对话的唯一 ID。
+ * @param role 消息角色（用户或助手）。
+ * @param parts 消息内容块列表。
+ * @returns 新追加的消息；对话不存在时抛出异常。
+ */
 export const appendMessage = async (
   id: string,
   role: Message["role"],
@@ -81,12 +110,22 @@ export const appendMessage = async (
   return message;
 };
 
+/**
+ * 保存对话关联的 Codex 订阅线程 ID。
+ * @param id 对话的唯一 ID。
+ * @param threadId Codex 线程 ID。
+ * @returns 无返回值；对话不存在时抛出异常。
+ */
 export const setCodexThreadId = async (id: string, threadId: string): Promise<void> => {
   const result = await ConversationModel.updateOne({ id }, { $set: { codexThreadId: threadId } })
     .exec();
   if (!result.matchedCount) throw new Error("对话不存在");
 };
 
+/**
+ * 清空所有对话的 Codex 线程 ID，用于配置变更后强制下一轮重新建线程。
+ * @returns 无返回值。
+ */
 export const clearCodexThreadIds = async (): Promise<void> => {
   await ConversationModel.updateMany(
     { codexThreadId: { $exists: true } },

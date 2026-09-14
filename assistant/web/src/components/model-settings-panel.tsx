@@ -3,24 +3,41 @@ import { useCallback, useEffect, useState } from "react";
 import { fetchProviderModels, getModelConfig, saveModelConfig } from "../api";
 import type { ModelConfig } from "../types";
 import { CodexAccountPanel } from "./codex-account-panel";
+import { KeyValueEditor } from "./key-value-editor";
+import {
+  pairsToRecord,
+  recordToPairs,
+  type KeyValuePair,
+} from "./mcp-form-utils";
 import { Button } from "./ui/button";
 
+/**
+ * 生成默认模型配置。
+ * @returns 全空的模型配置对象。
+ */
 const emptyConfig = (): ModelConfig => ({
   provider: "openai-compatible",
   authType: "api-key",
   baseUrl: "",
   model: "",
   systemPrompt: "",
+  headers: {},
   apiKeyConfigured: false,
 });
 
 const inputClass = "h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15";
 
-/** 模型设置面板：切换 Provider、配置 API Key 或 ChatGPT 登录、选择模型与系统提示词。 */
+/**
+ * 模型设置面板：切换 Provider、配置 API Key 或 ChatGPT 登录、选择模型与系统提示词。
+ * @param props.token 配置管理密钥。
+ * @returns 模型设置面板视图。
+ */
 export const ModelSettingsPanel = ({ token }: { token: string }) => {
   const [config, setConfig] = useState<ModelConfig>(emptyConfig);
   const [apiKey, setApiKey] = useState("");
   const [clearApiKey, setClearApiKey] = useState(false);
+  const [headerPairs, setHeaderPairs] = useState<KeyValuePair[]>([]);
+  const [temperature, setTemperature] = useState("");
   const [models, setModels] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
@@ -28,13 +45,22 @@ export const ModelSettingsPanel = ({ token }: { token: string }) => {
   useEffect(() => {
     setLoading(true);
     void getModelConfig(token)
-      .then(setConfig)
+      .then((value) => {
+        setConfig(value);
+        setHeaderPairs(recordToPairs(value.headers));
+        setTemperature(value.temperature == null ? "" : String(value.temperature));
+      })
       .catch((error: unknown) => setMessage(
         error instanceof Error ? error.message : "加载模型配置失败",
       ))
       .finally(() => setLoading(false));
   }, [token]);
 
+  /**
+   * 接收 Codex 模型列表并同步到配置。
+   * @param values Codex 模型 ID 列表。
+   * @returns 无返回值。
+   */
   const receiveCodexModels = useCallback((values: string[]) => {
     setModels(values);
     setConfig((current) => ({
@@ -43,6 +69,10 @@ export const ModelSettingsPanel = ({ token }: { token: string }) => {
     }));
   }, []);
 
+  /**
+   * 拉取并展示 Provider 可用模型列表。
+   * @returns 拉取完成后的 Promise。
+   */
   const fetchModels = async (): Promise<void> => {
     if (!config.baseUrl.trim()) {
       setMessage("请先填写 Base URL");
@@ -54,6 +84,7 @@ export const ModelSettingsPanel = ({ token }: { token: string }) => {
       const result = await fetchProviderModels(token, {
         baseUrl: config.baseUrl.trim(),
         apiKey: apiKey.trim() || undefined,
+        headers: pairsToRecord(headerPairs),
       });
       setModels(result.models);
       if (!config.model && result.models[0]) {
@@ -67,16 +98,27 @@ export const ModelSettingsPanel = ({ token }: { token: string }) => {
     }
   };
 
+  /**
+   * 保存模型配置；订阅模式固定为 ChatGPT 登录，API 模式固定为 api-key。
+   * @returns 保存完成后的 Promise。
+   */
   const save = async (): Promise<void> => {
     setLoading(true);
     setMessage(null);
     try {
+      const temperatureValue =
+        temperature.trim() === "" ? undefined : Number(temperature);
       const saved = await saveModelConfig(token, {
         provider: config.provider,
         authType: config.provider === "codex-subscription" ? "chatgpt" : "api-key",
         baseUrl: config.baseUrl.trim(),
         model: config.model,
         systemPrompt: config.systemPrompt,
+        headers: pairsToRecord(headerPairs),
+        temperature:
+          temperatureValue === undefined || Number.isNaN(temperatureValue)
+            ? undefined
+            : temperatureValue,
         apiKey: apiKey.trim() || undefined,
         clearApiKey,
       });
@@ -91,6 +133,11 @@ export const ModelSettingsPanel = ({ token }: { token: string }) => {
     }
   };
 
+  /**
+   * 切换 Provider 并重置模型列表。
+   * @param provider 目标 Provider 类型。
+   * @returns 无返回值。
+   */
   const changeProvider = (provider: ModelConfig["provider"]): void => {
     setModels([]);
     setConfig({ ...config, provider, authType: provider === "codex-subscription" ? "chatgpt" : "api-key" });
@@ -128,6 +175,24 @@ export const ModelSettingsPanel = ({ token }: { token: string }) => {
               清除已保存的 API Key
             </label>
           ) : null}
+          <label className="block space-y-1.5 text-sm font-medium">
+            采样温度
+            <input
+              className={inputClass}
+              max={2}
+              min={0}
+              onChange={(event) => setTemperature(event.target.value)}
+              placeholder="默认 0.3，范围 0~2"
+              step={0.1}
+              type="number"
+              value={temperature}
+            />
+          </label>
+          <KeyValueEditor
+            label="自定义请求头"
+            onChange={setHeaderPairs}
+            pairs={headerPairs}
+          />
         </>
       )}
 

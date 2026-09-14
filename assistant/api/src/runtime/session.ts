@@ -35,6 +35,12 @@ export class RuntimeSession {
   /** 每个对话同时只允许一个活跃 Run，key 为 conversationId。 */
   private readonly active = new Map<string, ActiveRun>();
 
+  /**
+   * 准备一次消息生成：加载依赖、落库用户消息并返回执行句柄。
+   * 同一对话已有活跃 Run 时会抛 RuntimeConflictError。
+   * @param input 生成参数：对话 ID、用户输入、事件回调与可选的 Agent/父 Run 关联。
+   * @returns 执行句柄，execute 启动生成，stop 中止任务。
+   */
   public async prepareTurn(input: {
     conversationId: string;
     content: string;
@@ -158,7 +164,11 @@ export class RuntimeSession {
     }
   }
 
-  /** 主动停止指定对话的生成任务，返回是否确实存在可停止的任务。 */
+  /**
+   * 主动停止指定对话的生成任务，返回是否确实存在可停止的任务。
+   * @param conversationId 目标对话的唯一 ID。
+   * @returns 存在活跃任务并已发送停止信号返回 true，否则返回 false。
+   */
   public stopConversation(conversationId: string): boolean {
     const active = this.active.get(conversationId);
     if (!active) return false;
@@ -168,7 +178,11 @@ export class RuntimeSession {
     return true;
   }
 
-  /** 供 Controller 在删除对话等场景判断是否存在进行中的任务。 */
+  /**
+   * 供 Controller 在删除对话等场景判断是否存在进行中的任务。
+   * @param conversationId 目标对话的唯一 ID。
+   * @returns 该对话当前是否有正在执行的 Run。
+   */
   public isConversationActive(conversationId: string): boolean {
     return this.active.has(conversationId);
   }

@@ -22,6 +22,7 @@ export const codexWorkspace = path.join(codexHome, "workspace");
 /**
  * 解析 Codex CLI 的可执行入口：
  * 优先使用配置的路径，其次在 Windows 全局 npm 目录探测，最后回退到 PATH 中的 codex。
+ * @returns 可执行命令及其参数；配置指向 .js 脚本时用当前 Node 进程运行。
  */
 const resolveCommand = (): { command: string; args: string[] } => {
   const configured = env.CODEX_CLI_PATH;
@@ -59,6 +60,10 @@ class CodexAppServerClient {
   private listeners = new Set<NotificationListener>();
   private requestHandler: ServerRequestHandler | null = null;
 
+  /**
+   * 幂等启动 Codex App Server 子进程并完成握手初始化。
+   * @returns 初始化完成的 Promise；失败时清理进程并抛出错误。
+   */
   async start(): Promise<void> {
     // 幂等启动：已有启动流程或进程就绪时直接返回。
     if (this.startPromise) return this.startPromise;
@@ -76,6 +81,10 @@ class CodexAppServerClient {
     return this.startPromise;
   }
 
+  /**
+   * 拉起子进程、初始化协议并挂载 Assistant skills 根目录。
+   * @returns 初始化流程完成的 Promise。
+   */
   private async spawnAndInitialize(): Promise<void> {
     await mkdir(codexWorkspace, { recursive: true });
     const executable = resolveCommand();
@@ -107,11 +116,23 @@ class CodexAppServerClient {
     this.initialized = true;
   }
 
+  /**
+   * 发起一次 JSON-RPC 请求，自动确保进程已启动。
+   * @param method 协议方法名。
+   * @param params 请求参数，可选。
+   * @returns 远端返回的结果，类型由调用方指定。
+   */
   async request<T>(method: string, params?: unknown): Promise<T> {
     await this.start();
     return this.sendRequest<T>(method, params);
   }
 
+  /**
+   * 发送请求并等待响应，带 30 秒超时。
+   * @param method 协议方法名。
+   * @param params 请求参数，可选。
+   * @returns 远端返回的结果，类型由调用方指定。
+   */
   private sendRequest<T>(method: string, params?: unknown): Promise<T> {
     const id = this.nextId++;
     const result = new Promise<unknown>((resolve, reject) => {
@@ -126,33 +147,61 @@ class CodexAppServerClient {
     return result as Promise<T>;
   }
 
-  /** 发送无响应的通知消息。 */
+  /**
+   * 发送无响应的通知消息。
+   * @param method 协议方法名。
+   * @param params 通知参数，可选。
+   * @returns 无返回值。
+   */
   notify(method: string, params?: unknown): void {
     this.write({ method, params });
   }
 
+  /**
+   * 注册通知监听器。
+   * @param listener 收到通知时的回调。
+   * @returns 注销该监听器的函数。
+   */
   onNotification(listener: NotificationListener): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   }
 
+  /**
+   * 设置服务端请求处理器，用于处理 Codex 主动发来的请求。
+   * @param handler 处理方法名与参数的异步回调。
+   * @returns 无返回值。
+   */
   setServerRequestHandler(handler: ServerRequestHandler): void {
     this.requestHandler = handler;
   }
 
+  /**
+   * 停止并清理子进程。
+   * @returns 无返回值。
+   */
   stop(): void {
     this.process?.kill();
     this.process = null;
     this.initialized = false;
   }
 
+  /**
+   * 向子进程 stdin 写入一条 JSON 消息。
+   * @param message 需要发送的 JSON-RPC 消息。
+   * @returns 无返回值；进程未运行时抛出错误。
+   */
   private write(message: RpcMessage): void {
     if (!this.process?.stdin.writable) throw new Error("Codex App Server 未运行");
     // 每行一条 JSON 消息，与 app-server 的 stdio 协议一致。
     this.process.stdin.write(`${JSON.stringify(message)}\n`);
   }
 
-  /** 处理一行 stdout：分发到请求响应、服务端请求或通知监听器。 */
+  /**
+   * 处理一行 stdout：分发到请求响应、服务端请求或通知监听器。
+   * @param line 子进程输出的一行 JSON 文本。
+   * @returns 无返回值。
+   */
   private handleLine(line: string): void {
     let message: RpcMessage;
     try {
@@ -178,6 +227,11 @@ class CodexAppServerClient {
     }
   }
 
+  /**
+   * 处理 Codex 主动发来的请求，执行后回写结果或错误。
+   * @param message 收到的请求消息。
+   * @returns 处理完成的 Promise。
+   */
   private async handleServerRequest(message: RpcMessage): Promise<void> {
     try {
       if (!this.requestHandler) throw new Error("未配置服务端请求处理器");
@@ -189,10 +243,20 @@ class CodexAppServerClient {
     }
   }
 
+  /**
+   * 子进程退出时统一按失败处理。
+   * @param code 子进程退出码，未知时为 null。
+   * @returns 无返回值。
+   */
   private handleExit(code: number | null): void {
     this.handleFailure(new Error(`Codex App Server 已退出 (${code ?? "unknown"})`));
   }
 
+  /**
+   * 统一失败处理：释放进程引用并拒绝所有挂起请求。
+   * @param error 失败原因。
+   * @returns 无返回值。
+   */
   private handleFailure(error: Error): void {
     this.process = null;
     this.initialized = false;

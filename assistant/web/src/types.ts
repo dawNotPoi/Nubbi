@@ -64,6 +64,8 @@ export type ModelConfig = {
   baseUrl: string;
   model: string;
   systemPrompt: string;
+  headers: Record<string, string>;
+  temperature?: number;
   apiKeyConfigured: boolean;
 };
 

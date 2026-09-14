@@ -16,6 +16,11 @@ type FastifyReply = {
   send: (payload: unknown) => void;
 };
 
+/**
+ * 从各种异常中提取可展示给客户端的消息。
+ * @param exception 捕获的未知异常。
+ * @returns 异常消息字符串。
+ */
 const exceptionMessage = (exception: unknown): string => {
   if (exception instanceof HttpException) {
     const body = exception.getResponse();
@@ -38,6 +43,12 @@ const exceptionMessage = (exception: unknown): string => {
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
 
+  /**
+   * 将异常统一转换为客户端已使用的 { message } 格式。
+   * @param exception 捕获的异常。
+   * @param host Nest 参数宿主，用于取出响应对象。
+   * @returns 无返回值，结果直接写入响应。
+   */
   catch(exception: unknown, host: ArgumentsHost): void {
     const context = host.switchToHttp();
     const response = context.getResponse<FastifyReply>();

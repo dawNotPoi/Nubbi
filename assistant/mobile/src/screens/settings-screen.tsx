@@ -11,6 +11,13 @@ import { ModelPanel } from "./settings/model-panel";
 import { Notice } from "./settings/notice";
 import { settingsStyles as styles } from "./settings/styles";
 
+/**
+ * 设置页：密钥解锁、模型/MCP 面板切换与服务器地址更换。
+ * @param props.baseUrl Assistant API 基础地址。
+ * @param props.onClose 关闭设置页的回调。
+ * @param props.onChangeServer 更换 API 地址的回调。
+ * @returns 设置页视图。
+ */
 export const SettingsScreen = ({ baseUrl, onClose, onChangeServer }: {
   baseUrl: string;
   onClose: () => void;
@@ -26,7 +33,10 @@ export const SettingsScreen = ({ baseUrl, onClose, onChangeServer }: {
   // 打开时读取本地保存的管理密钥，有则直接进入设置。
   useEffect(() => { void readConfigToken().then(setToken); }, []);
 
-  // 用密钥请求一次配置接口完成解锁，成功则持久化到安全存储。
+  /**
+   * 用密钥请求一次配置接口完成解锁，成功则持久化到安全存储。
+   * @returns 解锁流程完成后的 Promise。
+   */
   const unlock = async (): Promise<void> => {
     const value = tokenInput.trim();
     if (!value) return;
@@ -44,7 +54,10 @@ export const SettingsScreen = ({ baseUrl, onClose, onChangeServer }: {
     }
   };
 
-  // 锁定设置：清除本地密钥并回到解锁页。
+  /**
+   * 锁定设置：清除本地密钥并回到解锁页。
+   * @returns 锁定完成后的 Promise。
+   */
   const lock = async (): Promise<void> => {
     await saveConfigToken("");
     setToken("");

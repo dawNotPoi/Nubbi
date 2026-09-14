@@ -17,7 +17,10 @@ export const assistantConnection = mongoose.createConnection(env.MONGO_URI, {
   authSource: "admin",
 });
 
-/** 等待连接就绪，供 Nest 生命周期钩子在监听端口前调用。 */
+/**
+ * 等待连接就绪，供 Nest 生命周期钩子在监听端口前调用。
+ * @returns 连接建立完成的 Promise；连接失败时抛出异常。
+ */
 export const connectAssistantDatabase = async (): Promise<void> => {
   await assistantConnection.asPromise();
   console.log(`Assistant MongoDB connected: ${env.ASSISTANT_MONGO_DB_NAME}`);

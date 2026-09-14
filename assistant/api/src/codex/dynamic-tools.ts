@@ -19,7 +19,11 @@ type RunContext = {
 const contexts = new Map<string, RunContext>();
 let requestHandlerReady = false;
 
-/** 校验并解析 Codex 动态工具调用的参数。 */
+/**
+ * 校验并解析 Codex 动态工具调用的参数。
+ * @param value 未知来源的原始参数，需逐个字段校验。
+ * @returns 解析成功返回结构化参数，缺少必要字段时返回 null。
+ */
 const parseToolCall = (value: unknown): DynamicToolCallParams | null => {
   const threadId = readString(value, "threadId");
   const turnId = readString(value, "turnId");
@@ -39,6 +43,8 @@ const parseToolCall = (value: unknown): DynamicToolCallParams | null => {
 /**
  * 处理 Codex 发来的工具调用：交给 ToolGateway 走“校验 → 审批 → 执行”链路，
  * 并把工具执行产生的 MessagePart 收集进当前 Run，最终随助手消息一起落库。
+ * @param params Codex 发来的动态工具调用参数。
+ * @returns 回传给 Codex 的执行结果（内容与成功标记）。
  */
 const handleDynamicTool = async (params: unknown): Promise<DynamicToolCallResponse> => {
   const call = parseToolCall(params);
@@ -57,7 +63,10 @@ const handleDynamicTool = async (params: unknown): Promise<DynamicToolCallRespon
   };
 };
 
-/** 注册 Codex 服务端请求处理器（只允许工具调用一类请求），只安装一次。 */
+/**
+ * 注册 Codex 服务端请求处理器（只允许工具调用一类请求），只安装一次。
+ * @returns 无返回值。
+ */
 export const installDynamicToolHandler = (): void => {
   if (requestHandlerReady) return;
   codexClient.setServerRequestHandler(async (method, params) => {
@@ -67,7 +76,11 @@ export const installDynamicToolHandler = (): void => {
   requestHandlerReady = true;
 };
 
-/** 把 MCP 工具转换为 Codex 动态工具定义，随 thread/start 一起传给 Codex。 */
+/**
+ * 把 MCP 工具转换为 Codex 动态工具定义，随 thread/start 一起传给 Codex。
+ * @param tools MCP 工具列表。
+ * @returns 对应的动态工具定义数组。
+ */
 export const toDynamicTools = (tools: McpTool[]): DynamicToolSpec[] => tools.map((tool) => ({
   type: "function",
   name: tool.modelName,
@@ -75,7 +88,13 @@ export const toDynamicTools = (tools: McpTool[]): DynamicToolSpec[] => tools.map
   inputSchema: tool.modelTool.function.parameters,
 }));
 
-/** 绑定 Run 上下文到指定线程，Codex 发起工具调用时据此找到对应 gateway。 */
+/**
+ * 绑定 Run 上下文到指定线程，Codex 发起工具调用时据此找到对应 gateway。
+ * @param threadId Codex 线程 ID。
+ * @param gateway 该 Run 使用的工具网关。
+ * @param parts 用于收集工具执行记录的目标数组。
+ * @returns 无返回值。
+ */
 export const registerDynamicToolContext = (
   threadId: string,
   gateway: ToolGateway,
@@ -84,7 +103,11 @@ export const registerDynamicToolContext = (
   contexts.set(threadId, { gateway, parts });
 };
 
-/** Run 结束前解除线程与上下文的绑定，避免上下文泄漏到下一个 Run。 */
+/**
+ * Run 结束前解除线程与上下文的绑定，避免上下文泄漏到下一个 Run。
+ * @param threadId Codex 线程 ID。
+ * @returns 无返回值。
+ */
 export const removeDynamicToolContext = (threadId: string): void => {
   contexts.delete(threadId);
 };

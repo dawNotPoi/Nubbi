@@ -3,7 +3,16 @@ import { Button } from "./ui/button";
 import { cn } from "../lib/utils";
 import type { ConversationSummary } from "../types";
 
-/** 左侧历史对话抽屉：切换会话、新建与删除。 */
+/**
+ * 左侧历史对话抽屉：切换会话、新建与删除。
+ * @param props.open 是否展开。
+ * @param props.conversations 会话摘要列表。
+ * @param props.currentId 当前选中的会话 ID，用于高亮。
+ * @param props.onClose 关闭回调。
+ * @param props.onSelect 选中会话回调。
+ * @param props.onDelete 删除会话回调。
+ * @returns 历史对话抽屉视图。
+ */
 export const ConversationDrawer = ({
   open,
   conversations,

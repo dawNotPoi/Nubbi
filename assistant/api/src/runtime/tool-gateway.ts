@@ -15,14 +15,23 @@ export type ToolExecutionResult = {
   success: boolean;
 };
 
-/** 参数过大时只给用户展示截断预览，避免弹窗渲染卡顿。 */
+/**
+ * 参数过大时只给用户展示截断预览，避免弹窗渲染卡顿。
+ * @param value 模型传回的工具调用参数。
+ * @returns 原参数对象；超过上限时返回含 preview 与 truncated 标记的对象。
+ */
 const displayArguments = (value: Record<string, unknown>): Record<string, unknown> => {
   const source = JSON.stringify(value);
   if (source.length <= displayArgumentsLimit) return value;
   return { preview: source.slice(0, displayArgumentsLimit), truncated: true };
 };
 
-/** 统一的工具失败 JSON 结构，模型可通过 error 字段判断失败原因。 */
+/**
+ * 统一的工具失败 JSON 结构，模型可通过 error 字段判断失败原因。
+ * @param error 机器可读的错误码（如 unknown_tool）。
+ * @param message 给模型/用户看的错误描述。
+ * @returns 序列化后的 JSON 字符串。
+ */
 const errorContent = (error: string, message: string): string =>
   JSON.stringify({ success: false, error, message });
 
@@ -35,6 +44,10 @@ export class ToolGateway {
   private readonly readWaiters: Array<() => void> = [];
   private writeQueue: Promise<void> = Promise.resolve();
 
+  /**
+   * 创建工具网关实例。
+   * @param input 网关依赖：Run ID、MCP 工具列表、事件回调与取消信号。
+   */
   public constructor(input: {
     runId: string;
     tools: McpTool[];
@@ -47,12 +60,21 @@ export class ToolGateway {
     this.signal = input.signal;
   }
 
-  /** 依据 MCP 注解判断工具是否只读：只读工具可并行，可并行执行上限 4 个。 */
+  /**
+   * 依据 MCP 注解判断工具是否只读：只读工具可并行，可并行执行上限 4 个。
+   * @param toolName 模型的工具名（已加 serverId 前缀）。
+   * @returns 工具为只读（无破坏性且标记 readOnlyHint）返回 true。
+   */
   public isReadOnly(toolName: string): boolean {
     const annotations = this.tools.get(toolName)?.annotations;
     return annotations?.readOnlyHint === true && annotations.destructiveHint !== true;
   }
 
+  /**
+   * 并发执行一批工具调用。
+   * @param calls 待执行的工具调用列表。
+   * @returns 每个调用的执行结果数组，顺序与 calls 一致。
+   */
   public executeMany(calls: ModelToolCall[]): Promise<ToolExecutionResult[]> {
     return Promise.all(calls.map((call) => this.execute(call)));
   }
@@ -61,6 +83,8 @@ export class ToolGateway {
    * 调度一次工具执行：
    * - 只读工具通过 withReadSlot 并发执行（上限 4）；
    * - 写操作串行排队，避免并发工具间相互覆盖状态。
+   * @param call 模型发起的工具调用。
+   * @returns 本次工具执行的结果，包含回传模型的 content 与收集的 parts。
    */
   public execute(call: ModelToolCall): Promise<ToolExecutionResult> {
     const operation = () => this.executeNow(call);
@@ -70,7 +94,11 @@ export class ToolGateway {
     return pending;
   }
 
-  /** 只读并发槽：超过 4 个时排队等待，限制对远程 MCP 服务的并发压力。 */
+  /**
+   * 只读并发槽：超过 4 个时排队等待，限制对远程 MCP 服务的并发压力。
+   * @param operation 实际执行工具的回调。
+   * @returns operation 的执行结果。
+   */
   private async withReadSlot<T>(operation: () => Promise<T>): Promise<T> {
     if (this.readActive >= 4) {
       await new Promise<void>((resolve) => this.readWaiters.push(resolve));
@@ -84,7 +112,12 @@ export class ToolGateway {
     }
   }
 
-  /** 按工具声明的 JSON Schema 校验参数，避免把非法参数传给远端 MCP 服务。 */
+  /**
+   * 按工具声明的 JSON Schema 校验参数，避免把非法参数传给远端 MCP 服务。
+   * @param tool 目标 MCP 工具，含其声明的参数 Schema。
+   * @param value 模型传回的工具调用参数。
+   * @returns 校验失败时返回错误信息，通过时返回 null。
+   */
   private validate(tool: McpTool, value: Record<string, unknown>): string | null {
     try {
       const validator = validatorProvider.getValidator<Record<string, unknown>>(
@@ -97,6 +130,11 @@ export class ToolGateway {
     }
   }
 
+  /**
+   * 实际执行一次工具调用：校验、审批、调用 MCP 并收集 parts。
+   * @param call 模型发起的工具调用。
+   * @returns 执行结果，包括回传模型的 content、收集的 parts 与成功标记。
+   */
   private async executeNow(call: ModelToolCall): Promise<ToolExecutionResult> {
     this.signal.throwIfAborted();
     const tool = this.tools.get(call.name);
@@ -167,6 +205,15 @@ export class ToolGateway {
     }
   }
 
+  /**
+   * 统一记录工具失败：推送 tool-result 事件并返回失败结果。
+   * @param call 原始工具调用。
+   * @param tool 目标 MCP 工具。
+   * @param argumentsValue 展示给用户的参数（可能已截断）。
+   * @param content 回传给模型的失败内容。
+   * @param parts 追加失败记录的目标 parts 数组。
+   * @returns 失败的工具执行结果。
+   */
   private failure(
     call: ModelToolCall,
     tool: McpTool,
@@ -187,6 +234,15 @@ export class ToolGateway {
     return { content, parts, success: false };
   }
 
+  /**
+   * 构造工具执行结果对应的 MessagePart。
+   * @param call 原始工具调用。
+   * @param tool 目标 MCP 工具。
+   * @param argumentsValue 展示给用户的参数（可能已截断）。
+   * @param result 工具返回的结果文本。
+   * @param success 是否执行成功。
+   * @returns 类型为 tool 的 MessagePart。
+   */
   private toolPart(
     call: ModelToolCall,
     tool: McpTool,

@@ -21,9 +21,20 @@ import {
 } from "../mcp-config.js";
 import { McpConfigService } from "../services/mcp-config.service.js";
 
+/**
+ * 统一提取异常消息，非 Error 时回退到默认文案。
+ * @param error 捕获的未知异常。
+ * @param fallback 无法提取消息时的兜底文案。
+ * @returns 异常消息字符串。
+ */
 const messageOf = (error: unknown, fallback: string): string =>
   error instanceof Error ? error.message : fallback;
 
+/**
+ * 校验 MCP 服务配置并抛出统一的 400 异常。
+ * @param input 客户端提交的未知结构配置。
+ * @returns 校验通过的服务配置。
+ */
 const parseServer = (input: unknown) => {
   const result = mcpServerSchema.safeParse(input);
   if (!result.success) {
@@ -43,11 +54,20 @@ export class McpConfigController {
     @Inject(McpConfigService) private readonly mcpConfig: McpConfigService,
   ) {}
 
+  /**
+   * 列出全部 MCP 服务配置。
+   * @returns 服务配置列表。
+   */
   @Get("servers")
   list(): Promise<McpServerConfig[]> {
     return this.mcpConfig.list();
   }
 
+  /**
+   * 新建 MCP 服务。
+   * @param input 服务配置。
+   * @returns 已保存的服务配置；ID 冲突时抛 409。
+   */
   @Post("servers")
   async create(@Body() input: unknown): Promise<McpServerConfig> {
     try {
@@ -60,6 +80,12 @@ export class McpConfigController {
     }
   }
 
+  /**
+   * 更新 MCP 服务。
+   * @param id 待更新服务的 ID。
+   * @param input 新的服务配置。
+   * @returns 已保存的服务配置；服务不存在时抛 404。
+   */
   @Put("servers/:id")
   async update(
     @Param("id") id: string,
@@ -75,6 +101,11 @@ export class McpConfigController {
     }
   }
 
+  /**
+   * 删除 MCP 服务。
+   * @param id 待删除服务的 ID。
+   * @returns 无返回值；服务不存在时抛 404。
+   */
   @Delete("servers/:id")
   @HttpCode(204)
   async delete(@Param("id") id: string): Promise<void> {
@@ -82,6 +113,11 @@ export class McpConfigController {
     if (!deleted) throw new NotFoundException("MCP 服务不存在");
   }
 
+  /**
+   * 测试连接 MCP 服务。
+   * @param input 待测试的服务配置。
+   * @returns 连接与工具发现结果；连接失败时抛 502。
+   */
   @Post("test")
   @HttpCode(200)
   async test(

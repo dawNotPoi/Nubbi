@@ -8,10 +8,18 @@ import { McpSettingsDrawer } from "./components/mcp-settings-drawer";
 import { Button } from "./components/ui/button";
 import { useChat } from "./use-chat";
 
+/**
+ * 应用根组件，渲染聊天主界面。
+ * @returns 聊天应用视图。
+ */
 export default function App() {
   return <ChatApp />;
 }
 
+/**
+ * 聊天应用主体：组装消息流、输入区与抽屉式设置/历史面板。
+ * @returns 聊天主界面视图。
+ */
 const ChatApp = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);

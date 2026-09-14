@@ -11,6 +11,8 @@ export type RuntimeEventEmitter = {
  * 创建事件发射器：
  * 每条事件自动补全 eventId、sequence、时间戳等元信息，
  * 同步推送给 SSE 订阅者，同时异步落库（text-delta 高频事件除外）。
+ * @param input 发射器配置：Run 标识、订阅者回调与可选父 Run 关联。
+ * @returns 事件发射器，提供 emit 同步推送和 flush 等待落库完成。
  */
 export const createRuntimeEventEmitter = (input: {
   runId: string;

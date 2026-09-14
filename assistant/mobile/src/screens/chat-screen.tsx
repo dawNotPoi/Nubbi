@@ -18,6 +18,12 @@ import { MessageView } from "./chat/message-view";
 import { chatStyles as styles } from "./chat/styles";
 import { useMobileChat } from "./chat/use-mobile-chat";
 
+/**
+ * 聊天主屏：消息流、输入框与历史/设置入口。
+ * @param props.baseUrl Assistant API 基础地址。
+ * @param props.onOpenSettings 打开设置的回调。
+ * @returns 聊天主屏视图。
+ */
 export const ChatScreen = ({ baseUrl, onOpenSettings }: {
   baseUrl: string;
   onOpenSettings: () => void;
@@ -51,11 +57,20 @@ export const ChatScreen = ({ baseUrl, onOpenSettings }: {
     );
   }, [chat.approval, chat.decideApproval]);
 
+  /**
+   * 选择会话并关闭历史弹窗；不传 ID 表示新建空会话。
+   * @param id 会话 ID，可空。
+   * @returns 无返回值。
+   */
   const select = (id?: string): void => {
     setHistoryOpen(false);
     void chat.selectConversation(id);
   };
 
+  /**
+   * 发送输入框内容并清空草稿。
+   * @returns 无返回值。
+   */
   const send = (): void => {
     const content = draft.trim();
     if (!content) return;

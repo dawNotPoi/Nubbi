@@ -9,6 +9,12 @@ import { McpForm } from "./mcp-form";
 import { Notice } from "./notice";
 import { settingsStyles as styles } from "./styles";
 
+/**
+ * MCP 服务管理面板：列表、新增/编辑表单、启停与删除。
+ * @param props.baseUrl Assistant API 基础地址。
+ * @param props.token 配置管理密钥。
+ * @returns MCP 管理面板视图。
+ */
 export const McpPanel = ({ baseUrl, token }: { baseUrl: string; token: string }) => {
   const [servers, setServers] = useState<McpServerConfig[]>([]);
   // undefined 为列表页，null 为新增，对象为编辑。
@@ -17,6 +23,10 @@ export const McpPanel = ({ baseUrl, token }: { baseUrl: string; token: string })
   const [message, setMessage] = useState("");
   const [danger, setDanger] = useState(false);
 
+  /**
+   * 拉取服务列表并更新状态。
+   * @returns 加载完成后的 Promise。
+   */
   const load = useCallback(async (): Promise<void> => {
     setBusy(true);
     try {
@@ -32,7 +42,11 @@ export const McpPanel = ({ baseUrl, token }: { baseUrl: string; token: string })
 
   useEffect(() => { void load(); }, [load]);
 
-  // 新增或编辑时保存；编辑态更新，否则新建。
+  /**
+   * 新增或编辑时保存；编辑态走更新，否则新建。
+   * @param server 待保存的服务配置。
+   * @returns 保存完成后的 Promise。
+   */
   const save = async (server: McpServerConfig): Promise<void> => {
     setBusy(true);
     try {
@@ -47,6 +61,11 @@ export const McpPanel = ({ baseUrl, token }: { baseUrl: string; token: string })
     }
   };
 
+  /**
+   * 测试连接并展示发现的工具数量。
+   * @param server 待测试的服务配置。
+   * @returns 测试完成后的 Promise。
+   */
   const test = async (server: McpServerConfig): Promise<void> => {
     setBusy(true);
     try {
@@ -58,6 +77,11 @@ export const McpPanel = ({ baseUrl, token }: { baseUrl: string; token: string })
     }
   };
 
+  /**
+   * 切换服务的启用状态。
+   * @param server 目标服务配置。
+   * @returns 更新完成后的 Promise。
+   */
   const toggle = async (server: McpServerConfig): Promise<void> => {
     setBusy(true);
     try {
@@ -71,6 +95,11 @@ export const McpPanel = ({ baseUrl, token }: { baseUrl: string; token: string })
     }
   };
 
+  /**
+   * 删除服务（带确认弹窗），成功后刷新列表。
+   * @param server 待删除的服务配置。
+   * @returns 无返回值。
+   */
   const remove = (server: McpServerConfig): void => {
     Alert.alert("删除 MCP", `确认删除“${server.name}”？`, [
       { text: "取消", style: "cancel" },

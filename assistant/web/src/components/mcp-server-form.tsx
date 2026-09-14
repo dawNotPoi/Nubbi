@@ -18,6 +18,10 @@ type Draft = {
   headers: KeyValuePair[];
 };
 
+/**
+ * 生成空的表单草稿。
+ * @returns 全空的 MCP 表单草稿。
+ */
 const emptyDraft = (): Draft => ({
   id: "",
   name: "",
@@ -26,10 +30,20 @@ const emptyDraft = (): Draft => ({
   headers: [],
 });
 
+/**
+ * 服务端配置 → 表单草稿（headers 展开为数组）。
+ * @param server 服务端保存的 MCP 配置，可空。
+ * @returns 可用于表单编辑的草稿。
+ */
 const toDraft = (server: McpServerConfig | null): Draft => server
   ? { ...server, headers: recordToPairs(server.headers) }
   : emptyDraft();
 
+/**
+ * 表单草稿 → 服务端配置，做基础校验并过滤空请求头。
+ * @param draft 表单编辑中的草稿。
+ * @returns 校验通过的服务端配置；必填缺失或格式非法时抛出异常。
+ */
 const toConfig = (draft: Draft): McpServerConfig => {
   const id = draft.id.trim();
   const name = draft.name.trim();
@@ -59,7 +73,15 @@ const toConfig = (draft: Draft): McpServerConfig => {
 
 const inputClass = "h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15";
 
-/** MCP 服务新增/编辑表单。 */
+/**
+ * MCP 服务新增/编辑表单。
+ * @param props.server 待编辑的服务配置，null 表示新增。
+ * @param props.busy 是否处于加载中。
+ * @param props.onCancel 取消回调。
+ * @param props.onSave 保存回调。
+ * @param props.onTest 测试回调，返回提示文案。
+ * @returns MCP 编辑表单视图。
+ */
 export const McpServerForm = ({
   server,
   busy,
@@ -81,6 +103,11 @@ export const McpServerForm = ({
     setMessage(null);
   }, [server]);
 
+  /**
+   * 执行保存或测试：先校验草稿，再调用对应回调。
+   * @param action 要执行的操作（保存或测试）。
+   * @returns 操作完成后的 Promise。
+   */
   const run = async (action: "save" | "test"): Promise<void> => {
     try {
       setMessage(null);

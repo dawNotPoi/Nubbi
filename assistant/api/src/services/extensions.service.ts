@@ -17,6 +17,10 @@ export type ExtensionResponse = {
 /** 聚合 Skill、MCP 配置和工具发现结果，生成客户端需要的能力视图。 */
 @Injectable()
 export class ExtensionsService {
+  /**
+   * 聚合 Skill、MCP 配置与工具发现结果。
+   * @returns 客户端需要的能力视图（Skill 列表 + 服务列表与各自工具数）。
+   */
   async list(): Promise<ExtensionResponse> {
     const [skills, servers, tools] = await Promise.all([
       listSkills(),

@@ -4,7 +4,11 @@ import remarkGfm from "remark-gfm";
 import { cn } from "../lib/utils";
 import type { Message, MessagePart } from "../types";
 
-/** 工具执行卡片：可展开查看参数/结果，运行中显示占位文案。 */
+/**
+ * 工具执行卡片：可展开查看参数/结果，运行中显示占位文案。
+ * @param props.part 类型为 tool 的消息内容块。
+ * @returns 可展开的工具卡片视图。
+ */
 const ToolCard = ({ part }: {
   part: Extract<MessagePart, { type: "tool" }>;
 }) => (
@@ -20,6 +24,11 @@ const ToolCard = ({ part }: {
   </details>
 );
 
+/**
+ * 单条消息渲染：用户消息右对齐纯文本，助手消息按 parts 分块渲染。
+ * @param props.message 要渲染的消息。
+ * @returns 消息视图。
+ */
 export const MessageView = ({ message }: { message: Message }) => {
   const user = message.role === "user";
   return (
@@ -69,6 +78,10 @@ export const MessageView = ({ message }: { message: Message }) => {
   );
 };
 
+/**
+ * 空会话占位视图，用于尚无消息时引导用户。
+ * @returns 空状态视图。
+ */
 export const EmptyState = () => (
   <div className="grid min-h-full place-items-center px-6 py-12">
     <div className="max-w-sm text-center">

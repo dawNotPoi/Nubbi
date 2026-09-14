@@ -31,6 +31,16 @@ export interface ButtonProps
   asChild?: boolean;
 }
 
+/**
+ * 通用按钮组件，支持 asChild 切换为任意元素。
+ * @param props.className 自定义类名。
+ * @param props.variant 按钮配色变体（default/ghost/outline）。
+ * @param props.size 按钮尺寸（default/icon）。
+ * @param props.asChild 为 true 时渲染为子元素而非 button。
+ * @param props 其余原生按钮属性。
+ * @param ref 转发的 DOM 引用。
+ * @returns 按钮元素。
+ */
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Component = asChild ? Slot : "button";

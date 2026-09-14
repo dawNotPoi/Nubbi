@@ -35,6 +35,11 @@ export const McpSettingsDrawer = ({
   const [notice, setNotice] = useState<string | null>(null);
   const [section, setSection] = useState<"model" | "mcp">("model");
 
+  /**
+   * 拉取 MCP 服务列表。
+   * @param accessToken 配置管理密钥。
+   * @returns 加载完成后的 Promise。
+   */
   const load = useCallback(async (accessToken: string): Promise<void> => {
     setLoading(true);
     setError(null);
@@ -57,6 +62,10 @@ export const McpSettingsDrawer = ({
     });
   }, [load, open, token]);
 
+  /**
+   * 用密钥请求一次配置接口完成解锁，成功则写入 sessionStorage。
+   * @returns 解锁流程完成后的 Promise。
+   */
   const unlock = async (): Promise<void> => {
     const next = tokenInput.trim();
     if (!next) return;
@@ -70,6 +79,11 @@ export const McpSettingsDrawer = ({
     }
   };
 
+  /**
+   * 保存 MCP 服务（新增或更新）并刷新列表。
+   * @param value 待保存的服务配置。
+   * @returns 保存完成后的 Promise。
+   */
   const save = async (value: McpServerConfig): Promise<void> => {
     setLoading(true);
     setError(null);
@@ -84,6 +98,11 @@ export const McpSettingsDrawer = ({
     }
   };
 
+  /**
+   * 测试连接并返回结果文案。
+   * @param value 待测试的服务配置。
+   * @returns 连接结果提示文案。
+   */
   const test = async (value: McpServerConfig): Promise<string> => {
     setLoading(true);
     setError(null);
@@ -97,6 +116,11 @@ export const McpSettingsDrawer = ({
     }
   };
 
+  /**
+   * 切换服务的启用状态。
+   * @param server 目标服务配置。
+   * @returns 更新完成后的 Promise。
+   */
   const toggle = async (server: McpServerConfig): Promise<void> => {
     setLoading(true);
     try {
@@ -109,6 +133,11 @@ export const McpSettingsDrawer = ({
     }
   };
 
+  /**
+   * 删除服务（带确认）并刷新列表。
+   * @param server 待删除的服务配置。
+   * @returns 删除完成后的 Promise。
+   */
   const remove = async (server: McpServerConfig): Promise<void> => {
     if (!window.confirm(`删除 MCP Server「${server.name}」？`)) return;
     setLoading(true);
@@ -123,6 +152,10 @@ export const McpSettingsDrawer = ({
     }
   };
 
+  /**
+   * 锁定设置：清除本地密钥并回到解锁页。
+   * @returns 无返回值。
+   */
   const lock = (): void => {
     sessionStorage.removeItem(TOKEN_KEY);
     setToken("");

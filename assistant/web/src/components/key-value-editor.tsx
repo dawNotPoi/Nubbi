@@ -2,7 +2,13 @@ import { Plus, Trash2 } from "lucide-react";
 import type { KeyValuePair } from "./mcp-form-utils";
 import { Button } from "./ui/button";
 
-/** 可增删的键值对编辑器，用于配置请求头等字典字段。 */
+/**
+ * 可增删的键值对编辑器，用于配置请求头等字典字段。
+ * @param props.label 编辑器标题。
+ * @param props.pairs 当前键值对数组。
+ * @param props.onChange 键值对变化回调。
+ * @returns 键值对编辑器视图。
+ */
 export const KeyValueEditor = ({
   label,
   pairs,
@@ -12,6 +18,12 @@ export const KeyValueEditor = ({
   pairs: KeyValuePair[];
   onChange: (pairs: KeyValuePair[]) => void;
 }) => {
+  /**
+   * 更新指定索引键值对的字段。
+   * @param index 键值对在数组中的索引。
+   * @param patch 要合并的字段更新。
+   * @returns 无返回值。
+   */
   const update = (index: number, patch: Partial<KeyValuePair>): void => {
     onChange(pairs.map((pair, candidate) =>
       candidate === index ? { ...pair, ...patch } : pair));

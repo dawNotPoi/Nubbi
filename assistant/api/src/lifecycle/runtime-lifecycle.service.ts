@@ -8,6 +8,10 @@ import { abandonIncompleteRuns } from "../runtime/run-store.js";
  */
 @Injectable()
 export class RuntimeLifecycleService implements OnApplicationBootstrap {
+  /**
+   * Nest 应用启动时准备 Runtime 依赖。
+   * @returns 数据库连接与 Run 清理完成后的 Promise。
+   */
   async onApplicationBootstrap(): Promise<void> {
     await connectAssistantDatabase();
     await abandonIncompleteRuns();

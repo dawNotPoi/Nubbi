@@ -13,6 +13,7 @@ const logger = new Logger("Bootstrap");
 /**
  * 创建 Nest 应用并选择 Fastify 作为 HTTP 适配器。
  * 数据库连接等业务初始化由 Nest 生命周期服务完成，入口只保留传输层配置。
+ * @returns 服务启动完成后的 Promise。
  */
 const bootstrap = async (): Promise<void> => {
   const app = await NestFactory.create<NestFastifyApplication>(

@@ -18,7 +18,12 @@ import type {
 } from "../../types";
 import { applyEvent } from "./event-reducer";
 
-// 生成过程中的临时消息：尚未落库，ID 用本地时间戳区分，发送完成后被服务端数据替换。
+/**
+ * 生成过程中的临时消息：尚未落库，ID 用本地时间戳区分，发送完成后被服务端数据替换。
+ * @param role 消息角色（用户或助手）。
+ * @param parts 消息内容块列表。
+ * @returns 带临时 ID 的消息对象。
+ */
 const temporaryMessage = (role: Message["role"], parts: MessagePart[]): Message => ({
   id: `temp-${Date.now()}-${role}`,
   role,
@@ -41,6 +46,11 @@ export type MobileChatState = {
   remove: (conversation: ConversationSummary) => void;
 };
 
+/**
+ * 移动端聊天页的聚合状态：会话列表、当前对话、消息流与生成控制。
+ * @param baseUrl Assistant API 基础地址。
+ * @returns 聊天所需的状态与操作（选择会话、发送、停止、审批、删除）。
+ */
 export const useMobileChat = (baseUrl: string): MobileChatState => {
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [current, setCurrent] = useState<Conversation | null>(null);
@@ -52,12 +62,21 @@ export const useMobileChat = (baseUrl: string): MobileChatState => {
   // 保存当前请求的 AbortController，供“停止生成”与卸载时中断网络请求。
   const abortRef = useRef<AbortController | null>(null);
 
+  /**
+   * 重新拉取会话列表并更新状态。
+   * @returns 拉取到的最新会话列表。
+   */
   const refresh = useCallback(async (): Promise<ConversationSummary[]> => {
     const result = await listConversations(baseUrl);
     setConversations(result);
     return result;
   }, [baseUrl]);
 
+  /**
+   * 选择并加载指定对话；不传 ID 时清空当前对话与消息。
+   * @param id 对话的唯一 ID，可空。
+   * @returns 加载完成后的 Promise。
+   */
   const selectConversation = useCallback(async (id?: string): Promise<void> => {
     setError("");
     if (!id) {
@@ -94,6 +113,11 @@ export const useMobileChat = (baseUrl: string): MobileChatState => {
     };
   }, [refresh, selectConversation]);
 
+  /**
+   * 发送一条消息：必要时先建对话，随后流式接收助手回复。
+   * @param content 用户输入的文本内容。
+   * @returns 发送流程完成后的 Promise。
+   */
   const send = async (content: string): Promise<void> => {
     if (!content || generating) return;
     setError("");
@@ -138,6 +162,10 @@ export const useMobileChat = (baseUrl: string): MobileChatState => {
     }
   };
 
+  /**
+   * 停止当前生成：先中止本地 SSE 连接，再通知服务端停止 Run。
+   * @returns 停止流程完成后的 Promise。
+   */
   const stop = async (): Promise<void> => {
     // 先本地中止 SSE 连接，再通知服务端停止 Run（清理模型调用）。
     abortRef.current?.abort();
@@ -146,6 +174,11 @@ export const useMobileChat = (baseUrl: string): MobileChatState => {
     setGenerating(false);
   };
 
+  /**
+   * 提交当前工具审批的决定。
+   * @param approved 是否允许本次工具调用。
+   * @returns 提交完成后的 Promise。
+   */
   const decideApproval = async (approved: boolean): Promise<void> => {
     const currentApproval = approval;
     if (!currentApproval) return;
@@ -157,6 +190,11 @@ export const useMobileChat = (baseUrl: string): MobileChatState => {
     }
   };
 
+  /**
+   * 删除一个会话（带确认弹窗），删除成功后刷新列表。
+   * @param conversation 要删除的会话摘要。
+   * @returns 无返回值。
+   */
   const remove = (conversation: ConversationSummary): void => {
     Alert.alert("删除对话", `确认删除“${conversation.title}”？`, [
       { text: "取消", style: "cancel" },

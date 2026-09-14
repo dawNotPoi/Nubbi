@@ -9,7 +9,13 @@ import {
 import type { CodexAccount, DeviceLogin } from "../types";
 import { Button } from "./ui/button";
 
-/** ChatGPT 订阅账号面板：展示登录态、发起/退出设备码登录。 */
+/**
+ * ChatGPT 订阅账号面板：展示登录态、发起/退出设备码登录。
+ * @param props.token 配置管理密钥。
+ * @param props.onModels 模型列表更新回调。
+ * @param props.onMessage 提示文案回调。
+ * @returns 订阅账号面板视图。
+ */
 export const CodexAccountPanel = ({
   token,
   onModels,
@@ -23,7 +29,10 @@ export const CodexAccountPanel = ({
   const [login, setLogin] = useState<DeviceLogin | null>(null);
   const [loading, setLoading] = useState(true);
 
-  /** 刷新账号与模型列表；已登录 ChatGPT 时返回 true。 */
+  /**
+   * 刷新账号与模型列表；已登录 ChatGPT 时返回 true。
+   * @returns 是否已登录 ChatGPT。
+   */
   const refresh = useCallback(async (): Promise<boolean> => {
     const next = await getCodexAccount(token);
     setAccount(next);
@@ -52,6 +61,10 @@ export const CodexAccountPanel = ({
     return () => window.clearInterval(timer);
   }, [login, onMessage, refresh]);
 
+  /**
+   * 发起设备码登录并在新标签页打开验证地址。
+   * @returns 登录流程完成后的 Promise。
+   */
   const beginLogin = async (): Promise<void> => {
     setLoading(true);
     try {
@@ -66,6 +79,10 @@ export const CodexAccountPanel = ({
     }
   };
 
+  /**
+   * 退出 ChatGPT 登录并清空模型列表。
+   * @returns 退出完成后的 Promise。
+   */
   const signOut = async (): Promise<void> => {
     setLoading(true);
     try {

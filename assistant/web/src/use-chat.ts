@@ -17,7 +17,12 @@ import type {
   StreamEvent,
 } from "./types";
 
-// 生成过程中的临时消息：发送完成前占位展示，结束后用服务端数据替换。
+/**
+ * 生成过程中的临时消息：发送完成前占位展示，结束后用服务端数据替换。
+ * @param role 消息角色（用户或助手）。
+ * @param parts 消息内容块列表。
+ * @returns 带临时 ID 的消息对象。
+ */
 const temporaryMessage = (role: Message["role"], parts: MessagePart[]): Message => ({
   id: `temporary-${role}-${Date.now()}`,
   role,
@@ -25,7 +30,12 @@ const temporaryMessage = (role: Message["role"], parts: MessagePart[]): Message 
   createdAt: new Date().toISOString(),
 });
 
-/** 把单个 SSE 事件增量折叠进助手消息的 parts 数组。 */
+/**
+ * 把单个 SSE 事件增量折叠进助手消息的 parts 数组。
+ * @param parts 当前累积的 parts 数组。
+ * @param event 收到的单个 SSE 事件。
+ * @returns 应用事件后的新 parts 数组。
+ */
 const reduceEvent = (parts: MessagePart[], event: StreamEvent): MessagePart[] => {
   if (event.type === "text-delta") {
     const last = parts.at(-1);
@@ -67,6 +77,10 @@ const reduceEvent = (parts: MessagePart[], event: StreamEvent): MessagePart[] =>
     : parts;
 };
 
+/**
+ * Web 聊天页的聚合状态：会话列表、当前对话、消息流与生成控制。
+ * @returns 聊天所需的状态与操作（选择会话、发送、停止、审批、删除）。
+ */
 export const useChat = () => {
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [current, setCurrent] = useState<Conversation | null>(null);
@@ -79,6 +93,10 @@ export const useChat = () => {
   // 保存当前请求的 AbortController，供“停止生成”与卸载时中断。
   const abortRef = useRef<AbortController | null>(null);
 
+  /**
+   * 重新拉取会话列表。
+   * @returns 拉取完成后的 Promise。
+   */
   const refreshList = useCallback(async () => {
     setConversations(await listConversations());
   }, []);
@@ -91,6 +109,11 @@ export const useChat = () => {
     return () => abortRef.current?.abort();
   }, [refreshList]);
 
+  /**
+   * 选择并加载指定对话；不传 ID 时清空当前对话。
+   * @param id 对话的唯一 ID，可空。
+   * @returns 加载完成后的 Promise。
+   */
   const select = useCallback(async (id?: string) => {
     setLoading(true);
     setError(null);
@@ -104,6 +127,11 @@ export const useChat = () => {
     }
   }, []);
 
+  /**
+   * 发送一条消息：必要时先建对话，随后流式接收助手回复。
+   * @param content 用户输入的文本内容。
+   * @returns 发送流程完成后的 Promise。
+   */
   const send = useCallback(async (content: string) => {
     if (generating || !content.trim()) return;
     setGenerating(true);
@@ -147,12 +175,21 @@ export const useChat = () => {
     }
   }, [current, generating, refreshList]);
 
+  /**
+   * 停止当前生成：先中止本地 SSE 连接，再通知服务端停止 Run。
+   * @returns 停止流程完成后的 Promise。
+   */
   const stop = useCallback(async () => {
     abortRef.current?.abort();
     setApproval(null);
     if (current) await stopGeneration(current.id).catch(() => undefined);
   }, [current]);
 
+  /**
+   * 提交当前工具审批的决定。
+   * @param approved 是否允许本次工具调用。
+   * @returns 提交完成后的 Promise。
+   */
   const decideApproval = useCallback(async (approved: boolean) => {
     if (!approval) return;
     const id = approval.approvalId;
@@ -164,6 +201,11 @@ export const useChat = () => {
     }
   }, [approval]);
 
+  /**
+   * 删除指定对话并刷新列表。
+   * @param id 对话的唯一 ID。
+   * @returns 删除完成后的 Promise。
+   */
   const remove = useCallback(async (id: string) => {
     await deleteConversation(id);
     if (current?.id === id) setCurrent(null);
