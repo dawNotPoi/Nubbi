@@ -15,7 +15,12 @@ export const PasteMarkdownExtension = Extension.create({
             if (!text) return false;
 
             const html = event.clipboardData?.getData("text/html");
-            if (html) return false;
+            if (html) {
+              // Skip if the HTML has meaningful structure beyond wrapping plain text.
+              // Simple wrappers (e.g. <html><body><p>text</body></html>) are trivial.
+              const hasStructure = /<(h[1-6]|li|table|a|img|blockquote|code|pre|strong|em)\b/i.test(html);
+              if (hasStructure) return false;
+            }
 
             if (text.length < 3) return false;
 
