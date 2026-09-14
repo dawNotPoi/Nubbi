@@ -11,6 +11,7 @@ export enum UploadStatus {
 
 export enum ChunkStatus {
   pending = -1,
+  uploading = 2,
   fail = 0,
   success = 1,
 }
@@ -33,6 +34,7 @@ export class Uploader {
   private status: UploadStatus = UploadStatus.pending;
   private RestSize = 6; //鍒嗙墖涓婁紶闄愬埗 涓€鑸祻瑙堝櫒鍏佽鍚屾椂瀛樺湪鐨勮姹傛暟涓?
   private finishedCount = 0; //宸蹭笂浼犲垎鐗囨暟閲?
+  private mergeStarted = false;
   private hash = "";
   private name = "";
   private size = 5; //鍒嗙墖澶у皬 MB
@@ -96,9 +98,9 @@ export class Uploader {
   //鍚庣画瑕佺湅涓€涓嬶紝鍙兘瀛樺湪骞跺彂鎺у埗闂
   private async start() {
     if (this.status !== UploadStatus.uploading) return;
+    const totalChunks = this.totalChunksSize;
     const len = this.chunks.length;
     const maxConcurrency = this.RestSize;
-    let activeCount = 0;
     let stopped = false;
     const uploadNext = async () => {
       if (stopped || this.status !== UploadStatus.uploading) return;
@@ -106,7 +108,7 @@ export class Uploader {
         (item) => item.status === ChunkStatus.pending,
       );
       if (!chunk) return;
-      activeCount++;
+      chunk.status = ChunkStatus.uploading;
       try {
         await uploadChunk(chunk.formData!);
         chunk.status = ChunkStatus.success;
@@ -115,12 +117,13 @@ export class Uploader {
         const UPLOAD_PERCENTAGE = 100 - HASH_PERCENTAGE;
         this.progress =
           HASH_PERCENTAGE +
-          Math.round((this.finishedCount / len) * UPLOAD_PERCENTAGE);
+          Math.round((this.finishedCount / totalChunks) * UPLOAD_PERCENTAGE);
         this.onChange?.(this.status, this.progress);
-        console.log(this.finishedCount, len);
+        console.log(this.finishedCount, totalChunks);
 
         // 妫€鏌ユ槸鍚﹀叏閮ㄥ畬鎴?
-        if (this.finishedCount === len) {
+        if (this.finishedCount === totalChunks && !this.mergeStarted) {
+          this.mergeStarted = true;
           await mergeChunk(this.uploadId!);
           this.status = UploadStatus.success;
           this.progress = 100;
@@ -132,6 +135,7 @@ export class Uploader {
       } catch (err) {
         chunk.retries++;
         if (chunk.retries >= 3) {
+          chunk.status = ChunkStatus.fail;
           this.status = UploadStatus.fail;
           this.onChange?.(this.status, this.progress);
           stopped = true;
@@ -140,16 +144,15 @@ export class Uploader {
           chunk.status = ChunkStatus.pending; // 澶辫触閲嶈瘯
         }
       } finally {
-        activeCount--;
         // 缁х画涓婁紶涓嬩竴涓?
         if (!stopped && this.status === UploadStatus.uploading) {
-          uploadNext();
+          void uploadNext();
         }
       }
     };
     // 鍚姩鏈€澶у苟鍙戞暟鐨勪笂浼?
     for (let i = 0; i < Math.min(maxConcurrency, len); i++) {
-      uploadNext();
+      void uploadNext();
     }
   }
 
@@ -167,6 +170,8 @@ export class Uploader {
   async upload() {
     this.status = UploadStatus.uploading;
     this.onChange?.(this.status, this.progress);
+    this.finishedCount = 0;
+    this.mergeStarted = false;
     this.hash = await this.getHash(this.file);
     const { data } = await initUploadTask({
       fileName: this.name,
@@ -187,6 +192,7 @@ export class Uploader {
     this.uploadId = data.uploadId;
     const uploadedChunksIndex = data.uploadedChunks;
     const AllChunks = this.splitFileToChunks(this.file);
+    this.finishedCount = uploadedChunksIndex.length;
     this.chunks = AllChunks.filter((_, index) => {
       if (uploadedChunksIndex.includes(index)) return false;
       return true;

@@ -8,6 +8,20 @@ export interface MeetingType {
   duration: number;
   password?: string;
   endedAt?: string | Date | null;
+  status?: "unreviewd" | "approved" | "rejected";
+}
+
+export interface MeetingComment {
+  _id: string;
+  roomId: string;
+  meetingId: string;
+  content: string;
+  userId: string;
+  name: string;
+  avatar: string;
+  email: string;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 }
 
 export interface MeetingAccessResult {
@@ -45,6 +59,10 @@ export async function getAdminMeeting() {
 
 export async function getMeetingById(id: string) {
   return Get<MeetingType | null>("meeting/findById", { id });
+}
+
+export async function getMeetingComments(id: string) {
+  return Get<MeetingComment[]>("meeting/comments", { id });
 }
 
 export async function validateMeetingAccess(id: string, password?: string) {

@@ -1,66 +1,123 @@
-/* Notion 浅色模式背景 */
-pre {
+.dn-editor .blockCodeWrapper {
+  background: var(--editor-code-block-bg);
+}
+
+.dn-editor .blockCodeWrapper .codeToolbar {
+  background: var(--editor-code-toolbar-bg);
+  color: var(--editor-text-muted);
+  backdrop-filter: blur(6px);
+}
+
+.dn-editor .blockCodeWrapper .codeToolbarButton,
+.dn-editor .blockCodeWrapper .codeToolbarSelect :where(.ant-select-selector) {
+  color: var(--editor-text-muted);
+}
+
+.dn-editor .blockCodeWrapper .codeToolbarButton:hover,
+.dn-editor
+  .blockCodeWrapper
+  .codeToolbarSelect:hover
+  :where(.ant-select-selector) {
+  background: rgba(55, 53, 47, 0.06);
+  color: var(--editor-text);
+}
+
+.dn-editor .blockCodeWrapper .codeToolbarSelect :where(.ant-select-selector) {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.dn-editor
+  .blockCodeWrapper
+  .codeToolbarSelect
+  :where(.ant-select-selection-item) {
+  font-size: 13px;
+}
+
+.dn-editor .blockCodeWrapper .blockCodeContent {
+  margin: 0;
+  padding: 0 1.1rem 0.9rem;
+}
+
+.dn-editor pre {
   line-height: 1.5;
-  font-family: "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono",
-    "Courier New", monospace;
-  color: #37352f;
-  /* 语法高亮细节 - 仿 Notion 配色 */
-  .hljs-comment,
-  .hljs-quote {
-    color: #9b9a97; /* 注释：灰色 */
-    font-style: italic;
-  }
+  font-family: "JetBrains Mono", "SFMono-Regular", "Cascadia Code", Menlo,
+    Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.7;
+  color: rgba(55, 53, 47, 0.88);
+}
 
-  .hljs-keyword,
-  .hljs-selector-tag,
-  .hljs-addition {
-    color: #0b6e99; /* 关键字：深蓝色 */
-  }
+.dn-editor pre .hljs-comment,
+.dn-editor pre .hljs-quote {
+  color: #8d8a83;
+  font-style: normal;
+}
 
-  .hljs-number,
-  .hljs-string,
-  .hljs-meta .hljs-meta-string,
-  .hljs-literal,
-  .hljs-doctag,
-  .hljs-regexp {
-    color: #d9730d; /* 字符串/数字：橙色 */
-  }
+.dn-editor pre .hljs-keyword,
+.dn-editor pre .hljs-selector-tag,
+.dn-editor pre .hljs-addition {
+  color: #7b6fd6;
+}
 
-  .hljs-title,
-  .hljs-section,
-  .hljs-name,
-  .hljs-selector-id,
-  .hljs-selector-class {
-    color: #690; /* 函数/类名：绿色 */
-  }
+.dn-editor pre .hljs-number,
+.dn-editor pre .hljs-string,
+.dn-editor pre .hljs-meta .hljs-meta-string,
+.dn-editor pre .hljs-literal,
+.dn-editor pre .hljs-doctag,
+.dn-editor pre .hljs-regexp {
+  color: #c26d3a;
+}
 
-  .hljs-variable,
-  .hljs-template-variable,
-  .hljs-attribute,
-  .hljs-tag,
-  .hljs-attr {
-    color: #bf360c; /* 属性/变量：棕红色 */
-  }
+.dn-editor pre .hljs-title,
+.dn-editor pre .hljs-section,
+.dn-editor pre .hljs-name,
+.dn-editor pre .hljs-selector-id,
+.dn-editor pre .hljs-selector-class {
+  color: #2f7d68;
+}
 
-  .hljs-bullet,
-  .hljs-symbol,
-  .hljs-link,
-  .hljs-meta,
-  .hljs-selector-attr,
-  .hljs-selector-pseudo {
-    color: #5d4037;
-  }
+.dn-editor pre .hljs-variable,
+.dn-editor pre .hljs-template-variable,
+.dn-editor pre .hljs-attribute,
+.dn-editor pre .hljs-tag,
+.dn-editor pre .hljs-attr {
+  color: #9b5f52;
+}
 
-  .hljs-built_in,
-  .hljs-deletion {
-    color: #bc115b; /* 内置函数：紫红色 */
-  }
+.dn-editor pre .hljs-bullet,
+.dn-editor pre .hljs-symbol,
+.dn-editor pre .hljs-link,
+.dn-editor pre .hljs-meta,
+.dn-editor pre .hljs-selector-attr,
+.dn-editor pre .hljs-selector-pseudo {
+  color: #6b7280;
+}
 
-  .hljs-emphasis {
-    font-style: italic;
-  }
+.dn-editor pre .hljs-built_in,
+.dn-editor pre .hljs-deletion {
+  color: #b14d7d;
+}
 
-  .hljs-strong {
-    font-weight: bold;
-  }
+.dn-editor pre .hljs-type,
+.dn-editor pre .hljs-class .hljs-title,
+.dn-editor pre .hljs-function .hljs-title {
+  color: #256f8f;
+}
+
+.dn-editor pre .hljs-property,
+.dn-editor pre .hljs-params,
+.dn-editor pre .hljs-operator,
+.dn-editor pre .hljs-punctuation {
+  color: rgba(55, 53, 47, 0.82);
+}
+
+.dn-editor pre .hljs-emphasis {
+  font-style: italic;
+}
+
+.dn-editor pre .hljs-strong {
+  font-weight: bold;
 }

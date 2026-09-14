@@ -11,6 +11,7 @@ import { useMemo } from "react";
 import { CodeBlock } from "./extensions/code-block";
 import image from "./extensions/image";
 import { SlashCommandExtension } from "./extensions/slash-command";
+import { SmartSelectAllExtension } from "./extensions/smart-select-all";
 import "./index.css";
 
 const EMPTY_DOC = {
@@ -52,6 +53,7 @@ const TiptapEditor = ({
       },
     }),
     SlashCommandExtension,
+    SmartSelectAllExtension,
   ];
 
   const initialContent = useMemo(() => {
@@ -71,6 +73,11 @@ const TiptapEditor = ({
 
   const editor = useEditor({
     extensions,
+    editorProps: {
+      attributes: {
+        class: "dn-editor__content",
+      },
+    },
     onUpdate: ({ editor }) => {
       const markdown = editor.getMarkdown();
       onChange?.(markdown);
@@ -80,7 +87,7 @@ const TiptapEditor = ({
   });
 
   return (
-    <div className={clsx("size-full", className)}>
+    <div className={clsx("dn-editor size-full", className)}>
       <DragHandle
         computePositionConfig={{
           placement: "left-start",
@@ -89,7 +96,7 @@ const TiptapEditor = ({
         onNodeChange={() => {}}
         editor={editor}
       >
-        <div className="flex h-[20px] items-center px-2 text-zinc-400">
+        <div className="dn-editor__drag-handle flex h-[24px] items-center px-2">
           <Move size={15} />
         </div>
       </DragHandle>

@@ -1,4 +1,5 @@
 import TiptapEditor from "@/component/editor/Tiptap";
+import { Header } from "@/component/Header";
 import {
   postDetailAtom,
   updatePostContentAtom,
@@ -6,6 +7,7 @@ import {
 } from "@/store/atom/postAtom";
 import { debounceWrapper } from "@/utils/common";
 import { useAtom, useAtomValue } from "jotai";
+import { CheckCircle2, LoaderCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import "react-markdown-editor-lite/lib/index.css";
 import { useParams } from "react-router-dom";
@@ -14,6 +16,8 @@ import BlogCard from "./BlogCard";
 import BlogMeta from "./BlogMeta";
 
 const DEFAULT_TITLE = "未命名文档";
+
+type SaveStatus = "idle" | "saving" | "saved";
 
 function BlogSkeleton() {
   return (
@@ -41,20 +45,51 @@ function BlogSkeleton() {
   );
 }
 
+function SaveIndicator({ status }: { status: SaveStatus }) {
+  if (status === "idle") return null;
+
+  const isSaving = status === "saving";
+
+  return (
+    <div className="flex items-center gap-2 text-xs text-neutral-500">
+      {isSaving ? (
+        <LoaderCircle className="size-4 animate-spin text-neutral-500" />
+      ) : (
+        <CheckCircle2 className="size-4 text-emerald-500" />
+      )}
+      <span>{isSaving ? "保存中..." : "已自动保存"}</span>
+    </div>
+  );
+}
+
 export default function Blog() {
   const { Id } = useParams();
   const { data, isLoading, refetch } = useAtomValue(postDetailAtom(Id!));
-  const [{ mutate: updatePostContent }] = useAtom(updatePostContentAtom);
-  const { mutate: updatePostProperties } = useAtomValue(
-    updatePostPropertiesAtom,
-  );
+  const [contentMutation] = useAtom(updatePostContentAtom);
+  const propertiesMutation = useAtomValue(updatePostPropertiesAtom);
   const [title, setTitle] = useState("");
+  const [titleDebouncing, setTitleDebouncing] = useState(false);
+  const [contentDebouncing, setContentDebouncing] = useState(false);
+  const [hasAutoSaved, setHasAutoSaved] = useState(false);
 
-  const debouncedUpdatePost = useCallback(debounceWrapper(updatePostContent), []);
+  const { mutate: updatePostContent, isPending: isContentSaving } =
+    contentMutation;
+  const { mutate: updatePostProperties, isPending: isPropertiesSaving } =
+    propertiesMutation;
+
+  const debouncedUpdatePost = useCallback(
+    debounceWrapper((postId: string, content: string) => {
+      setContentDebouncing(false);
+      updatePostContent({ postId, content });
+    }),
+    [updatePostContent],
+  );
+
   const debouncedUpdateTitle = useMemo(
     () =>
       debounceWrapper((nextTitle: string, parentId?: string | null) => {
         if (!Id) return;
+        setTitleDebouncing(false);
         updatePostProperties({
           postId: Id,
           properties: { title: nextTitle },
@@ -70,7 +105,40 @@ export default function Blog() {
 
   useEffect(() => {
     setTitle(data?.title ?? "");
+    setTitleDebouncing(false);
+    setContentDebouncing(false);
+    setHasAutoSaved(false);
   }, [Id, data?.title]);
+
+  useEffect(() => {
+    if (!hasAutoSaved && (titleDebouncing || contentDebouncing)) {
+      setHasAutoSaved(true);
+    }
+  }, [contentDebouncing, hasAutoSaved, titleDebouncing]);
+
+  const saveStatus: SaveStatus = useMemo(() => {
+    if (!hasAutoSaved) return "idle";
+    if (
+      titleDebouncing ||
+      contentDebouncing ||
+      isContentSaving ||
+      isPropertiesSaving
+    ) {
+      return "saving";
+    }
+    return "saved";
+  }, [
+    contentDebouncing,
+    hasAutoSaved,
+    isContentSaving,
+    isPropertiesSaving,
+    titleDebouncing,
+  ]);
+
+  const headerRouteLabel = useMemo(() => {
+    const titleLabel = (title || data?.title || DEFAULT_TITLE).trim();
+    return ["笔记", titleLabel].join(" / ");
+  }, [data?.title, title]);
 
   const Editor = useMemo(() => {
     if (isLoading || !Id || !data) return null;
@@ -79,16 +147,27 @@ export default function Blog() {
         key={`${Id}:${data.updatedAt ?? ""}:${data.content?.length ?? 0}`}
         defaultValue={data.content}
         onChange={(markdown) => {
-          debouncedUpdatePost({ postId: Id, content: markdown });
+          setContentDebouncing(true);
+          debouncedUpdatePost(Id, markdown);
         }}
       />
     );
-  }, [Id, isLoading, data?.content, data?.updatedAt, debouncedUpdatePost, data]);
+  }, [Id, isLoading, data, debouncedUpdatePost]);
 
   if (!Id || isLoading || !data) return <BlogSkeleton />;
 
   return (
     <div className="min-w-[800px]">
+      <Header className="mb-4">
+        <div className="flex items-center justify-between gap-4">
+          <div className="truncate text-sm text-neutral-500">
+            {headerRouteLabel}
+          </div>
+          <div className="shrink-0">
+            <SaveIndicator status={saveStatus} />
+          </div>
+        </div>
+      </Header>
       <BlogCard
         data={data}
         onUpdate={(newData) => {
@@ -99,18 +178,19 @@ export default function Blog() {
           });
         }}
       />
-      <main className=" w-full mt-10 items-center">
+      <main className="mt-10 w-full items-center">
         <div
           key={`${Id}:${data.updatedAt ?? ""}:${data.content?.length ?? 0}`}
           className="mx-auto w-[50%] min-w-[600px]"
         >
           <input
-            className="outline-none text-4xl w-full px-2 font-extrabold"
+            className="w-full px-2 text-4xl font-extrabold outline-none"
             placeholder={DEFAULT_TITLE}
             value={title}
-            onChange={(e) => {
-              const nextTitle = e.target.value;
+            onChange={(event) => {
+              const nextTitle = event.target.value;
               setTitle(nextTitle);
+              setTitleDebouncing(true);
               debouncedUpdateTitle(nextTitle, data.parentId);
             }}
           />

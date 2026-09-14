@@ -1,9 +1,11 @@
+import { Header } from "@/component/Header";
 import RecentMeeting from "../../component/MeetingList/RecentMeeting";
 import RecentNoteList from "./RecentNoteList";
 
 export default function Home() {
   return (
     <div>
+      <Header />
       <main className="max-w-[1000px] mx-auto px-4">
         <header>
           <h2 className="font-bold h-[100px] flex items-center justify-center">

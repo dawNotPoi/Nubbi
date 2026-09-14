@@ -6,6 +6,92 @@ import meeting from "../models/meeting";
 import { successResponse } from "./utils";
 const router = express.Router();
 
+const getMeetingEndTimestamp = (item: {
+  startTime?: string | number | Date | null;
+  createdAt?: string | number | Date | null;
+  duration?: number | null;
+}) => {
+  const startTime = item.startTime || item.createdAt;
+  if (!startTime || !item.duration) return null;
+
+  const start = new Date(startTime).getTime();
+  if (Number.isNaN(start)) return null;
+
+  return start + item.duration * 60 * 1000;
+};
+
+const isMeetingExpired = (item: {
+  startTime?: string | number | Date | null;
+  createdAt?: string | number | Date | null;
+  duration?: number | null;
+  endedAt?: string | number | Date | null;
+}) => {
+  if (item.endedAt) return false;
+
+  const endTimestamp = getMeetingEndTimestamp(item);
+  return endTimestamp !== null && Date.now() >= endTimestamp;
+};
+
+const autoEndExpiredMeetings = async <T extends Array<any>>(meetings: T) => {
+  const now = new Date();
+  const expiredIds = meetings
+    .filter((item) => isMeetingExpired(item))
+    .map((item) => String(item._id));
+
+  if (expiredIds.length > 0) {
+    await meeting.updateMany(
+      {
+        _id: { $in: expiredIds },
+        endedAt: null,
+      },
+      {
+        $set: {
+          endedAt: now,
+        },
+      },
+    );
+  }
+
+  return meetings.map((item) => {
+    if (!expiredIds.includes(String(item._id))) {
+      return item;
+    }
+
+    const plain =
+      typeof item.toObject === "function" ? item.toObject() : { ...item };
+
+    return {
+      ...plain,
+      endedAt: plain.endedAt || now,
+    };
+  }) as T;
+};
+
+const autoEndExpiredMeeting = async (item: any) => {
+  if (!item || !isMeetingExpired(item)) {
+    return item;
+  }
+
+  const now = new Date();
+  await meeting.updateOne(
+    {
+      _id: item._id,
+      endedAt: null,
+    },
+    {
+      $set: {
+        endedAt: now,
+      },
+    },
+  );
+
+  const plain = typeof item.toObject === "function" ? item.toObject() : { ...item };
+  return {
+    ...plain,
+    endedAt: plain.endedAt || now,
+  };
+};
+
 router.post(
   "/create",
   requireAuth,
@@ -31,7 +117,7 @@ router.get(
     const result = await meeting.find({
       hostId: hostId,
     });
-    successResponse(res, result);
+    successResponse(res, await autoEndExpiredMeetings(result));
   })
 );
 
@@ -50,7 +136,7 @@ router.post(
       .limit(pageSize);
 
     successResponse(res, {
-      data: result,
+      data: await autoEndExpiredMeetings(result),
       pagination: {
         total,
         page: Number(page),
@@ -80,7 +166,7 @@ router.get(
   "/findAllMeeting",
   asyncHandler(async (req, res) => {
     const result = await meeting.find().sort({ createdAt: -1 });
-    successResponse(res, result);
+    successResponse(res, await autoEndExpiredMeetings(result));
   })
 );
 
@@ -113,6 +199,17 @@ router.get(
       successResponse(res, null);
       return;
     }
+    successResponse(res, await autoEndExpiredMeeting(result));
+  })
+);
+
+router.get(
+  "/comments",
+  asyncHandler(async (req, res) => {
+    const { id } = req.query;
+    const result = await meetingComment.find({ roomId: String(id || "") }).sort({
+      createdAt: 1,
+    });
     successResponse(res, result);
   })
 );
@@ -121,7 +218,7 @@ router.post(
   "/validateAccess",
   asyncHandler(async (req, res) => {
     const { id, password = "" } = req.body;
-    const result = await meeting.findById(id);
+    const result = await autoEndExpiredMeeting(await meeting.findById(id));
 
     if (!result) {
       successResponse(res, {

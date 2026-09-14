@@ -1,4 +1,3 @@
-import { Header } from "@/component/Header";
 import SideBar from "@/component/SideBar";
 import { PropsWithChildren } from "react";
 import {
@@ -23,8 +22,7 @@ const UserLayout = () => {
     <div className="flex h-screen overflow-hidden">
       <SideBar />
       <div className="flex-1 h-screen overflow-hidden">
-        <Header className="h-[40px]" />
-        <main className="pb-10 h-[calc(100vh-40px)]  overflow-y-auto">
+        <main className="h-screen overflow-y-auto pb-10">
           <Outlet />
         </main>
       </div>

@@ -1,4 +1,4 @@
-import { createMeeting, getMeeting, MeetingType } from "@/api/meeting";
+import { createMeeting, getAllMeeting, getMeeting, MeetingType } from "@/api/meeting";
 import { queryClient } from "@/AppProvider";
 
 import { atomWithMutation, atomWithQuery } from "jotai-tanstack-query";
@@ -14,6 +14,17 @@ export const MeetingAtom = atomWithQuery(
   () => queryClient
 );
 
+export const AllMeetingAtom = atomWithQuery(
+  () => ({
+    queryKey: ["allMeeting"],
+    queryFn: async () => {
+      const response = await getAllMeeting();
+      return response.data || [];
+    },
+  }),
+  () => queryClient
+);
+
 export const createMeetingAtom = atomWithMutation(() => ({
   mutationFn: (
     meeting: Pick<MeetingType, "title" | "startTime" | "duration">
@@ -22,5 +33,6 @@ export const createMeetingAtom = atomWithMutation(() => ({
   },
   onSuccess: () => {
     queryClient.invalidateQueries({ queryKey: ["meeting"] });
+    queryClient.invalidateQueries({ queryKey: ["allMeeting"] });
   },
 }));

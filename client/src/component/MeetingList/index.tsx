@@ -1,10 +1,13 @@
 import { Calendar, CalendarProps } from "antd";
 import { Dayjs } from "dayjs";
 
-import MeetingSchedule from "./MeetingSchedule"
+import MeetingSchedule from "./MeetingSchedule";
 
 export default function MeetingList() {
-  const onPanelChange = (value: Dayjs, mode: CalendarProps<Dayjs>["mode"]) => {}
+  const onPanelChange = (
+    value: Dayjs,
+    mode: CalendarProps<Dayjs>["mode"],
+  ) => {};
 
   return (
     <div className="p-2 border shadow-md flex h-[400px]">
@@ -17,5 +20,5 @@ export default function MeetingList() {
         <MeetingSchedule />
       </div>
     </div>
-  )
+  );
 }

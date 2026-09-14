@@ -1,11 +1,17 @@
+import { Header } from "@/component/Header";
+import Meetingmanage from "@/component/MeetingList/Meetingmanage";
 import RecentMeetings from "@/component/MeetingList/RecentMeeting";
 
 export default function Meetings() {
   return (
-    <div className="p-4 px-10">
-      <section className="max-w-screen-lg mx-auto">
-        <RecentMeetings />
-      </section>
-    </div>
+    <>
+      <Header />
+      <div className="p-4 px-10">
+        <section className="mx-auto max-w-screen-xl space-y-6">
+          <RecentMeetings />
+          <Meetingmanage variant="page" />
+        </section>
+      </div>
+    </>
   );
 }

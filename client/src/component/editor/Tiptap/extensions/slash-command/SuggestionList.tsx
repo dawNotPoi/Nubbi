@@ -6,6 +6,7 @@ import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 // 1. 单个命令项的类型
 export interface SuggestionItem {
   title: string;
+  description?: string;
   icon?: React.ReactNode;
   // 这里的 props 包含 editor, range (虽然你现在不需要删除 range，但保留以备不时之需)
   command: (props: { editor: Editor; range: Range }) => void;
@@ -78,24 +79,39 @@ const SuggestionList = forwardRef<SuggestionListRef, SuggestionListProps>(
     }));
 
     if (!props.items || props.items.length === 0) {
-      return <div>No Content</div>;
+      return (
+        <div className="px-3 py-2 text-sm text-[rgba(55,53,47,0.5)]">
+          No matching command
+        </div>
+      );
     }
 
     return (
-      <div className="flex-col gap-2">
+      <div className="flex min-w-[300px] flex-col gap-1 p-1">
         {props.items.map((item, index: number) => (
           <div
             key={index}
             className={clsx(
-              selectedIndex === index && "bg-gray-100",
-              "hover:bg-gray-100 cursor-pointer overflow-y-auto py-1 px-2 flex gap-1"
+              "flex cursor-pointer gap-3 overflow-y-auto rounded-xl px-2.5 py-2 transition-all",
+              selectedIndex === index
+                ? "bg-[rgba(55,53,47,0.08)]"
+                : "hover:bg-[rgba(55,53,47,0.05)]"
             )}
             onClick={() => selectItem(index)}
           >
-            <div className="size-10 bg-white flex items-center justify-center  border rounded-md">
+            <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg border border-[rgba(55,53,47,0.06)] bg-[rgba(255,255,255,0.88)] text-[rgba(55,53,47,0.72)]">
               {item.icon}
             </div>
-            <div className="flex items-center">{item.title}</div>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-medium text-[rgba(55,53,47,0.9)]">
+                {item.title}
+              </div>
+              {item.description ? (
+                <div className="mt-0.5 line-clamp-1 text-xs text-[rgba(55,53,47,0.52)]">
+                  {item.description}
+                </div>
+              ) : null}
+            </div>
           </div>
         ))}
       </div>

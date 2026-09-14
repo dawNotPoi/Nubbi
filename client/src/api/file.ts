@@ -1,3 +1,4 @@
+﻿import { authClient } from "@/utils/auth";
 import request, { requestWithNoJson } from "./request";
 const baseUrl = import.meta.env.VITE_API_URL;
 
@@ -44,15 +45,64 @@ export const createFloder = async (name?: string, parentId?: string) => {
   return request<FolderRecord>("file/createfolder", { parentId, name });
 };
 
-export async function deleteFile(_id: string) {
-  return request("file/delete", { _id }, "delete");
+export const getAllFolders = async () => {
+  return request<FolderRecord[]>("file/folders", undefined, "get");
+};
+
+export async function deleteFile(
+  _id: string,
+  kind: "file" | "folder" = "file",
+) {
+  return request("file/delete", { fileId: _id, kind }, "post");
 }
 
-export async function renameFile(_id: string, name: string) {
-  return request("file/rename", { _id, name });
+export async function deleteFilesBatch(fileIds: string[]) {
+  return request<{
+    deletedCount: number;
+    deletedFileCount: number;
+    deletedFolderCount: number;
+    deletedIds: string[];
+    missingFileIds: string[];
+    missingFolderIds: string[];
+  }>(
+    "file/delete-batch",
+    {
+      targets: fileIds.map((id) => ({ id, kind: "file" as const })),
+    },
+    "post",
+  );
 }
 
-//初始化上传任务,hash检验
+export async function deleteTargetsBatch(
+  targets: Array<{ id: string; kind: "file" | "folder" }>,
+) {
+  return request<{
+    deletedCount: number;
+    deletedFileCount: number;
+    deletedFolderCount: number;
+    deletedIds: string[];
+    missingFileIds: string[];
+    missingFolderIds: string[];
+  }>("file/delete-batch", { targets }, "post");
+}
+
+export async function renameFile(
+  _id: string,
+  name: string,
+  kind: "file" | "folder" = "file",
+) {
+  return request("file/rename", { _id, name, kind });
+}
+
+export async function moveFileItem(
+  _id: string,
+  targetFolderId: string,
+  kind: "file" | "folder",
+) {
+  return request("file/move", { _id, targetFolderId, kind });
+}
+
+//鍒濆鍖栦笂浼犱换鍔?hash妫€楠?
 export const initUploadTask = async (param: {
   fileName: string;
   fileHash: string;
@@ -63,12 +113,12 @@ export const initUploadTask = async (param: {
   return request<InitUploadTaskData>("file/init", param);
 };
 
-//上传分片
+//涓婁紶鍒嗙墖
 export const uploadChunk = async (formdata: FormData) => {
   return requestWithNoJson("/file/uploadchunk", formdata);
 };
 
-//分片合并
+//鍒嗙墖鍚堝苟
 export const mergeChunk = async (uploadId: string) => {
   return request("/file/merge", { uploadId });
 };
@@ -84,7 +134,7 @@ export const imgToGitCloud = async (file: File): Promise<string> => {
       reader.onload = function (event) {
         const fileContent = event.target?.result as string;
         if (!fileContent) {
-          reject(new Error("文件为空"));
+          reject(new Error("鏂囦欢涓虹┖"));
         }
         resolve(fileContent!.split(",")[1]);
       };
@@ -114,11 +164,52 @@ export const imgToGitCloud = async (file: File): Promise<string> => {
     return data.content.download_url;
   } else {
     console.log(res);
-    console.log("文件格式错误");
+    console.log("鏂囦欢鏍煎紡閿欒");
     return "";
   }
 };
 
 export const getFileDownloadUrl = (fileId: string) => {
   return `${baseUrl}/file/download/${fileId}`;
+};
+
+export const getFilePreviewUrl = (fileId: string) => {
+  return `${baseUrl}/file/preview/${fileId}`;
+};
+
+const getAuthorizedFileRequestInit = async (): Promise<RequestInit> => {
+  const session = await authClient.getSession();
+  const token = session.data?.session.token;
+
+  return {
+    credentials: "include",
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  };
+};
+
+export const fetchFilePreviewBlob = async (fileId: string) => {
+  const response = await fetch(
+    getFilePreviewUrl(fileId),
+    await getAuthorizedFileRequestInit(),
+  );
+
+  if (response.status === 401) {
+    await authClient.signOut();
+    const returnTo = encodeURIComponent(
+      `${window.location.pathname}${window.location.search}${window.location.hash}`,
+    );
+    window.location.href = `/login?returnTo=${returnTo}`;
+    throw new Error("认证失败，请重新登录");
+  }
+
+  if (!response.ok) {
+    throw new Error(`文件预览加载失败: ${response.status}`);
+  }
+
+  const blob = await response.blob();
+
+  return {
+    blob,
+    contentType: response.headers.get("content-type") || blob.type || "",
+  };
 };

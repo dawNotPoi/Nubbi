@@ -32,5 +32,6 @@ FileSchema.index({ hash: 1 });
 FileSchema.index({ ownerId: 1, folderId: 1, status: 1 });
 // 3. 统计：用户空间使用量计算
 FileSchema.index({ ownerId: 1, size: 1 });
+FileSchema.index({ storagePath: 1 });
 
 export const File = model("File", FileSchema);

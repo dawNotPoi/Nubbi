@@ -21,6 +21,7 @@ const NoteCard = ({
   avatarSrc?: string;
 }) => {
   const navigate = useNavigate();
+
   return (
     <li
       onClick={() => {
@@ -58,25 +59,47 @@ const NoteCard = ({
   );
 };
 
+const NoteCardSkeleton = () => {
+  return (
+    <li className="min-w-[150px] max-w-[150px] flex flex-col overflow-hidden border rounded-xl animate-pulse">
+      <header className="relative mb-[16px]">
+        <div className="h-[40px] bg-slate-100"></div>
+        <div className="absolute bottom-0 translate-x-6 translate-y-[14px] size-[25px] rounded-md bg-slate-200"></div>
+      </header>
+      <div className="pt-[10px] px-4 flex-1 pb-[14px]">
+        <div className="space-y-2">
+          <div className="h-4 rounded bg-slate-200"></div>
+          <div className="h-4 w-4/5 rounded bg-slate-200"></div>
+          <div className="h-4 w-3/5 rounded bg-slate-200"></div>
+        </div>
+        <div className="mt-4 flex items-center gap-2">
+          <div className="size-5 rounded-full bg-slate-200"></div>
+          <div className="h-3 w-20 rounded bg-slate-200"></div>
+        </div>
+      </div>
+    </li>
+  );
+};
+
 const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
-  const { data } = useAtomValue(recentPostAtom);
+  const {
+    data = [],
+    isPending,
+    isFetching,
+  } = useAtomValue(recentPostAtom);
   const { user } = useAuth();
   const [offset, setOffset] = useState(0);
   const [maxOffset, setMaxOffset] = useState(0);
   const [cachedAvatar, setCachedAvatar] = useState("");
-  const [cachedName, setCachedName] = useState("");
   const wrapperRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
-  const hasNotes = !!data?.length;
+  const hasNotes = data.length > 0;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     const avatar = user?.image || localStorage.getItem(AVATAR_CACHE_KEY) || "";
-    const name = user?.name || localStorage.getItem(NAME_CACHE_KEY) || "";
-
     setCachedAvatar(avatar);
-    setCachedName(name);
 
     if (user?.image) {
       localStorage.setItem(AVATAR_CACHE_KEY, user.image);
@@ -94,6 +117,7 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
         setOffset(0);
         return;
       }
+
       const listWidth = listRef.current.scrollWidth;
       const wrapperWidth = wrapperRef.current.offsetWidth;
       const max = Math.max(listWidth - wrapperWidth, 0);
@@ -107,7 +131,6 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
 
   const canScrollLeft = hasNotes && offset > 0;
   const canScrollRight = hasNotes && offset < maxOffset;
-  if (!data) return null;
 
   return (
     <CardWrapper
@@ -116,19 +139,30 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
         <>
           <Clock />
           <span>最近编辑</span>
+          {isFetching && !isPending ? (
+            <span className="ml-2 text-xs text-zinc-400">更新中...</span>
+          ) : null}
         </>
       }
     >
       <div ref={wrapperRef} className="overflow-hidden group relative">
         <ul
           ref={listRef}
-          style={{
-            transform: `translateX(-${offset}px)`,
-            transition: "all 0.3s",
-          }}
+          style={
+            isPending
+              ? undefined
+              : {
+                  transform: `translateX(-${offset}px)`,
+                  transition: "all 0.3s",
+                }
+          }
           className="gap-4 flex left-0"
         >
-          {data.length > 0 ? (
+          {isPending ? (
+            Array.from({ length: 4 }).map((_, index) => (
+              <NoteCardSkeleton key={`recent-note-skeleton-${index}`} />
+            ))
+          ) : hasNotes ? (
             data.map((post) => (
               <NoteCard
                 key={post._id}
@@ -141,7 +175,7 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
           )}
         </ul>
 
-        {canScrollLeft && (
+        {!isPending && canScrollLeft && (
           <div className="z-20 h-full absolute left-0 top-0 bg-gradient-to-r from-white to-white/5 flex flex-col justify-center">
             <button
               onClick={() => {
@@ -153,7 +187,7 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
             </button>
           </div>
         )}
-        {canScrollRight && (
+        {!isPending && canScrollRight && (
           <div className="z-20 h-full absolute right-0 top-0 bg-gradient-to-l from-white to-white/5 flex flex-col justify-center">
             <button
               onClick={() => {

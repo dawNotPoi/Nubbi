@@ -24,6 +24,10 @@ export const listFilesAtom = atomWithQuery((get) => {
     // 按目录维度缓存列表，便于精确刷新
     queryKey: ["files", parentId ?? "root"],
     queryFn: () => listFiles(parentId),
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   };
 });
 

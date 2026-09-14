@@ -1,10 +1,11 @@
 import { Modal } from "@/component/UI/Dialog";
+import { useAuth } from "@/hooks/useAuth";
 import { createMeetingAtom, MeetingAtom } from "@/store/atom/meetingAtom";
 import { Button, DatePicker, Input, message, Select } from "antd";
 import dayjs from "dayjs";
 import { useAtomValue } from "jotai";
 import { Calendars, Plus } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import CardWrapper from "../../views/Home/CardWrapper";
 
@@ -17,20 +18,40 @@ const AddMeetingModal = ({
   onClose: () => void;
   openModal: () => void;
 }) => {
+  const { user } = useAuth();
+  const defaultTitle = `${user?.name || "我"}的会议`;
   const [formData, setFormData] = useState({
-    title: "",
+    title: defaultTitle,
     startTime: dayjs().valueOf(),
     duration: 30,
     password: "",
   });
+
+  useEffect(() => {
+    if (!open) return;
+
+    setFormData({
+      title: defaultTitle,
+      startTime: dayjs().valueOf(),
+      duration: 30,
+      password: "",
+    });
+  }, [defaultTitle, open]);
+
   const creteMeetingMutation = useAtomValue(createMeetingAtom);
   const createMeeting = () => {
     creteMeetingMutation.mutate(formData, {
-      onError: (error) => {
+      onError: () => {
         message.error("网络异常");
       },
       onSuccess: (res) => {
-        message.success("创建会议成功");
+        if (res.code === 1) {
+          message.success("创建会议成功");
+          onClose();
+          return;
+        }
+
+        message.error(res.message || "创建会议失败");
       },
     });
   };
@@ -60,6 +81,7 @@ const AddMeetingModal = ({
             <div>标题</div>
             <div className="flex-1">
               <Input
+                value={formData.title}
                 placeholder="请输入会议标题"
                 onChange={(e) =>
                   setFormData((v) => ({
@@ -145,12 +167,35 @@ const AddMeetingModal = ({
 const RecentMeetings = ({ className }: { className?: string }) => {
   const { data: meetings } = useAtomValue(MeetingAtom);
   const [open, setOpen] = useState(false);
+  const upcomingWeekMeetings = useMemo(() => {
+    const now = dayjs();
+    const windowStart = now.startOf("day");
+    const windowEnd = windowStart.add(7, "day").endOf("day");
+
+    return (meetings || [])
+      .filter((item) => {
+        const start = dayjs(item.startTime);
+        const end = start.add(item.duration, "minute");
+
+        return (
+          start.isValid() &&
+          !item.endedAt &&
+          end.isAfter(now) &&
+          (start.isAfter(windowStart) || start.isSame(windowStart)) &&
+          (start.isBefore(windowEnd) || start.isSame(windowEnd))
+        );
+      })
+      .sort(
+        (left, right) =>
+          dayjs(left.startTime).valueOf() - dayjs(right.startTime).valueOf(),
+      );
+  }, [meetings]);
   const NoCotent = () => {
     return (
       <div className="h-[300px] flex items-center justify-center">
         <div className="flex flex-col gap-4 items-center text-zinc-500">
           <Calendars size={60} />
-          <p>近三天内没有会议</p>
+          <p>未来一周内没有会议</p>
           <div>
             <button className="text-sky-700 flex gap-1 items-center">
               <Plus size={20} />
@@ -199,7 +244,7 @@ const RecentMeetings = ({ className }: { className?: string }) => {
         className={className}
         header={
           <div className="flex w-full  items-center gap-2">
-            <Calendars /> <span>最近会议</span>
+            <Calendars /> <span>近期会议</span>
             <div className="flex-1"></div>
             <AddMeetingModal
               openModal={() => setOpen(true)}
@@ -210,8 +255,8 @@ const RecentMeetings = ({ className }: { className?: string }) => {
         }
       >
         <div className="max-h-[400px] border overflow-y-auto rounded-md ">
-          {meetings?.length && meetings.length > 0 ? (
-            meetings?.map((item) => (
+          {upcomingWeekMeetings.length > 0 ? (
+            upcomingWeekMeetings.map((item) => (
               <div key={item._id} className="p-2 flex gap-1">
                 <div className="p-2 w-[200px]">
                   {turnIntoWeek(dayjs(item.startTime).day())}
