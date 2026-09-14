@@ -195,8 +195,13 @@ export const LoginPage = () => {
   };
 
   const handleResendVerification = async () => {
+    const email = verificationEmail.trim();
+    if (!email) { message.error("请输入邮箱"); return; }
+    if (!emailPattern.test(email)) { message.error("请输入有效的邮箱地址"); return; }
+    const correctedDomain = getEmailDomainCorrection(email);
+    if (correctedDomain) { message.error(`邮箱域名是否应为 ${correctedDomain}？`); return; }
     setResendingVerification(true);
-    const result = await resendVerificationCode(verificationEmail.trim());
+    const result = await resendVerificationCode(email);
     setResendingVerification(false);
     if (!result.success) { message.error(result.error?.message || "验证码发送失败"); return; }
     message.success("验证码已重新发送，请检查邮箱。");
