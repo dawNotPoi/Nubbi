@@ -1,4 +1,13 @@
 export const READ_TOOL_DESCRIPTIONS = {
+  tags: `List all existing tags in the authenticated user's Nubbi tag catalog.
+
+Call this before proposing a tagged note or tag-property update. Reuse an existing tag exactly, including spelling and letter case, when it already represents the intended concept. Propose a new tag only when no existing tag fits. This tool is read-only.
+
+Args: none.
+Returns the alphabetically sorted tag names in structuredContent and a concise count in text.
+Example: {}.
+An empty list means no existing tags are available to reuse.`,
+
   list: `List the authenticated user's visible Nubbi notes as paginated metadata.
 
 Use this to browse, inspect hierarchy, or obtain note_id and updatedAt before another call. Filter by direct parent, source, lifecycle status, or exact tag. It reads both user- and agent-authored notes and never modifies them.

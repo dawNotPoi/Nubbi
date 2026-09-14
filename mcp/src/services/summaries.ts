@@ -19,6 +19,11 @@ export const summarizePage = (noun: string, data: unknown): string => {
   return `Found ${count} ${noun} at offset ${offset} (${total} total).${continuation}`;
 };
 
+export const summarizeTags = (data: unknown): string => {
+  const count = Array.isArray(data) ? data.length : 0;
+  return `Found ${count} existing ${count === 1 ? "tag" : "tags"}.`;
+};
+
 export const summarizeNote = (data: unknown): string => {
   const offset = readNumber(data, "contentOffset") ?? 0;
   const length = readNumber(data, "contentLength") ??

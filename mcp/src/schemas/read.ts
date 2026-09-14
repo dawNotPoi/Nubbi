@@ -18,6 +18,8 @@ const noteFilters = {
   tag: z.string().trim().min(1).max(100).optional().describe("Exact tag filter"),
 };
 
+export const ListTagsInputSchema = z.object({}).strict();
+
 export const ListNotesInputSchema = z
   .object({
     limit: LimitSchema,

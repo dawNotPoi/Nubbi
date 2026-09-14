@@ -11,6 +11,7 @@ export const API_TIMEOUT_MS = 30_000;
 export const READ_RETRY_DELAY_MS = 150;
 
 export const TOOL_NAMES = [
+  "nubbi_list_tags",
   "nubbi_list_notes",
   "nubbi_search_notes",
   "nubbi_get_note",

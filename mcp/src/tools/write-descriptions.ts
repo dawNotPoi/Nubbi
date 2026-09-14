@@ -5,6 +5,8 @@ export const WRITE_TOOL_DESCRIPTIONS = {
 
 Create a private agent-authored Nubbi note. If the user has not supplied or approved the full body, do not generate substantial content; preview an empty or proposed body and wait.
 
+When tags are appropriate, call nubbi_list_tags before the proposal. Reuse semantically matching tag names exactly, including spelling and letter case. Propose a new tag only when none fits, and identify reused versus new tags in the preview.
+
 The Nubbi server always forces source=agent, status=inbox, and published=false. The note may be placed at root or under any visible, non-deleted parent. This tool never publishes content.
 
 Args: optional title, Markdown content, parent_id/null, author/null, tags, ISO date, and JSON-compatible meta.
@@ -24,6 +26,8 @@ On 409 re-read and intentionally reapply the edit; write calls are never auto-re
   properties: `${WRITE_CONFIRMATION_GUIDANCE}
 
 Partially update safe properties of an agent-authored Nubbi note. Preview every property and tag change before confirmation.
+
+Before adding tags, call nubbi_list_tags and prefer exact existing names for matching concepts. Clearly identify any genuinely new tag in the preview.
 
 Read the note first and pass its exact updatedAt as expected_updated_at. Supports title, author, date, tag additions/removals, metadata set/removal. It cannot change source, publish state, deletion state, parent, or lifecycle status.
 

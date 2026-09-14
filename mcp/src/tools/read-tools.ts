@@ -3,18 +3,44 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import {
   GetNoteInputSchema,
   GetNotesInputSchema,
+  ListTagsInputSchema,
   ListNotesInputSchema,
   ListTrashInputSchema,
   SearchNotesInputSchema,
 } from "../schemas/read.js";
 import { ToolOutputSchema } from "../schemas/common.js";
-import { summarizeBatchNotes, summarizeNote, summarizePage } from "../services/summaries.js";
+import {
+  summarizeBatchNotes,
+  summarizeNote,
+  summarizePage,
+  summarizeTags,
+} from "../services/summaries.js";
 import { runTool } from "./tool-runner.js";
 import type { NubbiApi } from "../types.js";
 import { READ_ANNOTATIONS } from "./annotations.js";
 import { READ_TOOL_DESCRIPTIONS } from "./read-descriptions.js";
 
 export const registerReadTools = (server: McpServer, api: NubbiApi): void => {
+  server.registerTool(
+    "nubbi_list_tags",
+    {
+      title: "List Nubbi Tags",
+      description: READ_TOOL_DESCRIPTIONS.tags,
+      inputSchema: ListTagsInputSchema,
+      outputSchema: ToolOutputSchema,
+      annotations: READ_ANNOTATIONS,
+    },
+    async (): Promise<CallToolResult> =>
+      runTool(
+        api,
+        "Listing tags",
+        "GET",
+        "/mcp-api/tags",
+        { retryRead: true },
+        summarizeTags,
+      ),
+  );
+
   server.registerTool(
     "nubbi_list_notes",
     {

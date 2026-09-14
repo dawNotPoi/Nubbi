@@ -6,6 +6,7 @@ import {
   listMcpTrash,
   searchMcpNotes,
 } from "@/controller/mcp/noteRead";
+import { listTags } from "@/controller/tag";
 import {
   requireAuthenticatedUser,
   type AuthenticatedUser,
@@ -38,6 +39,12 @@ mcpReadRoutes.get("/context", {
   action: "read",
   message: "MCP context ready",
   handler: ({ authContext }) => getMcpContext(authContext),
+});
+
+/** 查询当前账号的标签目录，供 Agent 创建笔记前优先复用 */
+mcpReadRoutes.get("/tags", {
+  action: "read",
+  handler: ({ actor }) => listTags(actor.id),
 });
 
 /** 查询笔记列表（分页） */
