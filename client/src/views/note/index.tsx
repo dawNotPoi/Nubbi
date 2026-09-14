@@ -94,8 +94,7 @@ function MarkdownEditor({ value, onChange, className }: MarkdownEditorProps) {
 function NoteSkeleton() {
   return (
     <div className="min-w-[800px] animate-pulse">
-      <div className="mx-6 mt-6 h-40 rounded-2xl bg-neutral-100" />
-      <main className="mt-10 w-full items-center">
+      <main className="w-full items-center pt-10">
         <div className="mx-auto w-[50%] min-w-[600px]">
           <div className="h-12 w-2/3 rounded-lg bg-neutral-100" />
           <div className="mt-5 flex gap-3">

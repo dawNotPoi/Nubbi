@@ -62,7 +62,8 @@ const ProtectedRoute: React.FC<PropsWithChildren> = ({ children }) => {
   const { hasAccessToken, initialized, isAuthenticated, sessionPending } =
     useAuth();
   const location = useLocation();
-  if (!initialized || sessionPending || (hasAccessToken && !isAuthenticated)) {
+  // If has token, skip AuthRouteFallback so we don't flash between two skeletons
+  if (!initialized || (!hasAccessToken && sessionPending)) {
     return <AuthRouteFallback />;
   }
   if (isAuthenticated) {
@@ -85,7 +86,8 @@ const PublicOnlyRoute: React.FC<PropsWithChildren> = ({ children }) => {
     useAuth();
   const location = useLocation();
 
-  if (!initialized || sessionPending || (hasAccessToken && !isAuthenticated)) {
+  // If has token, skip AuthRouteFallback so we don't flash between two skeletons
+  if (!initialized || (!hasAccessToken && sessionPending)) {
     return <AuthRouteFallback />;
   }
 
