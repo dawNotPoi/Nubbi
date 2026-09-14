@@ -84,10 +84,14 @@ export const WrittingModal = ({ parent, onTrigger, trigger }: WritingModalProps)
   };
 
   const triggerElement = cloneElement(
-    trigger ?? <Plus className="size-full" />,
+    (trigger ?? <Plus className="size-full" />) as React.ReactElement<
+      Record<string, unknown>
+    >,
     {
       onClick: (event: React.MouseEvent) => {
-        trigger?.props.onClick?.(event);
+        (
+          trigger?.props as { onClick?: (e: React.MouseEvent) => void }
+        )?.onClick?.(event);
         onTrigger?.();
         draft.createDraftNote();
         setOpen(true);

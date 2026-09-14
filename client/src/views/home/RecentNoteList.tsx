@@ -1,9 +1,12 @@
+import { newNote } from "@/api/note";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { recentNoteAtom } from "@/store/atom/noteAtom";
+import { createNoteAtom, recentNoteAtom } from "@/store/atom/noteAtom";
+import { routes } from "@/utils/routes";
 import { useAtomValue } from "jotai";
-import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, Plus } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import CardWrapper from "./CardWrapper";
 import { RecentNoteCard, RecentNoteCardSkeleton } from "./RecentNoteCard";
 
@@ -19,6 +22,8 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
     isFetching,
   } = useAtomValue(recentNoteAtom);
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const { mutate: createNote } = useAtomValue(createNoteAtom);
   const isMobile = useIsMobile();
   const [offset, setOffset] = useState(0);
   const [maxOffset, setMaxOffset] = useState(0);
@@ -27,6 +32,20 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const hasNotes = data.length > 0;
+
+  /** 创建一篇根级笔记并跳转到编辑页 */
+  const handleCreateNote = () => {
+    if (!user?.id) return;
+    const note = newNote();
+    createNote(
+      { note },
+      {
+        onSuccess: () => {
+          navigate(routes.note(note._id));
+        },
+      },
+    );
+  };
 
   const getListLayout = useCallback(() => {
     const wrapper = wrapperRef.current;
@@ -128,7 +147,7 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
           <Clock />
           <span>最近编辑</span>
           {isFetching && !isPending ? (
-            <span className="ml-2 text-xs text-zinc-400">更新中...</span>
+            <span className="ml-2 text-xs text-text-muted">更新中...</span>
           ) : null}
         </>
       }
@@ -162,7 +181,22 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
               />
             ))
           ) : (
-            <div className="text-gray-400 h-[100px]">暂无笔记</div>
+            <li
+              className="flex min-h-[164px] w-[76vw] min-w-[76vw] snap-start cursor-pointer flex-col overflow-hidden rounded-xl border border-border-row bg-white shadow-soft transition-colors hover:bg-bg-hover sm:w-[168px] sm:min-w-[168px] sm:max-w-[168px]"
+              onClick={handleCreateNote}
+            >
+              <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 py-6 text-center">
+                <div className="grid size-12 place-items-center rounded-full bg-bg-panel">
+                  <Plus className="size-6 text-text-subtle" />
+                </div>
+                <p className="text-sm font-medium text-text-primary">
+                  还没有笔记
+                </p>
+                <p className="text-xs text-text-muted">
+                  点击创建第一篇
+                </p>
+              </div>
+            </li>
           )}
         </ul>
 

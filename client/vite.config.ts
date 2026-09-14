@@ -22,5 +22,8 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
       "simple-peer": "simple-peer/simplepeer.min.js",
     },
+    // 强制 react / react-dom 解析到同一个副本，避免 better-auth 等依赖
+    // 通过 peer 解析到 store 里的 react@19 副本，造成双 React 导致 hooks 失效
+    dedupe: ["react", "react-dom"],
   },
 });

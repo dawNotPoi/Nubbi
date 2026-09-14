@@ -83,7 +83,7 @@ app.use(requestLogger);
 //拦截用户信息请求
 // 将所有 /api/auth/* 请求转发给 Better Auth 处理器
 app.all(
-  "/api/auth/{:.*}",
+  "/api/auth/*splat",
   trackBetterAuthMutation,
   withAccountContext((req, res) => betterAuthHandler(req, res)),
 );

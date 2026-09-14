@@ -25,7 +25,7 @@ export const useNoteEditorDraft = ({
   const [title, setTitleState] = useState("");
   const [titleDebouncing, setTitleDebouncing] = useState(false);
   const [hasAutoSaved, setHasAutoSaved] = useState(false);
-  const activeNoteIdRef = useRef<string>();
+  const activeNoteIdRef = useRef<string | undefined>(undefined);
   const updatePropertiesRef = useRef(propertiesMutation.mutate);
   const {
     canApplyExternalContent,

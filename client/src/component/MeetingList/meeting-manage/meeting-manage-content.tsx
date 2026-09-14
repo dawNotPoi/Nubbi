@@ -28,7 +28,7 @@ export const MeetingManageContent = ({
 }: MeetingManageContentProps): ReactElement => (
   <div className={className}>
     <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
-      <div className="flex items-center gap-2 text-lg font-semibold text-zinc-900">
+      <div className="flex items-center gap-2 text-lg font-semibold text-text-primary">
         <CalendarDays size={18} />
         <span>会议管理</span>
       </div>
@@ -38,19 +38,19 @@ export const MeetingManageContent = ({
     </div>
 
     <div className="mb-5 grid gap-3 md:grid-cols-3">
-      <div className="rounded-2xl bg-zinc-50 px-4 py-3">
-        <div className="text-xs text-zinc-500">会议总数</div>
-        <div className="mt-1 text-2xl font-semibold text-zinc-900">
+      <div className="rounded-lg bg-bg-panel px-4 py-3">
+        <div className="text-xs text-text-muted">会议总数</div>
+        <div className="mt-1 text-2xl font-semibold text-text-primary">
           {stats.total}
         </div>
       </div>
-      <div className="rounded-2xl bg-amber-50 px-4 py-3">
+      <div className="rounded-lg bg-amber-50 px-4 py-3">
         <div className="text-xs text-amber-700">待审批</div>
         <div className="mt-1 text-2xl font-semibold text-amber-900">
           {stats.pending}
         </div>
       </div>
-      <div className="rounded-2xl bg-blue-50 px-4 py-3">
+      <div className="rounded-lg bg-blue-50 px-4 py-3">
         <div className="text-xs text-blue-700">已结束</div>
         <div className="mt-1 text-2xl font-semibold text-blue-900">
           {stats.ended}
@@ -65,7 +65,7 @@ export const MeetingManageContent = ({
         ))}
       </div>
     ) : meetings.length === 0 ? (
-      <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 py-14">
+      <div className="rounded-lg border border-dashed border-border-row bg-bg-panel py-14">
         <Empty description="暂无会议记录" />
       </div>
     ) : (

@@ -153,12 +153,17 @@ export const Modal = ({
   //弹窗开启时,关闭body滚动
   useBodyLock(open);
   const triggerEl = trigger
-    ? cloneElement(trigger, {
-        onClick: (e: any) => {
-          trigger.props.onClick?.(e);
-          setOpen(true);
+    ? cloneElement(
+        trigger as React.ReactElement<Record<string, unknown>>,
+        {
+          onClick: (event: React.MouseEvent) => {
+            (
+              trigger.props as { onClick?: (e: React.MouseEvent) => void }
+            ).onClick?.(event);
+            setOpen(true);
+          },
         },
-      })
+      )
     : null;
 
   //not mounted or closed

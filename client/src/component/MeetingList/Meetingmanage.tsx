@@ -1,9 +1,9 @@
-import { Modal } from "antd";
+import { Modal } from "@/component/UI/Dialog";
+import { useMeetingManage } from "./meeting-manage/use-meeting-manage";
+import { MeetingManageContent } from "./meeting-manage/meeting-manage-content";
+import { MeetingCommentsModal } from "./meeting-manage/meeting-comments-modal";
 import clsx from "clsx";
 import { memo, type PropsWithChildren, type ReactElement, useState } from "react";
-import { MeetingCommentsModal } from "./meeting-manage/meeting-comments-modal";
-import { MeetingManageContent } from "./meeting-manage/meeting-manage-content";
-import { useMeetingManage } from "./meeting-manage/use-meeting-manage";
 
 type MeetingManageProps = PropsWithChildren<{
   variant?: "modal" | "page";
@@ -23,7 +23,7 @@ const Meetingmanage = ({
     <MeetingManageContent
       className={clsx(
         isPage &&
-          "rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:rounded-3xl sm:p-6",
+          "rounded-lg border border-border-row bg-white p-4 shadow-soft sm:rounded-lg sm:p-6",
         className,
       )}
       meetings={meetingManage.meetings}
@@ -45,12 +45,10 @@ const Meetingmanage = ({
       ) : (
         <>
           <Modal
-            destroyOnClose
             open={open}
             onCancel={() => setOpen(false)}
-            footer={null}
-            width={920}
-            title={null}
+            showClose
+            className="md:!mt-[5vh] md:!w-[920px]"
           >
             <div className="pt-2">{content}</div>
           </Modal>
