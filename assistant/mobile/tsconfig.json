@@ -1,8 +1,0 @@
-{
-  "extends": "expo/tsconfig.base",
-  "compilerOptions": {
-    // 开启严格类型检查，保证与 Assistant API 的通信数据在编译期即被校验。
-    "allowImportingTsExtensions": true,
-    "strict": true
-  }
-}
