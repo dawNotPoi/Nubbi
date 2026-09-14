@@ -53,7 +53,7 @@
 
 ---
 
-### BUG-005 上传进行中关闭标签页无任何拦截
+### BUG-005 ~~上传进行中关闭标签页无任何拦截~~ ✅ 已修复
 
 **位置**：`client/src/component/upload/hooks/GlobalUpload.ts`
 
