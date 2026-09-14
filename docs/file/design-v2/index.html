@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <meta name="description" content="Nubbi 简约文件管理 HTML 视觉原型" />
+    <title>Nubbi 文件管理 · 简约设计稿</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./responsive.css" />
+  </head>
+  <body>
+    <main class="file-page">
+      <section class="file-surface" aria-label="文件管理器">
+        <header class="file-header">
+          <div class="title-group"><h1>文件</h1><span id="itemCount">0 项</span></div>
+          <div class="header-actions">
+            <label class="search-field">
+              <span class="search-icon" aria-hidden="true"></span>
+              <input id="searchInput" type="search" autocomplete="off" placeholder="搜索文件" aria-label="搜索当前目录" />
+              <button id="clearSearch" type="button" aria-label="清空搜索">×</button>
+            </label>
+            <div class="menu-wrap">
+              <button class="primary-button" id="newButton" type="button" aria-expanded="false"><span aria-hidden="true">＋</span> 新建</button>
+              <div class="create-menu" id="createMenu">
+                <button type="button" data-create="folder"><span aria-hidden="true">▱</span>新建文件夹</button>
+                <button type="button" data-create="upload"><span aria-hidden="true">↑</span>上传文件</button>
+              </div>
+            </div>
+            <div class="menu-wrap">
+              <button class="icon-button more-button" id="pageMenuButton" type="button" aria-label="更多操作" aria-expanded="false">•••</button>
+              <div class="page-menu" id="pageMenu">
+                <button type="button" data-page-action="transfer">传输任务 <span>2</span></button>
+                <button type="button" data-page-action="refresh">刷新</button>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div class="path-row"><nav class="breadcrumbs" id="breadcrumbs" aria-label="当前位置"></nav></div>
+
+        <div class="selection-bar" id="selectionBar" aria-live="polite">
+          <strong id="selectionCount">已选择 0 项</strong>
+          <button type="button" data-bulk="move">移动</button>
+          <button class="danger" type="button" data-bulk="delete">删除</button>
+          <button class="icon-button" id="clearSelection" type="button" aria-label="清空选择">×</button>
+        </div>
+
+        <section class="file-list" id="listContainer" aria-label="文件列表">
+          <div class="list-head">
+            <label class="check-cell"><input id="selectAll" type="checkbox" aria-label="选择当前目录全部项目" /></label>
+            <span>名称</span><span>最近修改</span><span class="sr-only">操作</span>
+          </div>
+          <div id="listRows"></div>
+        </section>
+
+        <section class="empty-state" id="emptyState" aria-live="polite">
+          <span class="empty-folder" aria-hidden="true"></span>
+          <h2 id="emptyTitle">此文件夹为空</h2>
+          <p id="emptyCopy">上传文件或新建文件夹后，内容会显示在这里。</p>
+          <button class="primary-button" type="button" data-create="upload">上传文件</button>
+        </section>
+      </section>
+    </main>
+
+    <aside class="preview-panel" id="previewPanel" aria-hidden="true" aria-label="文件预览" inert>
+      <div class="panel-header"><span>文件预览</span><button class="icon-button" id="previewClose" type="button" aria-label="关闭预览">×</button></div>
+      <div class="preview-canvas"><div class="preview-document"><span class="file-icon" id="previewIcon" data-ext="PDF"></span><strong id="previewExtension">PDF</strong><small>PREVIEW</small></div></div>
+      <div class="preview-info"><span id="previewPath">全部文件</span><h2 id="previewName">Nubbi 产品手册.pdf</h2><p id="previewMeta">2.4 MB · 07/15 09:18</p><div class="preview-actions"><button class="primary-button" type="button" data-preview-action="下载">下载</button><button class="quiet-button" type="button" data-preview-action="复制分享链接">分享</button></div></div>
+    </aside>
+
+    <aside class="upload-panel" id="uploadPanel" aria-hidden="true" aria-label="传输任务">
+      <div class="panel-header"><strong>传输</strong><button class="icon-button" id="uploadClose" type="button" aria-label="关闭传输">×</button></div>
+      <article class="upload-item"><span class="file-icon" data-ext="ZIP"></span><div><strong>nubbi-assets.zip</strong><span>48.2 MB · 68%</span><i><b class="progress-68"></b></i></div></article>
+      <article class="upload-item"><span class="file-icon" data-ext="PDF"></span><div><strong>信息架构.pdf</strong><span>正在校验文件…</span><i class="indeterminate"><b></b></i></div></article>
+    </aside>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="./prototype.js"></script>
+  </body>
+</html>

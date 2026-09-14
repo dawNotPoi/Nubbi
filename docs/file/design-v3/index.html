@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <meta name="description" content="参考 Nubbi Library 的文件管理 HTML 原型" />
+    <title>Nubbi Files · Library 设计稿</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./responsive.css" />
+  </head>
+  <body>
+    <main class="library-page">
+      <header class="page-heading">
+        <div class="title-copy"><h1>Files</h1><span id="itemCount">0 项</span></div>
+        <div class="heading-actions">
+          <button class="secondary-button" id="uploadButton" type="button"><span aria-hidden="true">↑</span> 上传文件</button>
+          <button class="primary-button" id="newFolderButton" type="button"><span aria-hidden="true">＋</span> 新建文件夹</button>
+        </div>
+      </header>
+
+      <section class="library-toolbar" aria-label="文件工具栏">
+        <nav class="breadcrumbs" id="breadcrumbs" aria-label="当前位置"></nav>
+        <div class="toolbar-actions">
+          <label class="search-field" id="searchField">
+            <input id="searchInput" type="search" autocomplete="off" placeholder="搜索文件" aria-label="搜索当前文件库" />
+            <button id="clearSearch" type="button" aria-label="清空搜索">×</button>
+          </label>
+          <button class="tool-button search-toggle" id="searchToggle" type="button" title="搜索" aria-expanded="false"><span class="search-icon" aria-hidden="true"></span></button>
+          <div class="menu-wrap">
+            <button class="tool-button" id="sortButton" type="button" title="排序" aria-expanded="false">⇅</button>
+            <div class="tool-menu" id="sortMenu">
+              <button type="button" data-sort="updated-desc">最近修改</button>
+              <button type="button" data-sort="updated-asc">最早修改</button>
+              <button type="button" data-sort="name-asc">名称 A–Z</button>
+            </div>
+          </div>
+          <div class="menu-wrap">
+            <button class="filter-button" id="typeButton" type="button" aria-expanded="false">全部类型</button>
+            <div class="tool-menu type-menu" id="typeMenu">
+              <button type="button" data-type="all">全部类型</button>
+              <button type="button" data-type="document">文档</button>
+              <button type="button" data-type="image">图片</button>
+              <button type="button" data-type="video">视频</button>
+              <button type="button" data-type="archive">压缩包</button>
+            </div>
+          </div>
+          <button class="transfer-button" id="transferButton" type="button">传输 <span>2</span></button>
+          <button class="tool-button" id="refreshButton" type="button" title="刷新" aria-label="刷新">↻</button>
+        </div>
+      </section>
+
+      <section class="file-table" id="fileTable" aria-label="文件列表">
+        <div class="table-head" id="tableHead">
+          <label class="check-cell"><input id="selectAll" type="checkbox" aria-label="选择全部可见项目" /></label>
+          <span class="head-label name-head">文件名</span>
+          <span class="head-label">最近修改</span>
+          <span class="head-label">类型 / 大小</span>
+          <span class="head-label"></span>
+          <div class="batch-bar" id="batchBar">
+            <span id="selectionCount">已选 0 项</span>
+            <button type="button" data-bulk="移动">移动</button>
+            <button class="danger" type="button" data-bulk="删除">删除</button>
+            <button type="button" id="clearSelection">取消</button>
+          </div>
+        </div>
+        <ul class="file-rows" id="fileRows"></ul>
+        <div class="empty-state" id="emptyState"><strong>没有找到文件</strong><span>试试调整筛选条件。</span></div>
+      </section>
+    </main>
+
+    <dialog class="preview-dialog" id="previewDialog">
+      <header><div><strong id="previewName">文件预览</strong></div><button class="tool-button" id="previewClose" type="button" aria-label="关闭预览">×</button></header>
+      <div class="preview-body"><div class="document-sheet"><span id="previewExtension">PDF</span><strong>文件预览</strong><p>此处承载图片、PDF、音视频及 Office 文档的预览内容。</p></div></div>
+      <footer><span id="previewMeta">2.4 MB · 最近修改</span><div><button class="secondary-button" type="button" data-action="下载">下载文件</button><button class="primary-button" id="previewDone" type="button">完成</button></div></footer>
+    </dialog>
+
+    <dialog class="transfer-dialog" id="transferDialog">
+      <header><div><strong>传输任务</strong><span>2 个任务进行中</span></div><button class="tool-button" id="transferClose" type="button" aria-label="关闭传输任务">×</button></header>
+      <div class="task-list">
+        <article><div><strong>nubbi-assets.zip</strong><span>48.2 MB · 68%</span><i><b class="progress-68"></b></i></div><button type="button">暂停</button></article>
+        <article><div><strong>信息架构.pdf</strong><span>正在校验文件…</span><i class="loading"><b></b></i></div><button type="button">取消</button></article>
+      </div>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="./prototype.js"></script>
+  </body>
+</html>

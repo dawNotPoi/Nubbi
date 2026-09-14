@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>文件管理 · 五种布局方向</title>
+  <style>
+    :root{--canvas:#f5f5f3;--paper:#fff;--ink:#171717;--muted:#737373;--line:#dededb;--hover:#ececea;--shadow:0 12px 36px rgba(23,23,23,.08)}
+    *{box-sizing:border-box}html,body{min-width:320px;min-height:100%;margin:0}body{background:var(--canvas);color:var(--ink);font-family:Inter,Arial,"PingFang SC",sans-serif}.page{width:min(1240px,calc(100% - 40px));margin:auto;padding:48px 0 72px}
+    header{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:32px}h1{margin:0;font-size:36px;letter-spacing:-.04em}header p{max-width:480px;margin:0;color:var(--muted);font-size:13px;line-height:1.7}
+    .options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.option{overflow:hidden;border:1px solid var(--line);border-radius:12px;background:var(--paper);color:inherit;text-decoration:none;transition:.18s ease}.option:hover{border-color:var(--ink);box-shadow:var(--shadow);transform:translateY(-2px)}
+    .preview{height:330px;overflow:hidden;border-bottom:1px solid var(--line);background:var(--paper);pointer-events:none}.preview iframe{width:1400px;height:880px;border:0;transform:scale(.38);transform-origin:top left}.copy{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:18px 20px}.copy strong{display:block;font-size:15px}.copy span{display:block;margin-top:5px;color:var(--muted);font-size:12px}.number{color:var(--line);font-size:32px;font-weight:800}
+    @media(max-width:900px){.options{grid-template-columns:1fr}.preview iframe{transform:scale(.48)}}
+    @media(max-width:560px){.page{width:calc(100% - 24px);padding-top:28px}header{align-items:flex-start;flex-direction:column}h1{font-size:30px}.preview{height:245px}.preview iframe{transform:scale(.3)}}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header><h1>七种文件管理布局</h1><p>每套都保留目录、搜索、上传、选择、文件信息和操作，仅改变布局与系统视觉语言。</p></header>
+    <section class="options">
+      <a class="option" href="./01-editorial/index.html"><div class="preview"><iframe src="./01-editorial/index.html" title="紧凑表格预览" loading="lazy"></iframe></div><div class="copy"><div><strong>Compact Table</strong><span>经典轻表格 · 信息密度高</span></div><b class="number">01</b></div></a>
+      <a class="option" href="./02-soft-cards/index.html"><div class="preview"><iframe src="./02-soft-cards/index.html" title="侧栏文件管理预览" loading="lazy"></iframe></div><div class="copy"><div><strong>Soft Explorer</strong><span>目录侧栏 · 柔和列表</span></div><b class="number">02</b></div></a>
+      <a class="option" href="./03-dark-console/index.html"><div class="preview"><iframe src="./03-dark-console/index.html" title="深色文件管理预览" loading="lazy"></iframe></div><div class="copy"><div><strong>Dark Manager</strong><span>深色界面 · 紧凑文件表格</span></div><b class="number">03</b></div></a>
+      <a class="option" href="./04-cobalt-grid/index.html"><div class="preview"><iframe src="./04-cobalt-grid/index.html" title="网格文件管理预览" loading="lazy"></iframe></div><div class="copy"><div><strong>Grid Explorer</strong><span>文件夹与文件卡片网格</span></div><b class="number">04</b></div></a>
+      <a class="option" href="./05-quiet-split/index.html"><div class="preview"><iframe src="./05-quiet-split/index.html" title="详情双栏预览" loading="lazy"></iframe></div><div class="copy"><div><strong>Detail Pane</strong><span>文件列表 · 右侧详情预览</span></div><b class="number">05</b></div></a>
+      <a class="option" href="./06-win11-explorer/index.html"><div class="preview"><iframe src="./06-win11-explorer/index.html" title="Win11 文件管理预览" loading="lazy"></iframe></div><div class="copy"><div><strong>Win11 Explorer</strong><span>命令栏 · 地址栏 · 详情列表</span></div><b class="number">06</b></div></a>
+      <a class="option" href="./07-macos-finder/index.html"><div class="preview"><iframe src="./07-macos-finder/index.html" title="macOS Finder 文件管理预览" loading="lazy"></iframe></div><div class="copy"><div><strong>macOS Finder</strong><span>Finder 侧栏 · 分栏浏览 · 预览</span></div><b class="number">07</b></div></a>
+    </section>
+  </main>
+</body>
+</html>

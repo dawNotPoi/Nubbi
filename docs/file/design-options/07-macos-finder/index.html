@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Finder · 文件管理</title>
+  <style>
+    :root{--window:#f6f6f6;--panel:#fff;--side:rgba(235,235,237,.82);--line:#d8d8da;--ink:#27272a;--muted:#77777c;--blue:#0a84ff;--hover:rgba(0,0,0,.045);--shadow:0 28px 80px rgba(34,38,47,.2)}
+    *{box-sizing:border-box}
+    body{margin:0;min-width:320px;min-height:100vh;background:linear-gradient(145deg,#dce8f5,#e7e2ef 48%,#e9edf0);color:var(--ink);font:13px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif;display:grid;place-items:center;padding:28px}
+    button,input{font:inherit;color:inherit}
+    button{cursor:pointer}
+    .finder{width:min(1280px,100%);height:min(780px,calc(100vh - 56px));min-height:590px;border:1px solid rgba(0,0,0,.18);border-radius:13px;background:var(--window);overflow:hidden;box-shadow:var(--shadow);display:grid;grid-template-rows:56px 1fr}
+    .toolbar{display:flex;align-items:center;gap:9px;padding:0 14px;border-bottom:1px solid #cfcfd1;background:linear-gradient(#fbfbfc,#ececef)}
+    .traffic{display:flex;gap:8px;margin-right:10px}
+    .dot{width:12px;height:12px;border-radius:50%;border:1px solid rgba(0,0,0,.12)}
+    .red{background:#ff5f57}.yellow{background:#febc2e}.green{background:#28c840}
+    .tool{height:30px;min-width:32px;border:1px solid #c9c9cc;border-radius:7px;background:linear-gradient(#fff,#e9e9eb);padding:0 9px;box-shadow:0 1px 1px rgba(0,0,0,.04)}
+    .tool:hover{background:#fff}
+    .nav{font-size:20px;line-height:1;color:#555}
+    .toolbar-title{margin-left:8px;font-weight:650}
+    .spacer{flex:1}
+    .segment{display:flex}
+    .segment .tool{border-radius:0;margin-left:-1px}
+    .segment .tool:first-child{border-radius:7px 0 0 7px;margin:0}
+    .segment .tool:last-child{border-radius:0 7px 7px 0}
+    .segment .active{background:#d6d6d8;box-shadow:inset 0 1px 2px rgba(0,0,0,.09)}
+    .search{width:190px;height:30px;border:1px solid #c9c9cc;border-radius:8px;background:rgba(255,255,255,.78);padding:0 10px;outline:none}
+    .search:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(10,132,255,.2);background:#fff}
+    .workspace{min-height:0;display:grid;grid-template-columns:190px minmax(390px,1fr) 280px}
+    .sidebar{min-width:0;padding:18px 10px;background:var(--side);backdrop-filter:blur(22px);border-right:1px solid #d2d2d4;overflow:auto}
+    .side-group{margin-bottom:18px}
+    .side-title{padding:0 10px 5px;color:#85858a;font-size:11px;font-weight:650}
+    .side-list{display:grid;gap:2px}
+    .side-item{height:30px;border:0;border-radius:6px;background:transparent;padding:0 10px;text-align:left;white-space:nowrap}
+    .side-item:hover{background:rgba(0,0,0,.05)}
+    .side-item.active{background:#d4d4d7;font-weight:600}
+    .browser{min-width:0;display:grid;grid-template-rows:48px 1fr 34px;background:var(--panel)}
+    .path{display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid #e1e1e3}
+    .path strong{font-size:14px}
+    .path span{color:var(--muted);font-size:11px}
+    .list{overflow:auto}
+    .row{min-width:560px;display:grid;grid-template-columns:38px minmax(220px,1fr) 80px 130px;align-items:center;padding:0 8px;border-bottom:1px solid #ededee}
+    .head{height:28px;position:sticky;top:0;z-index:1;background:#fafafa;color:#69696e;font-size:11px;border-bottom-color:#d7d7d9}
+    .item{height:42px}
+    .item:hover{background:var(--hover)}
+    .item.selected{background:var(--blue);color:#fff}
+    .item.selected .meta{color:rgba(255,255,255,.8)}
+    .cell{padding:0 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .check{display:grid;place-items:center}
+    input[type=checkbox]{width:14px;height:14px;margin:0;accent-color:var(--blue)}
+    .name{font-weight:500}
+    .meta{color:var(--muted);font-size:11px}
+    .status{display:flex;align-items:center;justify-content:center;gap:14px;border-top:1px solid #dedee0;color:var(--muted);font-size:11px}
+    .status button{border:0;background:transparent;color:#555;padding:3px 5px}
+    .status button:hover{color:var(--blue)}
+    .preview{padding:28px 22px;border-left:1px solid #d8d8da;background:#f8f8f8;overflow:auto;text-align:center}
+    .sheet{width:150px;height:190px;margin:8px auto 22px;border:1px solid #d2d2d4;border-radius:5px;background:#fff;box-shadow:0 7px 18px rgba(0,0,0,.1);padding:30px 18px;text-align:left}
+    .sheet-label{color:var(--blue);font-size:10px;font-weight:700;letter-spacing:.12em}
+    .sheet-title{margin-top:34px;font-size:18px;font-weight:700;line-height:1.25}
+    .sheet-year{margin-top:9px;color:var(--muted);font-size:11px}
+    .preview h2{margin:0 0 6px;font-size:14px;word-break:break-all}
+    .preview p{margin:0 0 20px;color:var(--muted);font-size:11px}
+    .preview-actions{display:flex;justify-content:center;gap:7px}
+    .preview-actions button{height:30px;border:1px solid #cfcfd2;border-radius:7px;background:#fff;padding:0 11px}
+    .toast{position:fixed;left:50%;bottom:18px;translate:-50% 14px;opacity:0;border-radius:8px;background:#252528;color:#fff;padding:8px 13px;pointer-events:none;transition:.2s}
+    .toast.show{translate:-50% 0;opacity:1}
+    [hidden]{display:none!important}
+    @media(max-width:980px){.workspace{grid-template-columns:180px 1fr}.preview{display:none}}
+    @media(max-width:720px){
+      body{display:block;padding:0;background:var(--window)}
+      .finder{width:100%;height:100vh;min-height:560px;border:0;border-radius:0;grid-template-rows:auto 1fr}
+      .toolbar{min-height:96px;flex-wrap:wrap;padding:10px}.traffic{margin-right:2px}.toolbar-title{display:none}.spacer{flex:1}.search{order:4;width:100%}
+      .workspace{grid-template-columns:1fr;grid-template-rows:auto 1fr}.sidebar{padding:8px;border:0;border-bottom:1px solid #d2d2d4;overflow:auto}.side-group{margin:0}.side-group:not(:first-child),.side-title{display:none}.side-list{display:flex;width:max-content}.side-item{padding:0 12px}
+    }
+    @media(max-width:520px){.tool.action-label{font-size:0}.tool.action-label::after{content:attr(aria-label);font-size:11px}.row{min-width:0;grid-template-columns:36px minmax(170px,1fr) 110px}.row .size{display:none}.browser{grid-template-rows:44px 1fr 34px}}
+    @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+  </style>
+</head>
+<body>
+  <main class="finder" aria-label="Finder 风格文件管理器">
+    <header class="toolbar">
+      <div class="traffic" aria-hidden="true"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
+      <button class="tool nav" type="button" aria-label="后退">‹</button><button class="tool nav" type="button" aria-label="前进">›</button>
+      <span class="toolbar-title">我的文件</span><span class="spacer"></span>
+      <button class="tool action-label" id="new" type="button" aria-label="新建">新建文件夹</button><button class="tool action-label" id="upload" type="button" aria-label="上传">上传</button>
+      <div class="segment" aria-label="视图"><button class="tool active" type="button">列表</button><button class="tool" type="button">分栏</button></div>
+      <input class="search" id="search" type="search" placeholder="搜索" aria-label="搜索文件">
+    </header>
+    <div class="workspace">
+      <aside class="sidebar" aria-label="Finder 侧栏">
+        <section class="side-group"><div class="side-title">个人收藏</div><nav class="side-list"><button class="side-item active">我的文件</button><button class="side-item">最近使用</button><button class="side-item">共享</button></nav></section>
+        <section class="side-group"><div class="side-title">iCloud</div><nav class="side-list"><button class="side-item">云端硬盘</button><button class="side-item">桌面</button><button class="side-item">文稿</button></nav></section>
+        <section class="side-group"><div class="side-title">位置</div><nav class="side-list"><button class="side-item">Nubbi 空间</button><button class="side-item">团队共享盘</button></nav></section>
+      </aside>
+      <section class="browser">
+        <div class="path"><strong>我的文件</strong><span>6 个项目</span></div>
+        <div class="list" role="table" aria-label="文件列表">
+          <div class="row head" role="row"><div class="cell check"><input id="all" type="checkbox" aria-label="全选"></div><div class="cell">名称</div><div class="cell size">大小</div><div class="cell">修改日期</div></div>
+          <div id="rows">
+            <div class="row item" data-name="产品资料" role="row"><div class="cell check"><input type="checkbox" aria-label="选择产品资料"></div><div class="cell name">产品资料</div><div class="cell meta size">—</div><div class="cell meta">今天 10:32</div></div>
+            <div class="row item" data-name="设计素材" role="row"><div class="cell check"><input type="checkbox" aria-label="选择设计素材"></div><div class="cell name">设计素材</div><div class="cell meta size">—</div><div class="cell meta">昨天 17:05</div></div>
+            <div class="row item" data-name="会议归档" role="row"><div class="cell check"><input type="checkbox" aria-label="选择会议归档"></div><div class="cell name">会议归档</div><div class="cell meta size">—</div><div class="cell meta">7 月 12 日</div></div>
+            <div class="row item selected" data-name="nubbi 产品手册 pdf" role="row"><div class="cell check"><input type="checkbox" checked aria-label="选择 Nubbi 产品手册"></div><div class="cell name">Nubbi 产品手册.pdf</div><div class="cell meta size">4.8 MB</div><div class="cell meta">今天 10:24</div></div>
+            <div class="row item" data-name="发布说明 md" role="row"><div class="cell check"><input type="checkbox" aria-label="选择发布说明"></div><div class="cell name">发布说明.md</div><div class="cell meta size">18 KB</div><div class="cell meta">昨天 16:40</div></div>
+            <div class="row item" data-name="演示封面 png" role="row"><div class="cell check"><input type="checkbox" aria-label="选择演示封面"></div><div class="cell name">演示封面.png</div><div class="cell meta size">2.1 MB</div><div class="cell meta">7 月 12 日</div></div>
+          </div>
+        </div>
+        <footer class="status"><span id="selection">6 个项目，已选择 1 项</span><button data-note="已准备分享">分享</button><button data-note="开始下载">下载</button></footer>
+      </section>
+      <aside class="preview" aria-label="文件预览"><div class="sheet"><div class="sheet-label">NUBBI</div><div class="sheet-title">产品<br>手册</div><div class="sheet-year">2026 EDITION</div></div><h2>Nubbi 产品手册.pdf</h2><p>PDF 文稿 · 4.8 MB</p><div class="preview-actions"><button data-note="已准备分享">分享</button><button data-note="开始下载">下载</button></div></aside>
+    </div>
+  </main>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script>
+    const rows=[...document.querySelectorAll('.item')],search=document.querySelector('#search'),all=document.querySelector('#all'),toast=document.querySelector('#toast');let timer;
+    function count(){const n=rows.filter(r=>r.querySelector('input').checked).length;document.querySelector('#selection').textContent=`6 个项目，已选择 ${n} 项`;rows.forEach(r=>r.classList.toggle('selected',r.querySelector('input').checked))}
+    rows.forEach(r=>r.querySelector('input').addEventListener('change',count));all.addEventListener('change',()=>{rows.filter(r=>!r.hidden).forEach(r=>r.querySelector('input').checked=all.checked);count()});
+    search.addEventListener('input',()=>{const q=search.value.trim().toLowerCase();rows.forEach(r=>r.hidden=!r.dataset.name.includes(q))});
+    function note(t){toast.textContent=t;toast.classList.add('show');clearTimeout(timer);timer=setTimeout(()=>toast.classList.remove('show'),1500)}
+    document.querySelector('#new').onclick=()=>note('新建文件夹');document.querySelector('#upload').onclick=()=>note('选择要上传的文件');document.querySelectorAll('[data-note]').forEach(b=>b.onclick=()=>note(b.dataset.note));
+  </script>
+</body>
+</html>
