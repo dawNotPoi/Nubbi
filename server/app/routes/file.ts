@@ -93,6 +93,9 @@ const normalizeQueryValue = (value: unknown) => {
   return typeof value === "string" ? value : "";
 };
 
+const normalizeRouteParam = (value: string | string[] | undefined) =>
+  Array.isArray(value) ? value[0] : value;
+
 const createPreviewSignature = (
   fileId: string,
   userId: string,
@@ -888,8 +891,12 @@ router.get(
   "/preview-url/:fileId",
   requireAuth,
   asyncHandler(async (req: AuthRequest, res) => {
-    const { fileId } = req.params;
+    const fileId = normalizeRouteParam(req.params.fileId);
     const userId = req.user?.id;
+
+    if (!fileId) {
+      return res.status(400).json({ message: "文件 id 不能为空" });
+    }
 
     const file = await getOwnedActiveFile(fileId, userId);
 
@@ -923,8 +930,12 @@ router.get(
   "/share-url/:fileId",
   requireAuth,
   asyncHandler(async (req: AuthRequest, res) => {
-    const { fileId } = req.params;
+    const fileId = normalizeRouteParam(req.params.fileId);
     const userId = req.user?.id;
+
+    if (!fileId) {
+      return res.status(400).json({ message: "文件 id 不能为空" });
+    }
 
     const file = await getOwnedActiveFile(fileId, userId);
 
@@ -947,7 +958,12 @@ const handleSignedStreamPreview = async (
   req: AuthRequest,
   res: express.Response,
 ) => {
-  const { fileId } = req.params;
+  const fileId = normalizeRouteParam(req.params.fileId);
+
+  if (!fileId) {
+    return res.status(400).json({ message: "文件 id 不能为空" });
+  }
+
   const userId = resolveSignedPreviewUserId(
     fileId,
     req.query as Record<string, unknown>,
@@ -1017,7 +1033,12 @@ router.get(
 router.get(
   "/public-download/:fileId",
   asyncHandler(async (req: AuthRequest, res) => {
-    const { fileId } = req.params;
+    const fileId = normalizeRouteParam(req.params.fileId);
+
+    if (!fileId) {
+      return res.status(400).json({ message: "文件 id 不能为空" });
+    }
+
     const userId = resolveSignedShareDownloadUserId(
       fileId,
       req.query as Record<string, unknown>,
@@ -1045,8 +1066,12 @@ router.get(
   "/download/:fileId",
   requireAuth,
   asyncHandler(async (req: AuthRequest, res) => {
-    const { fileId } = req.params;
+    const fileId = normalizeRouteParam(req.params.fileId);
     const userId = req.user?.id;
+
+    if (!fileId) {
+      return res.status(400).json({ message: "文件 id 不能为空" });
+    }
 
     const file = await getOwnedActiveFile(fileId, userId);
 
@@ -1066,8 +1091,12 @@ router.get(
   "/preview/:fileId",
   requireAuth,
   asyncHandler(async (req: AuthRequest, res) => {
-    const { fileId } = req.params;
+    const fileId = normalizeRouteParam(req.params.fileId);
     const userId = req.user?.id;
+
+    if (!fileId) {
+      return res.status(400).json({ message: "文件 id 不能为空" });
+    }
 
     const file = await getOwnedActiveFile(fileId, userId);
 

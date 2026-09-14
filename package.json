@@ -1,11 +1,17 @@
 {
   "name": "nubbi",
   "version": "1.0.0",
+  "private": true,
   "description": "",
   "main": "index.js",
   "scripts": {
-    "client": "pnpm --dir client dev",
-    "server": "pnpm --dir server dev",
+    "client": "pnpm dev:client",
+    "server": "pnpm dev:server",
+    "dev:client": "pnpm --filter nubbi-client dev",
+    "dev:server": "pnpm --filter nubbi-server dev",
+    "build:client": "pnpm --filter nubbi-client build",
+    "lint:client": "pnpm --filter nubbi-client lint",
+    "typecheck:server": "pnpm --filter nubbi-server typecheck",
     "prepare": "husky",
     "commit": "git-cz",
     "preflight": "node scripts/preflight.mjs",
@@ -18,9 +24,6 @@
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.12.4",
-  "dependencies": {
-    "winston": "^3.19.0"
-  },
   "devDependencies": {
     "@commitlint/cli": "^21.1.0",
     "@commitlint/config-angular": "^21.1.0",

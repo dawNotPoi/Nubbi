@@ -44,29 +44,24 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
-          cache-dependency-path: |
-            client/pnpm-lock.yaml
-            server/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
 
-      - name: Install client dependencies
-        run: pnpm --dir client install --frozen-lockfile
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Lint client
-        run: pnpm --dir client lint
+        run: pnpm --filter nubbi-client lint
 
       - name: Build client
-        run: pnpm --dir client build
-
-      - name: Install server dependencies
-        run: pnpm --dir server install --frozen-lockfile
+        run: pnpm --filter nubbi-client build
 
       - name: Typecheck server
-        run: pnpm --dir server typecheck
+        run: pnpm --filter nubbi-server typecheck
 
       - name: Build Docker images
         run: |
-          docker build -f client/Dockerfile.runtime -t nubbi-client:verify ./client
-          docker build -t nubbi-server:verify ./server
+          docker build -f client/Dockerfile -t nubbi-client:verify .
+          docker build -f server/Dockerfile -t nubbi-server:verify .
 
   deploy:
     name: Deploy
@@ -126,12 +121,12 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
-          cache-dependency-path: client/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Build client assets
         run: |
-          pnpm --dir client install --frozen-lockfile
-          pnpm --dir client build
+          pnpm install --frozen-lockfile
+          pnpm --filter nubbi-client build
 
       - name: Configure SSH
         run: |

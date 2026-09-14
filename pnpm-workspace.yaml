@@ -1,0 +1,6 @@
+packages:
+  - client
+  - server
+
+overrides:
+  mongodb: 6.21.0
