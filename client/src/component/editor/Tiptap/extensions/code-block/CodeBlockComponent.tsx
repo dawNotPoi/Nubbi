@@ -21,13 +21,16 @@ const CodeBlockComponent: React.FC<NodeViewProps> = ({
   const [selectedLanguage, setSelectedLanguage] = React.useState(() => {
     return normalizeCodeBlockLanguage(node.attrs.language);
   });
-  const [isExpanded, setIsExpanded] = useState(
-    () => node.textContent.length === 0,
-  );
+  const [isExpanded, setIsExpanded] = useState(() => {
+    const initialSource = node.textContent;
+    return initialSource.length === 0 || !/[\r\n]/.test(initialSource);
+  });
   const options = extension.options as CodeBlockOptions;
   const isEditable = editor.isEditable;
   const source = node.textContent;
   const isMermaid = selectedLanguage === "mermaid";
+  const canCollapse = /[\r\n]/.test(source);
+  const isSourceVisible = isExpanded || !canCollapse;
   const firstLine = source.split(/\r?\n/, 1)[0] ?? "";
 
   const handleLanguageChange = useCallback(
@@ -89,23 +92,25 @@ const CodeBlockComponent: React.FC<NodeViewProps> = ({
     <NodeViewWrapper
       className="blockCodeWrapper group rounded-xl pb-3"
       data-language={selectedLanguage}
-      data-expanded={isExpanded ? "true" : "false"}
+      data-expanded={isSourceVisible ? "true" : "false"}
     >
       <header className="toolbar flex items-center px-2 py-2">
-        <button
-          type="button"
-          aria-expanded={isExpanded}
-          aria-label={isExpanded ? "收起代码" : "展开代码"}
-          className="codeToolbarButton flex size-[28px] shrink-0 items-center justify-center overflow-hidden rounded-md p-1"
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={handleToggleExpanded}
-          title={isExpanded ? "收起代码" : "展开代码"}
-        >
-          <ChevronRight
-            className={`transition-transform ${isExpanded ? "rotate-90" : ""}`}
-            size={16}
-          />
-        </button>
+        {canCollapse ? (
+          <button
+            type="button"
+            aria-expanded={isExpanded}
+            aria-label={isExpanded ? "收起代码" : "展开代码"}
+            className="codeToolbarButton flex size-[28px] shrink-0 items-center justify-center overflow-hidden rounded-md p-1"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={handleToggleExpanded}
+            title={isExpanded ? "收起代码" : "展开代码"}
+          >
+            <ChevronRight
+              className={`transition-transform ${isExpanded ? "rotate-90" : ""}`}
+              size={16}
+            />
+          </button>
+        ) : null}
         <div className="flex-1"></div>
         <div className="codeToolbar flex h-[32px] items-center gap-1 overflow-hidden rounded-md p-0.5">
           {isEditable ? (
@@ -139,7 +144,7 @@ const CodeBlockComponent: React.FC<NodeViewProps> = ({
           </button>
         </div>
       </header>
-      {!isExpanded ? (
+      {canCollapse && !isExpanded ? (
         <pre
           aria-label="展开并编辑代码"
           className="blockCodeContent blockCodeSummary"
@@ -157,7 +162,7 @@ const CodeBlockComponent: React.FC<NodeViewProps> = ({
         </pre>
       ) : null}
       <pre
-        className={`blockCodeContent overflow-x-auto ${isExpanded ? "" : "hidden"}`}
+        className={`blockCodeContent overflow-x-auto ${isSourceVisible ? "" : "hidden"}`}
       >
         <NodeViewContent style={{ textWrap: "nowrap" }} />
       </pre>

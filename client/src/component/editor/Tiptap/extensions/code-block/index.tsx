@@ -4,8 +4,11 @@ import CodeBlockLowlight, {
 import { ReactNodeViewRenderer } from "@tiptap/react";
 import { common, createLowlight } from "lowlight";
 import CodeBlockComponent from "./CodeBlockComponent";
+import { mermaidLanguage } from "./mermaid-language";
 
 const lowlight = createLowlight(common);
+
+lowlight.register("mermaid", mermaidLanguage);
 
 lowlight.registerAlias({
   html: "xml",
@@ -15,6 +18,7 @@ lowlight.registerAlias({
   sh: "bash",
   zsh: "bash",
   yml: "yaml",
+  mmd: "mermaid",
 });
 
 export interface CodeBlockOptions extends CodeBlockLowlightOptions {
