@@ -25,8 +25,8 @@ jobs:
     name: Verify
     runs-on: ubuntu-latest
     env:
-      VITE_API_URL: ${{ vars.VITE_API_URL || 'http://127.0.0.1:4000' }}
-      VITE_SOCKET_URL: ${{ vars.VITE_SOCKET_URL || 'http://127.0.0.1:4040' }}
+      VITE_API_URL: ${{ vars.VITE_API_URL || secrets.VITE_API_URL || 'http://127.0.0.1:4000' }}
+      VITE_SOCKET_URL: ${{ vars.VITE_SOCKET_URL || secrets.VITE_SOCKET_URL || 'http://127.0.0.1:4040' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -82,35 +82,35 @@ jobs:
       DEPLOY_USER: ${{ secrets.DEPLOY_USER || 'root' }}
       DEPLOY_PORT: ${{ secrets.DEPLOY_PORT || '22' }}
       DEPLOY_PASSWORD: ${{ secrets.DEPLOY_PASSWORD || '' }}
-      VITE_API_URL: ${{ vars.VITE_API_URL || 'http://127.0.0.1:4000' }}
-      VITE_SOCKET_URL: ${{ vars.VITE_SOCKET_URL || 'http://127.0.0.1:4040' }}
-      WEB_PORT: ${{ vars.WEB_PORT || '80' }}
+      VITE_API_URL: ${{ vars.VITE_API_URL || secrets.VITE_API_URL || 'http://127.0.0.1:4000' }}
+      VITE_SOCKET_URL: ${{ vars.VITE_SOCKET_URL || secrets.VITE_SOCKET_URL || 'http://127.0.0.1:4040' }}
+      WEB_PORT: ${{ vars.WEB_PORT || secrets.WEB_PORT || '80' }}
       MONGO_URI: ${{ secrets.MONGO_URI || '' }}
-      SERVER_PORT: ${{ vars.SERVER_PORT || '4000' }}
-      SOCKET_PORT: ${{ vars.SOCKET_PORT || '4040' }}
+      SERVER_PORT: ${{ vars.SERVER_PORT || secrets.SERVER_PORT || '4000' }}
+      SOCKET_PORT: ${{ vars.SOCKET_PORT || secrets.SOCKET_PORT || '4040' }}
       BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET || '' }}
-      BETTER_AUTH_URL: ${{ vars.BETTER_AUTH_URL || '' }}
-      CLIENT_URL: ${{ vars.CLIENT_URL || '' }}
-      AUTH_GITHUB_ID: ${{ vars.AUTH_GITHUB_ID || '' }}
+      BETTER_AUTH_URL: ${{ vars.BETTER_AUTH_URL || secrets.BETTER_AUTH_URL || '' }}
+      CLIENT_URL: ${{ vars.CLIENT_URL || secrets.CLIENT_URL || '' }}
+      AUTH_GITHUB_ID: ${{ vars.AUTH_GITHUB_ID || secrets.AUTH_GITHUB_ID || '' }}
       AUTH_GITHUB_SECRET: ${{ secrets.AUTH_GITHUB_SECRET || '' }}
-      AUTH_GOOGLE_ID: ${{ vars.AUTH_GOOGLE_ID || vars.AUTH_GOOLE_ID || '' }}
+      AUTH_GOOGLE_ID: ${{ vars.AUTH_GOOGLE_ID || secrets.AUTH_GOOGLE_ID || vars.AUTH_GOOLE_ID || secrets.AUTH_GOOLE_ID || '' }}
       AUTH_GOOGLE_SECRET: ${{ secrets.AUTH_GOOGLE_SECRET || secrets.AUTH_GOOLE_SECRET || '' }}
-      AUTH_GOOLE_ID: ${{ vars.AUTH_GOOLE_ID || '' }}
+      AUTH_GOOLE_ID: ${{ vars.AUTH_GOOLE_ID || secrets.AUTH_GOOLE_ID || '' }}
       AUTH_GOOLE_SECRET: ${{ secrets.AUTH_GOOLE_SECRET || '' }}
       EMAIL_USER: ${{ secrets.EMAIL_USER || '' }}
       EMAIL_PASS: ${{ secrets.EMAIL_PASS || '' }}
-      EMAIL_FROM: ${{ vars.EMAIL_FROM || '' }}
-      EMAIL_SERVICE: ${{ vars.EMAIL_SERVICE || '' }}
+      EMAIL_FROM: ${{ vars.EMAIL_FROM || secrets.EMAIL_FROM || '' }}
+      EMAIL_SERVICE: ${{ vars.EMAIL_SERVICE || secrets.EMAIL_SERVICE || '' }}
       AI_CONFIG_SECRET: ${{ secrets.AI_CONFIG_SECRET || '' }}
-      GH_IMAGE_REPO: ${{ vars.GH_IMAGE_REPO || '' }}
+      GH_IMAGE_REPO: ${{ vars.GH_IMAGE_REPO || secrets.GH_IMAGE_REPO || '' }}
       GH_IMAGE_TOKEN: ${{ secrets.GH_IMAGE_TOKEN || '' }}
-      GH_IMAGE_BRANCH: ${{ vars.GH_IMAGE_BRANCH || 'main' }}
-      WEB_SEARCH_PROVIDER: ${{ vars.WEB_SEARCH_PROVIDER || '' }}
+      GH_IMAGE_BRANCH: ${{ vars.GH_IMAGE_BRANCH || secrets.GH_IMAGE_BRANCH || 'main' }}
+      WEB_SEARCH_PROVIDER: ${{ vars.WEB_SEARCH_PROVIDER || secrets.WEB_SEARCH_PROVIDER || '' }}
       WEB_SEARCH_API_KEY: ${{ secrets.WEB_SEARCH_API_KEY || '' }}
-      WEB_SEARCH_BASE_URL: ${{ vars.WEB_SEARCH_BASE_URL || '' }}
-      SMTP_HOST: ${{ vars.SMTP_HOST || '' }}
-      SMTP_PORT: ${{ vars.SMTP_PORT || '' }}
-      SMTP_SECURE: ${{ vars.SMTP_SECURE || '' }}
+      WEB_SEARCH_BASE_URL: ${{ vars.WEB_SEARCH_BASE_URL || secrets.WEB_SEARCH_BASE_URL || '' }}
+      SMTP_HOST: ${{ vars.SMTP_HOST || secrets.SMTP_HOST || '' }}
+      SMTP_PORT: ${{ vars.SMTP_PORT || secrets.SMTP_PORT || '' }}
+      SMTP_SECURE: ${{ vars.SMTP_SECURE || secrets.SMTP_SECURE || '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
