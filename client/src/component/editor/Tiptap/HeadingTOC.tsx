@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import type { Editor } from "@tiptap/react";
 
 interface HeadingEntry {
@@ -101,71 +100,71 @@ export default function HeadingTOC({ editor }: { editor: Editor }) {
 
   if (headings.length < 2) return null;
 
-  const content = (
-    <div className="fixed right-[30px] top-[200px] z-50">
+  return (
+    <div className="pointer-events-none sticky top-40 z-40 h-0">
       <div
-        className="flex items-start justify-end"
+        className="pointer-events-auto absolute right-[30px]"
         onMouseEnter={handleEnter}
         onMouseLeave={handleLeave}
       >
-        {/* vertical bar indicator — always visible */}
-        <div className={`relative z-10 flex shrink-0 flex-col items-end gap-[3px] rounded-full bg-white/60 px-1.5 py-3 shadow-sm backdrop-blur-sm transition-shadow ${open ? "shadow-md" : ""}`}>
-          {headings.map((h, i) => (
-            <button
-              key={i}
-              className={`rounded-full transition-all duration-200 ${
-                activeId === i
-                  ? "bg-neutral-700"
-                  : "bg-neutral-300"
-              }`}
-              style={{
-                width:
+        <div className="relative flex items-start justify-end">
+          {/* vertical bar indicator — always visible */}
+          <div className="relative z-10 flex shrink-0 flex-col items-end gap-[3px] px-1.5 py-3">
+            {headings.map((h, i) => (
+              <button
+                key={i}
+                className={`rounded-full transition-all duration-200 ${
                   activeId === i
-                    ? 18
-                    : h.level === 1
-                      ? 12
-                      : h.level === 2
-                        ? 8
-                        : 5,
-                height: activeId === i ? 5 : h.level === 1 ? 4 : 3,
-              }}
-              type="button"
-              title={h.text}
-              aria-label={`跳转到: ${h.text}`}
-              onClick={() => scrollToHeading(editor, h.pos)}
-            />
-          ))}
-        </div>
-
-        {/* expanded text panel — on hover, slides left */}
-        <div className={`absolute right-full -top-3 mr-2 z-10 transition-opacity duration-150 ${open ? "opacity-100" : "pointer-events-none opacity-0"}`}>
-          <div className="w-52 rounded-xl border border-neutral-200/80 bg-white shadow-lg backdrop-blur">
-            <div className="px-3 pb-2 pt-3 text-xs font-medium text-neutral-400">
-              目录
-            </div>
-            <nav ref={navRef} className="max-h-[50vh] overflow-y-auto px-1 pb-2">
-              {headings.map((h, i) => (
-                <button
-                  key={i}
-                  ref={activeId === i ? activeRef : undefined}
-                  className={`block w-full truncate rounded-md px-2 py-1 text-left text-[13px] leading-relaxed transition hover:bg-neutral-100 ${
+                    ? "bg-neutral-700"
+                    : "bg-neutral-300"
+                }`}
+                style={{
+                  width:
                     activeId === i
-                      ? "font-medium text-neutral-800"
-                      : "text-neutral-400"
-                  }`}
-                  style={{ paddingLeft: `${8 + (h.level - 1) * 12}px` }}
-                  type="button"
-                  onClick={() => scrollToHeading(editor, h.pos)}
-                >
-                  {h.text}
-                </button>
-              ))}
-            </nav>
+                      ? 18
+                      : h.level === 1
+                        ? 14
+                        : h.level === 2
+                          ? 10
+                          : 6,
+                  height: activeId === i ? 5 : h.level === 1 ? 4 : 3,
+                }}
+                type="button"
+                title={h.text}
+                aria-label={`跳转到: ${h.text}`}
+                onClick={() => scrollToHeading(editor, h.pos)}
+              />
+            ))}
+          </div>
+
+          {/* expanded text panel — on hover, slides left */}
+          <div className={`absolute right-full -top-3 mr-2 z-10 transition-opacity duration-150 ${open ? "opacity-100" : "pointer-events-none opacity-0"}`}>
+            <div className="w-52 rounded-xl border border-neutral-200/80 bg-white shadow-lg backdrop-blur">
+              <div className="px-3 pb-2 pt-3 text-xs font-medium text-neutral-400">
+                目录
+              </div>
+              <nav ref={navRef} className="max-h-[50vh] overflow-y-auto px-1 pb-2">
+                {headings.map((h, i) => (
+                  <button
+                    key={i}
+                    ref={activeId === i ? activeRef : undefined}
+                    className={`block w-full truncate rounded-md px-2 py-1 text-left text-[13px] leading-relaxed transition hover:bg-neutral-100 ${
+                      activeId === i
+                        ? "font-medium text-neutral-800"
+                        : "text-neutral-400"
+                    }`}
+                    style={{ paddingLeft: `${8 + (h.level - 1) * 12}px` }}
+                    type="button"
+                    onClick={() => scrollToHeading(editor, h.pos)}
+                  >
+                    {h.text}
+                  </button>
+                ))}
+              </nav>
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
-
-  return createPortal(content, document.body);
 }

@@ -6,7 +6,6 @@ import { useEffect, useMemo, useRef } from "react";
 import { EMPTY_DOC } from "./constants";
 import { createExtensions } from "./extensions";
 import FormatBubbleMenu from "./FormatBubbleMenu";
-import HeadingTOC from "./HeadingTOC";
 import { useContentSync } from "./hooks/useContentSync";
 import "./index.css";
 import type { TiptapEditorProps } from "./types";
@@ -28,6 +27,7 @@ const TiptapEditor = ({
   showMermaidSourceWhenReadOnly = false,
   variant = "editor",
   showTOC = false,
+  onEditorReady,
 }: TiptapEditorProps) => {
   const externalValue = serverValue ?? defaultValue;
   const extensions = useMemo(
@@ -83,6 +83,10 @@ const TiptapEditor = ({
     editor?.setEditable(editable);
   }, [editable, editor]);
 
+  useEffect(() => {
+    if (editor) onEditorReady?.(editor);
+  }, [editor, onEditorReady]);
+
   return (
     <div
       className={clsx(
@@ -104,7 +108,6 @@ const TiptapEditor = ({
       )}
       <EditorContent editor={editor} />
       {editable && <FormatBubbleMenu editor={editor} />}
-      {showTOC && editor && <HeadingTOC editor={editor} />}
     </div>
   );
 };

@@ -1,5 +1,7 @@
 import TiptapEditor from "@/component/editor/Tiptap";
+import HeadingTOC from "@/component/editor/Tiptap/HeadingTOC";
 import { Header } from "@/component/Header";
+import type { Editor } from "@tiptap/react";
 import { useNoteEditorDraft } from "@/features/note/hooks/useNoteEditorDraft";
 import type { NoteSaveStatus } from "@/features/note/model/types";
 import { noteAncestorsAtom, noteDetailAtom } from "@/store/atom/noteAtom";
@@ -165,6 +167,7 @@ export default function Note() {
     getStoredNoteDisplayMode,
   );
   const [coverEditorOpen, setCoverEditorOpen] = useState(false);
+  const [editor, setEditor] = useState<Editor | null>(null);
 
   useEffect(() => {
     setCoverEditorOpen(false);
@@ -222,6 +225,7 @@ export default function Note() {
         key={Id}
         canApplyExternalContent={canApplyExternalContent}
         onChange={setContent}
+        onEditorReady={setEditor}
         serverValue={content}
         showTOC
       />
@@ -278,6 +282,7 @@ export default function Note() {
           onEditorOpenChange={setCoverEditorOpen}
           onUpdate={updateProperties}
         />
+        {editor && <HeadingTOC editor={editor} />}
         <div
           className={`note-editor-shell mx-auto ${
             displayMode === "split" ? "note-editor-shell--wide" : ""

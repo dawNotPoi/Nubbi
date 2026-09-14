@@ -1,3 +1,5 @@
+import type { Editor } from "@tiptap/react";
+
 export type TiptapEditorVariant = "editor" | "preview";
 
 export interface TiptapEditorProps {
@@ -10,4 +12,5 @@ export interface TiptapEditorProps {
   showMermaidSourceWhenReadOnly?: boolean;
   variant?: TiptapEditorVariant;
   showTOC?: boolean;
+  onEditorReady?: (editor: Editor) => void;
 }
