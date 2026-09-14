@@ -4,6 +4,7 @@ set -Eeuo pipefail
 BRANCH="${1:-${DEPLOY_BRANCH:-master}}"
 APP_DIR="${APP_DIR:-$(pwd)}"
 HEALTHCHECK_URL="${HEALTHCHECK_URL:-}"
+DEPLOY_SERVICES="${DEPLOY_SERVICES:-client server mcp}"
 
 log() {
   printf '[docker-deploy] %s\n' "$*"
@@ -102,9 +103,30 @@ preserve_ports() {
   preserve_port MCP_PORT mcp 3100 3100
 }
 
+has_service() {
+  case " $DEPLOY_SERVICES " in
+    *" $1 "*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 resolve_healthcheck_url() {
   if [ -n "$HEALTHCHECK_URL" ]; then
     printf '%s\n' "$HEALTHCHECK_URL"
+    return
+  fi
+
+  if ! has_service client && has_service mcp && ! has_service server; then
+    local mcp_port
+    mcp_port="${MCP_PORT:-$(get_env_value MCP_PORT || true)}"
+    printf 'http://127.0.0.1:%s/health\n' "${mcp_port:-3100}"
+    return
+  fi
+
+  if ! has_service client && has_service server && ! has_service mcp; then
+    local server_port
+    server_port="${SERVER_PORT:-$(get_env_value SERVER_PORT || true)}"
+    printf 'http://127.0.0.1:%s/\n' "${server_port:-4000}"
     return
   fi
 
@@ -157,7 +179,7 @@ if [ ! -f ".env" ]; then
   exit 1
 fi
 
-if [ ! -f "client/dist/index.html" ]; then
+if has_service client && [ ! -f "client/dist/index.html" ]; then
   printf '[docker-deploy] missing client/dist/index.html\n' >&2
   printf '[docker-deploy] build the client before deploying\n' >&2
   exit 1
@@ -165,15 +187,23 @@ fi
 
 preserve_ports
 
-log "building runtime images sequentially"
-docker compose build server
-docker compose build mcp
+log "selected services: $DEPLOY_SERVICES"
+
+if has_service server || has_service mcp; then
+  log "building runtime images sequentially"
+  if has_service server; then
+    docker compose build server
+  fi
+  if has_service mcp; then
+    docker compose build mcp
+  fi
+fi
 
 log "starting all containers"
 # 镜像先构建完成，再切换容器；2C2G 服务器上避免并行构建造成内存尖峰。
-docker compose stop server client mcp || true
-docker compose rm -f server client mcp || true
-docker compose up -d --no-build --remove-orphans server client mcp
+docker compose stop $DEPLOY_SERVICES || true
+docker compose rm -f $DEPLOY_SERVICES || true
+docker compose up -d --no-build --remove-orphans $DEPLOY_SERVICES
 
 if command -v curl >/dev/null 2>&1; then
   HEALTHCHECK_URL="$(resolve_healthcheck_url)"
