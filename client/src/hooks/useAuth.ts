@@ -206,21 +206,6 @@ export const useAuth = () => {
     [refetchSession],
   );
 
-  const updateAvatar = useCallback(
-    async (imageUrl: string) => {
-      setError(null);
-      const result = await updateUserAvatar(imageUrl);
-      if (result.code === 1) {
-        await refetchSession();
-        return { success: true, data: result.data };
-      }
-      const message = result.message || "头像更新失败";
-      setError(message);
-      return { success: false, error: { message } };
-    },
-    [refetchSession],
-  );
-
   return {
     user,
     loading,
