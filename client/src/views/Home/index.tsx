@@ -9,7 +9,7 @@ export default function Home() {
       <main className="max-w-[1000px] mx-auto px-4">
         <header>
           <h2 className="font-bold h-[100px] flex items-center justify-center">
-            Good morning
+            {/* Good morning */}
           </h2>
         </header>
         <RecentNoteList className="mt-10" />

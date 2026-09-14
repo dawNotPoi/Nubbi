@@ -20,6 +20,12 @@ const envSchema = z.object({
   EMAIL_FROM: z.string().optional(),
   EMAIL_SERVICE: z.string().optional(),
   AI_CONFIG_SECRET: z.string().optional(),
+  GH_IMAGE_REPO: z.string().optional(),
+  GH_IMAGE_TOKEN: z.string().optional(),
+  GH_IMAGE_BRANCH: z.string().optional(),
+  GITHUB_IMAGE_REPO: z.string().optional(),
+  GITHUB_IMAGE_TOKEN: z.string().optional(),
+  GITHUB_IMAGE_BRANCH: z.string().optional(),
   WEB_SEARCH_PROVIDER: z
     .enum(["tavily", "brave", "serpapi", "searxng", ""])
     .optional()
@@ -42,6 +48,12 @@ const env = {
   AUTH_GOOGLE_SECRET:
     parsedEnv.AUTH_GOOGLE_SECRET || parsedEnv.AUTH_GOOLE_SECRET || "",
   EMAIL_FROM: parsedEnv.EMAIL_FROM || parsedEnv.EMAIL_USER,
+  GH_IMAGE_REPO: parsedEnv.GH_IMAGE_REPO || parsedEnv.GITHUB_IMAGE_REPO || "",
+  GH_IMAGE_TOKEN: parsedEnv.GH_IMAGE_TOKEN || parsedEnv.GITHUB_IMAGE_TOKEN || "",
+  GH_IMAGE_BRANCH:
+    parsedEnv.GH_IMAGE_BRANCH ||
+    parsedEnv.GITHUB_IMAGE_BRANCH ||
+    "main",
 };
 
 if (!env.AUTH_GOOGLE_ID || !env.AUTH_GOOGLE_SECRET) {
@@ -56,6 +68,7 @@ log.success("环境变量加载成功", {
   BETTER_AUTH_SECRET: env.BETTER_AUTH_SECRET ? "***" : "",
   AUTH_GITHUB_SECRET: env.AUTH_GITHUB_SECRET ? "***" : "",
   AUTH_GOOGLE_SECRET: env.AUTH_GOOGLE_SECRET ? "***" : "",
+  GH_IMAGE_TOKEN: env.GH_IMAGE_TOKEN ? "***" : "",
   WEB_SEARCH_API_KEY: env.WEB_SEARCH_API_KEY ? "***" : "",
 });
 
