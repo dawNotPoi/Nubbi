@@ -34,3 +34,4 @@ assistant/**/*.tsbuildinfo
 
 
 
+.tmp/
