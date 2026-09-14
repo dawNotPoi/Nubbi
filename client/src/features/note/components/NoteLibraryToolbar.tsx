@@ -46,19 +46,13 @@ type NoteLibraryToolbarProps = {
   searchOpen: boolean;
   sortMode: NoteLibrarySortMode;
   statusFilter: "all" | NoteStatus;
-<<<<<<< HEAD
   tagsFilter: string[];
-=======
->>>>>>> 7998882ea17f1aa6fb38ebb6bfa592eb7f8a44a7
   onFilterTextChange: (value: string) => void;
   onPublishedFilterChange: (value: "all" | "published" | "unpublished") => void;
   onSearchOpenChange: (open: boolean) => void;
   onSortModeChange: (mode: NoteLibrarySortMode) => void;
   onStatusFilterChange: (value: "all" | NoteStatus) => void;
-<<<<<<< HEAD
   onTagsFilterChange: (tags: string[]) => void;
-=======
->>>>>>> 7998882ea17f1aa6fb38ebb6bfa592eb7f8a44a7
 };
 
 export function NoteLibraryToolbar({
@@ -69,18 +63,12 @@ export function NoteLibraryToolbar({
   onSearchOpenChange,
   onSortModeChange,
   onStatusFilterChange,
-<<<<<<< HEAD
   onTagsFilterChange,
-=======
->>>>>>> 7998882ea17f1aa6fb38ebb6bfa592eb7f8a44a7
   publishedFilter,
   searchOpen,
   sortMode,
   statusFilter,
-<<<<<<< HEAD
   tagsFilter,
-=======
->>>>>>> 7998882ea17f1aa6fb38ebb6bfa592eb7f8a44a7
 }: NoteLibraryToolbarProps) {
   const sortItems: MenuProps["items"] = (
     ["updated-desc", "updated-asc", "name-asc", "name-desc"] as NoteLibrarySortMode[]
@@ -133,11 +121,7 @@ export function NoteLibraryToolbar({
         </Dropdown>
         <Dropdown menu={{ items: statusItems }} placement="bottomRight" trigger={["click"]}>
           <button
-<<<<<<< HEAD
             className="h-8 rounded px-2 text-sm text-text-muted hover:bg-bg-hover hover:text-text-primary"
-=======
-            className="h-8 rounded px-2 text-sm text-[#787774] hover:bg-[#f7f7f5] hover:text-[#37352f]"
->>>>>>> 7998882ea17f1aa6fb38ebb6bfa592eb7f8a44a7
             title="Status filter"
             type="button"
           >
@@ -146,18 +130,13 @@ export function NoteLibraryToolbar({
         </Dropdown>
         <Dropdown menu={{ items: publishedItems }} placement="bottomRight" trigger={["click"]}>
           <button
-<<<<<<< HEAD
             className="h-8 rounded px-2 text-sm text-text-muted hover:bg-bg-hover hover:text-text-primary"
-=======
-            className="h-8 rounded px-2 text-sm text-[#787774] hover:bg-[#f7f7f5] hover:text-[#37352f]"
->>>>>>> 7998882ea17f1aa6fb38ebb6bfa592eb7f8a44a7
             title="Publish filter"
             type="button"
           >
             {publishedLabels[publishedFilter]}
           </button>
         </Dropdown>
-<<<<<<< HEAD
         {availableTags.length > 0 ? (
           <Select
             allowClear
@@ -176,8 +155,6 @@ export function NoteLibraryToolbar({
             variant="borderless"
           />
         ) : null}
-=======
->>>>>>> 7998882ea17f1aa6fb38ebb6bfa592eb7f8a44a7
         <button
           className="flex size-8 items-center justify-center rounded text-text-subtle hover:bg-bg-hover hover:text-text-primary"
           onClick={() => onSearchOpenChange(!searchOpen)}

@@ -102,13 +102,8 @@ export function NoteLibraryRow({
   return (
     <li
       className={clsx(
-<<<<<<< HEAD
         "group/note-row grid cursor-pointer grid-cols-[40px_minmax(260px,1fr)_minmax(220px,26vw)_minmax(160px,18vw)_132px] items-center border-b border-border-row text-[14px] transition-colors",
         "hover:bg-bg-hover focus-within:bg-bg-hover",
-=======
-        "group/note-row grid cursor-pointer grid-cols-[40px_minmax(260px,1fr)_minmax(220px,26vw)_minmax(160px,18vw)_132px] items-center border-b border-[#efefed] text-[14px] transition-colors",
-        "hover:bg-[#f7f7f5] focus-within:bg-[#f7f7f5]",
->>>>>>> 7998882ea17f1aa6fb38ebb6bfa592eb7f8a44a7
         viewMode === "search" ? "min-h-[54px] py-1" : "h-11",
         selected && "bg-bg-selected",
       )}
@@ -222,11 +217,7 @@ export function NoteLibraryRow({
         ) : null}
         {note.tags.slice(0, 2).map((tag) => (
           <span
-<<<<<<< HEAD
             className="max-w-[86px] truncate rounded bg-bg-selected px-1.5 py-0.5 text-xs text-text-muted"
-=======
-            className="max-w-[86px] truncate rounded bg-[#f1f1ef] px-1.5 py-0.5 text-xs text-[#787774]"
->>>>>>> 7998882ea17f1aa6fb38ebb6bfa592eb7f8a44a7
             key={tag}
             title={tag}
           >
