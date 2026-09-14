@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { cancelThreadApprovals } from "./approvals.js";
 import { discoverMcpTools } from "../mcp/mcp.js";
-import { readModelConfig } from "../model/model-config.js";
+import { readModelConfig, DEFAULT_CONTEXT_WINDOW } from "../model/model-config.js";
 import { listSkills } from "../orchestration/skills.js";
-import { appendMessage, getConversation } from "../models/store.js";
+import { appendMessage, accumulateTokenUsage, getConversation } from "../models/store.js";
 import type { Message, RuntimeEvent } from "../types.js";
 import { codexExecutor } from "./codex-executor.js";
 import { buildAgentContext } from "./context-builder.js";
@@ -73,7 +73,9 @@ export class RuntimeSession {
       //获取落库后的对话,首条消息部分字符会作为对话标题
       const conversation = await getConversation(input.conversationId);
       if (!conversation) throw new Error("对话不存在");
-      const context = buildAgentContext(conversation);
+      // 上下文压缩预算 = 上下文窗口的 80%，预留余量给模型输出。
+      const contextWindow = modelConfig.contextWindow ?? DEFAULT_CONTEXT_WINDOW;
+      const context = buildAgentContext(conversation, Math.floor(contextWindow * 0.8));
       // 事件发射器统一为每条事件补全元信息，并负责异步落库 Run 日志。
       const emitter = createRuntimeEventEmitter({
         runId,
@@ -88,6 +90,13 @@ export class RuntimeSession {
         if (started) throw new Error("Run 已经启动");
         started = true;
         emitter.emit({ type: "run-started", provider: modelConfig.provider });
+        // 推送上下文占用状态，供前端展示模型消耗量与容量比例。
+        emitter.emit({
+          type: "context-status",
+          usedTokens: context.usedTokens,
+          maxTokens: context.maxTokens,
+          truncated: context.truncated,
+        });
         const emit = (event: Parameters<typeof emitter.emit>[0]) =>
           emitter.emit(event);
         // ToolGateway 拦截模型的工具调用：执行本地工具并校验审批，是安全边界所在。
@@ -103,7 +112,7 @@ export class RuntimeSession {
             ? codexExecutor
             : openAiExecutor;
         try {
-          const parts = await executor.execute({
+          const result = await executor.execute({
             runId,
             conversationId: input.conversationId,
             currentMessageId: currentMessage.id,
@@ -120,8 +129,18 @@ export class RuntimeSession {
           const message = await appendMessage(
             input.conversationId,
             "assistant",
-            parts,
+            result.parts,
           );
+          // 推送并落库本轮累计的 token 用量，供前端 /status 展示。
+          if (result.usage) {
+            emitter.emit({
+              type: "token-usage",
+              promptTokens: result.usage.promptTokens,
+              completionTokens: result.usage.completionTokens,
+              totalTokens: result.usage.totalTokens,
+            });
+            await accumulateTokenUsage(input.conversationId, result.usage);
+          }
           emitter.emit({ type: "assistant-message", messageId: message.id });
           emitter.emit({ type: "run-completed", messageId: message.id });
           return { message };

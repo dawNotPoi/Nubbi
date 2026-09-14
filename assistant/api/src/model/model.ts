@@ -58,15 +58,39 @@ const parseArguments = (source: string): Record<string, unknown> => {
   }
 };
 
+/** Provider 返回的 token 用量（来自 usage 字段）。 */
+export type ModelUsage = {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+};
+
+/** requestModel 的完整返回结构：文本、推理内容、工具调用与可回传的 assistant 消息。 */
+export type ModelReply = {
+  content: string;
+  reasoningContent: string | null;
+  toolCalls: ModelToolCall[];
+  assistantMessage: ModelMessage;
+  usage: ModelUsage | null;
+};
+
 /**
  * 非流式响应兜底：个别 Provider 忽略 stream 参数并返回普通 JSON。
  * @param json 响应体解析后的 JSON。
  * @returns 与流式路径一致的结果结构。
  */
-const parseNonStreaming = (json: unknown) => {
+const parseNonStreaming = (json: unknown): ModelReply => {
   const parsed = responseSchema.safeParse(json);
   if (!parsed.success) throw new Error("模型返回了无法解析的响应");
   const message = parsed.data.choices[0]!.message;
+  const raw = json as { usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } };
+  const usage = raw.usage
+    ? {
+        promptTokens: raw.usage.prompt_tokens ?? 0,
+        completionTokens: raw.usage.completion_tokens ?? 0,
+        totalTokens: raw.usage.total_tokens ?? 0,
+      }
+    : null;
   const toolCalls: ModelToolCall[] = (message.tool_calls ?? []).map((call) => ({
     id: call.id,
     name: call.function.name,
@@ -82,6 +106,7 @@ const parseNonStreaming = (json: unknown) => {
       reasoning_content: message.reasoning_content ?? null,
       tool_calls: message.tool_calls,
     },
+    usage,
   };
 };
 
@@ -102,7 +127,7 @@ export const requestModel = async (
   signal: AbortSignal,
   config: StoredModelConfig,
   onDelta?: (delta: ModelDelta) => void,
-) => {
+): Promise<ModelReply> => {
   if (!config.baseUrl || !config.model) {
     throw new Error("模型未配置，请在设置中填写 Base URL 并选择模型");
   }
@@ -129,6 +154,8 @@ export const requestModel = async (
       temperature: config.temperature ?? 0.3,
       // 请求流式响应，逐 token 推送增量。
       stream: true,
+      // 末尾分片携带 usage，用于精确统计 token 消耗。
+      stream_options: { include_usage: true },
     }),
     signal,
   });
@@ -141,7 +168,18 @@ export const requestModel = async (
   // 个别 Provider 会忽略 stream 参数并返回普通 JSON，按非流式兜底解析。
   const contentType = response.headers.get("content-type") ?? "";
   if (!contentType.includes("text/event-stream")) {
-    return parseNonStreaming(await response.json());
+    // 先读文本再手动解析：非 JSON 响应（如 Base URL 指向网页返回的 HTML）
+    // 直接抛可读错误，避免暴露底层 JSON.parse 的原始报错。
+    const text = await response.text();
+    let json: unknown;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      throw new Error(
+        `模型返回了非 JSON 响应（${contentType || "未知类型"}），请检查 Base URL 是否正确`,
+      );
+    }
+    return parseNonStreaming(json);
   }
   if (!response.body) throw new Error("当前 Provider 不支持流式响应");
 
@@ -150,6 +188,8 @@ export const requestModel = async (
   let buffer = "";
   let content = "";
   let reasoning = "";
+  // 末尾分片携带的 usage，用于精确统计本轮 token 消耗。
+  let usage: ModelUsage | null = null;
   // 工具调用按 index 累积，arguments 是跨分片拼接的 JSON 字符串。
   const toolCalls: Array<{
     id: string;
@@ -160,11 +200,22 @@ export const requestModel = async (
   /** 处理单条 data 行：累积内容与工具调用，并回调增量。 */
   const handleData = (data: string): void => {
     if (!data || data === "[DONE]") return;
-    let payload: { choices?: Array<{ delta?: StreamDelta }> };
+    let payload: {
+      choices?: Array<{ delta?: StreamDelta }>;
+      usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+    };
     try {
       payload = JSON.parse(data) as typeof payload;
     } catch {
       return;
+    }
+    // 流式末尾（choices 为空）会单独携带 usage，先捕获再继续处理增量。
+    if (payload.usage) {
+      usage = {
+        promptTokens: payload.usage.prompt_tokens ?? 0,
+        completionTokens: payload.usage.completion_tokens ?? 0,
+        totalTokens: payload.usage.total_tokens ?? 0,
+      };
     }
     const delta = payload.choices?.[0]?.delta;
     if (!delta) return;
@@ -241,5 +292,6 @@ export const requestModel = async (
             }))
         : undefined,
     },
+    usage,
   };
 };

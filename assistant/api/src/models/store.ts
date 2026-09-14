@@ -24,6 +24,13 @@ const toConversation = (document: HydratedDocument<StoredConversation>): Convers
     createdAt: message.createdAt,
   })),
   codexThreadId: document.codexThreadId,
+  tokenUsage: document.tokenUsage
+    ? {
+        promptTokens: document.tokenUsage.promptTokens ?? 0,
+        completionTokens: document.tokenUsage.completionTokens ?? 0,
+        totalTokens: document.tokenUsage.totalTokens ?? 0,
+      }
+    : undefined,
 });
 
 /**
@@ -40,6 +47,13 @@ export const listConversations = async (): Promise<Omit<Conversation, "messages"
     createdAt: document.createdAt,
     updatedAt: document.updatedAt,
     codexThreadId: document.codexThreadId,
+    tokenUsage: document.tokenUsage
+      ? {
+          promptTokens: document.tokenUsage.promptTokens ?? 0,
+          completionTokens: document.tokenUsage.completionTokens ?? 0,
+          totalTokens: document.tokenUsage.totalTokens ?? 0,
+        }
+      : undefined,
   }));
 };
 
@@ -119,6 +133,29 @@ export const appendMessage = async (
 export const setCodexThreadId = async (id: string, threadId: string): Promise<void> => {
   const result = await ConversationModel.updateOne({ id }, { $set: { codexThreadId: threadId } })
     .exec();
+  if (!result.matchedCount) throw new Error("对话不存在");
+};
+
+/**
+ * 累计对话的 token 用量（prompt/completion/total 各自累加）。
+ * @param id 对话的唯一 ID。
+ * @param usage 本次 Run 的用量增量。
+ * @returns 无返回值；对话不存在时抛出异常。
+ */
+export const accumulateTokenUsage = async (
+  id: string,
+  usage: { promptTokens: number; completionTokens: number; totalTokens: number },
+): Promise<void> => {
+  const result = await ConversationModel.updateOne(
+    { id },
+    {
+      $inc: {
+        "tokenUsage.promptTokens": usage.promptTokens,
+        "tokenUsage.completionTokens": usage.completionTokens,
+        "tokenUsage.totalTokens": usage.totalTokens,
+      },
+    },
+  ).exec();
   if (!result.matchedCount) throw new Error("对话不存在");
 };
 

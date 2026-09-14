@@ -1,3 +1,5 @@
+import type { TokenUsage } from "../types.js";
+
 export type RuntimeEventMeta = {
   eventId: string;
   runId: string;
@@ -43,6 +45,18 @@ export type RuntimeEventPayload = AgentEvent
   | {
       type: "run-started";
       provider: "openai-compatible" | "codex-subscription";
+    }
+  | {
+      type: "context-status";
+      usedTokens: number;
+      maxTokens: number;
+      truncated: boolean;
+    }
+  | {
+      type: "token-usage";
+      promptTokens: number;
+      completionTokens: number;
+      totalTokens: number;
     }
   | { type: "assistant-message"; messageId: string }
   | { type: "run-completed"; messageId: string }

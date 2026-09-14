@@ -3,6 +3,14 @@ export type ConversationSummary = {
   title: string;
   createdAt: string;
   updatedAt: string;
+  tokenUsage?: TokenUsage;
+};
+
+/** 累计的 token 用量（prompt / completion / total）。 */
+export type TokenUsage = {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
 };
 
 /** 消息内的内容块：文本、Skill、工具审批/执行记录或错误，逐块渲染。 */
@@ -66,12 +74,26 @@ export type ModelConfig = {
   systemPrompt: string;
   headers: Record<string, string>;
   temperature?: number;
+  contextWindow?: number;
   apiKeyConfigured: boolean;
 };
 
 export type CodexAccount = {
   account: null | { type: string; email?: string | null; planType?: string };
   requiresOpenaiAuth: boolean;
+};
+
+/** 当前可发现的 Skill 与 MCP 服务视图。 */
+export type ExtensionInfo = {
+  skills: Array<{ name: string; description: string; enabled: boolean }>;
+  servers: Array<{
+    id: string;
+    name: string;
+    transport: "http";
+    endpoint: string;
+    enabled: boolean;
+    toolCount: number;
+  }>;
 };
 
 export type CodexModel = {
@@ -102,6 +124,13 @@ export type ModelConfigInput = Omit<ModelConfig, "apiKeyConfigured"> & {
   clearApiKey?: boolean;
 };
 
+/** 服务端推送的上下文占用状态，用于展示模型消耗量与容量比例。 */
+export type ContextStatus = {
+  usedTokens: number;
+  maxTokens: number;
+  truncated: boolean;
+};
+
 export type StreamEvent = (
   | { type: "message-start"; conversationId: string }
   | { type: "skill-active"; name: string; description: string }
@@ -118,6 +147,8 @@ export type StreamEvent = (
   | { type: "text-delta"; text: string }
   | { type: "reasoning-delta"; text: string }
   | { type: "run-started"; provider: "openai-compatible" | "codex-subscription" }
+  | { type: "context-status"; usedTokens: number; maxTokens: number; truncated: boolean }
+  | { type: "token-usage"; promptTokens: number; completionTokens: number; totalTokens: number }
   | { type: "assistant-message"; messageId: string }
   | { type: "run-completed"; messageId: string }
   | { type: "run-failed"; messageId: string; message: string; cancelled: boolean }

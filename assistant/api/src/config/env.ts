@@ -4,7 +4,8 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { z } from "zod";
 
-export const projectRoot = fileURLToPath(new URL("../..", import.meta.url));
+// 从 src/config/env.ts 上溯三级得到 assistant 项目根目录（api → src → config）。
+export const projectRoot = fileURLToPath(new URL("../../..", import.meta.url));
 
 // 优先加载 Assistant 项目根目录下的 .env。
 dotenv.config({ path: path.join(projectRoot, ".env") });

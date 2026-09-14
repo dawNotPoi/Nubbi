@@ -1,6 +1,6 @@
 import type { Conversation, Message, MessagePart } from "../types.js";
+import { countTokens, messageOverheadTokens } from "./tokens.js";
 
-const contextBudget = 60_000;    // 注入模型的上下文预算（字符数）
 const toolResultLimit = 2_000;   // 工具结果截断长度
 const omissionText = "[较早的对话内容因上下文预算已省略]";
 
@@ -13,6 +13,8 @@ export type AgentContextMessage = {
 export type AgentContext = {
   messages: AgentContextMessage[];
   truncated: boolean;
+  usedTokens: number;
+  maxTokens: number;
 };
 
 /**
@@ -43,30 +45,41 @@ const toContextMessage = (message: Message): AgentContextMessage | null => {
   return content ? { id: message.id, role: message.role, content } : null;
 };
 
-const sizeOf = (message: AgentContextMessage): number => message.content.length + 32;
+/** 估算单条上下文消息的 token 数（内容 + 固定开销）。 */
+const messageTokens = (message: AgentContextMessage): number =>
+  countTokens(message.content) + messageOverheadTokens;
 
 /**
  * 构建注入模型的对话上下文。
- * 超过预算时：保留首条用户消息，从最新开始向前挑选放得下的消息，
- * 中间省略处插入占位说明，避免模型误解历史缺失。
+ * 超过 token 预算时：保留首条用户消息，从最新开始向前挑选放得下的消息，
+ * 中间省略处插入占位说明，避免模型误解历史缺失。返回裁剪后的上下文与占用比例。
  * @param conversation 完整对话，包含全部消息历史。
- * @returns 裁剪后的上下文消息列表与是否发生截断的标记。
+ * @param maxTokens 上下文 token 预算，默认 100_000。
+ * @returns 裁剪后的上下文消息列表、是否截断以及 token 占用信息。
  */
-export const buildAgentContext = (conversation: Conversation): AgentContext => {
+export const buildAgentContext = (
+  conversation: Conversation,
+  maxTokens = 100_000,
+): AgentContext => {
   const source = conversation.messages.flatMap((message) => {
     const converted = toContextMessage(message);
     return converted ? [converted] : [];
   });
-  const total = source.reduce((size, message) => size + sizeOf(message), 0);
-  if (total <= contextBudget) return { messages: source, truncated: false };
+  const usedTokens = source.reduce((sum, message) => sum + messageTokens(message), 0);
+  if (usedTokens <= maxTokens) {
+    return { messages: source, truncated: false, usedTokens, maxTokens };
+  }
 
+  // 超预算：保留首条用户消息，从最新开始向前挑选放得下的消息。
   const firstUser = source.find((message) => message.role === "user");
   const selected: AgentContextMessage[] = [];
-  let remaining = contextBudget - omissionText.length - (firstUser ? sizeOf(firstUser) : 0);
+  let remaining = maxTokens
+    - countTokens(omissionText)
+    - (firstUser ? messageTokens(firstUser) : 0);
   for (let index = source.length - 1; index >= 0; index -= 1) {
     const message = source[index];
     if (!message || message.id === firstUser?.id) continue;
-    const size = sizeOf(message);
+    const size = messageTokens(message);
     if (size > remaining) continue;
     selected.unshift(message);
     remaining -= size;
@@ -76,9 +89,13 @@ export const buildAgentContext = (conversation: Conversation): AgentContext => {
     role: "assistant",
     content: omissionText,
   };
+  const messages = [...(firstUser ? [firstUser] : []), marker, ...selected];
+  const trimmedTokens = messages.reduce((sum, message) => sum + messageTokens(message), 0);
   return {
-    messages: [...(firstUser ? [firstUser] : []), marker, ...selected],
+    messages,
     truncated: true,
+    usedTokens: trimmedTokens,
+    maxTokens,
   };
 };
 

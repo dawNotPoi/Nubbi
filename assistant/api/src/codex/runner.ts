@@ -2,7 +2,7 @@ import { cancelThreadApprovals } from "../runtime/approvals.js";
 import type { McpTool } from "../mcp/mcp.js";
 import type { StoredModelConfig } from "../model/model-config.js";
 import { renderCodexBootstrap } from "../runtime/context-builder.js";
-import type { ProviderExecutorInput } from "../runtime/provider-executor.js";
+import type { ExecutorResult, ProviderExecutorInput } from "../runtime/provider-executor.js";
 import { setCodexThreadId } from "../models/store.js";
 import type { AgentEvent, MessagePart } from "../types.js";
 import { readCodexAccount } from "./account.js";
@@ -128,9 +128,9 @@ const waitForTurn = (
  * 确保登录 → 续接/新建线程 → 注册动态工具上下文 → 启动 turn 并等待完成。
  * 流式文本通过事件推送，最终把纯文本拼成消息 parts 返回。
  * @param input Provider 执行上下文，包含对话、模型配置、工具网关与取消信号。
- * @returns 最终助手消息的内容块数组（文本 / 工具执行 / 错误等）。
+ * @returns 最终助手消息的内容块数组与 token 用量（Codex 暂不采集，固定为 null）。
  */
-export const runCodex = async (input: ProviderExecutorInput): Promise<MessagePart[]> => {
+export const runCodex = async (input: ProviderExecutorInput): Promise<ExecutorResult> => {
   installDynamicToolHandler();
   const account = await readCodexAccount();
   if (account.account?.type !== "chatgpt") {
@@ -168,7 +168,8 @@ export const runCodex = async (input: ProviderExecutorInput): Promise<MessagePar
       if (input.signal.aborted) interrupt();
       const text = (await completion.promise).trim();
       if (text) parts.push({ type: "text", text });
-      return parts;
+      // Codex 订阅暂不提供 usage，固定返回 null。
+      return { parts, usage: null };
     } catch (error) {
       completion.cancel();
       await completion.promise.catch(() => undefined);

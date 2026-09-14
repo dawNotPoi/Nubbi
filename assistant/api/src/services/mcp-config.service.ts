@@ -47,6 +47,21 @@ export class McpConfigService {
   }
 
   /**
+   * 仅更新 MCP 服务的启用状态并清空 Codex 线程引用。
+   * @param id 待更新服务的 ID。
+   * @param enabled 是否启用。
+   * @returns 已保存的服务配置；服务不存在时抛异常。
+   */
+  async setEnabled(id: string, enabled: boolean): Promise<McpServerConfig> {
+    const servers = await listMcpServers();
+    const server = servers.find((item) => item.id === id);
+    if (!server) throw new Error("MCP Server 不存在");
+    const updated = await updateMcpServer(id, { ...server, enabled });
+    await clearCodexThreadIds();
+    return updated;
+  }
+
+  /**
    * 删除 MCP 服务；删除成功时清空 Codex 线程引用。
    * @param id 待删除服务的 ID。
    * @returns 是否确实删除了服务。

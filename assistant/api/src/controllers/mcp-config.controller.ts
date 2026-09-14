@@ -14,6 +14,7 @@ import {
   Put,
   UseGuards,
 } from "@nestjs/common";
+import { z } from "zod";
 import { ConfigAccessGuard } from "../common/config-access.guard.js";
 import {
   mcpServerSchema,
@@ -95,6 +96,29 @@ export class McpConfigController {
       return await this.mcpConfig.update(id, parseServer(input));
     } catch (error) {
       if (error instanceof BadRequestException) throw error;
+      const message = messageOf(error, "更新 MCP 配置失败");
+      if (message.includes("不存在")) throw new NotFoundException(message);
+      throw new BadRequestException(message);
+    }
+  }
+
+  /**
+   * 仅更新 MCP 服务的启用状态。
+   * @param id 待更新服务的 ID。
+   * @param input 请求体，含 enabled 标记。
+   * @returns 已保存的服务配置；服务不存在时抛 404。
+   */
+  @Put("servers/:id/enabled")
+  @HttpCode(200)
+  async setEnabled(
+    @Param("id") id: string,
+    @Body() input: unknown,
+  ): Promise<McpServerConfig> {
+    const parsed = z.object({ enabled: z.boolean() }).safeParse(input);
+    if (!parsed.success) throw new BadRequestException("启停状态无效");
+    try {
+      return await this.mcpConfig.setEnabled(id, parsed.data.enabled);
+    } catch (error) {
       const message = messageOf(error, "更新 MCP 配置失败");
       if (message.includes("不存在")) throw new NotFoundException(message);
       throw new BadRequestException(message);

@@ -1,4 +1,5 @@
 import type { StoredModelConfig } from "../model/model-config.js";
+import type { ModelUsage } from "../model/model.js";
 import type { McpTool } from "../mcp/mcp.js";
 import type { Skill } from "../orchestration/skills.js";
 import type { AgentEvent, MessagePart } from "../types.js";
@@ -21,7 +22,13 @@ export type ProviderExecutorInput = {
   emit: (event: AgentEvent) => void;
 };
 
-/** Provider 执行器契约：输入统一上下文，产出最终助手消息的 parts。 */
+/** Provider 执行结果：最终助手消息 parts 与累计 token 用量。 */
+export type ExecutorResult = {
+  parts: MessagePart[];
+  usage: ModelUsage | null;
+};
+
+/** Provider 执行器契约：输入统一上下文，产出最终助手消息的 parts 与用量。 */
 export type ProviderExecutor = {
-  execute: (input: ProviderExecutorInput) => Promise<MessagePart[]>;
+  execute: (input: ProviderExecutorInput) => Promise<ExecutorResult>;
 };

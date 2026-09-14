@@ -5,6 +5,9 @@ import { projectRoot } from "../config/env.js";
 
 const providerSchema = z.enum(["openai-compatible", "codex-subscription"]);
 
+/** 模型上下文窗口的默认值（token），未配置时按此估算占用比例与压缩预算。 */
+export const DEFAULT_CONTEXT_WINDOW = 128_000;
+
 // 落盘存储的模型配置：包含敏感 API Key，因此保存时按 0600 权限写文件。
 const storedModelConfigSchema = z.object({
   provider: providerSchema.default("openai-compatible"),
@@ -17,6 +20,8 @@ const storedModelConfigSchema = z.object({
   headers: z.record(z.string()).default({}),
   // 采样温度：留空时使用默认 0.3，取值范围 0~2。
   temperature: z.number().min(0).max(2).optional(),
+  // 模型上下文窗口（token），用于计算上下文占用比例与自动压缩预算。
+  contextWindow: z.number().int().min(1024).max(2_000_000).optional(),
 });
 
 // 客户端输入：API Key 可留空（表示保持原值），并支持显式清除。
@@ -72,6 +77,7 @@ const emptyConfig = (): StoredModelConfig => ({
   systemPrompt: "",
   headers: {},
   temperature: undefined,
+  contextWindow: undefined,
 });
 
 /**
@@ -96,6 +102,7 @@ export const publicModelConfig = (config: StoredModelConfig): PublicModelConfig 
   systemPrompt: config.systemPrompt,
   headers: config.headers,
   temperature: config.temperature,
+  contextWindow: config.contextWindow,
   apiKeyConfigured: config.apiKey.length > 0,
 });
 
@@ -121,6 +128,7 @@ export const saveModelConfig = async (input: ModelConfigInput): Promise<PublicMo
     systemPrompt: input.systemPrompt,
     headers: input.headers ?? {},
     temperature: input.temperature,
+    contextWindow: input.contextWindow,
   };
   await mkdir(path.dirname(configFile), { recursive: true });
   // 0600：仅当前用户可读写，保护明文 API Key。
@@ -159,7 +167,18 @@ export const listProviderModels = async (input: ModelConnectionInput): Promise<s
     const detail = await response.text().catch(() => "");
     throw new Error(`获取模型失败 (${response.status})${detail ? `：${detail.slice(0, 200)}` : ""}`);
   }
-  const parsed = modelListSchema.safeParse(await response.json());
+  // 先读文本再手动解析：非 JSON 响应（如 Base URL 指向网页返回的 HTML）直接抛可读错误。
+  const text = await response.text();
+  const contentType = response.headers.get("content-type") ?? "";
+  let json: unknown;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    throw new Error(
+      `模型服务返回了非 JSON 响应（${contentType || "未知类型"}），请检查 Base URL 是否正确`,
+    );
+  }
+  const parsed = modelListSchema.safeParse(json);
   if (!parsed.success) throw new Error("模型服务返回了无法识别的模型列表");
   return [...new Set(parsed.data.data.map((item) => item.id))]
     .sort((left, right) => left.localeCompare(right));

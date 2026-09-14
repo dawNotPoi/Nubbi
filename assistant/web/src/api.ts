@@ -4,6 +4,7 @@ import type {
   Conversation,
   ConversationSummary,
   DeviceLogin,
+  ExtensionInfo,
   McpConnectionTest,
   McpServerConfig,
   ModelConfig,
@@ -34,18 +35,61 @@ const request = async <T>(
   path: string,
   init?: RequestInit,
 ): Promise<T> => {
+  const headers = new Headers(init?.headers);
+  // 只有实际携带 JSON 请求体时才声明 application/json。
+  // 否则空 body 的 POST/DELETE 会因「JSON content-type + 空 body」被 Fastify 直接拒绝。
+  if (init?.body != null) headers.set("Content-Type", "application/json");
   const response = await fetch(apiUrl(path), {
     ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...init?.headers,
-    },
+    headers,
   });
   if (!response.ok) throw new Error(await readError(response));
   return response.status === 204
     ? (undefined as T)
     : (response.json() as Promise<T>);
 };
+
+/**
+ * 读取当前可发现的 Skill 与 MCP 服务（含启用状态）。
+ * @returns 能力视图（Skill 列表 + 服务列表）。
+ */
+export const listExtensions = (): Promise<ExtensionInfo> =>
+  request("/api/extensions");
+
+/**
+ * 更新单个 Skill 的启用状态。
+ * @param token 配置管理密钥。
+ * @param name 技能名称。
+ * @param enabled 是否启用。
+ * @returns 更新后的技能启用状态。
+ */
+export const setSkillEnabled = (
+  token: string,
+  name: string,
+  enabled: boolean,
+): Promise<{ name: string; enabled: boolean }> =>
+  request(`/api/extensions/skills/${encodeURIComponent(name)}/enabled`, {
+    method: "PUT",
+    body: JSON.stringify({ enabled }),
+    headers: { "x-config-token": token },
+  });
+
+/**
+ * 仅更新 MCP 服务的启用状态。
+ * @param token 配置管理密钥。
+ * @param id 服务 ID。
+ * @param enabled 是否启用。
+ * @returns 已保存的服务配置。
+ */
+export const setMcpServerEnabled = (
+  token: string,
+  id: string,
+  enabled: boolean,
+): Promise<McpServerConfig> =>
+  mcpRequest(token, `/servers/${id}/enabled`, {
+    method: "PUT",
+    body: JSON.stringify({ enabled }),
+  });
 
 /**
  * 列出全部对话摘要。

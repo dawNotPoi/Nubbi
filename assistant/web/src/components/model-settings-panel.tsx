@@ -1,9 +1,9 @@
-import { KeyRound, RefreshCw, Save } from "lucide-react";
+import { RefreshCw, Save } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { fetchProviderModels, getModelConfig, saveModelConfig } from "../api";
 import type { ModelConfig } from "../types";
 import { CodexAccountPanel } from "./codex-account-panel";
-import { KeyValueEditor } from "./key-value-editor";
+import { OpenAiModelForm } from "./openai-model-form";
 import {
   pairsToRecord,
   recordToPairs,
@@ -11,10 +11,7 @@ import {
 } from "./mcp-form-utils";
 import { Button } from "./ui/button";
 
-/**
- * 生成默认模型配置。
- * @returns 全空的模型配置对象。
- */
+/** 生成默认模型配置。@returns 全空的模型配置对象。 */
 const emptyConfig = (): ModelConfig => ({
   provider: "openai-compatible",
   authType: "api-key",
@@ -38,6 +35,7 @@ export const ModelSettingsPanel = ({ token }: { token: string }) => {
   const [clearApiKey, setClearApiKey] = useState(false);
   const [headerPairs, setHeaderPairs] = useState<KeyValuePair[]>([]);
   const [temperature, setTemperature] = useState("");
+  const [contextWindow, setContextWindow] = useState("");
   const [models, setModels] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
@@ -49,6 +47,7 @@ export const ModelSettingsPanel = ({ token }: { token: string }) => {
         setConfig(value);
         setHeaderPairs(recordToPairs(value.headers));
         setTemperature(value.temperature == null ? "" : String(value.temperature));
+        setContextWindow(value.contextWindow == null ? "" : String(value.contextWindow));
       })
       .catch((error: unknown) => setMessage(
         error instanceof Error ? error.message : "加载模型配置失败",
@@ -108,6 +107,8 @@ export const ModelSettingsPanel = ({ token }: { token: string }) => {
     try {
       const temperatureValue =
         temperature.trim() === "" ? undefined : Number(temperature);
+      const contextWindowValue =
+        contextWindow.trim() === "" ? undefined : Number(contextWindow);
       const saved = await saveModelConfig(token, {
         provider: config.provider,
         authType: config.provider === "codex-subscription" ? "chatgpt" : "api-key",
@@ -119,6 +120,10 @@ export const ModelSettingsPanel = ({ token }: { token: string }) => {
           temperatureValue === undefined || Number.isNaN(temperatureValue)
             ? undefined
             : temperatureValue,
+        contextWindow:
+          contextWindowValue === undefined || Number.isNaN(contextWindowValue)
+            ? undefined
+            : contextWindowValue,
         apiKey: apiKey.trim() || undefined,
         clearApiKey,
       });
@@ -133,11 +138,7 @@ export const ModelSettingsPanel = ({ token }: { token: string }) => {
     }
   };
 
-  /**
-   * 切换 Provider 并重置模型列表。
-   * @param provider 目标 Provider 类型。
-   * @returns 无返回值。
-   */
+  /** 切换 Provider 并重置模型列表。 */
   const changeProvider = (provider: ModelConfig["provider"]): void => {
     setModels([]);
     setConfig({ ...config, provider, authType: provider === "codex-subscription" ? "chatgpt" : "api-key" });
@@ -157,43 +158,20 @@ export const ModelSettingsPanel = ({ token }: { token: string }) => {
       {config.provider === "codex-subscription" ? (
         <CodexAccountPanel onMessage={setMessage} onModels={receiveCodexModels} token={token} />
       ) : (
-        <>
-          <label className="block space-y-1.5 text-sm font-medium">
-            Base URL
-            <input className={inputClass} onChange={(event) => setConfig({ ...config, baseUrl: event.target.value })} placeholder="https://api.example.com/v1" value={config.baseUrl} />
-          </label>
-          <label className="block space-y-1.5 text-sm font-medium">
-            API Key
-            <div className="relative">
-              <KeyRound className="pointer-events-none absolute left-3 top-3 size-4 text-muted-foreground" />
-              <input autoComplete="off" className={`${inputClass} pl-9`} disabled={clearApiKey} onChange={(event) => setApiKey(event.target.value)} placeholder={config.apiKeyConfigured ? "已保存，留空保持不变" : "sk-..."} type="password" value={apiKey} />
-            </div>
-          </label>
-          {config.apiKeyConfigured ? (
-            <label className="flex min-h-9 items-center gap-2 text-sm text-muted-foreground">
-              <input checked={clearApiKey} className="size-4 accent-primary" onChange={(event) => setClearApiKey(event.target.checked)} type="checkbox" />
-              清除已保存的 API Key
-            </label>
-          ) : null}
-          <label className="block space-y-1.5 text-sm font-medium">
-            采样温度
-            <input
-              className={inputClass}
-              max={2}
-              min={0}
-              onChange={(event) => setTemperature(event.target.value)}
-              placeholder="默认 0.3，范围 0~2"
-              step={0.1}
-              type="number"
-              value={temperature}
-            />
-          </label>
-          <KeyValueEditor
-            label="自定义请求头"
-            onChange={setHeaderPairs}
-            pairs={headerPairs}
-          />
-        </>
+        <OpenAiModelForm
+          apiKey={apiKey}
+          clearApiKey={clearApiKey}
+          config={config}
+          contextWindow={contextWindow}
+          headerPairs={headerPairs}
+          onApiKeyChange={setApiKey}
+          onClearApiKeyChange={setClearApiKey}
+          onContextWindowChange={setContextWindow}
+          onHeaderPairsChange={setHeaderPairs}
+          onPatch={(patch) => setConfig((current) => ({ ...current, ...patch }))}
+          onTemperatureChange={setTemperature}
+          temperature={temperature}
+        />
       )}
 
       <div className="space-y-1.5">

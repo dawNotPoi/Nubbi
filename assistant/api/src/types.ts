@@ -39,6 +39,15 @@ export type Conversation = {
   messages: Message[];
   // 关联的 Codex 订阅会话线程 ID，用于跨轮续接 Codex 上下文。
   codexThreadId?: string;
+  // 本对话累计的 token 用量，跨多次运行累加。
+  tokenUsage?: TokenUsage;
+};
+
+/** 单次 Run / 累计的 token 用量。 */
+export type TokenUsage = {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
 };
 
 /** 传给模型的 function 工具定义（OpenAI function calling 格式）。 */

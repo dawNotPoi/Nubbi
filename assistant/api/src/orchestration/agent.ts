@@ -1,6 +1,6 @@
 import { executeToolCalls, skillToolName } from "./tool-executor.js";
 import { requestModel } from "../model/model.js";
-import type { ProviderExecutorInput } from "../runtime/provider-executor.js";
+import type { ExecutorResult, ProviderExecutorInput } from "../runtime/provider-executor.js";
 import type { Skill } from "./skills.js";
 import type { MessagePart, ModelMessage, ModelTool } from "../types.js";
 
@@ -64,11 +64,11 @@ const emitText = (text: string, emit: ProviderExecutorInput["emit"]): void => {
  * 以手写循环编排“模型 ↔ 工具”循环（类似 pi 的代码原生 agent 循环），
  * 替代原来的 LangGraph 图编排，返回最终消息 parts。
  * @param input Provider 执行上下文，包含上下文消息、模型配置、工具网关与取消信号。
- * @returns 最终助手消息的内容块数组（文本 / Skill 激活 / 工具执行 / 错误等）。
+ * @returns 最终助手消息的内容块数组与累计 token 用量。
  */
 export const runAgent = async (
   input: ProviderExecutorInput,
-): Promise<MessagePart[]> => {
+): Promise<ExecutorResult> => {
   const modelTools = input.tools.map((tool) => tool.modelTool);
   // 添加 skill 选择工具，模型通过它按需激活技能。
   if (input.skills.length) modelTools.push(skillTool(input.skills));
@@ -85,6 +85,10 @@ export const runAgent = async (
   const parts: MessagePart[] = [];
   // 本 Run 已激活的 Skill 集合，避免重复激活。
   const activeSkills = new Set<string>();
+  // 跨多轮累计 token 用量。
+  const usage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
+  // 有真实用量时返回对象，否则返回 null（如 Provider 未上报 usage）。
+  const usageOrNull = () => (usage.totalTokens > 0 ? usage : null);
 
   // 循环：每次迭代先调模型，有工具调用则执行并回填，直到无工具调用或达到轮数上限。
   for (let turn = 0; turn < maxTurns; turn += 1) {
@@ -100,6 +104,11 @@ export const runAgent = async (
         if (delta.reasoning) input.emit({ type: "reasoning-delta", text: delta.reasoning });
       },
     );
+    if (reply.usage) {
+      usage.promptTokens += reply.usage.promptTokens;
+      usage.completionTokens += reply.usage.completionTokens;
+      usage.totalTokens += reply.usage.totalTokens;
+    }
     // 原样保留模型返回的 assistant 消息，供后续轮次继续传递。
     messages.push(reply.assistantMessage);
 
@@ -109,7 +118,7 @@ export const runAgent = async (
       // 文本已通过 onDelta 实时推送；仅在模型没有任何文本产出时补发兜底提示。
       if (!reply.content.trim()) emitText(text, input.emit);
       parts.push({ type: "text", text });
-      return parts;
+      return { parts, usage: usageOrNull() };
     }
 
     // 执行本轮的批量工具调用，并把结果回填进消息历史。
@@ -138,5 +147,5 @@ export const runAgent = async (
   // 达到最大轮数仍未结束，推送兜底提示并结束。
   emitText(limitText, input.emit);
   parts.push({ type: "text", text: limitText });
-  return parts;
+  return { parts, usage: usageOrNull() };
 };
