@@ -6,6 +6,8 @@
   "scripts": {
     "client": "pnpm --dir client dev",
     "server": "pnpm --dir server dev",
+    "prepare": "husky",
+    "commit": "git-cz",
     "preflight": "node scripts/preflight.mjs",
     "preflight:no-docker": "node scripts/preflight.mjs --no-docker",
     "agent": "node scripts/agent-review.mjs",
@@ -18,5 +20,17 @@
   "packageManager": "pnpm@10.12.4",
   "dependencies": {
     "winston": "^3.19.0"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.1.0",
+    "@commitlint/config-angular": "^21.1.0",
+    "@commitlint/prompt": "^21.1.0",
+    "commitizen": "^4.3.2",
+    "husky": "^9.1.7"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/@commitlint/prompt"
+    }
   }
 }
