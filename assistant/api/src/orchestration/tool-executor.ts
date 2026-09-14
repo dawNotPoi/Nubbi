@@ -1,4 +1,4 @@
-import { loadSkill, type Skill } from "../skills.js";
+import { loadSkill, type Skill } from "./skills.js";
 import type { AgentEvent, MessagePart, ModelToolCall } from "../types.js";
 import type { ToolGateway } from "../runtime/tool-gateway.js";
 

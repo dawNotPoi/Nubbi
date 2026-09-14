@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
-import { listMcpServers } from "../mcp-config.js";
-import { discoverMcpTools } from "../mcp.js";
-import { listSkills } from "../skills.js";
+import { listMcpServers } from "../mcp/mcp-config.js";
+import { discoverMcpTools } from "../mcp/mcp.js";
+import { listSkills } from "../orchestration/skills.js";
 
 export type ExtensionResponse = {
   skills: { name: string; description: string }[];

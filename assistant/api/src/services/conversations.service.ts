@@ -5,7 +5,7 @@ import {
   deleteConversation,
   getConversation,
   listConversations,
-} from "../store.js";
+} from "../models/store.js";
 import type { Conversation, RuntimeEvent } from "../types.js";
 
 type PrepareTurnInput = {

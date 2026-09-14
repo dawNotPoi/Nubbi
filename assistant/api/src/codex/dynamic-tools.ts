@@ -1,4 +1,4 @@
-import type { McpTool } from "../mcp.js";
+import type { McpTool } from "../mcp/mcp.js";
 import type { MessagePart } from "../types.js";
 import type { ToolGateway } from "../runtime/tool-gateway.js";
 import { codexClient } from "./client.js";

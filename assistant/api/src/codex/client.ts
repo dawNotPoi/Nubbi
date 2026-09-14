@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import readline from "node:readline";
-import { env, projectRoot } from "../env.js";
+import { env, projectRoot } from "../config/env.js";
 import type {
   NotificationListener,
   RpcMessage,

@@ -1,6 +1,6 @@
-import type { StoredModelConfig } from "../model-config.js";
-import type { McpTool } from "../mcp.js";
-import type { Skill } from "../skills.js";
+import type { StoredModelConfig } from "../model/model-config.js";
+import type { McpTool } from "../mcp/mcp.js";
+import type { Skill } from "../orchestration/skills.js";
 import type { AgentEvent, MessagePart } from "../types.js";
 import type { AgentContext } from "./context-builder.js";
 import type { ToolGateway } from "./tool-gateway.js";

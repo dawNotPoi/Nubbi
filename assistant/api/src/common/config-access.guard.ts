@@ -6,7 +6,7 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 import { timingSafeEqual } from "node:crypto";
-import { env } from "../env.js";
+import { env } from "../config/env.js";
 
 type HeaderRequest = {
   headers: Record<string, string | string[] | undefined>;

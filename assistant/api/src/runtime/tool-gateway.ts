@@ -1,7 +1,7 @@
 import { AjvJsonSchemaValidator } from "@modelcontextprotocol/sdk/validation/ajv";
 import type { JsonSchemaType } from "@modelcontextprotocol/sdk/validation";
-import { requestApproval } from "../approvals.js";
-import { callMcpTool, type McpTool } from "../mcp.js";
+import { requestApproval } from "./approvals.js";
+import { callMcpTool, type McpTool } from "../mcp/mcp.js";
 import type { AgentEvent, MessagePart, ModelToolCall } from "../types.js";
 
 const modelResultLimit = 30_000;      // 回传给模型的工具结果上限

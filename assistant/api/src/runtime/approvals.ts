@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { AgentEvent } from "./types.js";
+import type { AgentEvent } from "../types.js";
 
 type ApprovalInput = {
   threadId: string;

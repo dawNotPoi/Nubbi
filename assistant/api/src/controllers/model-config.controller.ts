@@ -15,7 +15,7 @@ import {
   modelConfigInputSchema,
   modelConnectionInputSchema,
   type PublicModelConfig,
-} from "../model-config.js";
+} from "../model/model-config.js";
 import { ConfigAccessGuard } from "../common/config-access.guard.js";
 import { ModelConfigService } from "../services/model-config.service.js";
 

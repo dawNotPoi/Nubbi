@@ -6,7 +6,7 @@ import {
 } from "@nestjs/platform-fastify";
 import "reflect-metadata";
 import { AppModule } from "./app.module.js";
-import { env } from "./env.js";
+import { env } from "./config/env.js";
 
 const logger = new Logger("Bootstrap");
 

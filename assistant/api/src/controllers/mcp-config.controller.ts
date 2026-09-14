@@ -18,7 +18,7 @@ import { ConfigAccessGuard } from "../common/config-access.guard.js";
 import {
   mcpServerSchema,
   type McpServerConfig,
-} from "../mcp-config.js";
+} from "../mcp/mcp-config.js";
 import { McpConfigService } from "../services/mcp-config.service.js";
 
 /**

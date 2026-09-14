@@ -5,9 +5,9 @@ import {
   listMcpServers,
   updateMcpServer,
   type McpServerConfig,
-} from "../mcp-config.js";
-import { testMcpServer } from "../mcp.js";
-import { clearCodexThreadIds } from "../store.js";
+} from "../mcp/mcp-config.js";
+import { testMcpServer } from "../mcp/mcp.js";
+import { clearCodexThreadIds } from "../models/store.js";
 
 /**
  * 管理 MCP 配置及连接测试。

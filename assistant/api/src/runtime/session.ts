@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
-import { cancelThreadApprovals } from "../approvals.js";
-import { discoverMcpTools } from "../mcp.js";
-import { readModelConfig } from "../model-config.js";
-import { listSkills } from "../skills.js";
-import { appendMessage, getConversation } from "../store.js";
+import { cancelThreadApprovals } from "./approvals.js";
+import { discoverMcpTools } from "../mcp/mcp.js";
+import { readModelConfig } from "../model/model-config.js";
+import { listSkills } from "../orchestration/skills.js";
+import { appendMessage, getConversation } from "../models/store.js";
 import type { Message, RuntimeEvent } from "../types.js";
 import { codexExecutor } from "./codex-executor.js";
 import { buildAgentContext } from "./context-builder.js";

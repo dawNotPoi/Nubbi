@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { resolveApproval } from "../approvals.js";
+import { resolveApproval } from "../runtime/approvals.js";
 
 /** 将 HTTP 审批决定转交给正在等待的 Tool Gateway。 */
 @Injectable()

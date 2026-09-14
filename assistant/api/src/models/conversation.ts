@@ -1,5 +1,5 @@
 import { Schema } from "mongoose";
-import { assistantConnection } from "../db.js";
+import { assistantConnection } from "../config/db.js";
 import type { Conversation, Message } from "../types.js";
 
 // parts 在数据库里存为 Mixed（任意 JSON），读取时再校验为 MessagePart[]。

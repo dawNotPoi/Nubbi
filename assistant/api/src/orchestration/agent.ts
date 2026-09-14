@@ -1,8 +1,8 @@
-import { executeToolCalls, skillToolName } from "./orchestration/tool-executor.js";
-import { requestModel } from "./model.js";
-import type { ProviderExecutorInput } from "./runtime/provider-executor.js";
+import { executeToolCalls, skillToolName } from "./tool-executor.js";
+import { requestModel } from "../model/model.js";
+import type { ProviderExecutorInput } from "../runtime/provider-executor.js";
 import type { Skill } from "./skills.js";
-import type { MessagePart, ModelMessage, ModelTool } from "./types.js";
+import type { MessagePart, ModelMessage, ModelTool } from "../types.js";
 
 // 最大执行轮数：防止模型陷入无限工具调用循环。
 const maxTurns = 8;

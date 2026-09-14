@@ -4,7 +4,7 @@ import type {
   ModelMessage,
   ModelTool,
   ModelToolCall,
-} from "./types.js";
+} from "../types.js";
 
 const toolCallSchema = z.object({
   id: z.string(),

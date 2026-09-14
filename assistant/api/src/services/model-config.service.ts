@@ -13,8 +13,8 @@ import {
   type ModelConfigInput,
   type ModelConnectionInput,
   type PublicModelConfig,
-} from "../model-config.js";
-import { clearCodexThreadIds } from "../store.js";
+} from "../model/model-config.js";
+import { clearCodexThreadIds } from "../models/store.js";
 
 /** 管理模型配置、Provider 模型列表和 Codex 订阅账号生命周期。 */
 @Injectable()

@@ -1,6 +1,6 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
-import { projectRoot } from "./env.js";
+import { projectRoot } from "../config/env.js";
 
 export type Skill = {
   name: string;

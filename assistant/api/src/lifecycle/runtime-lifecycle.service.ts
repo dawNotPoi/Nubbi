@@ -1,5 +1,5 @@
 import { Injectable, type OnApplicationBootstrap } from "@nestjs/common";
-import { connectAssistantDatabase } from "../db.js";
+import { connectAssistantDatabase } from "../config/db.js";
 import { abandonIncompleteRuns } from "../runtime/run-store.js";
 
 /**

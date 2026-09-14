@@ -3,8 +3,8 @@ import type { HydratedDocument } from "mongoose";
 import {
   ConversationModel,
   type StoredConversation,
-} from "./models/conversation.js";
-import type { Conversation, Message, MessagePart } from "./types.js";
+} from "./conversation.js";
+import type { Conversation, Message, MessagePart } from "../types.js";
 
 /**
  * 将数据库文档转换为对外暴露的对话结构，并复制 parts 防止调用方修改库内对象。

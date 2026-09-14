@@ -1,5 +1,5 @@
 import { Schema } from "mongoose";
-import { assistantConnection } from "../db.js";
+import { assistantConnection } from "../config/db.js";
 
 /** Run 事件在 MongoDB 中的落库结构：元信息平铺，业务数据统一放 payload。 */
 export type RunEventRecord = {

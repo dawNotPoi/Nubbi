@@ -2,7 +2,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { listMcpServers, type McpServerConfig } from "./mcp-config.js";
-import type { ModelTool } from "./types.js";
+import type { ModelTool } from "../types.js";
 
 export type McpTool = {
   modelTool: ModelTool;

@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
-import { projectRoot } from "./env.js";
+import { projectRoot } from "../config/env.js";
 
 const providerSchema = z.enum(["openai-compatible", "codex-subscription"]);
 
