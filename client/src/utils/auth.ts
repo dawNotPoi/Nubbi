@@ -1,8 +1,9 @@
 import { createAuthClient } from "better-auth/react";
 import { useSyncExternalStore } from "react";
-import { getApiBaseUrl } from "./env";
+import { getApiBaseUrl, getAuthBaseUrl } from "./env";
 
 const baseUrl = getApiBaseUrl();
+const authBaseUrl = getAuthBaseUrl();
 
 type AuthRuntimeState = {
   accessToken: string | null;
@@ -142,7 +143,7 @@ const toAuthResult = <T extends { error?: unknown }>(
 };
 
 export const authClient = createAuthClient({
-  baseURL: baseUrl,
+  baseURL: authBaseUrl,
   fetchOptions: {
     credentials: "include",
     auth: {

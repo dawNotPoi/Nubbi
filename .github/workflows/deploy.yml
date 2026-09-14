@@ -26,6 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       VITE_API_URL: ${{ vars.VITE_API_URL || secrets.VITE_API_URL || '' }}
+      VITE_AUTH_URL: ${{ vars.VITE_AUTH_URL || secrets.VITE_AUTH_URL || '' }}
       VITE_SOCKET_URL: ${{ vars.VITE_SOCKET_URL || secrets.VITE_SOCKET_URL || '' }}
     steps:
       - name: Checkout
@@ -80,6 +81,7 @@ jobs:
       DEPLOY_PORT: ${{ secrets.DEPLOY_PORT || '22' }}
       DEPLOY_PASSWORD: ${{ secrets.DEPLOY_PASSWORD || '' }}
       VITE_API_URL: ${{ vars.VITE_API_URL || secrets.VITE_API_URL || '' }}
+      VITE_AUTH_URL: ${{ vars.VITE_AUTH_URL || secrets.VITE_AUTH_URL || '' }}
       VITE_SOCKET_URL: ${{ vars.VITE_SOCKET_URL || secrets.VITE_SOCKET_URL || '' }}
       WEB_PORT: ${{ vars.WEB_PORT || secrets.WEB_PORT || '80' }}
       MONGO_URI: ${{ secrets.MONGO_URI || '' }}
@@ -202,6 +204,7 @@ jobs:
 
           const rootEnv = {
             VITE_API_URL: process.env.VITE_API_URL,
+            VITE_AUTH_URL: process.env.VITE_AUTH_URL,
             VITE_SOCKET_URL: process.env.VITE_SOCKET_URL,
             WEB_PORT: process.env.WEB_PORT || '80',
             MONGO_URI: process.env.MONGO_URI,
