@@ -35,8 +35,13 @@ const corsOptions = {
   },
   credentials: true, // 允许携带凭证（如 cookies）
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"], // 允许的请求头
-  exposedHeaders: ["set-auth-token"],
+  allowedHeaders: ["Content-Type", "Authorization", "Range"], // 允许的请求头
+  exposedHeaders: [
+    "set-auth-token",
+    "Accept-Ranges",
+    "Content-Length",
+    "Content-Range",
+  ],
 };
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));

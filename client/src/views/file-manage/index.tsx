@@ -1,6 +1,7 @@
 import {
   deleteFile,
   deleteTargetsBatch,
+  fetchFileShareDownloadUrl,
   getAllFolders,
   getFileDownloadUrl,
   listFiles,
@@ -190,10 +191,11 @@ const FileManager = () => {
     if (record.kind !== "file") return;
 
     try {
-      await navigator.clipboard.writeText(getFileDownloadUrl(record._id));
-      messageApi.success("已复制下载链接");
+      const { url } = await fetchFileShareDownloadUrl(record._id);
+      await navigator.clipboard.writeText(url);
+      messageApi.success("已复制公开下载链接，7 天内有效");
     } catch {
-      messageApi.error("复制失败，请稍后重试");
+      messageApi.error("分享链接生成失败，请稍后重试");
     }
   };
 
