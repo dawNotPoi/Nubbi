@@ -250,14 +250,22 @@ export const deleteMcpServer = (baseUrl: string, token: string, id: string): Pro
  * @param server 待测试的服务配置。
  * @returns 连接与工具发现结果。
  */
-export const testMcpServer = (
+export const testMcpServer = async (
   baseUrl: string,
   token: string,
   server: McpServerConfig,
-): Promise<McpConnectionTest> => configRequest(baseUrl, token, "/api/mcp/test", {
-  method: "POST",
-  body: JSON.stringify(server),
-});
+): Promise<McpConnectionTest> => {
+  const result = await configRequest<McpConnectionTest>(baseUrl, token, "/api/mcp/test", {
+    method: "POST",
+    body: JSON.stringify(server),
+  });
+  // 旧版服务端可能只返回 tools 或只返回 toolCount，这里统一补全，避免界面显示“发现 个工具”或渲染崩溃。
+  return {
+    ...result,
+    toolCount: result.toolCount ?? result.tools?.length ?? 0,
+    tools: result.tools ?? [],
+  };
+};
 
 /**
  * 解析 SSE 事件块：空块或格式错误返回 null，正常则合并 data 行并补上 type。

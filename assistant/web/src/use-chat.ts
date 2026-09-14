@@ -20,6 +20,26 @@ import type {
 } from "./types";
 
 /**
+ * 判断事件是否需要进入轨迹侧边栏。
+ * 文本增量、心跳和完成事件不进入轨迹，避免保存重复的大对象。
+ * @param event SSE 事件。
+ * @returns 是否为轨迹相关事件。
+ */
+const isTraceEvent = (event: StreamEvent): boolean =>
+  event.type === "run-started" ||
+  event.type === "reasoning-delta" ||
+  event.type === "skill-active" ||
+  event.type === "tool-start" ||
+  event.type === "tool-result" ||
+  event.type === "approval-request" ||
+  event.type === "approval-resolved" ||
+  event.type === "token-usage" ||
+  event.type === "run-completed" ||
+  event.type === "run-failed" ||
+  event.type === "run-abandoned" ||
+  event.type === "error";
+
+/**
  * Web 聊天页的聚合状态：会话列表、当前对话、消息流与生成控制。
  * @returns 聊天所需的状态与操作（选择会话、发送、停止、审批、删除）。
  */
@@ -36,6 +56,11 @@ export const useChat = () => {
   const [contextStatus, setContextStatus] = useState<ContextStatus | null>(null);
   // 服务端推送的本轮累计 token 用量，与对话持久化值叠加即为全部已用。
   const [runTokenUsage, setRunTokenUsage] = useState<TokenUsage | null>(null);
+  // 当前 Run 的原始事件序列，供 dsh 风格轨迹侧边栏实时展示。
+  const [traceEvents, setTraceEvents] = useState<StreamEvent[]>([]);
+  const [traceRunId, setTraceRunId] = useState<string | null>(null);
+  // 当前 Run 的文本流汇总，Codex 等 Provider 不暴露 reasoning 时也能在轨迹中看到输出过程。
+  const [traceText, setTraceText] = useState("");
   // 保存当前请求的 AbortController，供“停止生成”与卸载时中断。
   const abortRef = useRef<AbortController | null>(null);
 
@@ -68,6 +93,9 @@ export const useChat = () => {
       setPending([]);
       setContextStatus(null);
       setRunTokenUsage(null);
+      setTraceEvents([]);
+      setTraceRunId(null);
+      setTraceText("");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "加载对话失败");
     } finally {
@@ -91,6 +119,9 @@ export const useChat = () => {
       const user = temporaryMessage("user", [{ type: "text", text: content.trim() }]);
       const assistant = temporaryMessage("assistant", []);
       setPending([user, assistant]);
+      setTraceEvents([]);
+      setTraceRunId(null);
+      setTraceText("");
       const controller = new AbortController();
       abortRef.current = controller;
       await streamMessage({
@@ -103,6 +134,9 @@ export const useChat = () => {
             item?.approvalId === event.approvalId ? null : item);
           if (event.type === "context-status") setContextStatus(event);
           if (event.type === "token-usage") setRunTokenUsage(event);
+          if (event.type === "message-start") setTraceRunId(event.runId ?? null);
+          if (event.type === "text-delta") setTraceText((text) => text + event.text);
+          if (isTraceEvent(event)) setTraceEvents((items) => [...items, event]);
           setPending((messages) => messages.map((message) =>
             message.id === assistant.id
               ? { ...message, parts: reduceEvent(message.parts, event) }
@@ -169,6 +203,9 @@ export const useChat = () => {
     approval,
     contextStatus,
     runTokenUsage,
+    traceEvents,
+    traceRunId,
+    traceText,
     generating,
     loading,
     error,

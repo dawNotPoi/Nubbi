@@ -120,6 +120,10 @@ export const runAgent = async (
     }
     // 原样保留模型返回的 assistant 消息，供后续轮次继续传递。
     messages.push(reply.assistantMessage);
+    // 把推理内容作为独立 part 持久化，前端可在消息流或轨迹中展示。
+    if (reply.reasoningContent) {
+      parts.push({ type: "reasoning", text: reply.reasoningContent });
+    }
 
     // 没有工具调用说明模型已给出最终回答，收尾返回。
     if (!reply.toolCalls.length) {

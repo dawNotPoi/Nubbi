@@ -22,6 +22,17 @@ export const MessageView = ({ message }: { message: Message }) => {
               ? <Text key={key} style={styles.userText}>{part.text}</Text>
               : <Markdown key={key} style={markdownStyles}>{part.text}</Markdown>;
           }
+          if (part.type === "reasoning") {
+            return (
+              <View key={key} style={styles.capability}>
+                <Sparkles color={colors.muted} size={15} />
+                <View style={styles.flex}>
+                  <Text style={styles.capabilityTitle}>思考过程</Text>
+                  <Text style={styles.capabilityText}>{part.text}</Text>
+                </View>
+              </View>
+            );
+          }
           if (part.type === "skill") {
             return (
               <View key={key} style={styles.capability}>

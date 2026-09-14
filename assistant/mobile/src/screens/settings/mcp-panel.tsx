@@ -71,7 +71,7 @@ export const McpPanel = ({ baseUrl, token }: { baseUrl: string; token: string })
     try {
       const result = await testMcpServer(baseUrl, token, server);
       setDanger(false);
-      setMessage(`连接成功，发现 ${result.toolCount} 个工具`);
+      setMessage(`连接成功，发现 ${result.toolCount ?? result.tools?.length ?? 0} 个工具`);
       return result;
     } finally {
       setBusy(false);

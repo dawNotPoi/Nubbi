@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { AgentEvent } from "../types.js";
+import type { AgentEvent, ApprovalReview } from "../types.js";
 
 type ApprovalInput = {
   threadId: string;
@@ -7,6 +7,7 @@ type ApprovalInput = {
   tool: string;
   arguments: Record<string, unknown>;
   emit: (event: AgentEvent) => void;
+  review?: ApprovalReview;
 };
 
 type PendingApproval = {
@@ -52,6 +53,7 @@ export const requestApproval = async (input: ApprovalInput): Promise<{
       tool: input.tool,
       arguments: input.arguments,
       expiresAt,
+      review: input.review,
     });
   });
   return { approvalId, approved };

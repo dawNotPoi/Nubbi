@@ -109,6 +109,20 @@ export const MessageView = ({ message }: { message: Message }) => {
               </div>
             );
           }
+          if (part.type === "reasoning") {
+            return (
+              <details className="mb-2 rounded-md border bg-amber-500/5 text-xs" key={key}>
+                <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-muted-foreground">
+                  <Sparkles className="size-3.5 text-amber-600" />
+                  思考过程
+                  <ChevronDown className="ml-auto size-3.5" />
+                </summary>
+                <p className="whitespace-pre-wrap border-t px-3 py-2 leading-5 text-muted-foreground">
+                  {part.text}
+                </p>
+              </details>
+            );
+          }
           if (part.type === "skill") {
             return (
               <div className="mb-2 flex gap-2 rounded-md border p-3 text-xs" key={key}>

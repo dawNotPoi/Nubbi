@@ -8,6 +8,7 @@ export type ConversationSummary = {
 /** 消息内的内容块：文本、Skill、工具审批/执行记录或错误，逐块渲染。 */
 export type MessagePart =
   | { type: "text"; text: string }
+  | { type: "reasoning"; text: string }
   | { type: "skill"; name: string; description: string }
   | {
       type: "approval";
@@ -57,8 +58,9 @@ export type McpServerConfig = {
 
 export type McpConnectionTest = {
   serverName: string;
-  toolCount: number;
-  tools: Array<{ name: string; description: string }>;
+  // 旧版服务端可能省略数量或工具清单，前端展示时需要兜底。
+  toolCount?: number;
+  tools?: Array<{ name: string; description: string }>;
 };
 
 export type ModelConfig = {

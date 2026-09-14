@@ -108,7 +108,7 @@ export const McpSettingsDrawer = ({
     setError(null);
     try {
       const result = await testMcpServer(token, value);
-      setNotice(value.name + "：连接成功，发现 " + result.toolCount + " 个工具");
+      setNotice(value.name + "：连接成功，发现 " + (result.toolCount ?? result.tools?.length ?? 0) + " 个工具");
       return result;
     } finally {
       setLoading(false);

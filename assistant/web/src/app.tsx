@@ -1,12 +1,13 @@
-import { Menu, MessageSquarePlus, Settings } from "lucide-react";
+import { Activity, Menu, MessageSquarePlus, Settings } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Composer } from "./components/composer";
-import { ApprovalDialog } from "./components/approval-dialog";
+import { InlineApproval } from "./components/inline-approval";
 import { ContextStatus } from "./components/context-status";
 import { ConversationDrawer } from "./components/conversation-drawer";
 import { EmptyState, MessageView } from "./components/message-view";
 import { ModelSwitcher } from "./components/model-switcher";
 import { McpSettingsDrawer } from "./components/mcp-settings-drawer";
+import { TraceDrawer } from "./components/trace-drawer";
 import { Button } from "./components/ui/button";
 import { useChat } from "./use-chat";
 import { useExtensions } from "./use-extensions";
@@ -28,6 +29,7 @@ export default function App() {
 const ChatApp = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [traceOpen, setTraceOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const chat = useChat();
   const modelSwitcher = useModelSwitcher();
@@ -36,7 +38,7 @@ const ChatApp = () => {
   // 新消息到达后滚动到底部。
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: "end" });
-  }, [chat.messages]);
+  }, [chat.approval, chat.messages]);
 
   // 上下文占用：优先用服务端压缩后推送的真实值，否则按消息内容本地估算。
   const contextUsage = useMemo(() => {
@@ -101,6 +103,15 @@ const ChatApp = () => {
           <Settings />
         </Button>
         <Button
+          aria-label="打开运行轨迹"
+          onClick={() => setTraceOpen(true)}
+          size="icon"
+          title="运行轨迹"
+          variant="ghost"
+        >
+          <Activity />
+        </Button>
+        <Button
           aria-label="新建对话"
           onClick={() => void chat.select()}
           size="icon"
@@ -123,6 +134,7 @@ const ChatApp = () => {
             {chat.messages.map((message) => (
               <MessageView key={message.id} message={message} />
             ))}
+            <InlineApproval approval={chat.approval} onDecision={(approved) => void chat.decideApproval(approved)} />
             <div ref={bottomRef} />
           </div>
         )}
@@ -182,7 +194,15 @@ const ChatApp = () => {
         }}
         open={settingsOpen}
       />
-      <ApprovalDialog approval={chat.approval} onDecision={(approved) => void chat.decideApproval(approved)} />
+      <TraceDrawer
+        conversationId={chat.current?.id}
+        generating={chat.generating}
+        liveEvents={chat.traceEvents}
+        liveRunId={chat.traceRunId}
+        liveText={chat.traceText}
+        onClose={() => setTraceOpen(false)}
+        open={traceOpen}
+      />
     </div>
   );
 };

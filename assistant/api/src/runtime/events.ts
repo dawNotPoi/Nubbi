@@ -1,5 +1,17 @@
 import type { TokenUsage } from "../types.js";
 
+/** 审批卡片的结构化评审内容，便于前端以友好形式展示，而不是直接抛 JSON。 */
+export type ApprovalReview = {
+  /** 操作名称，例如“创建笔记”“编辑笔记内容”。 */
+  operation: string;
+  /** 可选的笔记标题。 */
+  title?: string;
+  /** 可选的笔记正文。 */
+  content?: string;
+  /** 额外的键值说明，例如 note_id、mode、tags 等。 */
+  details?: Array<{ label: string; value: string }>;
+};
+
 export type RuntimeEventMeta = {
   eventId: string;
   runId: string;
@@ -37,6 +49,7 @@ export type AgentEvent =
       tool: string;
       arguments: Record<string, unknown>;
       expiresAt: string;
+      review?: ApprovalReview;
     }
   | { type: "approval-resolved"; approvalId: string; approved: boolean }
   | { type: "text-delta"; text: string }

@@ -23,6 +23,12 @@ export const temporaryMessage = (
  * @returns 应用事件后的新 parts 数组。
  */
 export const reduceEvent = (parts: MessagePart[], event: StreamEvent): MessagePart[] => {
+  if (event.type === "reasoning-delta") {
+    const last = parts.at(-1);
+    return last?.type === "reasoning"
+      ? [...parts.slice(0, -1), { ...last, text: last.text + event.text }]
+      : [...parts, { type: "reasoning", text: event.text }];
+  }
   if (event.type === "text-delta") {
     const last = parts.at(-1);
     return last?.type === "text"

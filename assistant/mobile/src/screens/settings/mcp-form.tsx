@@ -45,7 +45,11 @@ export const McpForm = ({
       setMessage("");
       const value = fromMcpDraft(draft);
       if (action === "save") await onSave(value);
-      else setTestResult(await onTest(value));
+      else {
+        const result = await onTest(value);
+        // 旧版服务端可能只返回 toolCount，未返回 tools；这里统一补成数组，避免渲染时崩溃。
+        setTestResult({ ...result, tools: result.tools ?? [] });
+      }
     } catch (caught) {
       setTestResult(null);
       setMessage(caught instanceof Error ? caught.message : "操作失败");
@@ -141,8 +145,8 @@ export const McpForm = ({
       </View>
       {testResult ? (
         <View style={styles.testResultBox}>
-          <Text style={styles.testResultTitle}>连接成功，发现 {testResult.toolCount} 个工具</Text>
-          {testResult.tools.map((tool) => (
+          <Text style={styles.testResultTitle}>连接成功，发现 {testResult.toolCount ?? testResult.tools?.length ?? 0} 个工具</Text>
+          {testResult.tools?.map((tool) => (
             <View key={tool.name} style={styles.testResultItem}>
               <Text style={styles.testResultName}>{tool.name}</Text>
               {tool.description ? (

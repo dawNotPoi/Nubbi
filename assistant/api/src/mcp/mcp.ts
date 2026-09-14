@@ -89,6 +89,115 @@ const connect = async (server: McpServerConfig, signal?: AbortSignal): Promise<C
   }
 };
 
+/** 已缓存的 MCP 客户端及其最近使用时间。 */
+type CachedClient = {
+  client: Client;
+  lastUsed: number;
+  closeTimer?: NodeJS.Timeout;
+};
+
+const clientCache = new Map<string, CachedClient>();
+const pendingConnections = new Map<string, Promise<Client>>();
+const CLIENT_IDLE_TIMEOUT_MS = 5 * 60_000;
+
+/**
+ * 生成 MCP 服务连接的缓存键：配置变化后自然使用新连接。
+ * @param server MCP 服务配置。
+ * @returns 缓存键字符串。
+ */
+const configKey = (server: McpServerConfig): string =>
+  JSON.stringify({
+    id: server.id,
+    transport: server.transport,
+    url: server.url,
+    headers: server.headers,
+    command: server.command,
+    args: server.args,
+    cwd: server.cwd,
+    env: server.env,
+  });
+
+/**
+ * 关闭并移除指定缓存连接。
+ * @param key 缓存键。
+ * @returns 关闭完成后的 Promise。
+ */
+const closeCachedClient = async (key: string): Promise<void> => {
+  const cached = clientCache.get(key);
+  if (!cached) return;
+  clientCache.delete(key);
+  if (cached.closeTimer) clearTimeout(cached.closeTimer);
+  await cached.client.close().catch(() => undefined);
+};
+
+/**
+ * 为缓存连接安排空闲回收，避免 stdio 子进程常驻过多。
+ * @param key 缓存键。
+ * @returns 无返回值。
+ */
+const scheduleIdleClose = (key: string): void => {
+  const cached = clientCache.get(key);
+  if (!cached) return;
+  if (cached.closeTimer) clearTimeout(cached.closeTimer);
+  cached.closeTimer = setTimeout(() => {
+    void closeCachedClient(key);
+  }, CLIENT_IDLE_TIMEOUT_MS);
+  cached.closeTimer.unref?.();
+};
+
+/**
+ * 获取 MCP 客户端：优先复用同配置的常驻连接，避免每次工具调用都重新拉起 stdio 子进程。
+ * @param server MCP 服务配置。
+ * @returns 可用的 MCP 客户端。
+ */
+const getCachedClient = async (server: McpServerConfig): Promise<Client> => {
+  const key = configKey(server);
+  const cached = clientCache.get(key);
+  if (cached) {
+    cached.lastUsed = Date.now();
+    scheduleIdleClose(key);
+    return cached.client;
+  }
+  const pending = pendingConnections.get(key);
+  if (pending) return pending;
+  const connection = connect(server)
+    .then((client) => {
+      clientCache.set(key, { client, lastUsed: Date.now() });
+      scheduleIdleClose(key);
+      return client;
+    })
+    .finally(() => {
+      pendingConnections.delete(key);
+    });
+  pendingConnections.set(key, connection);
+  return connection;
+};
+
+/**
+ * 使用缓存客户端执行操作；连接级异常时丢弃缓存，下次调用自动重建。
+ * @param server MCP 服务配置。
+ * @param signal 可选的取消信号。
+ * @param operation 使用客户端的操作。
+ * @returns 操作结果。
+ */
+const runWithClient = async <T>(
+  server: McpServerConfig,
+  signal: AbortSignal | undefined,
+  operation: (client: Client) => Promise<T>,
+): Promise<T> => {
+  const key = configKey(server);
+  const client = await getCachedClient(server);
+  try {
+    return await operation(client);
+  } catch (error) {
+    // 用户主动取消时不需要重建连接，避免无谓的进程启动。
+    if (!signal?.aborted) {
+      await closeCachedClient(key);
+    }
+    throw error;
+  }
+};
+
 /**
  * 生成模型可识别的工具名：前缀 serverId 避免不同服务间工具重名，
  * 并清理非法字符、限制长度（部分模型对工具名长度敏感）。
@@ -106,9 +215,8 @@ const safeName = (serverId: string, toolName: string): string =>
  * @param server MCP 服务配置。
  * @returns 该服务的工具列表，含模型名、原始名与 function 定义。
  */
-const discoverServerTools = async (server: McpServerConfig): Promise<McpTool[]> => {
-  const client = await connect(server);
-  try {
+const discoverServerTools = async (server: McpServerConfig): Promise<McpTool[]> =>
+  runWithClient(server, undefined, async (client) => {
     const result = await client.listTools(undefined, { timeout: 10_000 });
     return result.tools.map((tool) => {
       // 配置中的 id 保存后必有值，这里兜底避免 undefined 污染工具名。
@@ -128,10 +236,7 @@ const discoverServerTools = async (server: McpServerConfig): Promise<McpTool[]> 
         },
       };
     });
-  } finally {
-    await client.close();
-  }
-};
+  });
 
 /**
  * 并发发现所有已启用 MCP 服务的工具。
@@ -182,9 +287,8 @@ export const callMcpTool = async (
   tool: McpTool,
   argumentsValue: Record<string, unknown>,
   signal?: AbortSignal,
-): Promise<McpCallResult> => {
-  const client = await connect(tool.server, signal);
-  try {
+): Promise<McpCallResult> =>
+  runWithClient(tool.server, signal, async (client) => {
     const result = await client.callTool(
       { name: tool.originalName, arguments: argumentsValue },
       undefined,
@@ -194,7 +298,4 @@ export const callMcpTool = async (
       content: JSON.stringify(result, null, 2).slice(0, 30_000),
       success: result.isError !== true,
     };
-  } finally {
-    await client.close();
-  }
-};
+  });

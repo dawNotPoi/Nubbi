@@ -20,6 +20,7 @@ export type TokenUsage = {
 /** 消息内的内容块：文本、Skill、工具审批/执行记录或错误，逐块渲染。 */
 export type MessagePart =
   | { type: "text"; text: string }
+  | { type: "reasoning"; text: string }
   | { type: "skill"; name: string; description: string }
   | {
       type: "approval";
@@ -76,8 +77,9 @@ export type McpServerConfig = McpServerBase & {
 
 export type McpConnectionTest = {
   serverName: string;
-  toolCount: number;
-  tools: Array<{ name: string; description: string }>;
+  // 旧版服务端可能省略数量或工具清单，前端展示时需要兜底。
+  toolCount?: number;
+  tools?: Array<{ name: string; description: string }>;
 };
 
 export type ModelConfig = {
@@ -124,6 +126,14 @@ export type DeviceLogin = {
   userCode: string;
 };
 
+/** 审批卡片的结构化评审内容，便于前端以友好形式展示，而不是直接抛 JSON。 */
+export type ApprovalReview = {
+  operation: string;
+  title?: string;
+  content?: string;
+  details?: Array<{ label: string; value: string }>;
+};
+
 export type ApprovalRequest = {
   type: "approval-request";
   approvalId: string;
@@ -131,6 +141,7 @@ export type ApprovalRequest = {
   tool: string;
   arguments: Record<string, unknown>;
   expiresAt: string;
+  review?: ApprovalReview;
 };
 
 export type ModelConfigInput = Omit<ModelConfig, "apiKeyConfigured"> & {
@@ -166,6 +177,7 @@ export type StreamEvent = (
   | { type: "assistant-message"; messageId: string }
   | { type: "run-completed"; messageId: string }
   | { type: "run-failed"; messageId: string; message: string; cancelled: boolean }
+  | { type: "run-abandoned"; reason: string }
   | { type: "error"; message: string }
   | { type: "done"; message: Message }
 ) & {
@@ -175,5 +187,29 @@ export type StreamEvent = (
   sequence?: number;
   timestamp?: string;
   agentId?: string;
+  parentRunId?: string;
+};
+
+/** Run 审计摘要，由服务端从 run_events 聚合而来。 */
+export type RunSummary = {
+  runId: string;
+  conversationId: string;
+  agentId: string;
+  parentRunId?: string;
+  provider: "openai-compatible" | "codex-subscription";
+  status: "running" | "completed" | "failed" | "cancelled" | "abandoned";
+  startedAt: string;
+  finishedAt?: string;
+  message?: string;
+};
+
+/** 带服务端元信息的完整运行时事件，用于轨迹回放。 */
+export type RuntimeEvent = StreamEvent & {
+  eventId: string;
+  runId: string;
+  conversationId: string;
+  sequence: number;
+  timestamp: string;
+  agentId: string;
   parentRunId?: string;
 };

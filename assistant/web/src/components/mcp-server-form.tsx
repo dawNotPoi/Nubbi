@@ -4,7 +4,6 @@ import type { McpConnectionTest, McpServerConfig } from "../types";
 import { Button } from "./ui/button";
 import { HttpFields, StdioFields } from "./mcp-server-fields";
 import {
-  emptyDraft,
   toConfig,
   toDraft,
   type McpDraft,
@@ -80,7 +79,11 @@ export const McpServerForm = ({
       setMessage(null);
       const value = toConfig(draft);
       if (action === "save") await onSave(value);
-      else setTestResult(await onTest(value));
+      else {
+        const result = await onTest(value);
+        // 旧版服务端可能只返回 toolCount，未返回 tools；这里统一补成数组，避免渲染时崩溃。
+        setTestResult({ ...result, tools: result.tools ?? [] });
+      }
     } catch (error) {
       setTestResult(null);
       setMessage(error instanceof Error ? error.message : "操作失败");
@@ -128,11 +131,11 @@ export const McpServerForm = ({
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
           <p className="flex items-center gap-1.5 text-sm font-medium text-emerald-700">
             <CheckCircle2 className="size-4" />
-            连接成功，发现 {testResult.toolCount} 个工具
+            连接成功，发现 {testResult.toolCount ?? testResult.tools?.length ?? 0} 个工具
           </p>
-          {testResult.tools.length > 0 ? (
+          {testResult.tools && testResult.tools.length > 0 ? (
             <ul className="mt-2 max-h-48 space-y-1 overflow-auto">
-              {testResult.tools.map((tool) => (
+              {testResult.tools?.map((tool) => (
                 <li className="rounded bg-white/70 px-2 py-1" key={tool.name}>
                   <p className="break-all font-mono text-xs font-medium">{tool.name}</p>
                   {tool.description ? (

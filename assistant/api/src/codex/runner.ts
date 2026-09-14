@@ -3,7 +3,7 @@ import type { McpTool } from "../mcp/mcp.js";
 import type { StoredModelConfig } from "../model/model-config.js";
 import { renderCodexBootstrap } from "../runtime/context-builder.js";
 import type { ExecutorResult, ProviderExecutorInput } from "../runtime/provider-executor.js";
-import { setCodexThreadId } from "../models/store.js";
+import { getConversation, setCodexThreadId } from "../models/store.js";
 import type { AgentEvent, MessagePart } from "../types.js";
 import { readCodexAccount } from "./account.js";
 import { codexClient, codexWorkspace } from "./client.js";
@@ -19,6 +19,17 @@ import {
   type ThreadResponse,
   type TurnResponse,
 } from "./protocol.js";
+
+/**
+ * 生成动态工具签名，用于判断 Codex 线程是否仍使用最新 MCP 工具集。
+ * @param tools MCP 工具列表。
+ * @returns 工具签名；空工具集返回空字符串。
+ */
+const toolSignature = (tools: McpTool[]): string =>
+  tools
+    .map((tool) => `${tool.server.id ?? tool.server.name}:${tool.modelName}`)
+    .sort()
+    .join("|");
 
 /**
  * 创建新的 Codex 线程，只读沙箱、审批交给用户，工具只提供动态工具。
@@ -39,7 +50,7 @@ const startThread = async (
     sandbox: "read-only",
     developerInstructions: [
       modelConfig.systemPrompt,
-      "你是 Nubbi Assistant。按需使用已安装 Skill；调用外部能力时只使用提供的动态工具，不使用命令执行、文件变更或网络搜索工具。",
+      "你是 Nubbi Assistant。按需使用已安装 Skill；调用外部能力时优先使用提供的动态工具；可以使用内置联网搜索，但不使用命令执行或文件变更工具。",
     ].filter(Boolean).join("\n\n"),
     dynamicTools: toDynamicTools(tools),
   });
@@ -58,8 +69,11 @@ const resolveThread = async (
   currentId: string | undefined,
   modelConfig: StoredModelConfig,
   tools: McpTool[],
+  storedToolSignature?: string,
 ): Promise<{ threadId: string; isNew: boolean }> => {
-  if (currentId) {
+  // 旧线程没有签名时保持原行为（续接），避免老对话每次都被迫新建线程；
+  // 有签名且与当前 MCP 工具集不一致时才强制新建线程。
+  if (currentId && (storedToolSignature === undefined || storedToolSignature === toolSignature(tools))) {
     try {
       await codexClient.request<ThreadResponse>("thread/resume", {
         threadId: currentId,
@@ -93,9 +107,66 @@ const waitForTurn = (
   let cancel = () => undefined;
   const promise = new Promise<string>((resolve, reject) => {
     let text = "";
+    // 同一轮只展示一次“联网搜索”节点，避免重复刷屏。
+    let searchNotified = false;
+    let fileChangeNotified = false;
+    let commandNotified = false;
     const cleanup = codexClient.onNotification((method, params) => {
-      if (readString(params, "threadId") !== threadId) return;
+      // 部分通知（如 command/exec、reasoning）可能不携带 threadId；
+      // 只要携带了 threadId 就必须匹配当前线程，避免串线程。
+      const paramsThreadId = readString(params, "threadId");
+      if (paramsThreadId !== null && paramsThreadId !== threadId) return;
+      // Codex 不同版本可能用不同通知名推送推理内容，这里尽量兼容常见字段。
+      if (
+        method === "item/reasoning/delta" ||
+        method === "item/thinking/delta" ||
+        method === "item/reasoning/textDelta" ||
+        method === "item/reasoning/summaryTextDelta"
+      ) {
+        const delta = readString(params, "delta") ?? readString(params, "text") ?? readString(params, "reasoning") ?? "";
+        if (delta) emit({ type: "reasoning-delta", text: delta });
+        return;
+      }
+      // Codex 内置联网搜索不经过 ToolGateway，这里尽量识别相关通知并展示为“联网搜索”节点。
+      if (
+        !searchNotified &&
+        (method.toLowerCase().includes("websearch") ||
+          method.toLowerCase().includes("search") ||
+          method.toLowerCase().includes("citation") ||
+          method.toLowerCase().includes("browser") ||
+          JSON.stringify(params).toLowerCase().includes("web_search"))
+      ) {
+        searchNotified = true;
+        const description = readString(params, "query") ??
+          readString(params, "url") ??
+          readString(params, "text") ??
+          "模型正在联网搜索";
+        emit({ type: "skill-active", name: "联网搜索", description });
+        return;
+      }
+      // Codex 文件修改过程：展示为“文件变更”节点。
+      if (method === "item/fileChange/outputDelta" && !fileChangeNotified) {
+        fileChangeNotified = true;
+        const description = readString(params, "path") ??
+          readString(params, "filePath") ??
+          readString(params, "delta") ??
+          "Codex 正在修改文件";
+        emit({ type: "skill-active", name: "文件变更", description });
+        return;
+      }
+      // Codex 命令执行过程：展示为“命令执行”节点。
+      if (method === "command/exec/outputDelta" && !commandNotified) {
+        commandNotified = true;
+        const description = readString(params, "command") ??
+          readString(params, "output") ??
+          readString(params, "delta") ??
+          "Codex 正在执行命令";
+        emit({ type: "skill-active", name: "命令执行", description });
+        return;
+      }
       if (method === "item/agentMessage/delta") {
+        const reasoning = readString(params, "reasoning") ?? readString(params, "reasoning_content") ?? readString(params, "thought");
+        if (reasoning) emit({ type: "reasoning-delta", text: reasoning });
         const delta = readString(params, "delta") ?? "";
         text += delta;
         if (delta) emit({ type: "text-delta", text: delta });
@@ -136,10 +207,16 @@ export const runCodex = async (input: ProviderExecutorInput): Promise<ExecutorRe
   if (account.account?.type !== "chatgpt") {
     throw new Error("请先在模型设置中登录 ChatGPT");
   }
-  const resolved = await resolveThread(input.codexThreadId, input.modelConfig, input.tools);
+  const conversation = await getConversation(input.conversationId);
+  const resolved = await resolveThread(
+    input.codexThreadId,
+    input.modelConfig,
+    input.tools,
+    conversation?.codexToolSignature,
+  );
   const threadId = resolved.threadId;
   if (threadId !== input.codexThreadId) {
-    await setCodexThreadId(input.conversationId, threadId);
+    await setCodexThreadId(input.conversationId, threadId, toolSignature(input.tools));
   }
   const parts: MessagePart[] = [];
   registerDynamicToolContext(threadId, input.gateway, parts);

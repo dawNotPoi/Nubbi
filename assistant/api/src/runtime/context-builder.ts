@@ -24,6 +24,8 @@ export type AgentContext = {
  */
 const partText = (part: MessagePart): string => {
   if (part.type === "text") return part.text;
+  // 推理内容只用于前端展示，不回灌给模型，避免泄露/干扰后续生成。
+  if (part.type === "reasoning") return "";
   if (part.type === "skill") return `[已激活 Skill：${part.name}]`;
   if (part.type === "approval") {
     return `[工具审批：${part.server}/${part.tool}，${part.approved ? "已允许" : "已拒绝"}]`;

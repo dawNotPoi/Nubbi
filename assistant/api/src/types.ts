@@ -4,6 +4,7 @@
  */
 export type MessagePart =
   | { type: "text"; text: string }
+  | { type: "reasoning"; text: string }
   | { type: "skill"; name: string; description: string }
   | {
       type: "approval";
@@ -41,6 +42,8 @@ export type Conversation = {
   messages: Message[];
   // 关联的 Codex 订阅会话线程 ID，用于跨轮续接 Codex 上下文。
   codexThreadId?: string;
+  // 创建该 Codex 线程时的动态工具签名；MCP 工具集变化后强制新建线程。
+  codexToolSignature?: string;
   // 本对话累计的 token 用量，跨多次运行累加。
   tokenUsage?: TokenUsage;
 };
@@ -91,6 +94,7 @@ export type ModelToolCall = {
 
 export type {
   AgentEvent,
+  ApprovalReview,
   RunStatus,
   RunSummary,
   RuntimeEvent,

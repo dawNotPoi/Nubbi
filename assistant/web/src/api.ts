@@ -9,6 +9,8 @@ import type {
   McpServerConfig,
   ModelConfig,
   ModelConfigInput,
+  RunSummary,
+  RuntimeEvent,
   StreamEvent,
 } from "./types";
 import { apiUrl } from "./api-base";
@@ -295,13 +297,39 @@ export const deleteMcpServer = (
  * @param server 待测试的服务配置。
  * @returns 连接与工具发现结果。
  */
-export const testMcpServer = (
+export const testMcpServer = async (
   token: string,
   server: McpServerConfig,
-): Promise<McpConnectionTest> => mcpRequest(token, "/test", {
-  method: "POST",
-  body: JSON.stringify(server),
-});
+): Promise<McpConnectionTest> => {
+  const result = await mcpRequest<McpConnectionTest>(token, "/test", {
+    method: "POST",
+    body: JSON.stringify(server),
+  });
+  // 旧版服务端可能只返回 tools 或只返回 toolCount，这里统一补全，避免界面显示“发现 个工具”或渲染崩溃。
+  return {
+    ...result,
+    toolCount: result.toolCount ?? result.tools?.length ?? 0,
+    tools: result.tools ?? [],
+  };
+};
+
+/**
+ * 查询对话的全部 Run 摘要。
+ * @param conversationId 对话的唯一 ID。
+ * @returns Run 摘要列表。
+ */
+export const listConversationRuns = (
+  conversationId: string,
+): Promise<RunSummary[]> => request(`/api/conversations/${conversationId}/runs`);
+
+/**
+ * 查询指定 Run 的完整事件序列。
+ * @param runId Run 的唯一 ID。
+ * @returns 该 Run 的运行时事件列表。
+ */
+export const getRunEvents = (
+  runId: string,
+): Promise<RuntimeEvent[]> => request(`/api/runs/${runId}/events`);
 
 /**
  * 解析 SSE 事件块：空块或格式错误返回 null，正常则合并 data 行并补上 type。

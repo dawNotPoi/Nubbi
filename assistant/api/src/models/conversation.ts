@@ -24,6 +24,7 @@ const conversationSchema = new Schema<StoredConversation>({
   updatedAt: { type: String, required: true, index: true },
   messages: { type: [messageSchema], required: true, default: [] },
   codexThreadId: { type: String },
+  codexToolSignature: { type: String },
   tokenUsage: {
     type: new Schema({
       promptTokens: { type: Number, default: 0 },

@@ -129,14 +129,20 @@ export const appendMessage = async (
 };
 
 /**
- * 保存对话关联的 Codex 订阅线程 ID。
+ * 保存对话关联的 Codex 订阅线程 ID，并记录创建线程时的动态工具签名。
  * @param id 对话的唯一 ID。
  * @param threadId Codex 线程 ID。
+ * @param toolSignature 创建线程时的工具签名，缺省时不更新。
  * @returns 无返回值；对话不存在时抛出异常。
  */
-export const setCodexThreadId = async (id: string, threadId: string): Promise<void> => {
-  const result = await ConversationModel.updateOne({ id }, { $set: { codexThreadId: threadId } })
-    .exec();
+export const setCodexThreadId = async (
+  id: string,
+  threadId: string,
+  toolSignature?: string,
+): Promise<void> => {
+  const update: Record<string, string> = { codexThreadId: threadId };
+  if (toolSignature !== undefined) update.codexToolSignature = toolSignature;
+  const result = await ConversationModel.updateOne({ id }, { $set: update }).exec();
   if (!result.matchedCount) throw new Error("对话不存在");
 };
 
