@@ -1,37 +1,24 @@
 import {
   metaEntriesToRecord,
-  recordToMetaEntries,
   type Note,
   type NoteStatus,
   type UpdateNotePropertiesInput,
 } from "@/api/note";
+import { deleteTagAtom, tagListAtom } from "@/store/atom/tagAtom";
 import { DatePicker } from "antd";
 import dayjs from "dayjs";
+import { useAtomValue } from "jotai";
 import { useCallback, useEffect, useState } from "react";
 import { Select } from "./Select";
 
-const tagsOptions = ["算法", "React", "Node"];
 const statusOptions: NoteStatus[] = ["inbox", "active", "done", "archived"];
-const typeOptions = ["Note", "Thinking", "Share"];
 
 type Property = {
-  id: "status" | "date" | "tags" | "type";
+  id: "status" | "date" | "tags";
   name: string;
   type: "select" | "date" | "multi-select";
   options?: string[];
 };
-
-const formSchema: Property[] = [
-  {
-    id: "status",
-    name: "状态",
-    type: "select",
-    options: statusOptions,
-  },
-  { id: "date", name: "日期", type: "date" },
-  { id: "tags", name: "标签", type: "multi-select", options: tagsOptions },
-  { id: "type", name: "类型", type: "select", options: typeOptions },
-];
 
 const getMetaRecord = (note: Note) => ({
   ...metaEntriesToRecord(note.meta),
@@ -52,6 +39,24 @@ export default function NoteMeta({
   const [meta, setMeta] = useState<Record<string, any>>(() =>
     getMetaRecord(data),
   );
+  const tagsQuery = useAtomValue(tagListAtom);
+  const deleteTagMutation = useAtomValue(deleteTagAtom);
+
+  const formSchema: Property[] = [
+    {
+      id: "status",
+      name: "状态",
+      type: "select",
+      options: statusOptions,
+    },
+    { id: "date", name: "日期", type: "date" },
+    {
+      id: "tags",
+      name: "标签",
+      type: "multi-select",
+      options: tagsQuery.data ?? [],
+    },
+  ];
 
   useEffect(() => {
     setMeta(getMetaRecord(data));
@@ -63,19 +68,18 @@ export default function NoteMeta({
 
       setMeta((current) => {
         const nextMeta = { ...current, [property.id]: newValue };
-
-        if (property.id === "type") {
-          const { date: _date, status: _status, tags: _tags, ...metaRecord } =
-            nextMeta;
-          onUpdate({ meta: recordToMetaEntries(metaRecord) });
-        } else {
-          onUpdate({ [property.id]: newValue });
-        }
-
+        onUpdate({ [property.id]: newValue });
         return nextMeta;
       });
     },
     [onUpdate],
+  );
+
+  const handleDeleteTag = useCallback(
+    (tagName: string) => {
+      deleteTagMutation.mutate({ name: tagName });
+    },
+    [deleteTagMutation],
   );
 
   return (
@@ -89,6 +93,7 @@ export default function NoteMeta({
             <div className="min-h-10 flex-1 items-center hover:bg-gray-100/60">
               <InputRender
                 onChange={handlerFormChange}
+                onDeleteOption={item.id === "tags" ? handleDeleteTag : undefined}
                 property={item}
                 value={meta[item.id]}
               />
@@ -104,9 +109,15 @@ type InputRenderProps = {
   value: any;
   property: Property;
   onChange?: (value: any, property?: Property) => void;
+  onDeleteOption?: (value: string) => void;
 };
 
-const InputRender = ({ property, value, onChange }: InputRenderProps) => {
+const InputRender = ({
+  property,
+  value,
+  onChange,
+  onDeleteOption,
+}: InputRenderProps) => {
   const placeholder = "Empty";
 
   switch (property.type) {
@@ -121,6 +132,7 @@ const InputRender = ({ property, value, onChange }: InputRenderProps) => {
           onChange={(nextValue) => {
             onChange?.(nextValue, property);
           }}
+          onDeleteOption={onDeleteOption}
           options={property.options}
         />
       );

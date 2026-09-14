@@ -48,6 +48,7 @@ const ChangeAvatarModal = ({
         setUploading(false);
         return;
       }
+      const result = await onConfirm(url);
       if (result.success) {
         message.success("头像更换成功");
         handleClose();

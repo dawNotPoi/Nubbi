@@ -5,7 +5,7 @@ import type { NoteSaveStatus } from "@/features/note/model/types";
 import { noteAncestorsAtom, noteDetailAtom } from "@/store/atom/noteAtom";
 import { Switch } from "antd";
 import { useAtomValue } from "jotai";
-import { CheckCircle2, LoaderCircle } from "lucide-react";
+import { AlertCircle, CheckCircle2, LoaderCircle } from "lucide-react";
 import { useMemo } from "react";
 import "react-markdown-editor-lite/lib/index.css";
 import { useParams } from "react-router-dom";
@@ -46,15 +46,26 @@ function SaveIndicator({ status }: { status: NoteSaveStatus }) {
   if (status === "idle") return null;
 
   const isSaving = status === "saving";
+  const isError = status === "error";
+  const isConflict = status === "conflict";
+  const label = isSaving
+    ? "Saving..."
+    : isConflict
+      ? "Remote version changed"
+      : isError
+        ? "Save failed"
+        : "Saved";
 
   return (
     <div className="flex items-center gap-2 text-xs text-neutral-500">
       {isSaving ? (
         <LoaderCircle className="size-4 animate-spin text-neutral-500" />
+      ) : isError || isConflict ? (
+        <AlertCircle className="size-4 text-amber-500" />
       ) : (
         <CheckCircle2 className="size-4 text-emerald-500" />
       )}
-      <span>{isSaving ? "保存中..." : "已自动保存"}</span>
+      <span>{label}</span>
     </div>
   );
 }
@@ -64,6 +75,7 @@ export default function Note() {
   const { data, isLoading } = useAtomValue(noteDetailAtom(Id!));
   const { data: ancestors = [] } = useAtomValue(noteAncestorsAtom(Id!));
   const {
+    canApplyExternalContent,
     headerTitle,
     saveStatus,
     setContent,
@@ -82,11 +94,12 @@ export default function Note() {
     return (
       <TiptapEditor
         key={Id}
-        defaultValue={data.content}
+        canApplyExternalContent={canApplyExternalContent}
         onChange={setContent}
+        serverValue={data.content}
       />
     );
-  }, [Id, isLoading, data, setContent]);
+  }, [Id, canApplyExternalContent, isLoading, data, setContent]);
 
   if (!Id || isLoading || !data) return <NoteSkeleton />;
 
@@ -99,18 +112,10 @@ export default function Note() {
             current={{ _id: Id, title: headerTitle }}
           />
           <div className="flex shrink-0 items-center gap-3">
-            <label
-              className="flex items-center gap-2 text-xs text-neutral-500"
-              title={
-                ["done", "archived"].includes(data.status)
-                  ? "Toggle published state"
-                  : "Only done or archived notes can be published"
-              }
-            >
+            <label className="flex items-center gap-2 text-xs text-neutral-500">
               <span>Published</span>
               <Switch
                 checked={data.published}
-                disabled={!["done", "archived"].includes(data.status)}
                 size="small"
                 onChange={(published) => {
                   updateProperties({ published });
@@ -135,9 +140,7 @@ export default function Note() {
           <NoteMeta
             className="mt-4 -z-10"
             data={data}
-            onUpdate={(newMeta) => {
-              updateProperties({ meta: newMeta });
-            }}
+            onUpdate={updateProperties}
           />
           {Editor}
         </div>

@@ -12,7 +12,6 @@ import {
   patchNoteAcrossCaches,
   patchNoteDetailCache,
   rollbackNoteListSnapshot,
-  rollbackOptimisticNoteContentUpdate,
   rollbackOptimisticNotePropertiesUpdate,
 } from "@/features/note/model/cache";
 import { noteKeys, noteListQueryKey } from "@/features/note/model/keys";
@@ -20,6 +19,7 @@ import type {
   CreateNoteVariables,
   DeleteNoteVariables,
   PatchNoteCacheVariables,
+  UpdateNoteContentVariables,
   UpdateNotePropertiesVariables,
 } from "@/features/note/model/types";
 import {
@@ -240,13 +240,21 @@ export const publishNoteAtom = atomWithMutation(() => ({
 }));
 
 export const updateNoteContentAtom = atomWithMutation(() => ({
-  mutationFn: ({ noteId, content }: { noteId: string; content: string }) =>
-    updateNoteContent(noteId, content),
-  onMutate: async ({ noteId, content }) => {
-    return applyOptimisticNoteContentUpdate(queryClient, noteId, content);
+  mutationFn: ({
+    baseContentRevision,
+    clientMutationId,
+    content,
+    noteId,
+  }: UpdateNoteContentVariables) =>
+    updateNoteContent(noteId, {
+      baseContentRevision,
+      clientMutationId,
+      content,
+    }),
+  onMutate: async ({ noteId }) => {
+    return applyOptimisticNoteContentUpdate(queryClient, noteId);
   },
-  onError: (error, variables, context) => {
-    rollbackOptimisticNoteContentUpdate(queryClient, variables.noteId, context);
+  onError: (error) => {
     console.error("update Note content error", error);
   },
   onSuccess: (response, variables) => {

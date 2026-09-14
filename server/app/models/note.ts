@@ -35,6 +35,10 @@ const noteSchema = new Schema(
       type: String,
       default: "",
     },
+    contentRevision: {
+      type: Number,
+      default: 0,
+    },
     author: {
       type: String,
       default: null,

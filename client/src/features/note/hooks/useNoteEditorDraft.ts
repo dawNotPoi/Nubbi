@@ -1,13 +1,13 @@
 import type { NoteWithContent } from "@/api/note";
 import {
   patchNotePropertiesCacheAtom,
-  updateNoteContentAtom,
   updateNotePropertiesAtom,
 } from "@/store/atom/noteAtom";
 import { debounceWithControls } from "@/utils/common";
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { NotePropertiesInput, NoteSaveStatus } from "../model/types";
+import { useNoteContentDraft } from "./useNoteContentDraft";
 
 type UseNoteEditorDraftOptions = {
   data?: NoteWithContent;
@@ -20,39 +20,29 @@ export const useNoteEditorDraft = ({
   defaultTitle,
   noteId,
 }: UseNoteEditorDraftOptions) => {
-  const [contentMutation] = useAtom(updateNoteContentAtom);
   const propertiesMutation = useAtomValue(updateNotePropertiesAtom);
   const patchNotePropertiesCache = useSetAtom(patchNotePropertiesCacheAtom);
   const [title, setTitleState] = useState("");
   const [titleDebouncing, setTitleDebouncing] = useState(false);
-  const [contentDebouncing, setContentDebouncing] = useState(false);
   const [hasAutoSaved, setHasAutoSaved] = useState(false);
   const activeNoteIdRef = useRef<string>();
-  const updateContentRef = useRef(contentMutation.mutate);
   const updatePropertiesRef = useRef(propertiesMutation.mutate);
+  const {
+    canApplyExternalContent,
+    contentConflict,
+    contentDebouncing,
+    contentError,
+    contentSaving,
+    flushContent,
+    hasContentActivity,
+    setContent,
+  } = useNoteContentDraft({ data, noteId });
 
-  const { isPending: isContentSaving } = contentMutation;
   const { isPending: isPropertiesSaving } = propertiesMutation;
-
-  useEffect(() => {
-    updateContentRef.current = contentMutation.mutate;
-  }, [contentMutation.mutate]);
 
   useEffect(() => {
     updatePropertiesRef.current = propertiesMutation.mutate;
   }, [propertiesMutation.mutate]);
-
-  const debouncedUpdateContent = useMemo(
-    () =>
-      debounceWithControls((nextNoteId: string, nextContent: string) => {
-        setContentDebouncing(false);
-        updateContentRef.current({
-          content: nextContent,
-          noteId: nextNoteId,
-        });
-      }, 800),
-    [],
-  );
 
   const debouncedUpdateTitle = useMemo(
     () =>
@@ -77,9 +67,9 @@ export const useNoteEditorDraft = ({
   useEffect(() => {
     return () => {
       debouncedUpdateTitle.flush();
-      debouncedUpdateContent.flush();
+      flushContent();
     };
-  }, [debouncedUpdateContent, debouncedUpdateTitle, noteId]);
+  }, [debouncedUpdateTitle, flushContent, noteId]);
 
   useEffect(() => {
     const switchedNote = activeNoteIdRef.current !== noteId;
@@ -88,7 +78,6 @@ export const useNoteEditorDraft = ({
       activeNoteIdRef.current = noteId;
       setTitleState(data?.title ?? "");
       setTitleDebouncing(false);
-      setContentDebouncing(false);
       setHasAutoSaved(false);
       return;
     }
@@ -99,17 +88,19 @@ export const useNoteEditorDraft = ({
   }, [data?.title, isPropertiesSaving, noteId, titleDebouncing]);
 
   useEffect(() => {
-    if (!hasAutoSaved && (titleDebouncing || contentDebouncing)) {
+    if (!hasAutoSaved && (titleDebouncing || hasContentActivity)) {
       setHasAutoSaved(true);
     }
-  }, [contentDebouncing, hasAutoSaved, titleDebouncing]);
+  }, [hasAutoSaved, hasContentActivity, titleDebouncing]);
 
   const saveStatus: NoteSaveStatus = useMemo(() => {
     if (!hasAutoSaved) return "idle";
+    if (contentConflict) return "conflict";
+    if (contentError) return "error";
     if (
       titleDebouncing ||
       contentDebouncing ||
-      isContentSaving ||
+      contentSaving ||
       isPropertiesSaving
     ) {
       return "saving";
@@ -117,8 +108,10 @@ export const useNoteEditorDraft = ({
     return "saved";
   }, [
     contentDebouncing,
+    contentConflict,
+    contentError,
+    contentSaving,
     hasAutoSaved,
-    isContentSaving,
     isPropertiesSaving,
     titleDebouncing,
   ]);
@@ -146,16 +139,6 @@ export const useNoteEditorDraft = ({
     [data?.parentId, debouncedUpdateTitle, patchNotePropertiesCache, noteId],
   );
 
-  const setContent = useCallback(
-    (nextContent: string) => {
-      if (!noteId) return;
-
-      setContentDebouncing(true);
-      debouncedUpdateContent(noteId, nextContent);
-    },
-    [debouncedUpdateContent, noteId],
-  );
-
   const updateProperties = useCallback(
     (properties: NotePropertiesInput) => {
       if (!noteId) return;
@@ -171,6 +154,7 @@ export const useNoteEditorDraft = ({
 
   return {
     headerTitle,
+    canApplyExternalContent,
     saveStatus,
     setContent,
     setTitle,

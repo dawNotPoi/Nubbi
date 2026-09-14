@@ -15,6 +15,7 @@ export interface MetaEntry {
 export interface Note {
   _id: string;
   title: string;
+  contentRevision: number;
   parentId?: string | null;
   hasChildren: boolean;
   source: NoteSource;
@@ -44,6 +45,21 @@ export interface NotePathItem {
 export interface NoteWithContent extends Note {
   content?: string;
 }
+
+export type UpdateNoteContentInput = {
+  baseContentRevision?: number;
+  clientMutationId?: string;
+  content: string;
+};
+
+export type UpdateNoteContentResult = {
+  accepted: boolean;
+  clientMutationId?: string;
+  conflict?: {
+    serverContentRevision: number;
+  };
+  note?: NoteWithContent | null;
+};
 
 export type UpdateNotePropertiesInput = {
   title?: string;
@@ -88,6 +104,7 @@ export const newNote = (
   tags: [],
   cover: "",
   content: "",
+  contentRevision: 0,
   meta: [],
   deletedAt: null,
   expiresAt: null,
@@ -130,10 +147,13 @@ export const getDirectChildren = async (parentId: string) => {
   return Get<Note[]>("note/children", { parentId });
 };
 
-export async function updateNoteContent(noteId: string, content: string) {
-  const response = await request<NoteWithContent>(
+export async function updateNoteContent(
+  noteId: string,
+  input: UpdateNoteContentInput,
+) {
+  const response = await request<UpdateNoteContentResult>(
     "note/content",
-    { noteId, content },
+    { noteId, ...input },
     "put",
   );
 

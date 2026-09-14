@@ -1,4 +1,10 @@
-import { recordToMetaEntries, type Note, type NotePathItem, type NoteWithContent } from "@/api/note";
+import {
+  recordToMetaEntries,
+  type Note,
+  type NotePathItem,
+  type NoteWithContent,
+  type UpdateNoteContentResult,
+} from "@/api/note";
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
 import {
   canResolveNoteListScope,
@@ -307,7 +313,6 @@ export const patchNoteAcrossCaches = (
 export const applyOptimisticNoteContentUpdate = async (
   queryClient: QueryClient,
   noteId: string,
-  content: string,
 ): Promise<NoteContentSnapshot> => {
   const detailQueryKey = noteKeys.detail(noteId);
   const recentNoteQueryKey = noteKeys.recent();
@@ -322,7 +327,7 @@ export const applyOptimisticNoteContentUpdate = async (
   const currentStatus = previousDetail?.status;
   const statusPatch = currentStatus === "inbox" ? { status: "active" as const } : {};
 
-  patchNoteDetailCache(queryClient, noteId, { content, updatedAt, ...statusPatch });
+  patchNoteDetailCache(queryClient, noteId, { updatedAt, ...statusPatch });
   patchRecentNotesCache(queryClient, noteId, { updatedAt, ...statusPatch });
 
   return { previousDetail, previousRecentNotes };
@@ -346,10 +351,10 @@ export const rollbackOptimisticNoteContentUpdate = (
 export const applySuccessfulNoteContentUpdate = (
   queryClient: QueryClient,
   noteId: string,
-  note?: NoteWithContent,
+  result?: UpdateNoteContentResult,
 ) => {
-  if (note) {
-    patchNoteAcrossCaches(queryClient, noteId, note);
+  if (result?.note) {
+    patchNoteAcrossCaches(queryClient, noteId, result.note);
   }
 
   queryClient.invalidateQueries({ queryKey: noteKeys.recent() });

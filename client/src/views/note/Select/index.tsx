@@ -22,12 +22,18 @@ const PRESET_TAG_STYLES = [
   "bg-lime-100 text-lime-700",
 ];
 
-const CREATED_TAG_STYLE = "bg-sky-100 text-sky-700";
+const getTagStyle = (value: string) => {
+  let hash = 0;
+  for (const char of value) {
+    hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  }
+  return PRESET_TAG_STYLES[hash % PRESET_TAG_STYLES.length];
+};
 
-const createOption = (value: string, index: number): SelectOption => ({
+const createOption = (value: string): SelectOption => ({
   value,
   label: value,
-  className: PRESET_TAG_STYLES[index % PRESET_TAG_STYLES.length],
+  className: getTagStyle(value),
 });
 
 const normalizeValues = (
@@ -49,7 +55,7 @@ const mergeDisplayOptions = (
       map.set(item, {
         value: item,
         label: item,
-        className: CREATED_TAG_STYLE,
+        className: getTagStyle(item),
       });
     }
   });
@@ -97,6 +103,7 @@ export function Select({
   options = [],
   placeholder = "Empty",
   creatable = false,
+  onDeleteOption,
 }: {
   className?: string;
   value?: string | string[];
@@ -105,6 +112,7 @@ export function Select({
   options?: string[];
   placeholder?: string;
   creatable?: boolean;
+  onDeleteOption?: (value: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -130,7 +138,7 @@ export function Select({
   );
 
   const defaultOptions = useMemo(
-    () => options.map((item, index) => createOption(item, index)),
+    () => options.map((item) => createOption(item)),
     [options],
   );
 
@@ -214,7 +222,7 @@ export function Select({
           ) ?? {
             value: item,
             label: item,
-            className: CREATED_TAG_STYLE,
+            className: getTagStyle(item),
           };
           return (
             <OptionTag
@@ -290,7 +298,7 @@ export function Select({
             ) ?? {
               value: item,
               label: item,
-              className: CREATED_TAG_STYLE,
+              className: getTagStyle(item),
             };
             return (
               <OptionTag
@@ -347,13 +355,26 @@ export function Select({
                     setHighlightedIndex(index);
                   }}
                   className={clsx(
-                    "flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm text-stone-700 transition",
+                    "group flex w-full items-center justify-between gap-2 rounded-lg px-2 py-2 text-left text-sm text-stone-700 transition",
                     highlightedIndex === index
                       ? "bg-stone-100"
                       : "hover:bg-stone-50",
                   )}
                 >
                   <OptionTag option={option} />
+                  {onDeleteOption ? (
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onDeleteOption(option.value);
+                      }}
+                      className="flex size-5 shrink-0 items-center justify-center rounded-sm text-stone-400 opacity-0 hover:bg-black/5 hover:text-stone-600 group-hover:opacity-100"
+                    >
+                      <X className="size-3.5" />
+                    </span>
+                  ) : null}
                 </button>
               );
             })

@@ -16,6 +16,7 @@ import imageRouter from "./routes/image";
 import meetingRouter from "./routes/meeting";
 import noteRouter from "./routes/note";
 import summryRouter from "./routes/summary";
+import tagRouter from "./routes/tag";
 
 import P2PHandler from "./socket/P2PHandler";
 import userHandlers from "./socket/userHandler";
@@ -78,6 +79,7 @@ app.get("/", (req, res) => {
 //接口路由处理
 app.use("/auth", authRouter);
 app.use("/note", noteRouter);
+app.use("/tag", tagRouter);
 app.use("/download", express.static("static"));
 app.use("/file", fileRouter);
 app.use("/summary", summryRouter);

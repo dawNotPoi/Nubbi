@@ -22,6 +22,7 @@ import {
   updateNoteContent,
   updateNoteMeta,
 } from "../controller/note/update";
+import { syncUserTags } from "../controller/tag";
 import { asyncHandler } from "../middleware/common";
 import { validate, validateQuery } from "../middleware/validator";
 import { successResponse } from "./utils";
@@ -78,6 +79,7 @@ router.post(
     }
 
     const result = await createNote({ ...req.body, userId: id });
+    await syncUserTags(id, req.body.tags);
     successResponse(res, result, "create success");
   }),
 );
@@ -89,14 +91,19 @@ router.put(
     z.object({
       noteId: objectIdSchema,
       content: z.string(),
+      baseContentRevision: z.number().int().nonnegative().optional(),
+      clientMutationId: z.string().optional(),
     }),
   ),
   asyncHandler(async (req, res) => {
-    const { noteId, content } = req.body;
+    const { baseContentRevision, clientMutationId, noteId, content } = req.body;
     const user = await getUser(req);
     await assertCanAccessNote(user.id, noteId);
 
-    const result = await updateNoteContent(noteId, content);
+    const result = await updateNoteContent(noteId, content, {
+      baseContentRevision,
+      clientMutationId,
+    });
     successResponse(res, result, "content updated");
   }),
 );
@@ -141,6 +148,7 @@ router.put(
     }
 
     const result = await updateNoteMeta(noteId, properties);
+    await syncUserTags(user.id, properties.tags);
     successResponse(res, result, "properties updated");
   }),
 );

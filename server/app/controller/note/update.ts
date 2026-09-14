@@ -116,17 +116,67 @@ export const updateNote = async (req) => {
   return await updateNoteMeta(req._id, req.config);
 };
 
-export const updateNoteContent = async (noteId: string, content: string) => {
+type UpdateNoteContentOptions = {
+  baseContentRevision?: number;
+  clientMutationId?: string;
+};
+
+export const updateNoteContent = async (
+  noteId: string,
+  content: string,
+  options: UpdateNoteContentOptions = {},
+) => {
+  const hasBaseRevision = typeof options.baseContentRevision === "number";
   const existingNote = await note
     .findOne({ _id: noteId, deletedAt: null })
-    .select("status")
+    .select("contentRevision status")
     .lean();
 
-  if (!existingNote) return null;
+  if (!existingNote) {
+    return {
+      accepted: false,
+      clientMutationId: options.clientMutationId,
+      conflict: undefined,
+      note: null,
+    };
+  }
 
-  return await note.findByIdAndUpdate(
-    noteId,
+  const serverContentRevision = existingNote.contentRevision ?? 0;
+
+  if (
+    hasBaseRevision &&
+    options.baseContentRevision !== serverContentRevision
+  ) {
+    const currentNote = await note.findById(noteId);
+
+    return {
+      accepted: false,
+      clientMutationId: options.clientMutationId,
+      conflict: { serverContentRevision },
+      note: currentNote,
+    };
+  }
+
+  const updateFilter: Record<string, unknown> = {
+    _id: noteId,
+    deletedAt: null,
+  };
+
+  if (hasBaseRevision) {
+    if (options.baseContentRevision === 0) {
+      updateFilter.$or = [
+        { contentRevision: 0 },
+        { contentRevision: { $exists: false } },
+      ];
+    } else {
+      updateFilter.contentRevision = options.baseContentRevision;
+    }
+  }
+
+  const updatedNote = await note.findOneAndUpdate(
+    updateFilter,
     {
+      $inc: { contentRevision: 1 },
       $set: {
         content,
         ...(existingNote.status === "inbox" ? { status: "active" } : {}),
@@ -134,6 +184,25 @@ export const updateNoteContent = async (noteId: string, content: string) => {
     },
     { new: true },
   );
+
+  if (!updatedNote) {
+    const currentNote = await note.findOne({ _id: noteId, deletedAt: null });
+
+    return {
+      accepted: false,
+      clientMutationId: options.clientMutationId,
+      conflict: {
+        serverContentRevision: currentNote?.contentRevision ?? 0,
+      },
+      note: currentNote,
+    };
+  }
+
+  return {
+    accepted: true,
+    clientMutationId: options.clientMutationId,
+    note: updatedNote,
+  };
 };
 
 export const updateNoteMeta = async (
