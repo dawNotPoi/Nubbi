@@ -22,32 +22,6 @@ type AuthUser = {
   image?: string | null;
 };
 
-const waitForSessionRetry = (duration: number) =>
-  new Promise((resolve) => window.setTimeout(resolve, duration));
-
-const getConfirmedSessionUser = async () => {
-  let lastErrorMessage: string | undefined;
-
-  for (const delay of [0, 120, 300, 600]) {
-    if (delay > 0) {
-      await waitForSessionRetry(delay);
-    }
-
-    const currentSession = await getCurrentSession();
-    const user = currentSession.session?.data?.user;
-
-    if (currentSession.success && user) {
-      return { user };
-    }
-
-    lastErrorMessage = currentSession.error?.message;
-  }
-
-  return {
-    errorMessage: lastErrorMessage || "登录状态确认失败，请重新登录",
-  };
-};
-
 export const useAuth = () => {
   const { data: session, refetch: refetchSession, isPending } = useSession();
   const { accessToken, initialized } = useAuthRuntime();
@@ -107,25 +81,13 @@ export const useAuth = () => {
       setError(null);
       const result = await signInWithEmail(email, password);
       if (result.success) {
-        await refetchSession();
-
-        const confirmedSession = await getConfirmedSessionUser();
-
-        if (confirmedSession.user) {
-          setRecoveredUser(confirmedSession.user);
-          await refetchSession();
-        } else {
-          clearAuthState();
-          const message = confirmedSession.errorMessage;
-          setError(message);
-          setLoading(false);
-          return {
-            success: false,
-            error: {
-              message,
-            },
-          };
+        const immediateUser = (
+          result.data as { data?: { user?: AuthUser } } | undefined
+        )?.data?.user;
+        if (immediateUser) {
+          setRecoveredUser(immediateUser);
         }
+        void refetchSession();
       } else {
         setError(result.error?.message || "登录失败");
       }

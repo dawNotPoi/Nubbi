@@ -1,7 +1,6 @@
 import SideBar from "@/component/SideBar";
 import { useAuth } from "@/hooks/useAuth";
 import { resolveReturnTo, routes } from "@/utils/routes";
-import { Spin } from "antd";
 import { PropsWithChildren } from "react";
 import {
   BrowserRouter,
@@ -34,10 +33,27 @@ const UserLayout = () => {
 };
 
 const AuthRouteFallback = () => (
-  <div className="flex min-h-screen items-center justify-center bg-background">
-    <div className="flex flex-col items-center gap-3 text-sm text-[#6b7280]">
-      <Spin />
-      <span>正在同步登录状态...</span>
+  <div className="flex h-screen overflow-hidden">
+    <div className="w-52 flex-shrink-0 bg-sidebar px-3 py-2 animate-pulse">
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="size-7 rounded bg-stone-200" />
+          <div className="h-4 w-24 rounded bg-stone-200" />
+        </div>
+        <div className="h-7 w-full rounded-md bg-stone-200" />
+        <div className="h-7 w-4/5 rounded-md bg-stone-200" />
+        <div className="h-7 w-full rounded-md bg-stone-200" />
+        <div className="h-7 w-3/5 rounded-md bg-stone-200" />
+      </div>
+    </div>
+    <div className="flex-1 bg-background px-8 py-6 animate-pulse space-y-4">
+      <div className="h-7 w-36 rounded-md bg-stone-100" />
+      <div className="h-4 w-2/3 rounded bg-stone-100" />
+      <div className="h-4 w-1/2 rounded bg-stone-100" />
+      <div className="mt-8 grid grid-cols-2 gap-4">
+        <div className="h-28 rounded-xl bg-stone-100" />
+        <div className="h-28 rounded-xl bg-stone-100" />
+      </div>
     </div>
   </div>
 );
