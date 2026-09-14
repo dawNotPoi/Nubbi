@@ -1,5 +1,8 @@
 # 模块索引
 
+> 开发前读：`rules/core.md` → `skills/code.md` → `skills/style.md` → `docs/<module>/PRD.md`
+> 审查时读：`agent.md`（根目录）
+
 Agent 通过此文件判断代码变更属于哪个模块，决定需要更新哪个 PRD。
 
 ## 匹配规则
