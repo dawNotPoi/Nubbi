@@ -74,7 +74,7 @@ function OptionTag({
   return (
     <span
       className={clsx(
-        "inline-flex max-w-full items-center gap-1 rounded-md px-2 py-1 text-[12px] font-medium",
+        "inline-flex max-w-full items-center gap-1 rounded-md px-2 py-1 text-base font-medium",
         option.className,
       )}
     >
@@ -120,6 +120,7 @@ export function Select({
   const [query, setQuery] = useState("");
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const optionsListRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) {
@@ -200,6 +201,14 @@ export function Select({
       Math.min(Math.max(current, 0), keyboardItemsCount - 1),
     );
   }, [createValue, creatable, filteredOptions.length, keyboardItemsCount, open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const highlightedElement = optionsListRef.current?.querySelector(
+      "[data-highlighted='true']",
+    );
+    highlightedElement?.scrollIntoView({ block: "nearest" });
+  }, [highlightedIndex, open]);
 
   const handleCreate = () => {
     if (!createValue) return;
@@ -331,8 +340,12 @@ export function Select({
       open={open}
       onClickOutside={() => setOpen(false)}
       offset={8}
-      matchTriggerWidth
       className="border-none bg-transparent shadow-none"
+      style={{
+        width: "min(320px, calc(100vw - 24px))",
+        minWidth: 220,
+        maxHeight: "var(--popover-available-height)",
+      }}
       trigger={
         <div
           onClick={() => setOpen(true)}
@@ -351,9 +364,9 @@ export function Select({
         </div>
       }
     >
-      <div className="w-full rounded-xl border border-stone-200 bg-white p-2 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+      <div className="flex max-h-[var(--popover-available-height)] w-full flex-col rounded-xl border border-stone-200 bg-white p-2 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
         {mode === "multiple" && selectedValues.length > 0 ? (
-          <div className="mb-2 flex justify-end">
+          <div className="mb-2 flex shrink-0 justify-end">
             <button
               type="button"
               onClick={() => {
@@ -366,13 +379,17 @@ export function Select({
             </button>
           </div>
         ) : null}
-        <div className="space-y-1">
+        <div
+          ref={optionsListRef}
+          className="min-h-0 flex-1 space-y-1 overflow-y-auto pr-1"
+        >
           {filteredOptions.length ? (
             filteredOptions.map((option, index) => {
               return (
                 <button
                   key={option.value}
                   type="button"
+                  data-highlighted={highlightedIndex === index}
                   onClick={() => toggleValue(option.value)}
                   onMouseEnter={() => {
                     setHighlightedIndex(index);
@@ -409,10 +426,11 @@ export function Select({
         </div>
 
         {creatable && createValue ? (
-          <div className="mt-3 border-t border-stone-100 pt-3">
-            <button
-              type="button"
-              onClick={handleCreate}
+          <div className="mt-3 shrink-0 border-t border-stone-100 pt-3">
+              <button
+                type="button"
+                data-highlighted={highlightedIndex === filteredOptions.length}
+                onClick={handleCreate}
               onMouseEnter={() => {
                 setHighlightedIndex(filteredOptions.length);
               }}

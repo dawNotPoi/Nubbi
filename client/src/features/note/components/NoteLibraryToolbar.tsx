@@ -29,7 +29,6 @@ const statusLabels: Record<"all" | NoteStatus, string> = {
   all: "All statuses",
   inbox: "Inbox",
   active: "Active",
-  done: "Done",
   archived: "Archived",
 };
 
@@ -79,7 +78,7 @@ export function NoteLibraryToolbar({
     onClick: () => onSortModeChange(mode),
   }));
   const statusItems: MenuProps["items"] = (
-    ["all", "inbox", "active", "done", "archived"] as Array<"all" | NoteStatus>
+    ["all", "inbox", "active", "archived"] as Array<"all" | NoteStatus>
   ).map((status) => ({
     key: status,
     label: statusLabels[status],

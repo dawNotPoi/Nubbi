@@ -2,23 +2,8 @@ import type { NoteWithContent } from "@/api/note";
 import ImgToGitupload from "@/component/upload/ImgToGitupload";
 import { Button, Form, Input, Modal, Tabs } from "antd";
 import clsx from "clsx";
-import { ImagePlus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { NOTE_TITLE_ACTION_CLASS } from "./noteActionStyle";
-
-const imgs = [
-  "https://www.notion.so/images/page-cover/webb1.jpg",
-  "https://www.notion.so/images/page-cover/webb2.jpg",
-  "https://www.notion.so/images/page-cover/webb3.jpg",
-  "https://www.notion.so/images/page-cover/webb4.jpg",
-  "https://www.notion.so/images/page-cover/nasa_the_blue_marble.jpg",
-  "https://www.notion.so/images/page-cover/nasa_eva_during_skylab_3.jpg",
-  "https://www.notion.so/images/page-cover/woodcuts_1.jpg",
-];
-
-const DEFAULT_NOTE_COVER = imgs[0];
-
-type NoteCoverMode = "cover" | "trigger";
+import { NOTE_COVER_OPTIONS } from "./noteDefaults";
 
 type NoteCoverData = Pick<NoteWithContent, "cover">;
 
@@ -29,7 +14,8 @@ type NoteCoverUpdate = {
 type NoteCoverProps = {
   data: NoteCoverData;
   className?: string;
-  mode?: NoteCoverMode;
+  editorOpen: boolean;
+  onEditorOpenChange: (open: boolean) => void;
   onUpdate: (newData: NoteCoverUpdate) => void;
 };
 
@@ -39,11 +25,11 @@ type CoverLinkFormValues = {
 
 export default function NoteCover({
   data,
+  editorOpen,
   className,
-  mode = "cover",
+  onEditorOpenChange,
   onUpdate,
 }: NoteCoverProps) {
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [cover, setCover] = useState(data.cover);
 
   useEffect(() => {
@@ -51,20 +37,20 @@ export default function NoteCover({
   }, [data.cover]);
 
   const handleCancel = () => {
-    setIsModalOpen(false);
+    onEditorOpenChange(false);
   };
 
-  const updateCover = useCallback((nextCover: NoteCoverData["cover"]) => {
-    setCover(nextCover);
-    onUpdate({ cover: nextCover });
-  }, [onUpdate]);
+  const updateCover = useCallback(
+    (nextCover: NoteCoverData["cover"]) => {
+      setCover(nextCover);
+      onUpdate({ cover: nextCover });
+    },
+    [onUpdate],
+  );
 
   const showModal = useCallback(() => {
-    if (!cover) {
-      updateCover(DEFAULT_NOTE_COVER);
-    }
-    setIsModalOpen(true);
-  }, [cover, updateCover]);
+    onEditorOpenChange(true);
+  }, [onEditorOpenChange]);
 
   const tabs = useMemo(() => {
     return [
@@ -84,7 +70,7 @@ export default function NoteCover({
                 scrollBehavior: "auto",
               }}
             >
-              {imgs.map((item, index) => {
+              {NOTE_COVER_OPTIONS.map((item, index) => {
                 return (
                   <div
                     key={index}
@@ -173,7 +159,7 @@ export default function NoteCover({
       footer={null}
       maskClosable
       onCancel={handleCancel}
-      open={isModalOpen}
+      open={editorOpen}
       width={720}
     >
       <div className="relative pt-7">
@@ -182,7 +168,7 @@ export default function NoteCover({
             className="absolute right-0 top-0 rounded px-2 py-1 text-sm text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700"
             onClick={() => {
               updateCover("");
-              setIsModalOpen(false);
+              onEditorOpenChange(false);
             }}
             type="button"
           >
@@ -196,50 +182,30 @@ export default function NoteCover({
 
   return (
     <>
-      {mode === "trigger" ? (
-        <>
-          <button
-            className={clsx(
-              NOTE_TITLE_ACTION_CLASS,
-              className,
-            )}
-            onClick={showModal}
-            type="button"
-          >
-            <ImagePlus className="size-4" />
-            <span>添加封面</span>
-          </button>
-          {coverModal}
-        </>
+      {cover ? (
+        <div
+          className={clsx(
+            "group/cover relative  h-[30vh] min-h-[180px] max-h-[280px] w-full overflow-hidden",
+            className,
+          )}
+        >
+          <div className="absolute right-3 top-3 z-10 flex gap-2 opacity-0 transition-opacity group-hover/cover:opacity-100">
+            <button
+              className="py-1 rounded-[3px] border border-neutral-200 bg-white/90 px-2.5 text-[12px] font-medium text-[#37352f] shadow-[0_1px_3px_rgba(15,15,15,0.12)] backdrop-blur-sm transition hover:bg-white hover:shadow-[0_2px_6px_rgba(15,15,15,0.16)]"
+              onClick={showModal}
+              type="button"
+            >
+              编辑
+            </button>
+          </div>
+          <img
+            className="h-full w-full object-cover"
+            src={cover || ""}
+            alt=""
+          />
+        </div>
       ) : null}
-      {mode === "cover" ? (
-      <div
-        className={clsx(
-          "relative",
-          cover ? "group/cover mb-8" : "hidden",
-          className,
-        )}
-      >
-        {cover ? (
-          <>
-            <div className="absolute right-3 top-3 z-10 flex gap-2 opacity-0 transition-opacity group-hover/cover:opacity-100">
-              <Button size="small" onClick={showModal}>
-                编辑
-              </Button>
-              <Button onClick={() => updateCover("")} size="small">
-                移除
-              </Button>
-            </div>
-            <img
-              style={{ width: "100%", objectFit: "cover", aspectRatio: "5/1" }}
-              src={cover || ""}
-              alt=""
-            />
-            {coverModal}
-          </>
-        ) : null}
-      </div>
-      ) : null}
+      {coverModal}
     </>
   );
 }

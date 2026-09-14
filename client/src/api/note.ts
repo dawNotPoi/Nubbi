@@ -2,7 +2,7 @@ import { ObjectId } from "bson";
 import request, { Get } from "./request";
 
 export type NoteSource = "user" | "agent";
-export type NoteStatus = "inbox" | "active" | "done" | "archived";
+export type NoteStatus = "inbox" | "active" | "archived";
 
 type ApiResponse<T> = Awaited<ReturnType<typeof request<T>>>;
 

@@ -60,7 +60,7 @@ const noteSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["inbox", "active", "done", "archived"],
+      enum: ["inbox", "active", "archived"],
       default: "inbox",
     },
     published: {

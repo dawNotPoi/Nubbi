@@ -160,11 +160,6 @@ export const getNoteStats = async (userId: string) => {
     status: "active",
     ...ACTIVE_NOTE_FILTER,
   });
-  const done = await note.countDocuments({
-    userId,
-    status: "done",
-    ...ACTIVE_NOTE_FILTER,
-  });
   const archived = await note.countDocuments({
     userId,
     status: "archived",
@@ -176,7 +171,6 @@ export const getNoteStats = async (userId: string) => {
     published,
     inbox,
     active,
-    done,
     archived,
   };
 };

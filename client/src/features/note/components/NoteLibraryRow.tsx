@@ -204,7 +204,6 @@ export function NoteLibraryRow({
             "rounded px-1.5 py-0.5 text-xs font-medium",
             note.status === "inbox" && "bg-amber-50 text-amber-700",
             note.status === "active" && "bg-blue-50 text-blue-700",
-            note.status === "done" && "bg-emerald-50 text-emerald-700",
             note.status === "archived" && "bg-neutral-100 text-neutral-600",
           )}
         >

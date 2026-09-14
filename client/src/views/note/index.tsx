@@ -10,16 +10,20 @@ import {
   CheckCircle2,
   Columns2,
   FilePenLine,
+  ImagePlus,
   LoaderCircle,
   PanelTop,
+  Tag,
 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import "react-markdown-editor-lite/lib/index.css";
 import { useParams } from "react-router-dom";
 import "./index.css";
 import NoteBreadcrumb from "./NoteBreadcrumb";
 import NoteCover from "./NoteCover";
+import { DEFAULT_NOTE_COVER, DEFAULT_NOTE_TAG } from "./noteDefaults";
 import NoteTags from "./NoteTags";
+import NoteTitleActionButton from "./NoteTitleActionButton";
 
 const DEFAULT_TITLE = "未命名文档";
 const NOTE_DISPLAY_MODE_KEY = "note-display-mode";
@@ -160,6 +164,11 @@ export default function Note() {
   const [displayMode, setDisplayMode] = useState<NoteDisplayMode>(
     getStoredNoteDisplayMode,
   );
+  const [coverEditorOpen, setCoverEditorOpen] = useState(false);
+
+  useEffect(() => {
+    setCoverEditorOpen(false);
+  }, [Id]);
 
   const switchDisplayMode = useCallback(() => {
     setDisplayMode((currentMode) => {
@@ -171,6 +180,17 @@ export default function Note() {
 
   const displayModeMeta = displayModeButtonMeta[displayMode];
   const DisplayModeIcon = displayModeMeta.Icon;
+
+  const handleAddCover = useCallback(() => {
+    if (!data?.cover) {
+      updateProperties({ cover: DEFAULT_NOTE_COVER });
+    }
+  }, [data?.cover, updateProperties]);
+
+  const handleAddTag = useCallback(() => {
+    if (!data || data.tags.length > 0) return;
+    updateProperties({ tags: [DEFAULT_NOTE_TAG] });
+  }, [data, updateProperties]);
 
   const editorContent = useMemo(() => {
     if (isLoading || !Id || !data) return null;
@@ -218,8 +238,8 @@ export default function Note() {
   if (!Id || isLoading || !data) return <NoteSkeleton />;
 
   return (
-    <div className="min-w-[800px]">
-      <Header className="mb-4">
+    <div className="flex h-full min-w-[800px] flex-col overflow-hidden">
+      <Header>
         <div className="flex items-center justify-between gap-4">
           <NoteBreadcrumb
             ancestors={ancestors}
@@ -249,43 +269,63 @@ export default function Note() {
           </div>
         </div>
       </Header>
-      <main className="mt-10 w-full items-center">
+      <main className="min-h-0 flex-1 overflow-y-auto bg-white pb-10">
+        <NoteCover
+          className="mb-2"
+          data={data}
+          editorOpen={coverEditorOpen}
+          onEditorOpenChange={setCoverEditorOpen}
+          onUpdate={updateProperties}
+        />
         <div
           className={`note-editor-shell mx-auto ${
             displayMode === "split" ? "note-editor-shell--wide" : ""
-          }`}
+          } ${data.cover ? "" : "pt-10"}`}
         >
-          <NoteCover data={data} mode="cover" onUpdate={updateProperties} />
-          <div className="group/title relative">
-            {(!data.cover || data.tags.length === 0) ? (
-              <div className="pointer-events-none absolute left-1 top-0 z-50 -translate-y-full pb-2 opacity-0 transition-opacity group-hover/title:opacity-100 group-focus-within/title:opacity-100">
-                <div className="pointer-events-auto flex items-center gap-2">
-                  {!data.cover ? (
-                    <NoteCover
-                      data={data}
-                      mode="trigger"
-                      onUpdate={updateProperties}
-                    />
-                  ) : null}
-                  {data.tags.length === 0 ? (
-                    <NoteTags
-                      data={data}
-                      mode="trigger"
-                      onUpdate={updateProperties}
-                    />
-                  ) : null}
+          <div>
+            <div
+              className={`group/title relative inline-grid max-w-full align-top ${
+                !data.cover || data.tags.length === 0 ? "pt-[30px]" : ""
+              }`}
+            >
+              {!data.cover || data.tags.length === 0 ? (
+                <div className="pointer-events-none absolute left-1 top-0 z-50 opacity-0 transition-opacity group-hover/title:opacity-100 group-focus-within/title:opacity-100">
+                  <div className="pointer-events-auto flex items-center gap-2">
+                    {!data.cover ? (
+                      <NoteTitleActionButton
+                        icon={<ImagePlus className="size-4" />}
+                        onClick={handleAddCover}
+                      >
+                        添加封面
+                      </NoteTitleActionButton>
+                    ) : null}
+                    {data.tags.length === 0 ? (
+                      <NoteTitleActionButton
+                        icon={<Tag className="size-4" />}
+                        onClick={handleAddTag}
+                      >
+                        添加标签
+                      </NoteTitleActionButton>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
-            ) : null}
-            <NoteTags data={data} mode="tags" onUpdate={updateProperties} />
-            <input
-              className="w-full px-2 text-5xl font-extrabold outline-none"
-              onChange={(event) => {
-                setTitle(event.target.value);
-              }}
-              placeholder={DEFAULT_TITLE}
-              value={title}
-            />
+              ) : null}
+              <span
+                aria-hidden="true"
+                className="invisible col-start-1 row-start-1 max-w-full overflow-hidden whitespace-pre px-2 text-5xl font-extrabold"
+              >
+                {title || DEFAULT_TITLE}
+              </span>
+              <input
+                className="col-start-1 row-start-1 min-w-0 bg-transparent px-2 text-5xl font-extrabold outline-none"
+                onChange={(event) => {
+                  setTitle(event.target.value);
+                }}
+                placeholder={DEFAULT_TITLE}
+                value={title}
+              />
+            </div>
+            <NoteTags data={data} onUpdate={updateProperties} />
           </div>
           {editorContent}
         </div>

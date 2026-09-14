@@ -32,7 +32,7 @@ const router = express.Router();
 const objectIdSchema = z
   .string()
   .regex(/^[a-fA-F0-9]{24}$/, "Invalid ObjectId");
-const noteStatusSchema = z.enum(["inbox", "active", "done", "archived"]);
+const noteStatusSchema = z.enum(["inbox", "active", "archived"]);
 const metaEntrySchema = z.object({
   key: z.string().min(1),
   value: z.any(),

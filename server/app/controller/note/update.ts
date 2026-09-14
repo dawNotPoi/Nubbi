@@ -31,43 +31,6 @@ const sanitizeProperties = (properties: NoteProperties) => {
   return nextProperties;
 };
 
-const assertPublishInvariant = async (
-  noteId: string,
-  nextProperties: NoteProperties,
-) => {
-  if (
-    !Object.prototype.hasOwnProperty.call(nextProperties, "published") &&
-    !Object.prototype.hasOwnProperty.call(nextProperties, "status")
-  ) {
-    return true;
-  }
-
-  const existingNote = await note
-    .findOne({ _id: noteId, deletedAt: null })
-    .select("status published")
-    .lean();
-
-  if (!existingNote) return false;
-
-  const nextStatus =
-    typeof nextProperties.status === "string"
-      ? nextProperties.status
-      : existingNote.status;
-  const nextPublished =
-    typeof nextProperties.published === "boolean"
-      ? nextProperties.published
-      : existingNote.published;
-
-  if (nextPublished && !["done", "archived"].includes(nextStatus)) {
-    throw Object.assign(
-      new Error("Only done or archived notes can be published"),
-      { status: 400 },
-    );
-  }
-
-  return true;
-};
-
 const recalculateHasChildren = async (
   parentId?: unknown,
   session?: ClientSession,
@@ -211,8 +174,6 @@ export const updateNoteMeta = async (
 ) => {
   const nextProperties = sanitizeProperties(properties);
 
-  if (!(await assertPublishInvariant(noteId, nextProperties))) return null;
-
   if (Object.prototype.hasOwnProperty.call(nextProperties, "parentId")) {
     const { parentId, ...propertiesToUpdate } = nextProperties;
     return await moveNote(
@@ -270,22 +231,8 @@ export const moveNote = async (
 };
 
 export const publishNote = async (noteId: string, published: boolean) => {
-  const existingNote = await note
-    .findOne({ _id: noteId, deletedAt: null })
-    .select("status")
-    .lean();
-
-  if (!existingNote) return null;
-
-  if (published && !["done", "archived"].includes(existingNote.status)) {
-    throw Object.assign(
-      new Error("Only done or archived notes can be published"),
-      { status: 400 },
-    );
-  }
-
-  return await note.findByIdAndUpdate(
-    noteId,
+  return await note.findOneAndUpdate(
+    { _id: noteId, deletedAt: null },
     { $set: { published } },
     { new: true },
   );
