@@ -1,4 +1,4 @@
-import type { MeetingComment } from "@/views/MeetingRoom/types";
+import type { MeetingComment } from "@/views/meeting-room/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Peer from "simple-peer";
 import { io, Socket } from "socket.io-client";

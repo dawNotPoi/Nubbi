@@ -7,7 +7,7 @@ import { useAtomValue } from "jotai";
 import { Calendars, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import CardWrapper from "../../views/Home/CardWrapper";
+import CardWrapper from "../../views/home/CardWrapper";
 
 const AddMeetingModal = ({
   open,

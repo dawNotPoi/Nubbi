@@ -68,6 +68,6 @@ export interface UploadTask {
 
 export const uploadTasksAtom = atom<string[]>([]);
 
-export const uploadTaskAtomFamily = atomFamily((_id: String) =>
+export const uploadTaskAtomFamily = atomFamily((_id: string) =>
   atom<UploadTask | null>(null),
 );

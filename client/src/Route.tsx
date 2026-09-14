@@ -9,15 +9,15 @@ import {
   Routes,
   useLocation,
 } from "react-router-dom";
-import Blog from "./views/Blog";
-import FileManager from "./views/FileManage";
-import Home from "./views/Home";
-import { LoginPage } from "./views/Login";
-import MeetingAccessGuard from "./views/MeetingRoom/MeetingAccessGuard";
-import Meetings from "./views/Mettings";
-import NoteAI from "./views/NoteAI";
+import Blog from "./views/blog";
+import FileManager from "./views/file-manage";
+import Home from "./views/home";
+import { LoginPage } from "./views/login";
+import MeetingAccessGuard from "./views/meeting-room/MeetingAccessGuard";
+import Meetings from "./views/meetings";
+import NoteAI from "./views/note-ai";
 import PostTable from "./views/PostTable";
-import { ResetPasswordPage } from "./views/ResetPassword";
+import { ResetPasswordPage } from "./views/reset-password";
 
 const UserLayout = () => {
   return (
@@ -74,7 +74,6 @@ export const RouteWrapper = () => {
             <Route path="table" element={<PostTable />} />
             <Route path="file/*" element={<FileManager />} />
             <Route path="note-ai" element={<NoteAI />} />
-            <Route path="blog/:Id" element={<Blog />} />
             <Route path="note/:Id" element={<Blog />} />
           </Route>
         </Routes>

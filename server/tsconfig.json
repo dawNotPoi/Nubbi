@@ -4,10 +4,9 @@
     "module": "ES2022",
     "strict": true,
     "noImplicitAny": false,
-    "moduleResolution": "node",
-    "baseUrl": ".",
+    "moduleResolution": "nodenext",
     "paths": {
-      "@/*": ["app/*"]
+      "@/*": ["./app/*"]
     },
     "esModuleInterop": true,
     "skipLibCheck": true,

@@ -4,8 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "client": "cd client&&npm run dev",
-    "server":"cd server&&npm run dev"
+    "client": "pnpm --dir client dev",
+    "server": "pnpm --dir server dev",
+    "preflight": "node scripts/preflight.mjs",
+    "preflight:no-docker": "node scripts/preflight.mjs --no-docker"
   },
   "keywords": [],
   "author": "",

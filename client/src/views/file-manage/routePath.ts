@@ -34,7 +34,9 @@ export const persistBreadcrumbNames = (crumbs: CrumbItem[]) => {
       BREADCRUMB_NAME_CACHE_KEY,
       JSON.stringify(Object.fromEntries(nameMap)),
     );
-  } catch {}
+  } catch {
+    // Session storage can be unavailable in private browsing or restricted contexts.
+  }
 };
 
 const normalizeCrumbName = (name: string) => name.trim() || "未命名文件夹";

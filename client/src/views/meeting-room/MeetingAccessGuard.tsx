@@ -5,7 +5,7 @@ import {
 } from "@/api/meeting";
 import { Modal } from "@/component/UI/Dialog";
 import { useAuth } from "@/hooks/useAuth";
-import VideoPage from "@/views/MeetingRoom";
+import VideoPage from "@/views/meeting-room";
 import { Button, Input, Spin, message } from "antd";
 import { Clock3, Lock, LogIn, Video } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";

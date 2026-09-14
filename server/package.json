@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon --exec tsx app/index.ts",
-    "start": "tsx app/index.ts"
+    "start": "tsx app/index.ts",
+    "typecheck": "tsc --noEmit"
   },
   "author": "",
   "license": "ISC",

@@ -139,7 +139,7 @@ export const Modal = ({
     if (!open) return;
     bringToTop(id);
     const prev = document.activeElement as HTMLElement | null;
-    contentRef.current?.focus;
+    contentRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (!isTop) return;
       if (e.key === "Escape") setOpen(false);

@@ -29,7 +29,7 @@ const suggestion: Omit<SuggestionOptions, "editor"> = {
         if (!props.clientRect) {
           return;
         }
-        // @ts-ignore
+        // @ts-expect-error tippy's body target overload does not infer Suggestion's virtual rect.
         popup = tippy("body", {
           arrow: false,
           getReferenceClientRect: props.clientRect, // 定位菜单的参考位置（光标位置）
@@ -72,8 +72,8 @@ const suggestion: Omit<SuggestionOptions, "editor"> = {
 
       onExit() {
         // 清理 tippy 实例和 React 组件
-        popup && popup[0].destroy();
-        component && component.destroy();
+        popup?.[0].destroy();
+        component?.destroy();
       },
     };
   },

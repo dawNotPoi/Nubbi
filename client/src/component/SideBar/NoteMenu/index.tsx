@@ -45,7 +45,7 @@ export default function NoteMenu() {
       {open &&
         (isLoading ? (
           <>loading</>
-        ) : rootPosts?.length! > 0 ? (
+        ) : rootPosts && rootPosts.length > 0 ? (
           rootPosts?.map((post) => <NoteItem key={post._id} post={post} />)
         ) : (
           <div className="ml-4 text-sm text-gray-400 py-1">
