@@ -52,17 +52,19 @@ export class RuntimeSession {
     this.active.set(input.conversationId, { runId, controller });
     try {
       // 准备阶段并发加载所有依赖，缩短用户等待首帧的时间。
-      const [existingConversation, modelConfig, skills, tools] = await Promise.all([
-        getConversation(input.conversationId),
-        readModelConfig(),
-        listSkills(),
-        discoverMcpTools(),
-      ]);
+      const [existingConversation, modelConfig, skills, tools] =
+        await Promise.all([
+          getConversation(input.conversationId),
+          readModelConfig(),
+          listSkills(),
+          discoverMcpTools(),
+        ]);
       if (!existingConversation) throw new Error("对话不存在");
       // 先把用户消息落库，后续助手消息才能与之正确串联。
       const currentMessage = await appendMessage(input.conversationId, "user", [
         { type: "text", text: input.content },
       ]);
+      //获取落库后的对话,首条消息部分字符会作为对话标题
       const conversation = await getConversation(input.conversationId);
       if (!conversation) throw new Error("对话不存在");
       const context = buildAgentContext(conversation);
@@ -80,13 +82,20 @@ export class RuntimeSession {
         if (started) throw new Error("Run 已经启动");
         started = true;
         emitter.emit({ type: "run-started", provider: modelConfig.provider });
-        const emit = (event: Parameters<typeof emitter.emit>[0]) => emitter.emit(event);
+        const emit = (event: Parameters<typeof emitter.emit>[0]) =>
+          emitter.emit(event);
         // ToolGateway 拦截模型的工具调用：执行本地工具并校验审批，是安全边界所在。
-        const gateway = new ToolGateway({ runId, tools, emit, signal: controller.signal });
+        const gateway = new ToolGateway({
+          runId,
+          tools,
+          emit,
+          signal: controller.signal,
+        });
         // 按模型供应商选择执行器：Codex 走订阅会话，其余走 OpenAI 兼容接口。
-        const executor = modelConfig.provider === "codex-subscription"
-          ? codexExecutor
-          : openAiExecutor;
+        const executor =
+          modelConfig.provider === "codex-subscription"
+            ? codexExecutor
+            : openAiExecutor;
         try {
           const parts = await executor.execute({
             runId,
@@ -102,7 +111,11 @@ export class RuntimeSession {
             signal: controller.signal,
             emit,
           });
-          const message = await appendMessage(input.conversationId, "assistant", parts);
+          const message = await appendMessage(
+            input.conversationId,
+            "assistant",
+            parts,
+          );
           emitter.emit({ type: "assistant-message", messageId: message.id });
           emitter.emit({ type: "run-completed", messageId: message.id });
           return { message };
@@ -110,10 +123,14 @@ export class RuntimeSession {
           // 失败也落一条 error 类型消息，保证会话历史完整可追溯。
           const messageText = controller.signal.aborted
             ? "生成已停止"
-            : error instanceof Error ? error.message : "助手运行失败";
-          const message = await appendMessage(input.conversationId, "assistant", [
-            { type: "error", message: messageText },
-          ]);
+            : error instanceof Error
+              ? error.message
+              : "助手运行失败";
+          const message = await appendMessage(
+            input.conversationId,
+            "assistant",
+            [{ type: "error", message: messageText }],
+          );
           emitter.emit({
             type: "run-failed",
             messageId: message.id,
@@ -128,7 +145,8 @@ export class RuntimeSession {
           await emitter.flush();
           // 用 runId 校验，防止新的 Run 已被启动时误删它的标记。
           const current = this.active.get(input.conversationId);
-          if (current?.runId === runId) this.active.delete(input.conversationId);
+          if (current?.runId === runId)
+            this.active.delete(input.conversationId);
         }
       };
       // 准备阶段只返回句柄不执行，具体启动时机交由调用方（Controller）决定。
@@ -154,7 +172,6 @@ export class RuntimeSession {
   public isConversationActive(conversationId: string): boolean {
     return this.active.has(conversationId);
   }
-
 }
 
 export const runtimeSession = new RuntimeSession();
