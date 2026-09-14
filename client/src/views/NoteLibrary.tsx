@@ -43,13 +43,19 @@ export default function NoteLibrary() {
             searchOpen={library.searchOpen}
             sortMode={library.sortMode}
             statusFilter={library.statusFilter}
+<<<<<<< HEAD
             tagsFilter={library.tagsFilter}
+=======
+>>>>>>> 7998882ea17f1aa6fb38ebb6bfa592eb7f8a44a7
             onFilterTextChange={library.setFilterText}
             onPublishedFilterChange={library.setPublishedFilter}
             onSearchOpenChange={library.setSearchOpen}
             onSortModeChange={library.setSortMode}
             onStatusFilterChange={library.setStatusFilter}
+<<<<<<< HEAD
             onTagsFilterChange={library.setTagsFilter}
+=======
+>>>>>>> 7998882ea17f1aa6fb38ebb6bfa592eb7f8a44a7
           />
         </section>
 

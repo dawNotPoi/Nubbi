@@ -31,7 +31,10 @@ type NoteLibraryRowsOptions = {
   publishedFilter: "all" | "published" | "unpublished";
   sortMode: NoteLibrarySortMode;
   statusFilter: "all" | NoteStatus;
+<<<<<<< HEAD
   tagsFilter: string[];
+=======
+>>>>>>> 7998882ea17f1aa6fb38ebb6bfa592eb7f8a44a7
 };
 
 type NoteLibraryIndex = {
@@ -241,14 +244,20 @@ export const getNoteLibraryRows = ({
   publishedFilter,
   sortMode,
   statusFilter,
+<<<<<<< HEAD
   tagsFilter,
+=======
+>>>>>>> 7998882ea17f1aa6fb38ebb6bfa592eb7f8a44a7
 }: NoteLibraryRowsOptions) => {
   const keyword = filterText.trim().toLowerCase();
   const filteredNotes = notes.filter((note) => {
     if (statusFilter !== "all" && note.status !== statusFilter) return false;
     if (publishedFilter === "published" && !note.published) return false;
     if (publishedFilter === "unpublished" && note.published) return false;
+<<<<<<< HEAD
     if (tagsFilter.length > 0 && !tagsFilter.some((tag) => note.tags.includes(tag))) return false;
+=======
+>>>>>>> 7998882ea17f1aa6fb38ebb6bfa592eb7f8a44a7
     return true;
   });
   const index = buildNoteLibraryIndex(filteredNotes, sortMode);

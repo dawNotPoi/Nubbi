@@ -38,7 +38,10 @@ export const useNoteLibraryController = () => {
   const [publishedFilter, setPublishedFilter] = useState<
     "all" | "published" | "unpublished"
   >("all");
+<<<<<<< HEAD
   const [tagsFilter, setTagsFilter] = useState<string[]>([]);
+=======
+>>>>>>> 7998882ea17f1aa6fb38ebb6bfa592eb7f8a44a7
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [moveOpen, setMoveOpen] = useState(false);
   const [moveCandidates, setMoveCandidates] = useState<Note[]>([]);
@@ -56,6 +59,7 @@ export const useNoteLibraryController = () => {
         publishedFilter,
         sortMode,
         statusFilter,
+<<<<<<< HEAD
         tagsFilter,
       }),
     [allNotes, expandedLibraryNodeIds, filterText, publishedFilter, sortMode, statusFilter, tagsFilter],
@@ -64,6 +68,10 @@ export const useNoteLibraryController = () => {
   const availableTags = useMemo(
     () => getAvailableLibraryTags(allNotes),
     [allNotes],
+=======
+      }),
+    [allNotes, expandedLibraryNodeIds, filterText, publishedFilter, sortMode, statusFilter],
+>>>>>>> 7998882ea17f1aa6fb38ebb6bfa592eb7f8a44a7
   );
 
   const selectedNotes = useMemo(() => {
@@ -183,11 +191,17 @@ export const useNoteLibraryController = () => {
     setSearchOpen,
     setSortMode,
     setStatusFilter,
+<<<<<<< HEAD
     setTagsFilter,
     sortMode,
     publishedFilter,
     statusFilter,
     tagsFilter,
+=======
+    sortMode,
+    publishedFilter,
+    statusFilter,
+>>>>>>> 7998882ea17f1aa6fb38ebb6bfa592eb7f8a44a7
     toggleAllVisible,
     toggleLibraryNodeExpanded,
     toggleSelected,
