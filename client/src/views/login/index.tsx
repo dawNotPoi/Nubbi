@@ -301,7 +301,7 @@ export const LoginPage = () => {
                 <div className="flex gap-2.5">
                   <Input className="flex-1 min-w-0" maxLength={6} inputMode="numeric" value={resetCode} placeholder="6 位数字"
                     onChange={e => setResetCode(e.target.value.replace(/\D/g, "").slice(0, 6))} />
-                  <Button className="shrink-0 w-[110px]" variant="outline" size="sm"
+                  <Button className="shrink-0 w-[110px] self-center" variant="outline" size="sm"
                     onClick={handleSendResetCode}
                     disabled={loading || resetCodeCooldown > 0 || requestingResetCode}>
                     {requestingResetCode ? "发送中" : resetCodeCooldown > 0 ? `${resetCodeCooldown}s` : "获取验证码"}
@@ -354,7 +354,7 @@ export const LoginPage = () => {
                   <div className="flex gap-2.5">
                     <Input className="flex-1 min-w-0" maxLength={6} inputMode="numeric" value={regCode} placeholder="6 位数字"
                       onChange={e => setRegCode(e.target.value.replace(/\D/g, "").slice(0, 6))} />
-                    <Button className="shrink-0 w-[110px]" variant="outline" size="sm"
+                    <Button className="shrink-0 w-[110px] self-center" variant="outline" size="sm"
                       onClick={handleSendRegisterCode}
                       disabled={loading || registerCodeCooldown > 0 || sendingRegisterCode}>
                       {sendingRegisterCode ? "发送中" : registerCodeCooldown > 0 ? `${registerCodeCooldown}s` : "获取验证码"}
@@ -423,9 +423,7 @@ export const LoginPage = () => {
           ) : null}
         </CardContent>
 
-        <CardFooter>
-          <span className="auth-footer-dot size-1.5 rounded-full" /> Nubbi
-        </CardFooter>
+        <CardFooter />
       </Card>
     </div>
   );
