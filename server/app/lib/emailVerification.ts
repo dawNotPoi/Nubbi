@@ -9,13 +9,10 @@ type EmailVerificationCodeDocument = {
   expiresAt: Date;
   createdAt: Date;
   usedAt: Date | null;
-  failedAttempts?: number;
 };
 
 const EMAIL_VERIFICATION_COLLECTION = "email_verification_codes";
 const EMAIL_VERIFICATION_CODE_LENGTH = 6;
-export const EMAIL_VERIFICATION_COOLDOWN_SECONDS = 60;
-const EMAIL_VERIFICATION_MAX_ATTEMPTS = 5;
 
 let indexesEnsured = false;
 
@@ -55,46 +52,6 @@ const generateVerificationCode = () =>
     .toString()
     .padStart(EMAIL_VERIFICATION_CODE_LENGTH, "0");
 
-export const getEmailVerificationRemainingSeconds = async (email: string) => {
-  const collection = await getEmailVerificationCollection();
-  const normalizedEmail = normalizeEmail(email);
-  const now = new Date();
-
-  const latestCode = await collection.findOne(
-    { email: normalizedEmail, usedAt: null },
-    { sort: { createdAt: -1 } },
-  );
-
-  if (!latestCode) return 0;
-
-  const secondsSinceLastSend = Math.floor(
-    (now.getTime() - latestCode.createdAt.getTime()) / 1000,
-  );
-
-  return secondsSinceLastSend < EMAIL_VERIFICATION_COOLDOWN_SECONDS
-    ? EMAIL_VERIFICATION_COOLDOWN_SECONDS - secondsSinceLastSend
-    : 0;
-};
-
-export const createEmailVerificationAttempt = async (email: string) => {
-  const collection = await getEmailVerificationCollection();
-  const normalizedEmail = normalizeEmail(email);
-  const now = new Date();
-  const expiresAt = new Date(
-    now.getTime() + (EMAIL_VERIFICATION_COOLDOWN_SECONDS + 10) * 1000,
-  );
-
-  await collection.deleteMany({ email: normalizedEmail });
-  await collection.insertOne({
-    email: normalizedEmail,
-    codeHash: "",
-    token: "",
-    expiresAt,
-    createdAt: now,
-    usedAt: null,
-  });
-};
-
 export const createEmailVerificationCode = async (
   email: string,
   token: string,
@@ -123,42 +80,29 @@ export const consumeEmailVerificationCode = async (
   email: string,
   code: string,
 ) => {
-  const collection = await getEmailVerificationCollection();
+  const emailVerificationCollection = await getEmailVerificationCollection();
   const normalizedEmail = normalizeEmail(email);
   const now = new Date();
 
-  const record = await collection.findOne({
+  const record = await emailVerificationCollection.findOne({
     email: normalizedEmail,
-    codeHash: { $ne: "" },
+    codeHash: hashVerificationCode(normalizedEmail, code),
     expiresAt: { $gt: now },
     usedAt: null,
   });
 
-  if (!record) return null;
-
-  if ((record.failedAttempts ?? 0) >= EMAIL_VERIFICATION_MAX_ATTEMPTS) {
+  if (!record) {
     return null;
   }
 
-  if (record.codeHash !== hashVerificationCode(normalizedEmail, code)) {
-    const newFailedAttempts = (record.failedAttempts ?? 0) + 1;
-    const update: Record<string, unknown> = { failedAttempts: newFailedAttempts };
-    if (newFailedAttempts >= EMAIL_VERIFICATION_MAX_ATTEMPTS) {
-      update.usedAt = now;
-    }
-    await collection.updateOne(
-      { email: normalizedEmail, codeHash: record.codeHash, usedAt: null },
-      { $set: update },
-    );
-    return null;
-  }
-
-  const consumeResult = await collection.updateOne(
+  const consumeResult = await emailVerificationCollection.updateOne(
     { email: normalizedEmail, codeHash: record.codeHash, usedAt: null },
     { $set: { usedAt: now } },
   );
 
-  if (consumeResult.modifiedCount !== 1) return null;
+  if (consumeResult.modifiedCount !== 1) {
+    return null;
+  }
 
   return record.token;
 };

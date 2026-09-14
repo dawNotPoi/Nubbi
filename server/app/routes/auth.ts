@@ -15,15 +15,9 @@ import {
   createAccountDeletionCode,
 } from "@/lib/accountDeletionVerification";
 import { db } from "@/lib/db";
-import {
-  consumeEmailVerificationCode,
-  createEmailVerificationAttempt,
-  EMAIL_VERIFICATION_COOLDOWN_SECONDS,
-  getEmailVerificationRemainingSeconds,
-} from "@/lib/emailVerification";
+import { consumeEmailVerificationCode } from "@/lib/emailVerification";
 import {
   consumePasswordResetCode,
-  createPasswordResetAttempt,
   getPasswordResetRemainingSeconds,
   PASSWORD_RESET_COOLDOWN_SECONDS,
   PASSWORD_RESET_EXPIRES_IN_SECONDS,
@@ -164,10 +158,22 @@ const deleteUserAccountData = async ({
   await removeOrphanedStorageFiles(storagePaths);
 };
 
-const findAuthUserByEmail = async (email: string) => {
+const findAuthUserByEmail = async (
+  email: string,
+  opts?: { includeAccounts?: boolean },
+) => {
   const authContext = await auth.$context;
-  return authContext.internalAdapter.findUserByEmail(email);
+  return authContext.internalAdapter.findUserByEmail(email, {
+    includeAccounts: opts?.includeAccounts ?? false,
+  });
 };
+
+const hasCredentialAccount = (
+  existing: Awaited<ReturnType<typeof findAuthUserByEmail>>,
+) =>
+  existing?.accounts?.some(
+    (a) => (a as { providerId?: string }).providerId === "credential",
+  );
 
 const errorResponse = (
   res: express.Response,
@@ -197,15 +203,27 @@ router.post(
       return errorResponse(res, 400, emailError);
     }
 
-    const existingUser = await findAuthUserByEmail(email);
+    const existingUser = await findAuthUserByEmail(email, {
+      includeAccounts: true,
+    });
     if (existingUser?.user) {
       const existingEmailData = getExistingEmailData(existingUser.user);
+
+      if (hasCredentialAccount(existingUser)) {
+        return errorResponse(
+          res,
+          409,
+          existingEmailData.emailVerified
+            ? "邮箱已注册，请直接登录"
+            : "邮箱已注册但尚未验证，请完成邮箱验证",
+          existingEmailData,
+        );
+      }
+
       return errorResponse(
         res,
         409,
-        existingEmailData.emailVerified
-          ? "邮箱已注册，请直接登录"
-          : "邮箱已注册但尚未验证，请完成邮箱验证",
+        "该邮箱已通过第三方登录注册，请使用对应的第三方登录方式，或通过「忘记密码」设置密码后登录",
         existingEmailData,
       );
     }
@@ -281,15 +299,27 @@ router.post(
       return errorResponse(res, 400, "密码至少 6 位");
     }
 
-    const existingUser = await findAuthUserByEmail(email);
+    const existingUser = await findAuthUserByEmail(email, {
+      includeAccounts: true,
+    });
     if (existingUser?.user) {
       const existingEmailData = getExistingEmailData(existingUser.user);
+
+      if (hasCredentialAccount(existingUser)) {
+        return errorResponse(
+          res,
+          409,
+          existingEmailData.emailVerified
+            ? "邮箱已注册，请直接登录"
+            : "邮箱已注册但尚未验证，请完成邮箱验证",
+          existingEmailData,
+        );
+      }
+
       return errorResponse(
         res,
         409,
-        existingEmailData.emailVerified
-          ? "邮箱已注册，请直接登录"
-          : "邮箱已注册但尚未验证，请完成邮箱验证",
+        "该邮箱已通过第三方登录注册，请使用对应的第三方登录方式，或通过「忘记密码」设置密码后登录",
         existingEmailData,
       );
     }
@@ -371,31 +401,14 @@ router.post(
       });
     }
 
-    const remainingSeconds = await getEmailVerificationRemainingSeconds(email);
-    if (remainingSeconds > 0) {
-      return errorResponse(res, 429, "验证码发送过于频繁，请稍后再试", {
-        remainingSeconds,
-      });
-    }
+    await auth.api.sendVerificationEmail({
+      body: {
+        email,
+      },
+      headers: req.headers as HeadersInit,
+    });
 
-    // 先写入占位记录，防止对不存在邮箱的无限请求；
-    // 若邮箱存在，sendVerificationEmail 回调会用真实记录覆盖它
-    await createEmailVerificationAttempt(email);
-
-    try {
-      await auth.api.sendVerificationEmail({
-        body: { email },
-        headers: req.headers as HeadersInit,
-      });
-    } catch {
-      // 不向客户端暴露邮箱是否存在
-    }
-
-    successResponse(
-      res,
-      { cooldownSeconds: EMAIL_VERIFICATION_COOLDOWN_SECONDS },
-      "验证码已发送",
-    );
+    successResponse(res, null, "验证码已发送");
   }),
 );
 
@@ -505,10 +518,6 @@ router.post(
         remainingSeconds,
       });
     }
-
-    // 先写入占位记录保证冷却对不存在的邮箱同样生效；
-    // 若邮箱存在，sendResetPassword 回调会用真实记录覆盖它
-    await createPasswordResetAttempt(email);
 
     await auth.api.requestPasswordReset({
       body: {

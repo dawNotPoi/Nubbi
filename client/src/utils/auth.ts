@@ -133,29 +133,45 @@ const getErrorCode = (error: unknown) => {
   return candidate.error?.code || candidate.code;
 };
 
+const normalizedMessages: Record<string, string> = {
+  "Invalid email or password": "邮箱或密码错误",
+  "Credential account not found": "该账号未设置密码登录，请使用第三方登录或通过「忘记密码」设置密码",
+  "User not found": "该邮箱未注册",
+};
+
 const getErrorMessage = (error: unknown, fallback: string) => {
   if (getErrorCode(error) === "EMAIL_NOT_VERIFIED") {
     return "邮箱还没有验证，请先输入邮箱验证码完成验证。";
   }
 
-  if (typeof error === "string" && error.trim()) {
-    return error;
-  }
+  const extractMessage = (source: unknown): string | null => {
+    if (typeof source === "string" && source.trim()) {
+      return source;
+    }
 
-  if (error && typeof error === "object") {
-    const candidate = error as {
-      message?: string;
-      statusText?: string;
-      error?: {
+    if (source && typeof source === "object") {
+      const candidate = source as {
         message?: string;
+        statusText?: string;
+        error?: {
+          message?: string;
+          code?: string;
+        };
         code?: string;
       };
-      code?: string;
-    };
 
-    if (candidate.error?.message) return candidate.error.message;
-    if (candidate.message) return candidate.message;
-    if (candidate.statusText) return candidate.statusText;
+      if (candidate.error?.message) return candidate.error.message;
+      if (candidate.message) return candidate.message;
+      if (candidate.statusText) return candidate.statusText;
+    }
+
+    return null;
+  };
+
+  const rawMessage = extractMessage(error);
+
+  if (rawMessage) {
+    return normalizedMessages[rawMessage] || rawMessage;
   }
 
   return fallback;
