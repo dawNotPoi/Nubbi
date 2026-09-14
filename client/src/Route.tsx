@@ -24,7 +24,7 @@ const UserLayout = () => {
     <div className="flex h-screen overflow-hidden">
       <SideBar />
       <div className="flex-1 h-screen overflow-hidden">
-        <main className="h-screen overflow-y-auto pb-10 bg-background">
+        <main className="h-screen overflow-y-auto pb-10 bg-white">
           <Outlet />
         </main>
       </div>
@@ -46,7 +46,7 @@ const AuthRouteFallback = () => (
         <div className="h-7 w-3/5 rounded-md bg-stone-200" />
       </div>
     </div>
-    <div className="flex-1 bg-background px-8 py-6 animate-pulse space-y-4">
+    <div className="flex-1 bg-white px-8 py-6 animate-pulse space-y-4">
       <div className="h-7 w-36 rounded-md bg-stone-100" />
       <div className="h-4 w-2/3 rounded bg-stone-100" />
       <div className="h-4 w-1/2 rounded bg-stone-100" />
@@ -62,7 +62,8 @@ const ProtectedRoute: React.FC<PropsWithChildren> = ({ children }) => {
   const { hasAccessToken, initialized, isAuthenticated, sessionPending } =
     useAuth();
   const location = useLocation();
-  if (!initialized || sessionPending || (hasAccessToken && !isAuthenticated)) {
+  // If has token, skip AuthRouteFallback so we don't flash between two skeletons
+  if (!initialized || (!hasAccessToken && sessionPending)) {
     return <AuthRouteFallback />;
   }
   if (isAuthenticated) {
@@ -85,7 +86,8 @@ const PublicOnlyRoute: React.FC<PropsWithChildren> = ({ children }) => {
     useAuth();
   const location = useLocation();
 
-  if (!initialized || sessionPending || (hasAccessToken && !isAuthenticated)) {
+  // If has token, skip AuthRouteFallback so we don't flash between two skeletons
+  if (!initialized || (!hasAccessToken && sessionPending)) {
     return <AuthRouteFallback />;
   }
 

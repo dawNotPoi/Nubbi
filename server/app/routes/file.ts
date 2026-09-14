@@ -3,6 +3,7 @@ import { File } from "@/models/file/file";
 import { Folder } from "@/models/file/folder";
 import { UploadTask } from "@/models/file/uploadTask";
 import env from "@/lib/env";
+import logger from "@/common/logger";
 import crypto from "crypto";
 import express from "express";
 import fse from "fs-extra";
@@ -91,6 +92,9 @@ const normalizeQueryValue = (value: unknown) => {
 
   return typeof value === "string" ? value : "";
 };
+
+const normalizeRouteParam = (value: string | string[] | undefined) =>
+  Array.isArray(value) ? value[0] : value;
 
 const createPreviewSignature = (
   fileId: string,
@@ -298,13 +302,16 @@ const removeOrphanedStorageFiles = async (storagePaths: string[]) => {
       const otherReferences = await File.countDocuments({ storagePath });
 
       if (otherReferences > 0) {
-        console.log(`保留物理文件，仍有 ${otherReferences} 个引用。`);
+        logger.debug("保留物理文件，仍有引用", {
+          storagePath,
+          references: otherReferences,
+        });
         return;
       }
 
       if (await fse.pathExists(storagePath)) {
         await fse.remove(storagePath);
-        console.log(`物理文件已删除: ${storagePath}`);
+        logger.info("物理文件已删除", { storagePath });
       }
     }),
   );
@@ -472,7 +479,7 @@ router.post(
         uploadedChunks: task.uploadedChunks,
       });
     } catch (error) {
-      console.error(error);
+      logger.error("上传初始化失败", { error });
       res.status(500).json({ message: "初始化失败" });
     }
   }),
@@ -485,7 +492,7 @@ router.post(
   asyncHandler(async (req, res) => {
     const { uploadId, chunkIndex } = req.body;
     const userId = req.user?.id;
-    console.log(chunkIndex);
+    logger.debug("上传分片", { chunkIndex });
     if (!req.file) {
       return res.status(400).send("No chunk file");
     }
@@ -884,8 +891,12 @@ router.get(
   "/preview-url/:fileId",
   requireAuth,
   asyncHandler(async (req: AuthRequest, res) => {
-    const { fileId } = req.params;
+    const fileId = normalizeRouteParam(req.params.fileId);
     const userId = req.user?.id;
+
+    if (!fileId) {
+      return res.status(400).json({ message: "文件 id 不能为空" });
+    }
 
     const file = await getOwnedActiveFile(fileId, userId);
 
@@ -919,8 +930,12 @@ router.get(
   "/share-url/:fileId",
   requireAuth,
   asyncHandler(async (req: AuthRequest, res) => {
-    const { fileId } = req.params;
+    const fileId = normalizeRouteParam(req.params.fileId);
     const userId = req.user?.id;
+
+    if (!fileId) {
+      return res.status(400).json({ message: "文件 id 不能为空" });
+    }
 
     const file = await getOwnedActiveFile(fileId, userId);
 
@@ -943,7 +958,12 @@ const handleSignedStreamPreview = async (
   req: AuthRequest,
   res: express.Response,
 ) => {
-  const { fileId } = req.params;
+  const fileId = normalizeRouteParam(req.params.fileId);
+
+  if (!fileId) {
+    return res.status(400).json({ message: "文件 id 不能为空" });
+  }
+
   const userId = resolveSignedPreviewUserId(
     fileId,
     req.query as Record<string, unknown>,
@@ -1013,7 +1033,12 @@ router.get(
 router.get(
   "/public-download/:fileId",
   asyncHandler(async (req: AuthRequest, res) => {
-    const { fileId } = req.params;
+    const fileId = normalizeRouteParam(req.params.fileId);
+
+    if (!fileId) {
+      return res.status(400).json({ message: "文件 id 不能为空" });
+    }
+
     const userId = resolveSignedShareDownloadUserId(
       fileId,
       req.query as Record<string, unknown>,
@@ -1041,8 +1066,12 @@ router.get(
   "/download/:fileId",
   requireAuth,
   asyncHandler(async (req: AuthRequest, res) => {
-    const { fileId } = req.params;
+    const fileId = normalizeRouteParam(req.params.fileId);
     const userId = req.user?.id;
+
+    if (!fileId) {
+      return res.status(400).json({ message: "文件 id 不能为空" });
+    }
 
     const file = await getOwnedActiveFile(fileId, userId);
 
@@ -1062,8 +1091,12 @@ router.get(
   "/preview/:fileId",
   requireAuth,
   asyncHandler(async (req: AuthRequest, res) => {
-    const { fileId } = req.params;
+    const fileId = normalizeRouteParam(req.params.fileId);
     const userId = req.user?.id;
+
+    if (!fileId) {
+      return res.status(400).json({ message: "文件 id 不能为空" });
+    }
 
     const file = await getOwnedActiveFile(fileId, userId);
 

@@ -17,6 +17,7 @@ type SidebarTreeItemProps = {
   depth?: number;
   active?: boolean;
   expanded?: boolean;
+  hasChildren?: boolean;
   loading?: boolean;
   actions?: SidebarTreeAction[];
   to?: string;
@@ -82,6 +83,7 @@ export function SidebarTreeItem({
   depth = 0,
   active = false,
   expanded = false,
+  hasChildren = false,
   loading = false,
   actions = [],
   to,
@@ -112,7 +114,7 @@ export function SidebarTreeItem({
       )}
       style={{ paddingLeft: depthPadding(depth) }}
     >
-      {onToggle ? (
+      {onToggle && hasChildren ? (
         <span className="relative mr-0.5 flex size-6 shrink-0 items-center justify-center">
           <FileText
             className={clsx(
@@ -193,10 +195,10 @@ export function SidebarTreeState({
             key={index}
             style={{ paddingLeft: depthPadding(depth) + 6 }}
           >
-            <div className="size-4 shrink-0 animate-pulse rounded bg-border" />
+            <div className="size-4 shrink-0 animate-pulse rounded bg-skeleton" />
             <div
               className={clsx(
-                "h-3 animate-pulse rounded bg-border",
+                "h-3 animate-pulse rounded bg-skeleton",
                 index % 3 === 0 && "w-28",
                 index % 3 === 1 && "w-20",
                 index % 3 === 2 && "w-24",
@@ -238,7 +240,7 @@ export function SidebarSectionHeader({
       className={clsx(
         "group/sidebar-section flex items-center rounded-md px-2 py-1",
         "cursor-pointer",
-        "text-neutral-700 transition-colors hover:bg-normal/40",
+        "text-neutral-700 transition-colors hover:bg-gray-200/40",
       )}
     >
       <button

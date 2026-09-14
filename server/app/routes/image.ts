@@ -1,4 +1,5 @@
 import env from "@/lib/env";
+import logger from "@/common/logger";
 import image from "@/models/image";
 import express from "express";
 import multer from "multer";
@@ -39,7 +40,7 @@ const uploadImageToGitHub = async (file: Express.Multer.File) => {
 
   if (!response.ok) {
     const text = await response.text();
-    console.error("GitHub 图床上传失败", {
+    logger.error("GitHub 图床上传失败", {
       status: response.status,
       statusText: response.statusText,
       body: text,

@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git commit *)",
+      "Bash(git *)",
+      "PowerShell(Get-ChildItem -Recurse -File \"E:\\learning\\Nubbi\\.agent\\" | ForEach-Object { $len = \(Get-Content $_.FullName -Raw\).Length; $path = $_.FullName.Replace\(\"E:\\learning\\Nubbi\\", \"\"\); Write-Output \"$path — $len chars\" })",
+      "PowerShell(git *)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash(git commit *)",
+        "comment": "1: user confirmation",
+        "command": "powershell.exe -NoProfile -Command \"$marker='.claude/.commit-confirmed'; if(-not (Test-Path $marker)){Write-Host 'commit blocked: user confirmation required'; exit 1}; Remove-Item $marker; exit 0\""
+      },
+      {
+        "matcher": "Bash(git commit *)",
+        "comment": "2: changes staged",
+        "command": "powershell.exe -NoProfile -Command \"$date=(Get-Date -Format 'yyyy-MM-dd'); $file='docs/changes/'+$date+'.md'; if(-not (Test-Path $file)){Write-Host 'changes missing'; exit 1}; $staged=& git diff --cached --name-only; if($staged -notmatch [regex]::Escape($file)){Write-Host 'changes not staged'; exit 1}; exit 0\""
+      },
+      {
+        "matcher": "Bash(git commit *)",
+        "comment": "3: format check",
+        "command": "powershell.exe -NoProfile -Command \"$msg=''; for($i=0;$i -lt $args.Count;$i++){if($args[$i] -eq '-m' -and $i+1 -lt $args.Count){$msg=$args[$i+1];break}} if($msg -eq ''){exit 0} if($msg -notmatch '^(feat|fix|refactor|docs|style|test|chore)\\([a-z-]+\\): .+'){Write-Host 'bad format';exit 1}; $scope=($msg -replace '.*\\(([a-z-]+)\\).*','$1'); if($scope -notmatch '^(server|client|shared|config|agent)$'){Write-Host 'bad scope';exit 1}; $subject=$msg -replace '^[^:]+: ',''; if($subject -notmatch '[\\u4e00-\\u9fff]'){Write-Host 'no chinese';exit 1}; exit 0\" -- %ARGUMENTS%"
+      }
+    ]
+  }
+}

@@ -67,8 +67,8 @@ export default function ResizeTab({
       <div
         onMouseDown={startResizing}
         className={clsx(
-          "absolute top-0 right-0 bottom-0 h-full w-0.5 bg-normal/50 cursor-col-resize transition-all duration-300 hover:w-1",
-          isResizing && "w-1 bg-normal"
+          "absolute top-0 right-0 bottom-0 h-full w-0.5 bg-gray-200/50 cursor-col-resize transition-all duration-300 hover:w-1",
+          isResizing && "w-1 bg-gray-300"
         )}
       ></div>
     </div>

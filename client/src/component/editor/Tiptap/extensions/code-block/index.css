@@ -1,5 +1,6 @@
 .dn-editor .blockCodeWrapper {
   background: var(--editor-code-block-bg);
+  margin: var(--editor-block-gap-y) 0;
 }
 
 .dn-editor .blockCodeWrapper .codeToolbar {

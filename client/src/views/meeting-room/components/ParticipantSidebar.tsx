@@ -13,7 +13,7 @@ export default function ParticipantSidebar({
   onSelectParticipant,
 }: ParticipantSidebarProps) {
   return (
-    <aside className="w-[15%] py-10 bg-normal">
+    <aside className="w-[15%] py-10 bg-gray-200">
       <ul className="min-w-[200px] h-full max-w-[300px] flex gap-1 flex-col overflow-y-scroll justify-center scrollbar-none">
         {participants.map((participant) => (
           <ParticipantTile

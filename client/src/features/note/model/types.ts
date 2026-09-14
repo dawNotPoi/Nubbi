@@ -1,6 +1,6 @@
-import type { NoteWithContent, updateNoteProperties } from "@/api/note";
+import type { NoteWithContent, UpdateNotePropertiesInput } from "@/api/note";
 
-export type NotePropertiesInput = Parameters<typeof updateNoteProperties>[1];
+export type NotePropertiesInput = UpdateNotePropertiesInput;
 
 export type CreateNoteVariables = {
   note: NoteWithContent;
@@ -20,9 +20,16 @@ export type UpdateNotePropertiesVariables = {
   owner?: string;
 };
 
+export type UpdateNoteContentVariables = {
+  baseContentRevision?: number;
+  clientMutationId?: string;
+  content: string;
+  noteId: string;
+};
+
 export type PatchNoteCacheVariables = {
   noteId: string;
   properties: Partial<NoteWithContent>;
 };
 
-export type NoteSaveStatus = "idle" | "saving" | "saved";
+export type NoteSaveStatus = "idle" | "saving" | "saved" | "error" | "conflict";

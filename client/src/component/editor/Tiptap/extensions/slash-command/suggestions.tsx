@@ -1,4 +1,4 @@
-import { Editor } from "@tiptap/core";
+import type { Editor, Range } from "@tiptap/core";
 import {
   Code2,
   Heading1,
@@ -7,18 +7,21 @@ import {
   List,
   ListOrdered,
   Minus,
-  Pilcrow,
   PictureInPictureIcon,
+  Pilcrow,
   Quote,
   Table,
 } from "lucide-react";
+import type { ReactNode } from "react";
 
-const allItems: {
+export interface SuggestionItem {
   title: string;
   description?: string;
-  icon: string | JSX.Element;
-  command: ({ editor, range }: { editor: Editor; range: any }) => void;
-}[] = [
+  icon?: ReactNode;
+  command: (props: { editor: Editor; range: Range }) => void;
+}
+
+const allItems: SuggestionItem[] = [
   {
     title: "Heading 1",
     description: "Large section heading",
@@ -147,9 +150,8 @@ const allItems: {
   },
 ];
 
-export const getSuggestions = ({ query }: { query: string }) => {
-  const normalizedQuery = query.toLowerCase().trim();
-
+export const getSuggestions = ({ query }: { query?: string | null }) => {
+  const normalizedQuery = (query ?? "").replace(/^\//, "").toLowerCase().trim();
   return allItems.filter((item) =>
     normalizedQuery.length === 0
       ? true

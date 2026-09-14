@@ -1,4 +1,10 @@
-import type { Note, NotePathItem, NoteWithContent } from "@/api/note";
+import {
+  recordToMetaEntries,
+  type Note,
+  type NotePathItem,
+  type NoteWithContent,
+  type UpdateNoteContentResult,
+} from "@/api/note";
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
 import {
   canResolveNoteListScope,
@@ -9,6 +15,15 @@ import {
   type NoteListScope,
 } from "./keys";
 import type { UpdateNotePropertiesVariables } from "./types";
+
+type NoteCachePatch = Omit<
+  Partial<NoteWithContent>,
+  "date" | "expiresAt" | "meta"
+> & {
+  date?: string | Date;
+  expiresAt?: string | Date | null;
+  meta?: NoteWithContent["meta"] | Record<string, unknown>;
+};
 
 export type NoteListSnapshot = {
   canPatch: boolean;
@@ -163,17 +178,34 @@ const prependUniqueNote = (notes: Note[], note: Note) => [
   ...notes.filter((cachedNote) => cachedNote._id !== note._id),
 ];
 
-const getChildNoteIds = (note: Note) => {
-  if (!Array.isArray(note.children)) return [];
+const normalizeNotePatch = (
+  patch: NoteCachePatch,
+): Partial<NoteWithContent> => {
+  const { date, expiresAt, meta, ...restPatch } = patch;
+  const normalizedPatch: Partial<NoteWithContent> = { ...restPatch };
 
-  return (note.children as unknown[])
-    .map((child) => {
-      if (typeof child === "string") return child;
-      if (!child || typeof child !== "object" || !("_id" in child)) return "";
+  if (Object.prototype.hasOwnProperty.call(patch, "date")) {
+    normalizedPatch.date =
+      typeof date === "object" && date instanceof Date
+        ? date.toISOString()
+        : date;
+  }
 
-      return String((child as { _id?: unknown })._id || "");
-    })
-    .filter((noteId): noteId is string => Boolean(noteId));
+  if (Object.prototype.hasOwnProperty.call(patch, "expiresAt")) {
+    normalizedPatch.expiresAt =
+      typeof expiresAt === "object" && expiresAt instanceof Date
+        ? expiresAt.toISOString()
+        : expiresAt;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(patch, "meta")) {
+    normalizedPatch.meta =
+      meta && !Array.isArray(meta)
+        ? recordToMetaEntries(meta)
+        : meta;
+  }
+
+  return normalizedPatch;
 };
 
 const collectNoteAndDescendantIds = (
@@ -186,12 +218,6 @@ const collectNoteAndDescendantIds = (
   getCachedNoteListQueryKeys(queryClient).forEach((queryKey) => {
     const notes = queryClient.getQueryData<Note[]>(queryKey) ?? [];
     notes.forEach((note) => {
-      const childIds = getChildNoteIds(note);
-      if (childIds.length > 0) {
-        const children = childrenByParentId.get(note._id) ?? [];
-        childrenByParentId.set(note._id, [...children, ...childIds]);
-      }
-
       if (!hasParentId(note.parentId)) return;
 
       const children = childrenByParentId.get(note.parentId) ?? [];
@@ -218,8 +244,10 @@ const collectNoteAndDescendantIds = (
 export const patchNoteInCachedLists = (
   queryClient: QueryClient,
   noteId: string,
-  patch: Partial<NoteWithContent>,
+  patch: NoteCachePatch,
 ) => {
+  const normalizedPatch = normalizeNotePatch(patch);
+
   queryClient
     .getQueryCache()
     .findAll({ queryKey: noteKeys.lists })
@@ -230,7 +258,7 @@ export const patchNoteInCachedLists = (
         if (!old) return old;
 
         return old.map((note) =>
-          note._id === noteId ? ({ ...note, ...patch } as Note) : note,
+          note._id === noteId ? ({ ...note, ...normalizedPatch } as Note) : note,
         );
       });
     });
@@ -239,25 +267,29 @@ export const patchNoteInCachedLists = (
 export const patchNoteDetailCache = (
   queryClient: QueryClient,
   noteId: string,
-  patch: Partial<NoteWithContent>,
+  patch: NoteCachePatch,
 ) => {
+  const normalizedPatch = normalizeNotePatch(patch);
+
   queryClient.setQueryData<NoteWithContent>(noteKeys.detail(noteId), (old) =>
-    old ? { ...old, ...patch } : old,
+    old ? { ...old, ...normalizedPatch } : old,
   );
 };
 
 export const patchRecentNotesCache = (
   queryClient: QueryClient,
   noteId: string,
-  patch: Partial<NoteWithContent>,
+  patch: NoteCachePatch,
 ) => {
+  const normalizedPatch = normalizeNotePatch(patch);
+
   queryClient.setQueryData<Note[]>(noteKeys.recent(), (old) => {
     if (!old) return old;
 
     const patchedNote = old.find((note) => note._id === noteId);
     if (!patchedNote) return old;
 
-    const nextNote = { ...patchedNote, ...patch } as Note;
+    const nextNote = { ...patchedNote, ...normalizedPatch } as Note;
     return [nextNote, ...old.filter((note) => note._id !== noteId)];
   });
 };
@@ -265,7 +297,7 @@ export const patchRecentNotesCache = (
 export const patchNoteAncestorsCache = (
   queryClient: QueryClient,
   noteId: string,
-  patch: Partial<NoteWithContent>,
+  patch: NoteCachePatch,
 ) => {
   queryClient
     .getQueryCache()
@@ -282,7 +314,7 @@ export const patchNoteAncestorsCache = (
 export const patchNoteAcrossCaches = (
   queryClient: QueryClient,
   noteId: string,
-  patch: Partial<NoteWithContent>,
+  patch: NoteCachePatch,
 ) => {
   patchNoteInCachedLists(queryClient, noteId, patch);
   patchNoteDetailCache(queryClient, noteId, patch);
@@ -293,7 +325,6 @@ export const patchNoteAcrossCaches = (
 export const applyOptimisticNoteContentUpdate = async (
   queryClient: QueryClient,
   noteId: string,
-  content: string,
 ): Promise<NoteContentSnapshot> => {
   const detailQueryKey = noteKeys.detail(noteId);
   const recentNoteQueryKey = noteKeys.recent();
@@ -305,8 +336,11 @@ export const applyOptimisticNoteContentUpdate = async (
   const previousDetail = queryClient.getQueryData<NoteWithContent>(detailQueryKey);
   const previousRecentNotes = queryClient.getQueryData<Note[]>(recentNoteQueryKey);
 
-  patchNoteDetailCache(queryClient, noteId, { content, updatedAt });
-  patchRecentNotesCache(queryClient, noteId, { updatedAt });
+  const currentStatus = previousDetail?.status;
+  const statusPatch = currentStatus === "inbox" ? { status: "active" as const } : {};
+
+  patchNoteDetailCache(queryClient, noteId, { updatedAt, ...statusPatch });
+  patchRecentNotesCache(queryClient, noteId, { updatedAt, ...statusPatch });
 
   return { previousDetail, previousRecentNotes };
 };
@@ -329,10 +363,10 @@ export const rollbackOptimisticNoteContentUpdate = (
 export const applySuccessfulNoteContentUpdate = (
   queryClient: QueryClient,
   noteId: string,
-  note?: NoteWithContent,
+  result?: UpdateNoteContentResult,
 ) => {
-  if (note) {
-    patchNoteAcrossCaches(queryClient, noteId, note);
+  if (result?.note) {
+    patchNoteAcrossCaches(queryClient, noteId, result.note);
   }
 
   queryClient.invalidateQueries({ queryKey: noteKeys.recent() });

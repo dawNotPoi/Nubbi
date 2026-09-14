@@ -4,11 +4,10 @@ const args = new Set(process.argv.slice(2));
 const skipDocker = args.has("--no-docker");
 
 const commands = [
-  ["pnpm", ["--dir", "client", "install", "--frozen-lockfile"]],
-  ["pnpm", ["--dir", "client", "lint"]],
-  ["pnpm", ["--dir", "client", "build"]],
-  ["pnpm", ["--dir", "server", "install", "--frozen-lockfile"]],
-  ["pnpm", ["--dir", "server", "typecheck"]],
+  ["pnpm", ["install", "--frozen-lockfile"]],
+  ["pnpm", ["--filter", "nubbi-client", "lint"]],
+  ["pnpm", ["--filter", "nubbi-client", "build"]],
+  ["pnpm", ["--filter", "nubbi-server", "typecheck"]],
 ];
 
 if (!skipDocker) {
@@ -18,13 +17,23 @@ if (!skipDocker) {
       [
         "build",
         "-f",
-        "client/Dockerfile.runtime",
+        "client/Dockerfile",
         "-t",
         "nubbi-client:preflight",
-        "./client",
+        ".",
       ],
     ],
-    ["docker", ["build", "-t", "nubbi-server:preflight", "./server"]]
+    [
+      "docker",
+      [
+        "build",
+        "-f",
+        "server/Dockerfile",
+        "-t",
+        "nubbi-server:preflight",
+        ".",
+      ],
+    ]
   );
 }
 

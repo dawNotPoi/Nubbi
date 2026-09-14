@@ -155,14 +155,11 @@ fi
 
 if [ ! -f "client/dist/index.html" ]; then
   printf '[docker-deploy] missing client/dist/index.html\n' >&2
-  printf '[docker-deploy] build the client before deploying: pnpm --dir client build\n' >&2
+  printf '[docker-deploy] build the client before deploying: pnpm --filter nubbi-client build\n' >&2
   exit 1
 fi
 
 preserve_ports
-
-log "stopping existing containers to free ports"
-docker compose down --remove-orphans 2>/dev/null || true
 
 log "building and starting client and server containers"
 docker compose up -d --build --remove-orphans client server

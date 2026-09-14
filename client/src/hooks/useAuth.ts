@@ -11,6 +11,7 @@ import {
   useAuthRuntime,
   useSession,
 } from "@/utils/auth";
+import { updateUserAvatar } from "@/api/file";
 import { routes } from "@/utils/routes";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -186,6 +187,21 @@ export const useAuth = () => {
     [navigate],
   );
 
+  const updateAvatar = useCallback(
+    async (imageUrl: string) => {
+      setError(null);
+      const result = await updateUserAvatar(imageUrl);
+      if (result.code === 1) {
+        await refetchSession();
+        return { success: true, data: result.data };
+      }
+      const message = result.message || "头像更新失败";
+      setError(message);
+      return { success: false, error: { message } };
+    },
+    [refetchSession],
+  );
+
   return {
     user,
     loading,
@@ -200,6 +216,7 @@ export const useAuth = () => {
     logout,
     requestAccountDeletionCode,
     deleteAccount,
+    updateAvatar,
     isAuthenticated,
   };
 };

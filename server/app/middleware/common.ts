@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from "express";
+import logger from "@/common/logger";
 
 export interface AppError extends Error {
   status?: number;
@@ -10,7 +11,7 @@ export function errorHandler(
   res: Response,
   next: NextFunction,
 ) {
-  console.error(err);
+  logger.error("未捕获的异常", err);
 
   res.status(err.status || 500).json({
     code: 0,

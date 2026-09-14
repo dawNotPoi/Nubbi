@@ -1,18 +1,15 @@
-import { Editor } from "@tiptap/core";
-import { SuggestionKeyDownProps } from "@tiptap/suggestion";
+import type { Editor, Range } from "@tiptap/core";
+import type { SuggestionKeyDownProps } from "@tiptap/suggestion";
 import clsx from "clsx";
-import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
+import type { SuggestionItem } from "./suggestions";
 
-// 1. 单个命令项的类型
-export interface SuggestionItem {
-  title: string;
-  description?: string;
-  icon?: React.ReactNode;
-  // 这里的 props 包含 editor, range (虽然你现在不需要删除 range，但保留以备不时之需)
-  command: (props: { editor: Editor; range: Range }) => void;
-}
-
-// 2. 传递给 SuggestionList 组件的 Props
 export interface SuggestionListProps {
   items: SuggestionItem[];
   editor: Editor;
@@ -20,7 +17,6 @@ export interface SuggestionListProps {
   query: string;
 }
 
-// 3. 暴露给外部（如 Suggestion 插件）调用的句柄类型
 export interface SuggestionListRef {
   onKeyDown: (props: SuggestionKeyDownProps) => boolean;
 }
@@ -28,10 +24,16 @@ export interface SuggestionListRef {
 const SuggestionList = forwardRef<SuggestionListRef, SuggestionListProps>(
   (props, ref) => {
     const [selectedIndex, setSelectedIndex] = useState(0);
+    const selectedItemRef = useRef<HTMLDivElement | null>(null);
     // 当建议列表更新时（例如用户输入了更多字符），重置选中项到第一个
     useEffect(() => {
       setSelectedIndex(0);
     }, [props.items]);
+
+    // 列表可滚动时,保证键盘切换的选中项始终可见
+    useEffect(() => {
+      selectedItemRef.current?.scrollIntoView({ block: "nearest" });
+    }, [selectedIndex, props.items]);
 
     // --- 命令选择和执行 ---
     const selectItem = (index: number) => {
@@ -43,12 +45,14 @@ const SuggestionList = forwardRef<SuggestionListRef, SuggestionListProps>(
 
     // --- 键盘事件处理函数 ---
     const upHandler = () => {
+      if (props.items.length === 0) return;
       setSelectedIndex(
         (prevIndex) => (prevIndex + props.items.length - 1) % props.items.length
       );
     };
 
     const downHandler = () => {
+      if (props.items.length === 0) return;
       setSelectedIndex((prevIndex) => (prevIndex + 1) % props.items.length);
     };
 
@@ -79,6 +83,8 @@ const SuggestionList = forwardRef<SuggestionListRef, SuggestionListProps>(
     }));
 
     if (!props.items || props.items.length === 0) {
+      if (!props.query?.trim()) return null;
+
       return (
         <div className="bg-[#fffdf9] px-3 py-2 text-sm text-[rgba(55,53,47,0.5)]">
           No matching command
@@ -94,6 +100,7 @@ const SuggestionList = forwardRef<SuggestionListRef, SuggestionListProps>(
         {props.items.map((item, index: number) => (
           <div
             key={index}
+            ref={selectedIndex === index ? selectedItemRef : undefined}
             className={clsx(
               "flex h-10 shrink-0 cursor-pointer items-center gap-2 overflow-hidden rounded-lg px-2 transition-colors",
               selectedIndex === index

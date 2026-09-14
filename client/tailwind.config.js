@@ -19,29 +19,69 @@ export default {
         "scale-in": "scale-in 0.2s ease-out",
       },
       colors: {
-        normal: "rgb(229 231 235)",
-        normalGray: "rgb(243,248,254)",
         sidebar: "var(--sidebar)",
-        background: "var(--background)",
-        surface: "var(--surface)",
-        panel: "var(--panel)",
 
-        border: "var(--border)",
-        divider: "var(--divider)",
+        "text-primary": "var(--text-primary)",
+        "text-muted": "var(--text-muted)",
+        "text-subtle": "var(--text-subtle)",
+        "text-placeholder": "var(--text-placeholder)",
 
-        foreground: "var(--foreground)",
-        muted: "var(--muted)",
-        subtle: "var(--subtle)",
-        inverse: "var(--inverse)",
+        "bg-hover": "var(--bg-hover)",
+        "bg-selected": "var(--bg-selected)",
+        "bg-icon-hover": "var(--bg-icon-hover)",
+        "bg-panel": "var(--bg-panel)",
 
-        primary: "var(--primary)",
-        "primary-soft": "var(--primary-soft)",
+        "border-row": "var(--border-row)",
+        "border-button": "var(--border-button)",
+        "border-button-hover": "var(--border-button-hover)",
+        "border-toolbar": "var(--border-toolbar)",
 
-        success: "var(--success)",
-        warning: "var(--warning)",
-        danger: "var(--danger)",
+        "focus-ring": "var(--focus-ring)",
+
+        "accent-border": "var(--accent-border)",
+        "accent-bg": "var(--accent-bg)",
+        "accent-text": "var(--accent-text)",
+
+        skeleton: "var(--skeleton)",
+
+        // shadcn/ui semantic tokens
+        background: "hsl(0 0% 100%)",
+        foreground: "hsl(0 0% 3.9%)",
+        card: "hsl(0 0% 100%)",
+        "card-foreground": "hsl(0 0% 3.9%)",
+        popover: "hsl(0 0% 100%)",
+        "popover-foreground": "hsl(0 0% 3.9%)",
+        primary: {
+          DEFAULT: "hsl(222 100% 64%)",
+          foreground: "hsl(0 0% 98%)",
+        },
+        secondary: {
+          DEFAULT: "hsl(0 0% 96.1%)",
+          foreground: "hsl(0 0% 9%)",
+        },
+        muted: {
+          DEFAULT: "hsl(0 0% 96.1%)",
+          foreground: "hsl(0 0% 45.1%)",
+        },
+        accent: {
+          DEFAULT: "#eef3ff",
+          foreground: "#4f8cff",
+        },
+        destructive: {
+          DEFAULT: "#fef2f2",
+          foreground: "#dc2626",
+        },
+        border: "hsl(0 0% 93%)",
+        input: "hsl(0 0% 93%)",
+        ring: "hsl(222 100% 64%)",
+      },
+      borderRadius: {
+        lg: "10px",
+        md: "8px",
+        sm: "6px",
       },
       boxShadow: {
+        "focus-input": "0 0 0 2px var(--focus-ring)",
         soft: "var(--shadow-soft)",
       },
     },

@@ -5,7 +5,15 @@ import { defineConfig } from "vite";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), codeInspectorPlugin({ bundler: "vite" })],
+  plugins: [
+    codeInspectorPlugin({
+      bundler: "vite",
+      importClient: "file",
+      injectTo: path.resolve(__dirname, "./src/main.tsx"),
+      skipSnippets: ["htmlScript"],
+    }),
+    react(),
+  ],
   build: {
     chunkSizeWarningLimit: 2000,
   },
