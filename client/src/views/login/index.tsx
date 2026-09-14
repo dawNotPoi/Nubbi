@@ -13,11 +13,11 @@ import { useEffect, useMemo, useState } from "react";
 import { Github, Loader2 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import faviconSvg from "/favicon.svg";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { Button } from "@/component/UI/button";
+import { Input } from "@/component/UI/input";
+import { Label } from "@/component/UI/label";
+import { Separator } from "@/component/UI/separator";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/component/UI/card";
 
 type AuthView = "login" | "register" | "verifyEmail" | "forgotPassword";
 
