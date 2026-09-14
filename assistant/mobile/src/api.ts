@@ -31,10 +31,11 @@ const readError = async (response: Response): Promise<string> => {
  * @returns 解析后的 JSON 结果。
  */
 const request = async <T>(baseUrl: string, path: string, init?: RequestInit): Promise<T> => {
-  const response = await fetch(`${baseUrl}${path}`, {
-    ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers },
-  });
+  const headers = new Headers(init?.headers);
+  // 只有实际携带 JSON 请求体时才声明 application/json，
+  // 避免空 body 的 POST/DELETE 因「JSON content-type + 空 body」被 Fastify 拒绝。
+  if (init?.body != null) headers.set("Content-Type", "application/json");
+  const response = await fetch(`${baseUrl}${path}`, { ...init, headers });
   if (!response.ok) throw new Error(await readError(response));
   if (response.status === 204) return undefined as T;
   const contentType = response.headers.get("content-type") ?? "";
