@@ -99,6 +99,7 @@ preserve_ports() {
   preserve_port WEB_PORT client 80 80
   preserve_port SERVER_PORT server 4000 4000
   preserve_port SOCKET_PORT server 4040 4040
+  preserve_port MCP_PORT mcp 3100 3100
 }
 
 resolve_healthcheck_url() {
@@ -127,11 +128,14 @@ print_diagnostics() {
   docker compose logs --tail 80 client || true
   log "server logs"
   docker compose logs --tail 80 server || true
+  log "mcp logs"
+  docker compose logs --tail 80 mcp || true
 }
 
 cd "$APP_DIR"
 
 require_command docker
+export COMPOSE_PARALLEL_LIMIT="${COMPOSE_PARALLEL_LIMIT:-1}"
 
 log "deploying branch: $BRANCH"
 if [ "${SKIP_GIT_UPDATE:-0}" = "1" ]; then
@@ -161,13 +165,15 @@ fi
 
 preserve_ports
 
-log "building and starting all containers"
-# 先停止旧容器，确保端口完全释放，避免重建时端口冲突
-# 注意：mcp 容器不再由 CI 部署（assistant 通过本地 stdio 连接，服务器内存有限），
-# 需要时可手动执行 docker compose up -d mcp。
-docker compose stop server client || true
-docker compose rm -f server client || true
-docker compose up -d --build --remove-orphans server client
+log "building runtime images sequentially"
+docker compose build server
+docker compose build mcp
+
+log "starting all containers"
+# 镜像先构建完成，再切换容器；2C2G 服务器上避免并行构建造成内存尖峰。
+docker compose stop server client mcp || true
+docker compose rm -f server client mcp || true
+docker compose up -d --no-build --remove-orphans server client mcp
 
 if command -v curl >/dev/null 2>&1; then
   HEALTHCHECK_URL="$(resolve_healthcheck_url)"

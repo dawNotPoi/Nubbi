@@ -65,9 +65,13 @@ jobs:
       - name: Typecheck server
         run: pnpm --filter nubbi-server typecheck
 
+      - name: Test MCP server
+        run: pnpm --filter nubbi-mcp-server test
+
       - name: Build Docker images
         run: |
           docker build -f server/Dockerfile -t nubbi-server:verify .
+          docker build -f mcp/Dockerfile -t nubbi-mcp-server:verify .
 
   deploy:
     name: Deploy
@@ -88,6 +92,10 @@ jobs:
       MONGO_URI: ${{ secrets.MONGO_URI || '' }}
       SERVER_PORT: ${{ vars.SERVER_PORT || secrets.SERVER_PORT || '' }}
       SOCKET_PORT: ${{ vars.SOCKET_PORT || secrets.SOCKET_PORT || '' }}
+      MCP_PORT: ${{ vars.MCP_PORT || secrets.MCP_PORT || '' }}
+      MCP_BIND_ADDRESS: ${{ vars.MCP_BIND_ADDRESS || secrets.MCP_BIND_ADDRESS || '' }}
+      MCP_ALLOWED_HOSTS: ${{ vars.MCP_ALLOWED_HOSTS || secrets.MCP_ALLOWED_HOSTS || '' }}
+      MCP_ALLOWED_ORIGINS: ${{ vars.MCP_ALLOWED_ORIGINS || secrets.MCP_ALLOWED_ORIGINS || '' }}
       BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET || '' }}
       BETTER_AUTH_URL: ${{ vars.BETTER_AUTH_URL || secrets.BETTER_AUTH_URL || '' }}
       CLIENT_URL: ${{ vars.CLIENT_URL || secrets.CLIENT_URL || '' }}
@@ -234,6 +242,22 @@ jobs:
             rootEnv.SOCKET_PORT = process.env.SOCKET_PORT;
           }
 
+          if (process.env.MCP_PORT) {
+            rootEnv.MCP_PORT = process.env.MCP_PORT;
+          }
+
+          if (process.env.MCP_BIND_ADDRESS) {
+            rootEnv.MCP_BIND_ADDRESS = process.env.MCP_BIND_ADDRESS;
+          }
+
+          if (process.env.MCP_ALLOWED_HOSTS) {
+            rootEnv.MCP_ALLOWED_HOSTS = process.env.MCP_ALLOWED_HOSTS;
+          }
+
+          if (process.env.MCP_ALLOWED_ORIGINS) {
+            rootEnv.MCP_ALLOWED_ORIGINS = process.env.MCP_ALLOWED_ORIGINS;
+          }
+
           const serialize = (value) => JSON.stringify(String(value ?? ''));
           const render = (env) =>
             Object.entries(env)
@@ -323,7 +347,7 @@ jobs:
             fi
           }
 
-          for key in WEB_PORT SERVER_PORT SOCKET_PORT; do
+          for key in WEB_PORT SERVER_PORT SOCKET_PORT MCP_PORT MCP_BIND_ADDRESS MCP_ALLOWED_HOSTS MCP_ALLOWED_ORIGINS; do
             preserve_env_value "$key"
           done
 
