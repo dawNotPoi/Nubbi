@@ -112,7 +112,7 @@ export const ResetPasswordPage = () => {
               label="新密码"
               rules={[
                 { required: true, message: "请输入新密码" },
-                { min: 6, message: "密码至少 6 位" },
+                { min: 8, message: "密码至少 8 位" },
               ]}
             >
               <Input.Password placeholder="请输入新密码" />
@@ -123,7 +123,7 @@ export const ResetPasswordPage = () => {
               label="确认新密码"
               rules={[
                 { required: true, message: "请再次输入新密码" },
-                { min: 6, message: "密码至少 6 位" },
+                { min: 8, message: "密码至少 8 位" },
               ]}
             >
               <Input.Password placeholder="请再次输入新密码" />

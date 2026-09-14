@@ -71,6 +71,8 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
+    // better-auth 默认即 8，显式声明以与路由层校验（注册/重置"至少 8 位"）保持同步
+    minPasswordLength: 8,
     passwordResetTokenExpiresIn: 60 * 60,
     sendResetPassword: async ({ user, token }) => {
       const resetCode = await createPasswordResetCode(

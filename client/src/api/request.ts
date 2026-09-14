@@ -1,10 +1,4 @@
-import {
-  ensureJwt,
-  handleUnauthorized,
-} from "@/utils/auth";
-import { getApiBaseUrl } from "@/utils/env";
-
-const baseUrl = getApiBaseUrl();
+import { authorizedFetch } from "@/utils/auth";
 
 type ApiResponse<T> = {
   code: 0 | 1;
@@ -12,39 +6,7 @@ type ApiResponse<T> = {
   message: string;
 };
 
-const resolveApiUrl = (url: string) => {
-  const pathUrl = url.startsWith("/") ? url : `/${url}`;
-  return `${baseUrl}${pathUrl}`;
-};
-
-const withAuthHeaders = async (headers?: HeadersInit) => {
-  const nextHeaders = new Headers(headers);
-  const token = await ensureJwt();
-
-  if (token) {
-    nextHeaders.set("Authorization", `Bearer ${token}`);
-  }
-
-  return nextHeaders;
-};
-
-export const authorizedFetch = async (
-  url: string,
-  init: RequestInit = {},
-): Promise<Response> => {
-  const response = await fetch(resolveApiUrl(url), {
-    ...init,
-    credentials: init.credentials ?? "omit",
-    headers: await withAuthHeaders(init.headers),
-  });
-
-  if (response.status === 401) {
-    await handleUnauthorized();
-    throw new Error("认证失败，请重新登录");
-  }
-
-  return response;
-};
+export { authorizedFetch };
 
 export default async function request<T>(
   url: string,
@@ -52,7 +14,7 @@ export default async function request<T>(
   method = "post",
   init: RequestInit = {},
 ): Promise<ApiResponse<T>> {
-  const headers = await withAuthHeaders(init.headers);
+  const headers = new Headers(init.headers);
 
   if (!headers.has("Content-Type") && body !== undefined) {
     headers.set("Content-Type", "application/json");
@@ -112,8 +74,4 @@ export function Get<T = unknown>(
     ...options,
     method: "GET",
   }).then((response) => response.json());
-}
-
-export function getWebData() {
-  return request("admin/info", undefined, "get");
 }

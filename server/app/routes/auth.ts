@@ -261,8 +261,8 @@ router.post(
       return errorResponse(res, 400, "请输入 6 位数字验证码");
     }
 
-    if (password.length < 6) {
-      return errorResponse(res, 400, "密码至少 6 位");
+    if (password.length < 8) {
+      return errorResponse(res, 400, "密码至少 8 位");
     }
 
     const existingUser = await findAuthUserByEmail(email);
@@ -543,10 +543,10 @@ router.post(
       });
     }
 
-    if (newPassword.length < 6) {
+    if (newPassword.length < 8) {
       return res.status(400).json({
         code: 0,
-        message: "新密码至少需要 6 位",
+        message: "新密码至少需要 8 位",
         data: null,
       });
     }
