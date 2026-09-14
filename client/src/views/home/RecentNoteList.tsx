@@ -2,12 +2,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { recentNoteAtom } from "@/store/atom/noteAtom";
 import { useAtomValue } from "jotai";
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import CardWrapper from "./CardWrapper";
 import { RecentNoteCard, RecentNoteCardSkeleton } from "./RecentNoteCard";
 
 const AVATAR_CACHE_KEY = "home_recent_note_user_avatar";
 const NAME_CACHE_KEY = "home_recent_note_user_name";
+const EDGE_FADE_MIN_WIDTH = 64;
+const FALLBACK_CARD_STEP = 184;
 
 const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
   const {
@@ -19,9 +21,47 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
   const [offset, setOffset] = useState(0);
   const [maxOffset, setMaxOffset] = useState(0);
   const [cachedAvatar, setCachedAvatar] = useState("");
+  const [rightFadeWidth, setRightFadeWidth] = useState(EDGE_FADE_MIN_WIDTH);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const hasNotes = data.length > 0;
+
+  const getListLayout = useCallback(() => {
+    const wrapper = wrapperRef.current;
+    const list = listRef.current;
+    const firstCard = list?.querySelector("li");
+
+    if (!wrapper || !list || !(firstCard instanceof HTMLElement)) return null;
+
+    const { columnGap } = window.getComputedStyle(list);
+    const gap = Number.parseFloat(columnGap) || 0;
+    const cardWidth = firstCard.offsetWidth;
+    const step = cardWidth + gap;
+
+    if (cardWidth <= 0 || step <= 0) return null;
+
+    const listLeft = list.offsetLeft;
+    const availableWidth = Math.max(
+      cardWidth,
+      wrapper.clientWidth - listLeft - EDGE_FADE_MIN_WIDTH,
+    );
+    const visibleCardCount = Math.max(
+      1,
+      Math.floor((availableWidth + gap) / step),
+    );
+    const visibleCardsWidth =
+      visibleCardCount * cardWidth + Math.max(visibleCardCount - 1, 0) * gap;
+    const fadeWidth = Math.max(
+      EDGE_FADE_MIN_WIDTH,
+      wrapper.clientWidth - listLeft - visibleCardsWidth,
+    );
+
+    return {
+      fadeWidth,
+      step,
+      visibleCardCount,
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -40,25 +80,43 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
 
   useEffect(() => {
     const updateMax = () => {
-      if (!wrapperRef.current || !listRef.current || !hasNotes) {
+      const layout = getListLayout();
+
+      if (!layout || !hasNotes) {
         setMaxOffset(0);
         setOffset(0);
+        setRightFadeWidth(EDGE_FADE_MIN_WIDTH);
         return;
       }
 
-      const listWidth = listRef.current.scrollWidth;
-      const wrapperWidth = wrapperRef.current.offsetWidth;
-      const max = Math.max(listWidth - wrapperWidth, 0);
+      const maxStartIndex = Math.max(data.length - layout.visibleCardCount, 0);
+      const max = maxStartIndex * layout.step;
       setMaxOffset(max);
+      setRightFadeWidth(layout.fadeWidth);
+      setOffset((current) => Math.min(current, max));
     };
 
     updateMax();
     window.addEventListener("resize", updateMax);
     return () => window.removeEventListener("resize", updateMax);
-  }, [hasNotes, data]);
+  }, [data.length, getListLayout, hasNotes]);
 
   const canScrollLeft = hasNotes && offset > 0;
   const canScrollRight = hasNotes && offset < maxOffset;
+  const hasHorizontalOverflow = hasNotes && maxOffset > 0;
+
+  const scrollNotes = (direction: -1 | 1) => {
+    const layout = getListLayout();
+    const step = layout?.step || FALLBACK_CARD_STEP;
+    const visibleCardCount = layout?.visibleCardCount || 1;
+    const cardCountPerMove = Math.max(1, visibleCardCount - 1);
+    const distance = cardCountPerMove * step;
+
+    setOffset((current) => {
+      const next = current + direction * distance;
+      return Math.min(Math.max(next, 0), maxOffset);
+    });
+  };
 
   return (
     <CardWrapper
@@ -104,27 +162,34 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
         </ul>
 
         {!isPending && canScrollLeft && (
-          <div className="z-20 h-full absolute left-0 top-0 bg-gradient-to-r from-white to-white/5 flex flex-col justify-center">
+          <div className="pointer-events-none absolute left-0 top-0 z-20 flex h-full w-16 flex-col items-start justify-center bg-gradient-to-r from-white to-white/5">
             <button
               onClick={() => {
-                setOffset((v) => (v - 450 <= 0 ? 0 : v - 450));
+                scrollNotes(-1);
               }}
-              className="cursor-pointer group-hover:opacity-100 hover:border-sky-400 opacity-0 p-2 rounded-full bg-white border flex items-center justify-center"
+              aria-label="向左查看更多最近编辑"
+              className="pointer-events-auto flex cursor-pointer items-center justify-center rounded-full border bg-white p-2 opacity-0 hover:border-sky-400 group-hover:opacity-100"
             >
               <ChevronLeft size={14} />
             </button>
           </div>
         )}
-        {!isPending && canScrollRight && (
-          <div className="z-20 h-full absolute right-0 top-0 bg-gradient-to-l from-white to-white/5 flex flex-col justify-center">
-            <button
-              onClick={() => {
-                setOffset((v) => (v + 450 > maxOffset ? maxOffset : v + 450));
-              }}
-              className="cursor-pointer group-hover:opacity-100 opacity-0 p-2 rounded-full bg-white border flex items-center justify-center hover:border-sky-400"
-            >
-              <ChevronRight size={14} />
-            </button>
+        {!isPending && hasHorizontalOverflow && (
+          <div
+            className="pointer-events-none absolute right-0 top-0 z-20 flex h-full flex-col items-end justify-center bg-gradient-to-l from-white to-white/5"
+            style={{ width: rightFadeWidth }}
+          >
+            {canScrollRight ? (
+              <button
+                onClick={() => {
+                  scrollNotes(1);
+                }}
+                aria-label="向右查看更多最近编辑"
+                className="pointer-events-auto flex cursor-pointer items-center justify-center rounded-full border bg-white p-2 opacity-0 hover:border-sky-400 group-hover:opacity-100"
+              >
+                <ChevronRight size={14} />
+              </button>
+            ) : null}
           </div>
         )}
       </div>
