@@ -1,6 +1,7 @@
+import { getApiBaseUrl } from "@/utils/env";
 import request, { authorizedFetch, requestWithNoJson } from "./request";
 
-const baseUrl = import.meta.env.VITE_API_URL;
+const baseUrl = getApiBaseUrl();
 
 export interface FolderRecord {
   _id: string;

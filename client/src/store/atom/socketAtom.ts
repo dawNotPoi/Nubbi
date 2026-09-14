@@ -1,6 +1,7 @@
+import { getSocketBaseUrl } from "@/utils/env";
 import { atom } from "jotai";
 import { Socket, io } from "socket.io-client";
-const url = import.meta.env.VITE_SOCKET_URL;
+const url = getSocketBaseUrl();
 // socket 实例的 atom
 
 interface SocketState {

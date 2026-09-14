@@ -17,10 +17,8 @@ if (!skipDocker) {
       "docker",
       [
         "build",
-        "--build-arg",
-        "VITE_API_URL=http://127.0.0.1:4000",
-        "--build-arg",
-        "VITE_SOCKET_URL=http://127.0.0.1:4040",
+        "-f",
+        "client/Dockerfile.runtime",
         "-t",
         "d-note-client:preflight",
         "./client",

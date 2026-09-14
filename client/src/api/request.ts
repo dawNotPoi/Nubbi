@@ -3,8 +3,9 @@ import {
   handleUnauthorized,
   restoreAuthSession,
 } from "@/utils/auth";
+import { getApiBaseUrl } from "@/utils/env";
 
-const baseUrl = import.meta.env.VITE_API_URL;
+const baseUrl = getApiBaseUrl();
 
 type ApiResponse<T> = {
   code: 0 | 1;

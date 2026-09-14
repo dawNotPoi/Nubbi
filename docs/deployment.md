@@ -44,15 +44,11 @@ Optional root `.env` values for Docker Compose:
 
 ```env
 WEB_PORT=80
-VITE_API_URL=
-VITE_SOCKET_URL=
-VITE_GITHUB_REPO=
-VITE_GITHUB_TOKEN=
 ```
 
-Leaving `VITE_API_URL` and `VITE_SOCKET_URL` empty makes the browser use the
-same origin. The frontend Nginx container proxies API routes to the server
-container and proxies `/socket.io` to the Socket.IO port.
+The frontend is built before it is uploaded to the server. The frontend Nginx
+container only serves the already-built `client/dist` files, proxies API routes
+to the server container, and proxies `/socket.io` to the Socket.IO port.
 
 Do not put high-privilege secrets in `VITE_` variables. Vite embeds them into
 browser assets. If `VITE_GITHUB_TOKEN` is still needed, use a minimal-scope token
@@ -89,16 +85,22 @@ The workflow:
 
 The Docker deploy script:
 
-1. Pulls the latest branch with `git pull --ff-only`.
-2. Runs `docker compose up -d --build --remove-orphans`.
-3. Checks the frontend URL.
-4. Prints `docker compose ps`.
+1. Pulls the latest branch with `git pull --ff-only`, unless the release bundle
+   was uploaded by GitHub Actions.
+2. Verifies `client/dist/index.html` exists.
+3. Builds only the runtime Docker images and starts the containers.
+4. Checks the frontend URL.
+5. Prints `docker compose ps`.
 
 ## Manual commands
 
 Deploy:
 
 ```bash
+pnpm --dir client install --frozen-lockfile
+pnpm --dir client build
+
+# Upload this repository, including client/dist, to the server first.
 cd /var/www/D-NOTE
 bash scripts/deploy-docker.sh master
 ```

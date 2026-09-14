@@ -1,7 +1,8 @@
 import { createAuthClient } from "better-auth/react";
 import { useSyncExternalStore } from "react";
+import { getApiBaseUrl } from "./env";
 
-const baseUrl = import.meta.env.VITE_API_URL;
+const baseUrl = getApiBaseUrl();
 
 type AuthRuntimeState = {
   accessToken: string | null;

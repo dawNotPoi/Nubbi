@@ -25,8 +25,8 @@ jobs:
     name: Verify
     runs-on: ubuntu-latest
     env:
-      VITE_API_URL: ${{ vars.VITE_API_URL || secrets.VITE_API_URL || 'http://127.0.0.1:4000' }}
-      VITE_SOCKET_URL: ${{ vars.VITE_SOCKET_URL || secrets.VITE_SOCKET_URL || 'http://127.0.0.1:4040' }}
+      VITE_API_URL: ${{ vars.VITE_API_URL || secrets.VITE_API_URL || '' }}
+      VITE_SOCKET_URL: ${{ vars.VITE_SOCKET_URL || secrets.VITE_SOCKET_URL || '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -64,10 +64,7 @@ jobs:
 
       - name: Build Docker images
         run: |
-          docker build \
-            --build-arg VITE_API_URL="$VITE_API_URL" \
-            --build-arg VITE_SOCKET_URL="$VITE_SOCKET_URL" \
-            -t d-note-client:verify ./client
+          docker build -f client/Dockerfile.runtime -t d-note-client:verify ./client
           docker build -t d-note-server:verify ./server
 
   deploy:
@@ -82,8 +79,8 @@ jobs:
       DEPLOY_USER: ${{ secrets.DEPLOY_USER || 'root' }}
       DEPLOY_PORT: ${{ secrets.DEPLOY_PORT || '22' }}
       DEPLOY_PASSWORD: ${{ secrets.DEPLOY_PASSWORD || '' }}
-      VITE_API_URL: ${{ vars.VITE_API_URL || secrets.VITE_API_URL || 'http://127.0.0.1:4000' }}
-      VITE_SOCKET_URL: ${{ vars.VITE_SOCKET_URL || secrets.VITE_SOCKET_URL || 'http://127.0.0.1:4040' }}
+      VITE_API_URL: ${{ vars.VITE_API_URL || secrets.VITE_API_URL || '' }}
+      VITE_SOCKET_URL: ${{ vars.VITE_SOCKET_URL || secrets.VITE_SOCKET_URL || '' }}
       WEB_PORT: ${{ vars.WEB_PORT || secrets.WEB_PORT || '80' }}
       MONGO_URI: ${{ secrets.MONGO_URI || '' }}
       SERVER_PORT: ${{ vars.SERVER_PORT || secrets.SERVER_PORT || '4000' }}
@@ -116,6 +113,23 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch || github.ref }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.12.4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: client/pnpm-lock.yaml
+
+      - name: Build client assets
+        run: |
+          pnpm --dir client install --frozen-lockfile
+          pnpm --dir client build
 
       - name: Configure SSH
         run: |
@@ -163,8 +177,6 @@ jobs:
         run: |
           required_vars=(
             DEPLOY_HOST
-            VITE_API_URL
-            VITE_SOCKET_URL
             MONGO_URI
             BETTER_AUTH_SECRET
             BETTER_AUTH_URL
@@ -240,7 +252,6 @@ jobs:
           tar \
             --exclude='.git' \
             --exclude='client/node_modules' \
-            --exclude='client/dist' \
             --exclude='server/node_modules' \
             --exclude='server/storage' \
             --exclude='.pnpm-store' \
