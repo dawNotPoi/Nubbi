@@ -11,11 +11,20 @@ const activeTaskFilter = (ownerId: string) => ({
   ...getActiveUploadTaskGuard(new Date()),
 });
 
-/** 校验用户存储配额：文件占用 + 未完成任务预留，超限抛 413 */
-export const assertUploadQuota = async (
+/** 用户存储用量：活跃文件占用 + 未完成上传任务预留 */
+export type StorageUsage = {
+  usedBytes: number;
+  reservedBytes: number;
+};
+
+/**
+ * 汇总用户存储用量，配额校验与用量展示共用同一口径。
+ * @param ownerId 用户 ID。
+ * @returns 活跃文件占用字节数与上传任务预留字节数。
+ */
+export const getStorageUsage = async (
   ownerId: string,
-  size: number,
-): Promise<void> => {
+): Promise<StorageUsage> => {
   const [fileUsage, taskUsage] = await Promise.all([
     File.aggregate<{ total: number }>([
       { $match: { ownerId, status: "active" } },
@@ -26,7 +35,19 @@ export const assertUploadQuota = async (
       { $group: { _id: null, total: { $sum: "$totalSize" } } },
     ]),
   ]);
-  const reserved = (fileUsage[0]?.total ?? 0) + (taskUsage[0]?.total ?? 0);
+  return {
+    usedBytes: fileUsage[0]?.total ?? 0,
+    reservedBytes: taskUsage[0]?.total ?? 0,
+  };
+};
+
+/** 校验用户存储配额：文件占用 + 未完成任务预留，超限抛 413 */
+export const assertUploadQuota = async (
+  ownerId: string,
+  size: number,
+): Promise<void> => {
+  const { usedBytes, reservedBytes } = await getStorageUsage(ownerId);
+  const reserved = usedBytes + reservedBytes;
   if (reserved + size > fileUploadConfig.userQuotaBytes) {
     throw new FileUploadError(413, "UPLOAD_QUOTA_EXCEEDED", "用户存储空间不足");
   }

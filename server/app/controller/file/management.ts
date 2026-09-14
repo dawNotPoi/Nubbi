@@ -5,6 +5,7 @@ import {
 } from "@/services/fileManagement/delete";
 import { listFiles } from "@/services/fileManagement/list";
 import { moveFileBatch, moveFileItem } from "@/services/fileManagement/move";
+import { getFileStats } from "@/services/fileManagement/stats";
 import type {
   FileListInput,
   MoveBatchInput,
@@ -53,6 +54,11 @@ export const getManagedFileList = (
   ownerId: string,
   input: FileListInput,
 ): ReturnType<typeof listFiles> => listFiles(ownerId, input);
+
+/** 查询当前用户的存储用量与配额 */
+export const getManagedFileStats = (
+  ownerId: string,
+): ReturnType<typeof getFileStats> => getFileStats(ownerId);
 
 /** 移动单个文件/文件夹 */
 export const moveManagedItem = (

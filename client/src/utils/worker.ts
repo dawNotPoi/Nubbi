@@ -1,6 +1,6 @@
 import SparkMD5 from "spark-md5";
+import { FULL_HASH_THRESHOLD_BYTES } from "@/features/upload/hashPolicy";
 
-const SMALL_FILE_THRESHOLD = 100 * 1024 * 1024; // 100MB
 const FULL_HASH_CHUNK_SIZE = 2 * 1024 * 1024;   // 2MB per read for full hash
 const SAMPLE_SIZE = 1 * 1024 * 1024;             // 1MB per sample point
 const MIDDLE_SAMPLE_COUNT = 12;                  // evenly-spaced middle samples
@@ -78,7 +78,9 @@ const calculateSampledHash = async (file: File): Promise<string> => {
 onmessage = (event: MessageEvent<File>) => {
   const file = event.data;
   const calculate =
-    file.size < SMALL_FILE_THRESHOLD ? calculateFullHash : calculateSampledHash;
+    file.size < FULL_HASH_THRESHOLD_BYTES
+      ? calculateFullHash
+      : calculateSampledHash;
 
   calculate(file)
     .then((hash) => {

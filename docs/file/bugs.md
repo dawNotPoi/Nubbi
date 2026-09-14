@@ -75,13 +75,15 @@
 
 ---
 
-### BUG-007 大文件抽样 hash 时进度条 0%→10% 瞬间跳变
+### BUG-007 ~~大文件抽样 hash 时进度条 0%→10% 瞬间跳变~~ ✅ 已修复
 
-**位置**：`client/src/utils/file.ts` `HASH_PERCENTAGE`
+**位置**：`client/src/features/upload/Uploader.ts` · `client/src/utils/worker.ts` · `client/src/features/upload/hashPolicy.ts`
 
 **现象**：≥100MB 文件使用抽样 hash，仅读约 14MB，速度极快，hash 阶段占用的 10% 进度在不到一秒内跳过，随后进度卡住等待服务端响应，体验割裂。
 
 **修复方向**：对大文件将 `HASH_PERCENTAGE` 设为 0 或 2，或在 hash 完成后直接跳过这一阶段的进度展示。
+
+**修复说明**：只有完整哈希（<100MB）才把哈希进度映射到 0–10%，抽样哈希期间进度保持 0，初始化时直接跳到 10%；阈值抽到 `hashPolicy.ts`，worker 与 Uploader 共用，避免两处各写一个 100MB 常量。
 
 ---
 
@@ -107,11 +109,13 @@
 
 ## P3 — 低优先级
 
-### BUG-010 `uploadTaskAtomFamily` 永不清理，长会话内存持续增长
+### BUG-010 ~~`uploadTaskAtomFamily` 永不清理，长会话内存持续增长~~ ✅ 已修复
 
 **位置**：`client/src/store/atom/FileAtom.ts`
 
 **修复方向**：任务完成/取消后调用 `uploadTaskAtomFamily.remove(taskId)` 释放 atom。
+
+**修复说明**：`useUploadTaskActions.removeTask` 已统一移除 atom，取消任务、单条移除和“清除已完成”都会走到该路径；成功任务保留到用户主动清除，属于列表展示需要。
 
 ---
 
