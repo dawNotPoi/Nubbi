@@ -3,7 +3,6 @@ import Note from "@/models/note";
 import NotePurgeTask from "@/models/notePurgeTask";
 import Summary from "@/models/summary";
 import { recalculateHasChildren } from "./structure";
-import { withNoteStructureLock } from "./structure-lock";
 
 export const completePendingNotePurge = async (
   userId: string,
@@ -41,11 +40,9 @@ export const processPendingNotePurges = async (): Promise<void> => {
     .lean();
 
   for (const task of tasks) {
-    await withNoteStructureLock(task.userId, () =>
-      completePendingNotePurge(
-        task.userId,
-        String(task.rootNoteId),
-      ),
+    await completePendingNotePurge(
+      task.userId,
+      String(task.rootNoteId),
     ).catch((error: unknown) => {
       logger.warn("笔记永久删除任务失败，将在后台重试", {
         userId: task.userId,

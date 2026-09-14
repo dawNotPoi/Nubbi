@@ -48,36 +48,30 @@ export const libraryExpandedNodesAtom = atomWithStorage<string[]>(
   [],
 );
 
-export const rootNotesAtom = atomFamily((owner: string) =>
-  atomWithQuery(
-    () => ({
-      queryKey: noteListQueryKey({ owner }),
-      queryFn: async () => {
-        const response = await getRootNotes();
-        return response.data || [];
-      },
-      enabled: Boolean(owner),
-      staleTime: 5 * 60 * 1000,
-      gcTime: 10 * 60 * 1000,
-    }),
-    () => queryClient,
-  ),
+export const rootNotesAtom = atomWithQuery(
+  () => ({
+    queryKey: noteKeys.rootLists,
+    queryFn: async () => {
+      const response = await getRootNotes();
+      return response.data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  }),
+  () => queryClient,
 );
 
-export const allNotesAtom = atomFamily((owner: string) =>
-  atomWithQuery(
-    () => ({
-      queryKey: noteKeys.allList(owner),
-      queryFn: async () => {
-        const response = await getAllNotes();
-        return response.data || [];
-      },
-      enabled: Boolean(owner),
-      staleTime: 2 * 60 * 1000,
-      gcTime: 10 * 60 * 1000,
-    }),
-    () => queryClient,
-  ),
+export const allNotesAtom = atomWithQuery(
+  () => ({
+    queryKey: noteKeys.allLists,
+    queryFn: async () => {
+      const response = await getAllNotes();
+      return response.data || [];
+    },
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  }),
+  () => queryClient,
 );
 
 export const noteChildrenAtom = atomFamily((noteId: string) =>
@@ -135,8 +129,8 @@ export const patchNotePropertiesCacheAtom = atom(
 
 export const createNoteAtom = atomWithMutation(() => ({
   mutationFn: ({ note }: CreateNoteVariables) => createNote(note),
-  onMutate: async ({ note, owner }) => {
-    const scope = { parentId: note.parentId, owner };
+  onMutate: async ({ note }) => {
+    const scope = { parentId: note.parentId };
     return optimisticPrependNoteToList(queryClient, scope, note);
   },
   onError: (error, _variables, context) => {
@@ -144,7 +138,7 @@ export const createNoteAtom = atomWithMutation(() => ({
     rollbackNoteListSnapshot(queryClient, context);
   },
   onSuccess: (response, variables) => {
-    const scope = { parentId: variables.note.parentId, owner: variables.owner };
+    const scope = { parentId: variables.note.parentId };
     const nextNote = response.data || variables.note;
 
     patchNoteAcrossCaches(queryClient, variables.note._id, nextNote);
@@ -156,7 +150,6 @@ export const createNoteAtom = atomWithMutation(() => ({
       });
       markNoteListQueryStale(queryClient, {
         parentId: variables.note.parentId,
-        owner: variables.owner,
       });
     }
     queryClient.invalidateQueries({
@@ -168,8 +161,8 @@ export const createNoteAtom = atomWithMutation(() => ({
 
 export const deleteSingleNoteAtom = atomWithMutation(() => ({
   mutationFn: ({ noteId }: DeleteNoteVariables) => deleteNote(noteId),
-  onMutate: async ({ noteId, parentId, owner }) => {
-    const scope = { parentId, owner };
+  onMutate: async ({ noteId, parentId }) => {
+    const scope = { parentId };
     return optimisticRemoveNoteFromList(queryClient, scope, noteId);
   },
   onError: (error, _variables, context) => {
@@ -179,7 +172,6 @@ export const deleteSingleNoteAtom = atomWithMutation(() => ({
   onSuccess: (_data, variables) => {
     markNoteListQueryStale(queryClient, {
       parentId: variables.parentId,
-      owner: variables.owner,
     });
     queryClient.invalidateQueries({
       queryKey: noteKeys.recent(),

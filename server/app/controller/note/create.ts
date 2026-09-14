@@ -4,7 +4,6 @@ import note, {
   type NoteEntity,
 } from "@/models/note";
 import mongoose, { type Types } from "mongoose";
-import { withNoteStructureLock } from "@/services/note/structure-lock";
 import { assertNotesNotPendingPurge } from "./access";
 import { normalizeMetaEntries, type MetaEntry } from "./note-meta";
 
@@ -49,7 +48,7 @@ type CreateNoteData = {
 const resolveInitialStatus = (source?: NoteSource): NoteStatus =>
   source === "agent" ? "inbox" : "active";
 
-const createNoteUnlocked = async (req: CreateNoteInput) => {
+const createNoteRecord = async (req: CreateNoteInput) => {
   const noteData: CreateNoteData = {
     userId: req.userId,
     title: req.title,
@@ -107,10 +106,9 @@ const createNoteUnlocked = async (req: CreateNoteInput) => {
 
 export const createNote = async (
   req: CreateNoteInput,
-): Promise<NoteDocument> =>
-  withNoteStructureLock(String(req.userId), () => createNoteUnlocked(req));
+): Promise<NoteDocument> => createNoteRecord(req);
 
-const duplicateNoteUnlocked = async (
+const duplicateNoteRecord = async (
   noteId: string,
   userId: string,
   newParentId: string | null = null,
@@ -167,6 +165,4 @@ export const duplicateNote = async (
   userId: string,
   newParentId: string | null = null,
 ): Promise<NoteDocument> =>
-  withNoteStructureLock(userId, () =>
-    duplicateNoteUnlocked(noteId, userId, newParentId),
-  );
+  duplicateNoteRecord(noteId, userId, newParentId);

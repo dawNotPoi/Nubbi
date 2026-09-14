@@ -52,7 +52,7 @@ export const useMarkdownNoteImport = ({
             title: draft.title,
           });
 
-          await createNote({ note, owner });
+          await createNote({ note });
         }),
       );
 

@@ -15,7 +15,6 @@ type SubmitDraftOptions = {
 };
 
 type UseCreateNoteDraftOptions = {
-  owner?: string;
   parent: Note;
 };
 
@@ -24,10 +23,7 @@ const DEFAULT_DRAFT_TITLE = "未命名文档";
 const normalizeDraftTitle = (title: string) =>
   title.trim() ? title : DEFAULT_DRAFT_TITLE;
 
-export const useCreateNoteDraft = ({
-  owner,
-  parent,
-}: UseCreateNoteDraftOptions) => {
+export const useCreateNoteDraft = ({ parent }: UseCreateNoteDraftOptions) => {
   const [targetNote, setTargetNote] = useState<Note | null>(parent);
   const [targetPickerOpen, setTargetPickerOpen] = useState(false);
   const [draftNote, setDraftNote] = useState<NoteWithContent | null>(null);
@@ -82,7 +78,6 @@ export const useCreateNoteDraft = ({
           }
 
           updatePropertiesRef.current({
-            owner,
             parentId: parentId ?? undefined,
             noteId,
             properties: { title: nextTitle },
@@ -90,7 +85,7 @@ export const useCreateNoteDraft = ({
         },
         300,
       ),
-    [owner],
+    [],
   );
 
   const debouncedUpdateContent = useMemo(
@@ -163,7 +158,7 @@ export const useCreateNoteDraft = ({
     setDraftNote(note);
     createdNoteIdsRef.current.delete(note._id);
     createNoteRef.current(
-      { owner, note },
+      { note },
       {
         onError: () => {
           createdNoteIdsRef.current.delete(note._id);
@@ -177,7 +172,6 @@ export const useCreateNoteDraft = ({
           if (pendingTitle) {
             pendingTitleSaveRef.current.delete(note._id);
             updatePropertiesRef.current({
-              owner,
               parentId: pendingTitle.parentId ?? undefined,
               noteId: note._id,
               properties: { title: pendingTitle.title },
@@ -201,7 +195,7 @@ export const useCreateNoteDraft = ({
     );
 
     return note;
-  }, [owner, resolvedTargetNote]);
+  }, [resolvedTargetNote]);
 
   const selectParent = (nextParent: Note) => {
     targetChangedByUserRef.current = true;
@@ -218,7 +212,6 @@ export const useCreateNoteDraft = ({
     draftNoteRef.current = nextNote;
     setDraftNote(nextNote);
     updatePropertiesRef.current({
-      owner,
       parentId: currentNote.parentId ?? undefined,
       noteId: currentNote._id,
       properties: { parentId: nextParent._id },

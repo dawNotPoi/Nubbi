@@ -28,7 +28,7 @@ export const useNoteLibraryController = () => {
     isError,
     isLoading,
     refetch,
-  } = useAtomValue(allNotesAtom(owner));
+  } = useAtomValue(allNotesAtom);
   const { data: recentNotes = [] } = useAtomValue(recentNoteAtom);
   const [filterText, setFilterText] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);

@@ -94,6 +94,10 @@
 Better Auth 的账号关联配置只声明在 `account.accountLinking`；认证日志同时按
 字段名和字符串内容清理 Cookie、Bearer、JWT、API Key、验证码和密码。
 
+开发环境允许 `localhost`、`127.0.0.1` 和 `::1` 使用实际启动端口访问认证
+接口，兼容 Vite 在默认端口被占用后切换端口；生产环境仍只信任
+`CLIENT_URL` 和 `BETTER_AUTH_URL` 配置的精确 Origin。
+
 ---
 
 ## 客户端页面

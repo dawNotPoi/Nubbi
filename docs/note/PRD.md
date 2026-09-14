@@ -354,8 +354,8 @@ z.object({
 | 文件 | 变更 |
 |------|------|
 | `client/src/store/atom/noteAtom.ts` | 适配新 Note 类型；`patchNoteAcrossCaches` 适配新字段 |
-| `client/src/features/note/model/cache.ts` | 适配新字段名 |
-| `client/src/features/note/model/keys.ts` | 不变（key 结构不变） |
+| `client/src/features/note/model/cache.ts` | 适配新字段名；列表缓存作用域仅由父节点区分 |
+| `client/src/features/note/model/keys.ts` | Note Query Key 不包含用户 ID，退出登录或账号注销后统一清空 Query Cache |
 | `client/src/features/note/model/hierarchy.ts` | 适配 hasChildren |
 
 ---
@@ -578,7 +578,7 @@ await Note.updateMany({}, { $set: { date: null } });
 - MCP 不可修改 `source`、发布笔记或永久删除笔记。
 - Agent 子树含普通用户后代时，移动、删除和恢复整棵子树均拒绝，避免越权级联。
 - MCP 正文写入使用 `contentRevision`；属性和结构写入使用 `updatedAt` 做冲突检测。
-- 树结构变更按用户获取 Mongo 租约锁；并发结构写在 2 秒内无法取得锁时返回 409，客户端应刷新后重试。
+- 当前 Note 页面仅由管理员操作，服务端不为树结构变更增加 Mongo 租约锁，也不返回锁竞争 409；调用方按正常交互顺序发起结构写操作。
 - 人工回收站通过 `GET /note/trash` 的统一 `limit/offset` 契约分页读取；响应为 `{ items, total, count, limit, offset, hasMore, nextOffset }`。客户端依赖 `hasMore/nextOffset` 合并完整结果后再判断父子层级，避免截断导致错误启用子节点恢复。
 
 ### 回收站页面

@@ -13,6 +13,7 @@ import {
 } from "@/utils/auth";
 import { updateUserAvatar } from "@/api/file";
 import { routes } from "@/utils/routes";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -33,6 +34,7 @@ export const useAuth = () => {
   const [recoveredUser, setRecoveredUser] = useState<AuthUser | undefined>();
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const user = session?.user ?? recoveredUser;
   const isAuthenticated = !!user && !!accessToken;
 
@@ -154,10 +156,11 @@ export const useAuth = () => {
     setLoading(true);
     setError(null);
     const result = await signOut();
+    queryClient.clear();
     setLoading(false);
     navigate(routes.login);
     return result;
-  }, [navigate]);
+  }, [navigate, queryClient]);
 
   const requestAccountDeletionCode = useCallback(async () => {
     setError(null);
@@ -181,10 +184,11 @@ export const useAuth = () => {
       }
 
       setRecoveredUser(undefined);
+      queryClient.clear();
       navigate(routes.login, { replace: true });
       return result;
     },
-    [navigate],
+    [navigate, queryClient],
   );
 
   const updateAvatar = useCallback(

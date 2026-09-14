@@ -7,7 +7,6 @@ import { collectDescendantNoteIds } from "@/controller/note/delete";
 import { validateNoteMoveTarget } from "@/controller/note/hierarchy-query";
 import { recalculateHasChildren } from "@/controller/note/structure-update";
 import Note from "@/models/note";
-import { withNoteStructureLock } from "@/services/note/structure-lock";
 import {
   assertExpectedDate,
   httpError,
@@ -16,7 +15,7 @@ import {
 import type { McpAffectedNoteResult, McpNoteResult } from "./types";
 import { throwMcpUpdateConflict } from "./mutation-conflict";
 
-const moveMcpNoteUnlocked = async (
+const moveMcpNoteRecord = async (
   userId: string,
   noteId: string,
   input: { expectedUpdatedAt: string; parentId: string | null },
@@ -72,9 +71,7 @@ export const moveMcpNote = async (
   noteId: string,
   input: { expectedUpdatedAt: string; parentId: string | null },
 ): Promise<McpNoteResult> =>
-  withNoteStructureLock(userId, () =>
-    moveMcpNoteUnlocked(userId, noteId, input),
-  );
+  moveMcpNoteRecord(userId, noteId, input);
 
 export const archiveMcpNote = async (
   userId: string,
@@ -98,7 +95,7 @@ export const archiveMcpNote = async (
   return serializeNote(updated);
 };
 
-const trashMcpNoteUnlocked = async (
+const trashMcpNoteRecord = async (
   userId: string,
   noteId: string,
   input: { expectedUpdatedAt?: string },
@@ -141,11 +138,9 @@ export const trashMcpNote = async (
   noteId: string,
   input: { expectedUpdatedAt?: string },
 ): Promise<McpAffectedNoteResult> =>
-  withNoteStructureLock(userId, () =>
-    trashMcpNoteUnlocked(userId, noteId, input),
-  );
+  trashMcpNoteRecord(userId, noteId, input);
 
-const restoreMcpNoteUnlocked = async (
+const restoreMcpNoteRecord = async (
   userId: string,
   noteId: string,
   input: { deletedAt?: string },
@@ -184,6 +179,4 @@ export const restoreMcpNote = async (
   noteId: string,
   input: { deletedAt?: string },
 ): Promise<McpAffectedNoteResult> =>
-  withNoteStructureLock(userId, () =>
-    restoreMcpNoteUnlocked(userId, noteId, input),
-  );
+  restoreMcpNoteRecord(userId, noteId, input);

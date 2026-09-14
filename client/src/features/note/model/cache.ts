@@ -7,7 +7,6 @@ import {
 } from "@/api/note";
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
 import {
-  canResolveNoteListScope,
   hasParentId,
   noteKeys,
   noteListQueryKey,
@@ -26,11 +25,8 @@ type NoteCachePatch = Omit<
 };
 
 export type NoteListSnapshot = {
-  canPatch: boolean;
-  caches?: NoteListCacheSnapshot[];
-  hadPreviousData?: boolean;
-  previousNotes?: Note[];
-  queryKey?: QueryKey;
+  caches: NoteListCacheSnapshot[];
+  queryKey: QueryKey;
   scope: NoteListScope;
 };
 
@@ -41,8 +37,6 @@ type NoteListCacheSnapshot = {
 };
 
 export type NotePropertiesSnapshot = {
-  canPatchCurrentList: boolean;
-  canPatchNextList: boolean;
   currentScope: NoteListScope;
   nextParentId?: string | null;
   nextScope: NoteListScope;
@@ -59,27 +53,17 @@ export type NoteContentSnapshot = {
 
 export const getNoteListScope = ({
   parentId,
-  owner,
 }: NoteListScope): NoteListScope => ({
   parentId,
-  owner,
 });
 
 export const invalidateNoteListQuery = (
   queryClient: QueryClient,
-  { parentId, owner }: NoteListScope,
+  { parentId }: NoteListScope,
 ) => {
   if (hasParentId(parentId)) {
     queryClient.invalidateQueries({
       queryKey: noteListQueryKey({ parentId }),
-    });
-    queryClient.invalidateQueries({ queryKey: noteKeys.allLists });
-    return;
-  }
-
-  if (owner) {
-    queryClient.invalidateQueries({
-      queryKey: noteListQueryKey({ owner }),
     });
     queryClient.invalidateQueries({ queryKey: noteKeys.allLists });
     return;
@@ -91,23 +75,11 @@ export const invalidateNoteListQuery = (
 
 export const markNoteListQueryStale = (
   queryClient: QueryClient,
-  { parentId, owner }: NoteListScope,
+  { parentId }: NoteListScope,
 ) => {
   if (hasParentId(parentId)) {
     queryClient.invalidateQueries({
       queryKey: noteListQueryKey({ parentId }),
-      refetchType: "none",
-    });
-    queryClient.invalidateQueries({
-      queryKey: noteKeys.allLists,
-      refetchType: "none",
-    });
-    return;
-  }
-
-  if (owner) {
-    queryClient.invalidateQueries({
-      queryKey: noteListQueryKey({ owner }),
       refetchType: "none",
     });
     queryClient.invalidateQueries({
@@ -377,10 +349,6 @@ export const optimisticPrependNoteToList = async (
   scope: NoteListScope,
   note: NoteWithContent,
 ): Promise<NoteListSnapshot> => {
-  if (!canResolveNoteListScope(scope)) {
-    return { canPatch: false, scope };
-  }
-
   const queryKey = noteListQueryKey(scope);
   await Promise.all([
     queryClient.cancelQueries({ queryKey }),
@@ -394,8 +362,6 @@ export const optimisticPrependNoteToList = async (
     ...(recentNotes === undefined ? [] : [noteKeys.recent()]),
   ]);
   const caches = getNoteListSnapshots(queryClient, cacheQueryKeys);
-  const previousNotes = queryClient.getQueryData<Note[]>(queryKey);
-  const hadPreviousData = previousNotes !== undefined;
 
   queryClient.setQueryData<Note[]>(queryKey, (old = []) =>
     prependUniqueNote(old as Note[], note),
@@ -411,9 +377,6 @@ export const optimisticPrependNoteToList = async (
 
   return {
     caches,
-    canPatch: true,
-    hadPreviousData,
-    previousNotes,
     queryKey,
     scope,
   };
@@ -424,10 +387,6 @@ export const optimisticRemoveNoteFromList = async (
   scope: NoteListScope,
   noteId: string,
 ): Promise<NoteListSnapshot> => {
-  if (!canResolveNoteListScope(scope)) {
-    return { canPatch: false, scope };
-  }
-
   const removedIds = collectNoteAndDescendantIds(queryClient, noteId);
   const queryKey = noteListQueryKey(scope);
   await Promise.all([
@@ -440,8 +399,6 @@ export const optimisticRemoveNoteFromList = async (
     ...(recentNotes === undefined ? [] : [noteKeys.recent()]),
   ]);
   const caches = getNoteListSnapshots(queryClient, cacheQueryKeys);
-  const previousNotes = queryClient.getQueryData<Note[]>(queryKey);
-  const hadPreviousData = previousNotes !== undefined;
 
   cacheQueryKeys.forEach((cachedQueryKey) => {
     queryClient.setQueryData<Note[]>(cachedQueryKey, (old) =>
@@ -451,9 +408,6 @@ export const optimisticRemoveNoteFromList = async (
 
   return {
     caches,
-    canPatch: true,
-    hadPreviousData,
-    previousNotes,
     queryKey,
     scope,
   };
@@ -463,28 +417,16 @@ export const rollbackNoteListSnapshot = (
   queryClient: QueryClient,
   snapshot?: NoteListSnapshot,
 ) => {
-  if (!snapshot?.canPatch || !snapshot.queryKey) {
-    return;
-  }
+  if (!snapshot) return;
 
-  if (snapshot.caches) {
-    snapshot.caches.forEach((cache) => {
-      if (!cache.hadPreviousData) {
-        queryClient.removeQueries({ exact: true, queryKey: cache.queryKey });
-        return;
-      }
+  snapshot.caches.forEach((cache) => {
+    if (!cache.hadPreviousData) {
+      queryClient.removeQueries({ exact: true, queryKey: cache.queryKey });
+      return;
+    }
 
-      queryClient.setQueryData(cache.queryKey, cache.previousNotes);
-    });
-    return;
-  }
-
-  if (!snapshot.hadPreviousData) {
-    queryClient.removeQueries({ exact: true, queryKey: snapshot.queryKey });
-    return;
-  }
-
-  queryClient.setQueryData(snapshot.queryKey, snapshot.previousNotes);
+    queryClient.setQueryData(cache.queryKey, cache.previousNotes);
+  });
 };
 
 export const replaceNoteInListCache = (
@@ -492,8 +434,6 @@ export const replaceNoteInListCache = (
   scope: NoteListScope,
   note: NoteWithContent,
 ) => {
-  if (!canResolveNoteListScope(scope)) return;
-
   queryClient.setQueryData<Note[]>(noteListQueryKey(scope), (old = []) =>
     (old as Note[]).map((cachedNote) =>
       cachedNote._id === note._id ? { ...cachedNote, ...note } : cachedNote,
@@ -503,35 +443,27 @@ export const replaceNoteInListCache = (
 
 export const applyOptimisticNotePropertiesUpdate = async (
   queryClient: QueryClient,
-  { noteId, properties, parentId, owner }: UpdateNotePropertiesVariables,
+  { noteId, properties, parentId }: UpdateNotePropertiesVariables,
 ): Promise<NotePropertiesSnapshot> => {
-  const currentScope = getNoteListScope({ parentId, owner });
+  const currentScope = getNoteListScope({ parentId });
   const nextParentId = Object.prototype.hasOwnProperty.call(properties, "parentId")
     ? properties.parentId
     : parentId;
-  const nextScope = getNoteListScope({ parentId: nextParentId, owner });
-  const canPatchCurrentList = canResolveNoteListScope(currentScope);
-  const canPatchNextList = canResolveNoteListScope(nextScope);
+  const nextScope = getNoteListScope({ parentId: nextParentId });
   const currentQueryKey = noteListQueryKey(currentScope);
   const nextQueryKey = noteListQueryKey(nextScope);
   const detailQueryKey = noteKeys.detail(noteId);
   const recentNoteQueryKey = noteKeys.recent();
 
-  if (canPatchCurrentList) {
-    await queryClient.cancelQueries({ queryKey: currentQueryKey });
-  }
-  if (canPatchNextList && !sameQueryKey(currentQueryKey, nextQueryKey)) {
+  await queryClient.cancelQueries({ queryKey: currentQueryKey });
+  if (!sameQueryKey(currentQueryKey, nextQueryKey)) {
     await queryClient.cancelQueries({ queryKey: nextQueryKey });
   }
   await queryClient.cancelQueries({ queryKey: detailQueryKey });
   await queryClient.cancelQueries({ queryKey: recentNoteQueryKey });
 
-  const previousNotes = canPatchCurrentList
-    ? queryClient.getQueryData<Note[]>(currentQueryKey)
-    : undefined;
-  const previousNextNotes = canPatchNextList
-    ? queryClient.getQueryData<Note[]>(nextQueryKey)
-    : undefined;
+  const previousNotes = queryClient.getQueryData<Note[]>(currentQueryKey);
+  const previousNextNotes = queryClient.getQueryData<Note[]>(nextQueryKey);
   const previousDetail =
     queryClient.getQueryData<NoteWithContent>(detailQueryKey);
   const previousRecentNotes =
@@ -550,12 +482,10 @@ export const applyOptimisticNotePropertiesUpdate = async (
         } as NoteWithContent);
 
   if (parentId !== nextParentId) {
-    if (canPatchCurrentList) {
-      queryClient.setQueryData<Note[]>(currentQueryKey, (old = []) =>
-        (old as Note[]).filter((note: Note) => note._id !== noteId),
-      );
-    }
-    if (nextNote && canPatchNextList) {
+    queryClient.setQueryData<Note[]>(currentQueryKey, (old = []) =>
+      (old as Note[]).filter((note: Note) => note._id !== noteId),
+    );
+    if (nextNote) {
       queryClient.setQueryData<Note[]>(nextQueryKey, (old = []) => {
         const nextList = (old as Note[]).filter((note) => note._id !== noteId);
         return [nextNote, ...nextList];
@@ -569,8 +499,6 @@ export const applyOptimisticNotePropertiesUpdate = async (
   });
 
   return {
-    canPatchCurrentList,
-    canPatchNextList,
     currentScope,
     nextParentId,
     nextScope,
@@ -588,13 +516,13 @@ export const rollbackOptimisticNotePropertiesUpdate = (
 ) => {
   if (!snapshot) return;
 
-  if (snapshot.previousNotes && snapshot.canPatchCurrentList) {
+  if (snapshot.previousNotes) {
     queryClient.setQueryData(
       noteListQueryKey(snapshot.currentScope),
       snapshot.previousNotes,
     );
   }
-  if (snapshot.previousNextNotes && snapshot.canPatchNextList) {
+  if (snapshot.previousNextNotes) {
     queryClient.setQueryData(
       noteListQueryKey(snapshot.nextScope),
       snapshot.previousNextNotes,

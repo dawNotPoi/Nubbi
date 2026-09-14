@@ -56,7 +56,7 @@ export const useNoteLibraryActions = ({
       updatedAt: createdAt,
       ...note,
     });
-    await createNote({ note: draft, owner });
+    await createNote({ note: draft });
   };
 
   const confirmDelete = (notes: Note[]) => {
@@ -79,7 +79,6 @@ export const useNoteLibraryActions = ({
             actionNotes.map((note) =>
               deleteNote({
                 noteId: note._id,
-                owner,
                 parentId: note.parentId ?? null,
               }),
             ),
@@ -111,7 +110,6 @@ export const useNoteLibraryActions = ({
     try {
       await updateNoteProperties({
         noteId: note._id,
-        owner,
         parentId: note.parentId ?? null,
         properties: { title },
       });
@@ -133,7 +131,6 @@ export const useNoteLibraryActions = ({
         moveCandidates.map((note) =>
           updateNoteProperties({
             noteId: note._id,
-            owner,
             parentId: note.parentId ?? null,
             properties: { parentId: target._id },
           }),

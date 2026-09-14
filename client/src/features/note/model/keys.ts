@@ -1,15 +1,12 @@
 export type NoteListScope = {
   parentId?: string | null;
-  owner?: string | null;
 };
 
 export const noteKeys = {
   all: ["notes"] as const,
   lists: ["notes", "list"] as const,
   allLists: ["notes", "list", "all"] as const,
-  allList: (owner: string) => ["notes", "list", "all", owner] as const,
   rootLists: ["notes", "list", "root"] as const,
-  root: (owner: string) => ["notes", "list", "root", owner] as const,
   childrenLists: ["notes", "list", "children"] as const,
   children: (parentId: string) =>
     ["notes", "list", "children", parentId] as const,
@@ -26,13 +23,10 @@ export const noteKeys = {
 export const hasParentId = (parentId?: string | null): parentId is string =>
   typeof parentId === "string" && parentId.length > 0;
 
-export const canResolveNoteListScope = ({ parentId, owner }: NoteListScope) =>
-  hasParentId(parentId) || Boolean(owner);
-
-export const noteListQueryKey = ({ parentId, owner }: NoteListScope) =>
+export const noteListQueryKey = ({ parentId }: NoteListScope) =>
   hasParentId(parentId)
     ? noteKeys.children(parentId)
-    : noteKeys.root(owner ?? "");
+    : noteKeys.rootLists;
 
 export const sameQueryKey = (
   firstKey: readonly unknown[],

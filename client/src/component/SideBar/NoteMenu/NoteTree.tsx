@@ -21,23 +21,20 @@ import { WrittingModal } from "./WritingModal";
 
 type NoteTreeProps = {
   notes: Note[];
-  owner?: string;
   depth?: number;
 };
 
 type NoteTreeNodeProps = {
   note: Note;
-  owner?: string;
   depth: number;
 };
 
 type NoteChildrenProps = {
   noteId: string;
-  owner?: string;
   depth: number;
 };
 
-function NoteChildren({ noteId, owner, depth }: NoteChildrenProps) {
+function NoteChildren({ noteId, depth }: NoteChildrenProps) {
   const {
     data: children,
     isError,
@@ -73,10 +70,10 @@ function NoteChildren({ noteId, owner, depth }: NoteChildrenProps) {
     );
   }
 
-  return <NoteTree depth={depth} owner={owner} notes={children} />;
+  return <NoteTree depth={depth} notes={children} />;
 }
 
-function NoteTreeNode({ note, owner, depth }: NoteTreeNodeProps) {
+function NoteTreeNode({ note, depth }: NoteTreeNodeProps) {
   const { Id } = useParams();
   const [expandedNodes, setExpandedNodes] = useAtom(expandedNodesAtom);
   const { mutate: deleteNote } = useAtomValue(deleteSingleNoteAtom);
@@ -119,7 +116,6 @@ function NoteTreeNode({ note, owner, depth }: NoteTreeNodeProps) {
       icon: <Plus className="size-3.5" />,
       render: (className) => (
         <WrittingModal
-          owner={owner}
           parent={note}
           onTrigger={() => {
             setOpen(true);
@@ -144,7 +140,6 @@ function NoteTreeNode({ note, owner, depth }: NoteTreeNodeProps) {
       danger: true,
       onClick: () => {
         deleteNote({
-          owner,
           parentId: note.parentId,
           noteId: note._id,
         });
@@ -177,17 +172,17 @@ function NoteTreeNode({ note, owner, depth }: NoteTreeNodeProps) {
         />
       </div>
       {open && note.hasChildren ? (
-        <NoteChildren depth={depth + 1} owner={owner} noteId={note._id} />
+        <NoteChildren depth={depth + 1} noteId={note._id} />
       ) : null}
     </>
   );
 }
 
-export default function NoteTree({ notes, owner, depth = 1 }: NoteTreeProps) {
+export default function NoteTree({ notes, depth = 1 }: NoteTreeProps) {
   return (
     <div>
       {notes.map((note) => (
-        <NoteTreeNode depth={depth} key={note._id} owner={owner} note={note} />
+        <NoteTreeNode depth={depth} key={note._id} note={note} />
       ))}
     </div>
   );

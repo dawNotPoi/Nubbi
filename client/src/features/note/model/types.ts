@@ -4,20 +4,17 @@ export type NotePropertiesInput = UpdateNotePropertiesInput;
 
 export type CreateNoteVariables = {
   note: NoteWithContent;
-  owner?: string;
 };
 
 export type DeleteNoteVariables = {
   noteId: string;
   parentId?: string | null;
-  owner?: string;
 };
 
 export type UpdateNotePropertiesVariables = {
   noteId: string;
   properties: NotePropertiesInput;
   parentId?: string | null;
-  owner?: string;
 };
 
 export type UpdateNoteContentVariables = {

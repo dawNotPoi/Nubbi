@@ -2,7 +2,6 @@ import { httpError } from "@/common/http-error";
 import note, { type NoteDocument } from "@/models/note";
 import notePurgeTask from "@/models/notePurgeTask";
 import { completePendingNotePurge } from "@/services/note/purge";
-import { withNoteStructureLock } from "@/services/note/structure-lock";
 import { assertNotesNotPendingPurge } from "./access";
 import { recalculateHasChildren } from "./structure-update";
 
@@ -38,7 +37,7 @@ export const collectDescendantNoteIds = async (
   return descendantIds;
 };
 
-const deleteNoteUnlocked = async (
+const deleteNoteRecord = async (
   noteId: string,
   userId: string,
 ): Promise<NoteDocument | null> => {
@@ -67,9 +66,9 @@ export const deleteNote = async (
   noteId: string,
   userId: string,
 ): Promise<NoteDocument | null> =>
-  withNoteStructureLock(userId, () => deleteNoteUnlocked(noteId, userId));
+  deleteNoteRecord(noteId, userId);
 
-const restoreNoteUnlocked = async (
+const restoreNoteRecord = async (
   noteId: string,
   userId: string,
 ): Promise<NoteDocument | null> => {
@@ -116,9 +115,9 @@ export const restoreNote = async (
   noteId: string,
   userId: string,
 ): Promise<NoteDocument | null> =>
-  withNoteStructureLock(userId, () => restoreNoteUnlocked(noteId, userId));
+  restoreNoteRecord(noteId, userId);
 
-const purgeNoteUnlocked = async (
+const purgeNoteRecord = async (
   noteId: string,
   userId: string,
 ): Promise<{ deletedCount: number }> => {
@@ -167,4 +166,4 @@ export const purgeNote = async (
   noteId: string,
   userId: string,
 ): Promise<{ deletedCount: number }> =>
-  withNoteStructureLock(userId, () => purgeNoteUnlocked(noteId, userId));
+  purgeNoteRecord(noteId, userId);

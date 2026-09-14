@@ -45,7 +45,7 @@ export default function MobileNavigation() {
     if (!owner || createMutation.isPending) return;
     const note = newNote();
     createMutation.mutate(
-      { note, owner },
+      { note },
       { onSuccess: () => navigate(routes.note(note._id)) },
     );
   };

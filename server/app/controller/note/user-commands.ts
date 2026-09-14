@@ -8,7 +8,6 @@ import {
   validateNoteMoveTarget,
 } from "./hierarchy-query";
 import type { NoteListDocument } from "./query-types";
-import { withNoteStructureLock } from "@/services/note/structure-lock";
 import {
   updateNoteMeta,
   type NotePropertiesInput,
@@ -45,9 +44,6 @@ export const updateUserNoteProperties = async ({
     properties,
     "parentId",
   );
-  const hasStructureChange =
-    hasParentChange ||
-    Object.prototype.hasOwnProperty.call(properties, "source");
 
   const applyUpdate = async (): Promise<NoteDocument> => {
     if (
@@ -64,9 +60,7 @@ export const updateUserNoteProperties = async ({
     return updateNoteMeta(userId, noteId, properties);
   };
 
-  const updatedNote = hasStructureChange
-    ? await withNoteStructureLock(userId, applyUpdate)
-    : await applyUpdate();
+  const updatedNote = await applyUpdate();
   await recordUserTags(userId, properties.tags);
   return updatedNote;
 };

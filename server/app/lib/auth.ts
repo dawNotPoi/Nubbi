@@ -17,6 +17,7 @@ import {
   sanitizeAuthLogMessage,
   serializeAuthLogArg,
 } from "./auth-logging";
+import { resolveAuthTrustedOrigins } from "./trusted-origins";
 
 const authDb = await db;
 if (!authDb) {
@@ -28,7 +29,7 @@ export const auth = betterAuth({
   secret: env.BETTER_AUTH_SECRET,
   baseURL: env.BETTER_AUTH_URL,
   basePath: "/api/auth",
-  trustedOrigins: [env.CLIENT_URL, env.BETTER_AUTH_URL],
+  trustedOrigins: resolveAuthTrustedOrigins,
   logger: {
     level: env.NODE_ENV === "production" ? "warn" : "debug",
     log(level, message, ...args) {

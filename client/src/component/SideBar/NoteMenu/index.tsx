@@ -64,7 +64,7 @@ export default function NoteMenu() {
     isError,
     isLoading,
     refetch,
-  } = useAtomValue(rootNotesAtom(owner));
+  } = useAtomValue(rootNotesAtom);
   const { mutate: createNote } = useAtomValue(createNoteAtom);
   const [open, setOpen] = useState(true);
   const navigate = useNavigate();
@@ -75,7 +75,7 @@ export default function NoteMenu() {
 
     const note = newNote();
     createNote(
-      { owner, note },
+      { note },
       {
         onSuccess: () => {
           navigate(routes.note(note._id));
@@ -132,7 +132,7 @@ export default function NoteMenu() {
           />
         ) : rootNotes && rootNotes.length > 0 ? (
           <>
-            <NoteTree owner={owner} notes={rootNotes} />
+            <NoteTree notes={rootNotes} />
             <RootDropIndicator />
           </>
         ) : (

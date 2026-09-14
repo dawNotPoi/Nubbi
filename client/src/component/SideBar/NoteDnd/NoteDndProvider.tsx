@@ -11,7 +11,6 @@ import {
   expandedNodesAtom,
   updateNotePropertiesAtom,
 } from "@/store/atom/noteAtom";
-import { useSession } from "@/utils/auth";
 import {
   DndContext,
   DragEndEvent,
@@ -133,8 +132,6 @@ export function TrashDropTarget({ children }: PropsWithChildren) {
 }
 
 export function NoteDndProvider({ children }: PropsWithChildren) {
-  const { data } = useSession();
-  const owner = data?.user.id ?? "";
   const { mutate: updateNoteProperties } = useAtomValue(
     updateNotePropertiesAtom,
   );
@@ -174,7 +171,7 @@ export function NoteDndProvider({ children }: PropsWithChildren) {
 
     if (over.id === TRASH_DROP_ID) {
       deleteNote(
-        { noteId: note._id, parentId: currentParentId, owner },
+        { noteId: note._id, parentId: currentParentId },
         {
           onSuccess: () => {
             message.success("已移入回收站");
@@ -206,7 +203,6 @@ export function NoteDndProvider({ children }: PropsWithChildren) {
     updateNoteProperties(
       {
         noteId: note._id,
-        owner,
         parentId: currentParentId,
         properties: { parentId: targetParentId },
       },
