@@ -322,30 +322,6 @@ export const SmartSelectAllExtension = Extension.create({
         },
         props: {
           decorations: createAllSelectionDecorations,
-          handleDOMEvents: {
-            blur: (view) => {
-              const currentState =
-                SMART_SELECT_ALL_KEY.getState(view.state) ?? IDLE_STATE;
-              if (currentState.mode === "idle") {
-                return false;
-              }
-              view.dispatch(
-                view.state.tr.setMeta(SMART_SELECT_ALL_KEY, IDLE_STATE),
-              );
-              return false;
-            },
-            focus: (view) => {
-              const currentState =
-                SMART_SELECT_ALL_KEY.getState(view.state) ?? IDLE_STATE;
-              if (currentState.mode === "idle") {
-                return false;
-              }
-              view.dispatch(
-                view.state.tr.setMeta(SMART_SELECT_ALL_KEY, IDLE_STATE),
-              );
-              return false;
-            },
-          },
         },
       }),
     ];
