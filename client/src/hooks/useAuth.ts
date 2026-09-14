@@ -13,6 +13,39 @@ import { routes } from "@/utils/routes";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+type AuthUser = {
+  id: string;
+  email?: string;
+  name?: string;
+  image?: string | null;
+};
+
+const waitForSessionRetry = (duration: number) =>
+  new Promise((resolve) => window.setTimeout(resolve, duration));
+
+const getConfirmedSessionUser = async () => {
+  let lastErrorMessage: string | undefined;
+
+  for (const delay of [0, 120, 300, 600]) {
+    if (delay > 0) {
+      await waitForSessionRetry(delay);
+    }
+
+    const currentSession = await getCurrentSession();
+    const user = currentSession.session?.data?.user;
+
+    if (currentSession.success && user) {
+      return { user };
+    }
+
+    lastErrorMessage = currentSession.error?.message;
+  }
+
+  return {
+    errorMessage: lastErrorMessage || "登录状态确认失败，请重新登录",
+  };
+};
+
 export const useAuth = () => {
   const { data: session, refetch: refetchSession, isPending } = useSession();
   const { accessToken, initialized } = useAuthRuntime();
@@ -20,9 +53,7 @@ export const useAuth = () => {
 
   const [loading, setLoading] = useState(false);
   const [sessionRecovering, setSessionRecovering] = useState(false);
-  const [recoveredUser, setRecoveredUser] = useState<
-    { id: string; email?: string; name?: string; image?: string | null } | undefined
-  >();
+  const [recoveredUser, setRecoveredUser] = useState<AuthUser | undefined>();
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const user = session?.user ?? recoveredUser;
@@ -75,6 +106,24 @@ export const useAuth = () => {
       const result = await signInWithEmail(email, password);
       if (result.success) {
         await refetchSession();
+
+        const confirmedSession = await getConfirmedSessionUser();
+
+        if (confirmedSession.user) {
+          setRecoveredUser(confirmedSession.user);
+          await refetchSession();
+        } else {
+          clearAuthState();
+          const message = confirmedSession.errorMessage;
+          setError(message);
+          setLoading(false);
+          return {
+            success: false,
+            error: {
+              message,
+            },
+          };
+        }
       } else {
         setError(result.error?.message || "登录失败");
       }

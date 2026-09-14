@@ -1,6 +1,7 @@
 import SideBar from "@/component/SideBar";
 import { useAuth } from "@/hooks/useAuth";
 import { resolveReturnTo, routes } from "@/utils/routes";
+import { Spin } from "antd";
 import { PropsWithChildren } from "react";
 import {
   BrowserRouter,
@@ -32,12 +33,21 @@ const UserLayout = () => {
   );
 };
 
+const AuthRouteFallback = () => (
+  <div className="flex min-h-screen items-center justify-center bg-background">
+    <div className="flex flex-col items-center gap-3 text-sm text-[#6b7280]">
+      <Spin />
+      <span>正在同步登录状态...</span>
+    </div>
+  </div>
+);
+
 const ProtectedRoute: React.FC<PropsWithChildren> = ({ children }) => {
   const { hasAccessToken, initialized, isAuthenticated, sessionPending } =
     useAuth();
   const location = useLocation();
   if (!initialized || sessionPending || (hasAccessToken && !isAuthenticated)) {
-    return null;
+    return <AuthRouteFallback />;
   }
   if (isAuthenticated) {
     return children;
@@ -60,7 +70,7 @@ const PublicOnlyRoute: React.FC<PropsWithChildren> = ({ children }) => {
   const location = useLocation();
 
   if (!initialized || sessionPending || (hasAccessToken && !isAuthenticated)) {
-    return null;
+    return <AuthRouteFallback />;
   }
 
   if (!isAuthenticated) {
