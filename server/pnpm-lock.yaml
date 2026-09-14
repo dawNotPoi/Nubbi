@@ -41,6 +41,9 @@ importers:
       fs-extra:
         specifier: ^11.2.0
         version: 11.3.0
+      jose:
+        specifier: ^6.2.3
+        version: 6.2.3
       logger:
         specifier: ^0.0.1
         version: 0.0.1
@@ -683,6 +686,9 @@ packages:
 
   jose@5.10.0:
     resolution: {integrity: sha512-s+3Al/p9g32Iq+oqXxkW//7jk2Vig6FF1CFqzVXoTUXt2qz89YWbL+OwS17NFYEvxC35n0FKeGO2LGYSxeM2Gg==}
+
+  jose@6.2.3:
+    resolution: {integrity: sha512-YYVDInQKFJfR/xa3ojUTl8c2KoTwiL1R5Wg9YCydwH0x0B9grbzlg5HC7mMjCtUJjbQ/YnGEZIhI5tCgfTb4Hw==}
 
   jsonfile@6.1.0:
     resolution: {integrity: sha512-5dgndWOriYSm5cnYaJNhalLNDKOqFwyDB/rr1E9ZsGciGvKPs8R2xYGCacuf3z6K1YKDz182fd+fY3cn3pMqXQ==}
@@ -1691,6 +1697,8 @@ snapshots:
   isarray@1.0.0: {}
 
   jose@5.10.0: {}
+
+  jose@6.2.3: {}
 
   jsonfile@6.1.0:
     dependencies:

@@ -12,6 +12,8 @@
    - 流程图应覆盖：数据流向、模块边界、关键分支路径
 3. 如涉及 API、组件接口或数据模型变动，**先**更新 `docs/<module>/PRD.md`，再开始编码
 4. 读 `docs/<module>/PRD.md` 理解现有架构和可复用组件，避免重复造轮子
+5. 长时间方案讨论时，按 `.agent/rules/discussion-log.md` 精炼对话要点到 `docs/<module>/discussion.md`，让下一个 agent 快速理解上下文
+6. 下一个 agent 接手时，先读 `docs/<module>/discussion.md` 再读 PRD
 
 ## 第二步：编写代码
 
