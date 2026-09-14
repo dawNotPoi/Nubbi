@@ -234,6 +234,10 @@ export const fetchFilePreviewStreamUrl = async (fileId: string) => {
   };
 };
 
+export const updateUserAvatar = async (imageUrl: string) => {
+  return request<{ image: string }>("/auth/avatar/update", { imageUrl });
+};
+
 export const fetchFileShareDownloadUrl = async (fileId: string) => {
   const response = await authorizedFetch(
     `/file/share-url/${encodeURIComponent(fileId)}`,

@@ -584,4 +584,22 @@ router.post(
   }),
 );
 
+router.post(
+  "/avatar/update",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const user = await getUser(req);
+    const imageUrl = String(req.body?.imageUrl || "").trim();
+
+    if (!imageUrl || !/^(https?:\/\/|data:image\/)/.test(imageUrl)) {
+      return errorResponse(res, 400, "请提供有效的图片地址");
+    }
+
+    const authContext = await auth.$context;
+    await authContext.internalAdapter.updateUser(user.id, { image: imageUrl });
+
+    successResponse(res, { image: imageUrl }, "头像更新成功");
+  }),
+);
+
 export default router;

@@ -3,6 +3,7 @@ import { routes } from "@/utils/routes";
 import clsx from "clsx";
 import { useSetAtom } from "jotai";
 import {
+  Camera,
   ChevronsLeft,
   FolderTree,
   House,
@@ -14,6 +15,7 @@ import React, { useState } from "react";
 import { sideBarOpenedAtom } from "../../store/atom/common";
 import { Modal } from "antd";
 import AccountDeletionModal from "../AccountDeletionModal";
+import ChangeAvatarModal from "../ChangeAvatarModal";
 import Image from "../UI/Image";
 import Popover from "../UI/Popover";
 import { IconButton, MenuItemContainer } from "./components";
@@ -22,8 +24,9 @@ import ResizeTab from "./ResizeTab";
 
 const SideBar: React.FC = () => {
   const setSideBarOpened = useSetAtom(sideBarOpenedAtom);
-  const { user, logout } = useAuth();
+  const { user, logout, updateAvatar } = useAuth();
   const [deletionModalOpen, setDeletionModalOpen] = useState(false);
+  const [avatarModalOpen, setAvatarModalOpen] = useState(false);
 
   const handleRequestAccountDeletion = () => {
     Modal.confirm({
@@ -34,6 +37,10 @@ const SideBar: React.FC = () => {
       okButtonProps: { danger: true },
       onOk: () => setDeletionModalOpen(true),
     });
+  };
+
+  const handleChangeAvatar = () => {
+    setAvatarModalOpen(true);
   };
 
   return (
@@ -63,6 +70,13 @@ const SideBar: React.FC = () => {
                 >
                   <Trash2 size={15} />
                   <span>注销账号</span>
+                </button>
+                <button
+                  className="flex h-9 w-full items-center gap-2 rounded-md px-2 text-left text-sm text-slate-700 transition-colors hover:bg-gray-200/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300"
+                  onClick={handleChangeAvatar}
+                >
+                  <Camera size={15} />
+                  <span>更换头像</span>
                 </button>
                 <button
                   className="flex h-9 w-full items-center gap-2 rounded-md px-2 text-left text-sm text-slate-700 transition-colors hover:bg-gray-200/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300"
@@ -110,6 +124,12 @@ const SideBar: React.FC = () => {
         open={deletionModalOpen}
         userEmail={user?.email}
         onClose={() => setDeletionModalOpen(false)}
+      />
+      <ChangeAvatarModal
+        open={avatarModalOpen}
+        currentImage={user?.image || undefined}
+        onClose={() => setAvatarModalOpen(false)}
+        onConfirm={updateAvatar}
       />
     </ResizeTab>
   );
