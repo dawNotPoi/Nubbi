@@ -8,12 +8,13 @@ import { createNoteAtom } from "@/store/atom/note/noteMutationAtom";
 import { useSession } from "@/utils/auth";
 import { routes } from "@/utils/routes";
 import { useAtomValue } from "jotai";
-import { ListTree, Plus } from "lucide-react";
+import { ListTree, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   RootDropIndicator,
   RootHeaderDropZone,
+  TrashDropTarget,
 } from "../NoteDnd/DropZones";
 import NoteTree from "./NoteTree";
 
@@ -70,6 +71,7 @@ export default function NoteMenu() {
   const [open, setOpen] = useState(true);
   const navigate = useNavigate();
   const hasRootNotesData = rootNotes !== undefined;
+  const trashIcon = <Trash2 className="size-3.5" />;
 
   const createNoteHandler = () => {
     if (!owner) return;
@@ -97,6 +99,29 @@ export default function NoteMenu() {
               onClick: () => {
                 navigate(routes.noteLib);
               },
+            },
+            {
+              key: "open-note-trash",
+              label: "回收站",
+              icon: trashIcon,
+              danger: true,
+              render: (className) => (
+                <TrashDropTarget className="flex size-6 shrink-0">
+                  <button
+                    aria-label="回收站"
+                    className={className}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      navigate(routes.noteTrash);
+                    }}
+                    title="回收站"
+                    type="button"
+                  >
+                    {trashIcon}
+                  </button>
+                </TrashDropTarget>
+              ),
             },
             {
               key: "new-root-note",

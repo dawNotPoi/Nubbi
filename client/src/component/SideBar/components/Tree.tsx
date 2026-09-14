@@ -1,6 +1,6 @@
 import clsx from "clsx";
 import { ChevronRight, FileText } from "lucide-react";
-import { MouseEvent, ReactNode } from "react";
+import { Fragment, MouseEvent, ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 
 export type SidebarTreeAction = {
@@ -260,27 +260,39 @@ export function SidebarSectionHeader({
       </button>
       {actions.length > 0 ? (
         <div className="ml-1 flex shrink-0 items-center gap-0.5">
-          {actions.map((action) => (
-            <button
-              aria-label={action.label}
-              className={clsx(
-                "flex size-6 items-center justify-center rounded-md text-neutral-400",
-                "opacity-0 transition hover:bg-neutral-200/80 hover:text-neutral-700",
-                "focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300",
-                "group-hover/sidebar-section:opacity-100",
-                action.danger && "hover:text-red-500",
-              )}
-              key={action.key}
-              onClick={(event) => {
-                stopActionEvent(event);
-                action.onClick?.();
-              }}
-              title={action.label}
-              type="button"
-            >
-              {action.icon}
-            </button>
-          ))}
+          {actions.map((action) => {
+            const className = clsx(
+              "flex size-6 items-center justify-center rounded-md text-neutral-400",
+              "opacity-0 transition hover:bg-neutral-200/80 hover:text-neutral-700",
+              "focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300",
+              "group-hover/sidebar-section:opacity-100",
+              action.danger && "hover:text-red-500",
+            );
+
+            if (action.render) {
+              return (
+                <Fragment key={action.key}>
+                  {action.render(className)}
+                </Fragment>
+              );
+            }
+
+            return (
+              <button
+                aria-label={action.label}
+                className={className}
+                key={action.key}
+                onClick={(event) => {
+                  stopActionEvent(event);
+                  action.onClick?.();
+                }}
+                title={action.label}
+                type="button"
+              >
+                {action.icon}
+              </button>
+            );
+          })}
         </div>
       ) : null}
     </div>

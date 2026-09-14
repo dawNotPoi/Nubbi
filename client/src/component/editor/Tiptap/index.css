@@ -166,6 +166,45 @@
   text-wrap: pretty;
 }
 
+.dn-editor .tiptap-mathematics-render {
+  color: inherit;
+}
+
+.dn-editor .tiptap-mathematics-render[data-type="inline-math"] {
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+.dn-editor .tiptap-mathematics-render[data-type="block-math"] {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  padding: 0.75rem 0;
+  text-align: center;
+}
+
+.dn-editor .tiptap-mathematics-render[data-type="block-math"] .block-math-inner {
+  width: max-content;
+  min-width: 100%;
+}
+
+.dn-editor .tiptap-mathematics-render .katex-display {
+  margin: 0;
+}
+
+.dn-editor .tiptap-mathematics-render--editable:hover {
+  background: rgb(245, 245, 245);
+}
+
+.dn-editor .block-math-error,
+.dn-editor .inline-math-error {
+  color: rgb(185, 28, 28);
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+}
+
 .dn-editor .dn-editor__content h1 {
   font-size: 2.35rem;
   font-weight: 700;

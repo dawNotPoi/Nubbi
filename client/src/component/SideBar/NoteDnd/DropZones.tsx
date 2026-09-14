@@ -66,7 +66,10 @@ export function RootDropIndicator() {
   );
 }
 
-export function TrashDropTarget({ children }: PropsWithChildren) {
+export function TrashDropTarget({
+  children,
+  className,
+}: PropsWithChildren<{ className?: string }>) {
   const { activeNote } = useNoteDndState();
   const { isOver, setNodeRef } = useDroppable({
     id: TRASH_DROP_ID,
@@ -78,6 +81,7 @@ export function TrashDropTarget({ children }: PropsWithChildren) {
     <div
       className={clsx(
         "rounded-md",
+        className,
         isOver && "bg-red-50 text-red-600 ring-1 ring-inset ring-red-200",
       )}
       ref={setNodeRef}

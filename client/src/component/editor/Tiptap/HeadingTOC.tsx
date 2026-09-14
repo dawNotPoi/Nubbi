@@ -1,10 +1,26 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
+import { ListTree } from "lucide-react";
 
 interface HeadingEntry {
   level: number;
   text: string;
   pos: number;
+}
+
+interface HeadingElement {
+  element: HTMLElement;
+  index: number;
+}
+
+const ACTIVE_HEADING_OFFSET = 96;
+const SCROLL_END_TOLERANCE = 2;
+
+function getScrollRoot(editor: Editor): HTMLElement | null {
+  return (
+    editor.view.dom.closest<HTMLElement>("[data-note-scroll-container]") ??
+    editor.view.dom.closest<HTMLElement>("main")
+  );
 }
 
 function extractHeadings(editor: Editor): HeadingEntry[] {
@@ -23,12 +39,51 @@ function extractHeadings(editor: Editor): HeadingEntry[] {
 
 function scrollToHeading(editor: Editor, pos: number) {
   const dom = editor.view.nodeDOM(pos);
-  if (dom instanceof HTMLElement) {
-    dom.scrollIntoView({ behavior: "smooth", block: "start" });
+  if (!(dom instanceof HTMLElement)) return;
+
+  const scrollRoot = getScrollRoot(editor);
+  if (scrollRoot) {
+    const rootRect = scrollRoot.getBoundingClientRect();
+    const headingRect = dom.getBoundingClientRect();
+    const top =
+      scrollRoot.scrollTop +
+      headingRect.top -
+      rootRect.top -
+      ACTIVE_HEADING_OFFSET;
+
+    scrollRoot.scrollTo({
+      top: Math.max(0, top),
+      behavior: "smooth",
+    });
+    return;
   }
+
+  window.scrollTo({
+    top: Math.max(
+      0,
+      window.scrollY + dom.getBoundingClientRect().top - ACTIVE_HEADING_OFFSET,
+    ),
+    behavior: "smooth",
+  });
 }
 
-export default function HeadingTOC({ editor }: { editor: Editor }) {
+function getHeadingElements(
+  editor: Editor,
+  headings: HeadingEntry[],
+): HeadingElement[] {
+  return headings.flatMap(({ pos }, index) => {
+    const dom = editor.view.nodeDOM(pos);
+    return dom instanceof HTMLElement ? [{ element: dom, index }] : [];
+  });
+}
+
+export default function HeadingTOC({
+  editor,
+  isMobile,
+}: {
+  editor: Editor;
+  isMobile: boolean;
+}) {
   const [headings, setHeadings] = useState<HeadingEntry[]>([]);
   const [activeId, setActiveId] = useState<number | null>(null);
   const [open, setOpen] = useState(false);
@@ -48,6 +103,14 @@ export default function HeadingTOC({ editor }: { editor: Editor }) {
     closeTimer.current = setTimeout(() => setOpen(false), 150);
   }, []);
 
+  const handleHeadingClick = useCallback(
+    (pos: number) => {
+      scrollToHeading(editor, pos);
+      if (isMobile) setOpen(false);
+    },
+    [editor, isMobile],
+  );
+
   const updateHeadings = useCallback(() => {
     setHeadings(extractHeadings(editor));
   }, [editor]);
@@ -64,52 +127,95 @@ export default function HeadingTOC({ editor }: { editor: Editor }) {
   useEffect(() => {
     if (headings.length < 2) return;
 
-    const headingEls = document.querySelectorAll(
-      ".dn-editor__content h1, .dn-editor__content h2, .dn-editor__content h3, .dn-editor__content h4, .dn-editor__content h5, .dn-editor__content h6",
-    );
+    const headingElements = getHeadingElements(editor, headings);
+    if (headingElements.length === 0) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+    const scrollRoot = getScrollRoot(editor);
+    const scrollTarget: HTMLElement | Window = scrollRoot ?? window;
+    let animationFrame: number | null = null;
 
-        if (visible.length > 0) {
-          const el = visible[0].target as HTMLElement;
-          const level = parseInt(el.tagName[1], 10);
-          const idx = headings.findIndex(
-            (h) => h.level === level && h.text === el.textContent,
-          );
-          if (idx !== -1) setActiveId(idx);
+    const updateActiveHeading = () => {
+      animationFrame = null;
+      const rootTop = scrollRoot?.getBoundingClientRect().top ?? 0;
+      const readingLine = rootTop + ACTIVE_HEADING_OFFSET;
+      let nextActiveId = 0;
+
+      headingElements.forEach(({ element, index }) => {
+        if (element.getBoundingClientRect().top <= readingLine) {
+          nextActiveId = index;
         }
-      },
-      { rootMargin: "-80px 0px -60% 0px", threshold: 0 },
-    );
+      });
 
-    headingEls.forEach((el) => observer.observe(el));
+      if (
+        scrollRoot &&
+        scrollRoot.scrollTop + scrollRoot.clientHeight >=
+          scrollRoot.scrollHeight - SCROLL_END_TOLERANCE
+      ) {
+        nextActiveId = headingElements[headingElements.length - 1].index;
+      }
 
-    return () => observer.disconnect();
-  }, [headings]);
+      setActiveId((current) =>
+        current === nextActiveId ? current : nextActiveId,
+      );
+    };
+
+    const scheduleUpdate = () => {
+      if (animationFrame !== null) return;
+      animationFrame = window.requestAnimationFrame(updateActiveHeading);
+    };
+
+    updateActiveHeading();
+    scrollTarget.addEventListener("scroll", scheduleUpdate, { passive: true });
+    window.addEventListener("resize", scheduleUpdate);
+
+    return () => {
+      scrollTarget.removeEventListener("scroll", scheduleUpdate);
+      window.removeEventListener("resize", scheduleUpdate);
+      if (animationFrame !== null) {
+        window.cancelAnimationFrame(animationFrame);
+      }
+    };
+  }, [editor, headings]);
 
   // Auto-scroll the TOC panel to keep the active heading visible
   useEffect(() => {
-    if (activeRef.current && navRef.current) {
-      activeRef.current.scrollIntoView({ block: "nearest" });
+    const activeElement = activeRef.current;
+    const nav = navRef.current;
+    if (!activeElement || !nav) return;
+
+    const navRect = nav.getBoundingClientRect();
+    const activeRect = activeElement.getBoundingClientRect();
+
+    if (activeRect.top < navRect.top) {
+      nav.scrollTop -= navRect.top - activeRect.top;
+    } else if (activeRect.bottom > navRect.bottom) {
+      nav.scrollTop += activeRect.bottom - navRect.bottom;
     }
   }, [activeId]);
 
   if (headings.length < 2) return null;
 
   return (
-    <div className="pointer-events-none sticky top-40 z-40 h-0">
+    <div className="pointer-events-none sticky top-4 z-40 h-0 md:top-40">
       <div
-        className="pointer-events-auto absolute right-[30px]"
-        onMouseEnter={handleEnter}
-        onMouseLeave={handleLeave}
+        className="pointer-events-auto absolute right-2 md:right-[30px]"
+        onMouseEnter={isMobile ? undefined : handleEnter}
+        onMouseLeave={isMobile ? undefined : handleLeave}
       >
         <div className="relative flex items-start justify-end">
+          <button
+            aria-expanded={open}
+            aria-label={open ? "收起目录" : "展开目录"}
+            className="flex size-9 items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-500 shadow-sm transition hover:bg-neutral-50 hover:text-neutral-800 md:hidden"
+            onClick={() => setOpen((current) => !current)}
+            title={open ? "收起目录" : "展开目录"}
+            type="button"
+          >
+            <ListTree className="size-[18px]" />
+          </button>
+
           {/* vertical bar indicator — always visible */}
-          <div className="relative z-10 flex shrink-0 flex-col items-end gap-[3px] px-1.5 py-3">
+          <div className="relative z-10 hidden shrink-0 flex-col items-end gap-[3px] px-1.5 py-3 md:flex">
             {headings.map((h, i) => (
               <button
                 key={i}
@@ -132,14 +238,16 @@ export default function HeadingTOC({ editor }: { editor: Editor }) {
                 type="button"
                 title={h.text}
                 aria-label={`跳转到: ${h.text}`}
-                onClick={() => scrollToHeading(editor, h.pos)}
+                onClick={() => handleHeadingClick(h.pos)}
               />
             ))}
           </div>
 
           {/* expanded text panel — on hover, slides left */}
-          <div className={`absolute right-full -top-3 mr-2 z-10 transition-opacity duration-150 ${open ? "opacity-100" : "pointer-events-none opacity-0"}`}>
-            <div className="w-52 rounded-xl border border-neutral-200/80 bg-white shadow-lg backdrop-blur">
+          <div
+            className={`absolute right-0 top-11 z-10 transition-opacity duration-150 md:right-full md:-top-3 md:mr-2 ${open ? "opacity-100" : "pointer-events-none opacity-0"}`}
+          >
+            <div className="w-[min(18rem,calc(100vw-1rem))] rounded-lg border border-neutral-200/80 bg-white shadow-lg backdrop-blur md:w-52">
               <div className="px-3 pb-2 pt-3 text-xs font-medium text-neutral-400">
                 目录
               </div>
@@ -155,7 +263,7 @@ export default function HeadingTOC({ editor }: { editor: Editor }) {
                     }`}
                     style={{ paddingLeft: `${8 + (h.level - 1) * 12}px` }}
                     type="button"
-                    onClick={() => scrollToHeading(editor, h.pos)}
+                    onClick={() => handleHeadingClick(h.pos)}
                   >
                     {h.text}
                   </button>

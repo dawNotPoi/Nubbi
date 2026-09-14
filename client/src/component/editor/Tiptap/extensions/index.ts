@@ -1,5 +1,6 @@
 import { imgToGitCloud } from "@/api/file";
 import { TableKit } from "@tiptap/extension-table";
+import { Mathematics } from "@tiptap/extension-mathematics";
 import { Placeholder } from "@tiptap/extensions";
 import { Markdown } from "@tiptap/markdown";
 import StarterKit from "@tiptap/starter-kit";
@@ -18,6 +19,12 @@ export function createExtensions() {
       codeBlock: false,
     }),
     Markdown,
+    Mathematics.configure({
+      katexOptions: {
+        strict: false,
+        throwOnError: false,
+      },
+    }),
     CodeBlock.configure({
       onCopy: () => {
         message.success("复制成功");

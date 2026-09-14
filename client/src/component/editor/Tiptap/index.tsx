@@ -1,10 +1,12 @@
 import DragHandle from "@tiptap/extension-drag-handle-react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import clsx from "clsx";
+import "katex/dist/katex.min.css";
 import { GripVertical } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import { EMPTY_DOC } from "./constants";
 import { createExtensions } from "./extensions";
+import { normalizeMathMarkdown } from "./extensions/mathematics/normalizeMathMarkdown";
 import FormatBubbleMenu from "./FormatBubbleMenu";
 import { useContentSync } from "./hooks/useContentSync";
 import "./index.css";
@@ -28,10 +30,14 @@ const TiptapEditor = ({
   onEditorReady,
 }: TiptapEditorProps) => {
   const externalValue = serverValue ?? defaultValue;
+  const normalizedExternalValue = useMemo(
+    () => normalizeMathMarkdown(externalValue ?? ""),
+    [externalValue],
+  );
   const extensions = useMemo(() => createExtensions(), []);
 
   const initialContent = useMemo(() => {
-    const content = externalValue?.trim() ?? "";
+    const content = normalizedExternalValue.trim();
     if (content.length === 0) {
       return {
         content: EMPTY_DOC,
@@ -40,12 +46,12 @@ const TiptapEditor = ({
     }
 
     return {
-      content: externalValue,
+      content: normalizedExternalValue,
       contentType: "markdown" as const,
     };
-  }, [externalValue]);
+  }, [normalizedExternalValue]);
 
-  const contentRef = useRef(externalValue ?? "");
+  const contentRef = useRef(normalizedExternalValue);
 
   const editor = useEditor({
     extensions,
@@ -69,7 +75,7 @@ const TiptapEditor = ({
 
   useContentSync(
     editor,
-    externalValue,
+    normalizedExternalValue,
     contentRef,
     canApplyExternalContent,
   );

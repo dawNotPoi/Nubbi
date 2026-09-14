@@ -6,14 +6,12 @@ import {
   FolderTree,
   House,
   Presentation,
-  Trash2,
 } from "lucide-react";
 import React from "react";
 import { useLocation } from "react-router-dom";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { mobileSideBarOpenedAtom } from "../../store/atom/common";
 import { MenuItemContainer } from "./components";
-import { TrashDropTarget } from "./NoteDnd/DropZones";
 import { NoteDndProvider } from "./NoteDnd/NoteDndProvider";
 import NoteMenu from "./NoteMenu";
 import ResizeTab from "./ResizeTab";
@@ -64,12 +62,6 @@ const SideBar: React.FC = () => {
               <span>会议</span>
             </MenuItemContainer>
             <NoteMenu />
-            <TrashDropTarget>
-              <MenuItemContainer to={routes.noteTrash}>
-                <Trash2 size={16} />
-                <span>回收站</span>
-              </MenuItemContainer>
-            </TrashDropTarget>
           </NoteDndProvider>
         </div>
       </div>

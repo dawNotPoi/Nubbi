@@ -336,7 +336,10 @@ export default function Note() {
           </div>
         </div>
       </Header>
-      <main className="min-h-0 flex-1 overflow-y-auto bg-white pb-10">
+      <main
+        className="min-h-0 flex-1 overflow-y-auto bg-white pb-10"
+        data-note-scroll-container
+      >
         <NoteCover
           className="mb-2"
           data={data}
@@ -344,7 +347,7 @@ export default function Note() {
           onEditorOpenChange={setCoverEditorOpen}
           onUpdate={updateProperties}
         />
-        {editor && !isMobile ? <HeadingTOC editor={editor} /> : null}
+        {editor ? <HeadingTOC editor={editor} isMobile={isMobile} /> : null}
         <div
           className={`note-editor-shell mx-auto ${
             displayMode === "split" ? "note-editor-shell--wide" : ""

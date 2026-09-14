@@ -5,6 +5,7 @@ import { noteKeys } from "@/features/note/model/keys";
 import { expandedNodesAtom } from "@/store/atom/note/noteAtom";
 import { updateNotePropertiesAtom } from "@/store/atom/note/noteMutationAtom";
 import {
+  CollisionDetection,
   DndContext,
   DragEndEvent,
   DragOverlay,
@@ -28,6 +29,12 @@ import {
   type NoteDragData,
   type NoteDropData,
 } from "./model";
+
+const detectDropTarget: CollisionDetection = (args) => {
+  const collisions = pointerWithin(args);
+  const trashCollision = collisions.find(({ id }) => id === TRASH_DROP_ID);
+  return trashCollision ? [trashCollision] : collisions;
+};
 
 /**
  * 侧边栏笔记拖拽的全局 Provider：为笔记树和回收站提供统一的 DnD 上下文。
@@ -123,7 +130,7 @@ export function NoteDndProvider({ children }: PropsWithChildren) {
   return (
     <NoteDndContext.Provider value={state}>
       <DndContext
-        collisionDetection={pointerWithin}
+        collisionDetection={detectDropTarget}
         measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
         onDragCancel={resetState}
         onDragEnd={handleDragEnd}
