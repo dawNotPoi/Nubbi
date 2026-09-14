@@ -4,6 +4,7 @@ WORKDIR /app
 
 RUN corepack enable
 ENV CI=true
+ENV NODE_OPTIONS=--max-old-space-size=4096
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY client/package.json ./client/package.json
