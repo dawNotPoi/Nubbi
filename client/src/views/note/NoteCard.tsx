@@ -14,7 +14,7 @@ const imgs = [
   "https://www.notion.so/images/page-cover/woodcuts_1.jpg",
 ];
 
-export default function BlogCard({
+export default function NoteCard({
   data,
   className,
   onUpdate,

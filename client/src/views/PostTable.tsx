@@ -24,7 +24,7 @@ export default function PostTable() {
                   right: "3px",
                 }}
                 onClick={() => {
-                  navigate(`/blog/${_id}`);
+                  navigate(`/note/${_id}`);
                 }}
               >
                 open
@@ -113,7 +113,7 @@ export default function PostTable() {
         <Button
           onClick={() => {
             createPost().then((res) => {
-              navigate(`/blog/${res}`);
+              navigate(`/note/${res}`);
             });
           }}
         >
@@ -122,7 +122,7 @@ export default function PostTable() {
         <MarkdownUpload
           onFinish={(props) => {
             createPost().then((res) => {
-              navigate(`/blog/${res}`, {
+              navigate(`/note/${res}`, {
                 state: { mdObject: props },
               });
             });

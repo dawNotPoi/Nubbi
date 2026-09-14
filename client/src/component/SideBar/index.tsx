@@ -1,10 +1,8 @@
 import { useAuth } from "@/hooks/useAuth";
-import { createPostAtom } from "@/store/atom/postAtom";
 import clsx from "clsx";
-import { useAtomValue, useSetAtom } from "jotai";
+import { useSetAtom } from "jotai";
 import { ChevronsLeft, FolderTree, House, Presentation } from "lucide-react";
 import React from "react";
-import { useNavigate } from "react-router-dom";
 import { sideBarOpenedAtom } from "../../store/atom/common";
 import Image from "../UI/Image";
 import Popover from "../UI/Popover";
@@ -13,9 +11,7 @@ import NoteMenu from "./NoteMenu";
 import ResizeTab from "./ResizeTab";
 
 const SideBar: React.FC = () => {
-  const navigate = useNavigate();
   const setSideBarOpened = useSetAtom(sideBarOpenedAtom);
-  const { mutate: createPost } = useAtomValue(createPostAtom);
   const { user, logout } = useAuth();
   return (
     <ResizeTab

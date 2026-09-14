@@ -52,6 +52,7 @@ function ItemBase({
   return (
     <div className={clsx(className, "mt-0.5")}>
       <MenuItemContainer
+        to={`/note/${post._id}`}
         onClick={() => {
           onClick?.(post);
         }}

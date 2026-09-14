@@ -9,7 +9,7 @@ import {
   Routes,
   useLocation,
 } from "react-router-dom";
-import Blog from "./views/blog";
+import Note from "./views/note";
 import FileManager from "./views/file-manage";
 import Home from "./views/home";
 import { LoginPage } from "./views/login";
@@ -74,7 +74,7 @@ export const RouteWrapper = () => {
             <Route path="table" element={<PostTable />} />
             <Route path="file/*" element={<FileManager />} />
             <Route path="note-ai" element={<NoteAI />} />
-            <Route path="note/:Id" element={<Blog />} />
+            <Route path="note/:Id" element={<Note />} />
           </Route>
         </Routes>
       </div>

@@ -27,7 +27,7 @@ const formSchema: Property[] = [
   { id: "type", name: "类型", type: "select", options: typeOptions },
 ];
 
-export default function BlogMeta({
+export default function NoteMeta({
   data,
   className,
   onUpdate,

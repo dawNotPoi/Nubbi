@@ -12,14 +12,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import "react-markdown-editor-lite/lib/index.css";
 import { useNavigate, useParams } from "react-router-dom";
 import "./index.css";
-import BlogCard from "./BlogCard";
-import BlogMeta from "./BlogMeta";
+import NoteCard from "./NoteCard";
+import NoteMeta from "./NoteMeta";
 
 const DEFAULT_TITLE = "未命名文档";
 
 type SaveStatus = "idle" | "saving" | "saved";
 
-function BlogSkeleton() {
+function NoteSkeleton() {
   return (
     <div className="min-w-[800px] animate-pulse">
       <div className="mx-6 mt-6 h-40 rounded-2xl bg-neutral-100" />
@@ -62,7 +62,7 @@ function SaveIndicator({ status }: { status: SaveStatus }) {
   );
 }
 
-export default function Blog() {
+export default function Note() {
   const { Id } = useParams();
   const navigate = useNavigate();
   const { data, isLoading, refetch } = useAtomValue(postDetailAtom(Id!));
@@ -155,7 +155,7 @@ export default function Blog() {
     );
   }, [Id, isLoading, data, debouncedUpdatePost]);
 
-  if (!Id || isLoading || !data) return <BlogSkeleton />;
+  if (!Id || isLoading || !data) return <NoteSkeleton />;
 
   return (
     <div className="min-w-[800px]">
@@ -177,7 +177,7 @@ export default function Blog() {
           </div>
         </div>
       </Header>
-      <BlogCard
+      <NoteCard
         data={data}
         onUpdate={(newData) => {
           updatePostProperties({
@@ -203,7 +203,7 @@ export default function Blog() {
               debouncedUpdateTitle(nextTitle, data.parentId);
             }}
           />
-          <BlogMeta
+          <NoteMeta
             className="mt-4 -z-10"
             data={data}
             onUpdate={(newMeta) => {
