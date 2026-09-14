@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
-import type { RuntimeEvent, RuntimeEventPayload } from "./events.js";
-import { appendRunEvent } from "./run-store.js";
+import type { RuntimeEvent, RuntimeEventPayload } from "./events.ts";
+import { appendRunEvent } from "../features/runs/run.repository.ts";
 
+/** 本次运行的事件发布入口，负责附加身份并排队持久化。 */
 export type RuntimeEventEmitter = {
   emit: (payload: RuntimeEventPayload) => RuntimeEvent;
   flush: () => Promise<void>;
@@ -47,8 +48,7 @@ export const createRuntimeEventEmitter = (input: {
     },
     flush: async () => {
       // 等待全部异步落库完成；个别失败只告警，不阻塞 Run 收尾。
-      const failures = (await Promise.allSettled(pending))
-        .filter((result) => result.status === "rejected");
+      const failures = (await Promise.allSettled(pending)).filter((result) => result.status === "rejected");
       if (failures.length) console.error(`Run 日志写入失败：${failures.length} 个事件未保存`);
     },
   };

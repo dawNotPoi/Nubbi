@@ -1,7 +1,7 @@
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
-import { cn } from "../../lib/utils";
+import { cn } from "../../lib/utils.ts";
 
 // 统一按钮样式变体：default / ghost / outline 与尺寸组合。
 const buttonVariants = cva(
@@ -25,6 +25,7 @@ const buttonVariants = cva(
   },
 );
 
+/** 通用按钮外观和原生交互属性，支持组合子组件。 */
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
@@ -44,13 +45,7 @@ export interface ButtonProps
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Component = asChild ? Slot : "button";
-    return (
-      <Component
-        className={cn(buttonVariants({ variant, size, className }))}
-        ref={ref}
-        {...props}
-      />
-    );
+    return <Component className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />;
   },
 );
 

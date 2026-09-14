@@ -6,7 +6,7 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 import { timingSafeEqual } from "node:crypto";
-import { env } from "../config/env.js";
+import { env } from "../config/env.ts";
 
 type HeaderRequest = {
   headers: Record<string, string | string[] | undefined>;
@@ -18,7 +18,7 @@ type HeaderRequest = {
  * @returns 第一个值；为空时返回空字符串。
  */
 const firstHeader = (value: string | string[] | undefined): string =>
-  Array.isArray(value) ? value[0] ?? "" : value ?? "";
+  Array.isArray(value) ? (value[0] ?? "") : (value ?? "");
 
 /**
  * 使用恒定时间比较令牌，避免时序侧信道攻击。
@@ -29,8 +29,7 @@ const firstHeader = (value: string | string[] | undefined): string =>
 const matchesToken = (provided: string, expected: string): boolean => {
   const actualBuffer = Buffer.from(provided);
   const expectedBuffer = Buffer.from(expected);
-  return actualBuffer.length === expectedBuffer.length
-    && timingSafeEqual(actualBuffer, expectedBuffer);
+  return actualBuffer.length === expectedBuffer.length && timingSafeEqual(actualBuffer, expectedBuffer);
 };
 
 /**
@@ -47,13 +46,11 @@ export class ConfigAccessGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const expected = env.CONFIG_ADMIN_TOKEN ?? env.MCP_CONFIG_TOKEN;
     if (!expected) {
-      throw new ServiceUnavailableException(
-        "请先在 assistant/.env 中配置 CONFIG_ADMIN_TOKEN 并重启 Assistant API",
-      );
+      throw new ServiceUnavailableException("请先在 assistant/.env 中配置 CONFIG_ADMIN_TOKEN 并重启 Assistant API");
     }
     const request = context.switchToHttp().getRequest<HeaderRequest>();
-    const provided = firstHeader(request.headers["x-config-token"])
-      || firstHeader(request.headers["x-mcp-config-token"]);
+    const provided =
+      firstHeader(request.headers["x-config-token"]) || firstHeader(request.headers["x-mcp-config-token"]);
     if (!matchesToken(provided, expected)) {
       throw new UnauthorizedException("设置管理密钥无效");
     }

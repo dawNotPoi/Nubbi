@@ -2,17 +2,17 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Modal, StyleSheet } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-import { ChatScreen } from "./src/screens/chat-screen";
-import { ConnectionScreen } from "./src/screens/connection-screen";
-import { SettingsScreen } from "./src/screens/settings-screen";
-import { readApiUrl } from "./src/storage";
-import { colors } from "./src/theme";
+import { ChatScreen } from "./src/features/chat/chat-screen.tsx";
+import { ConnectionScreen } from "./src/features/connection/connection-screen.tsx";
+import { SettingsScreen } from "./src/features/settings/settings-screen.tsx";
+import { readApiUrl } from "./src/platform/connection-storage.ts";
+import { colors } from "./src/theme.ts";
 
 /**
  * 应用根组件：用安全区域容器包裹整个应用。
  * @returns 应用根视图。
  */
-export default function App() {
+export default function App(): React.JSX.Element {
   // 安全区域容器包裹整个应用，避免刘海屏/底部手势区域遮挡内容。
   return (
     <SafeAreaProvider>
@@ -33,7 +33,9 @@ function AppContent() {
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   // 启动时读取上次保存的 API 地址。
-  useEffect(() => { void readApiUrl().then(setBaseUrl); }, []);
+  useEffect(() => {
+    void readApiUrl().then(setBaseUrl);
+  }, []);
 
   if (baseUrl === null) {
     return (

@@ -5,6 +5,7 @@ import path from "node:path";
 import { z } from "zod";
 
 // 从 src/config/env.ts 上溯三级得到 assistant 项目根目录（api → src → config）。
+/** Assistant 运行根目录，用于解析本地配置和技能路径。 */
 export const projectRoot = fileURLToPath(new URL("../../..", import.meta.url));
 
 // 优先加载 Assistant 项目根目录下的 .env。
@@ -25,14 +26,14 @@ const readServerMongoUri = (): string | undefined => {
 };
 
 // 空字符串视为未配置，避免用户留空后仍得到字符串值。
-const optionalString = () =>
-  z.preprocess((value) => (value === "" ? undefined : value), z.string().optional());
+const optionalString = () => z.preprocess((value) => (value === "" ? undefined : value), z.string().optional());
 
 // 必填变量：为空同样视为缺失，并给出明确的环境变量名。
-const requiredString = (name: string) => z.preprocess(
-  (value) => (value === "" ? undefined : value),
-  z.string({ required_error: `Missing required env var: ${name}` }).min(1),
-);
+const requiredString = (name: string) =>
+  z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z.string({ required_error: `Missing required env var: ${name}` }).min(1),
+  );
 
 const schema = z.object({
   // HTTP 监听端口，默认 8787。
@@ -49,6 +50,7 @@ const schema = z.object({
   CODEX_CLI_PATH: optionalString(),
 });
 
+/** 经过校验的服务运行配置，密钥仅在服务端使用。 */
 export const env = schema.parse({
   ...process.env,
   MONGO_URI: process.env.MONGO_URI ?? readServerMongoUri(),

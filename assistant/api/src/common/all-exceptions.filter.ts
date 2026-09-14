@@ -57,9 +57,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       if (!response.raw.writableEnded) response.raw.end();
       return;
     }
-    const status = exception instanceof HttpException
-      ? exception.getStatus()
-      : HttpStatus.INTERNAL_SERVER_ERROR;
+    const status = exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
     if (!(exception instanceof HttpException)) {
       this.logger.error(
         exception instanceof Error ? exception.message : "服务器内部错误",

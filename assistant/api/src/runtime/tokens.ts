@@ -6,9 +6,8 @@
  */
 export const countTokens = (text: string): number => {
   if (!text) return 0;
-  const cjk = (text.match(
-    /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff66-\uff9f\uac00-\ud7af]/g,
-  ) ?? []).length;
+  const cjk = (text.match(/[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff66-\uff9f\uac00-\ud7af]/g) ?? [])
+    .length;
   return Math.ceil(cjk + (text.length - cjk) / 4);
 };
 

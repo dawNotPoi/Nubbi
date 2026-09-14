@@ -1,6 +1,6 @@
 import { Injectable, type OnApplicationBootstrap } from "@nestjs/common";
-import { connectAssistantDatabase } from "../config/db.js";
-import { abandonIncompleteRuns } from "../runtime/run-store.js";
+import { connectAssistantDatabase } from "../config/db.ts";
+import { abandonIncompleteRuns } from "../features/runs/run.repository.ts";
 
 /**
  * 在 Nest 开始监听端口前准备 Runtime 依赖。

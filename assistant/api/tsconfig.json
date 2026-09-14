@@ -1,9 +1,12 @@
 {
   "compilerOptions": {
-    // NodeNext 让 TypeScript 按 Node.js ESM 规则解析源码中的 .js 导入路径。
+    // NodeNext 让 TypeScript 按 Node.js ESM 规则解析模块。
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
+    // 由 tsx 直接运行 TypeScript 源码；tsc 仅检查类型，并允许导入路径使用 .ts 扩展名。
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
     // Assistant Runtime 涉及模型与工具参数，保持严格类型可以尽早发现协议错误。
     "strict": true,
     "noUncheckedIndexedAccess": true,
@@ -13,6 +16,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "types": ["node"],
+    "rootDir": "./src",
     "outDir": "dist"
   },
   "include": ["src"]

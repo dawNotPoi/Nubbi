@@ -1,3 +1,4 @@
+import { styles } from "./control-styles.ts";
 import {
   Button as ExpoButton,
   Checkbox as ExpoCheckbox,
@@ -8,16 +9,8 @@ import {
   type TextInputProps as ExpoTextInputProps,
 } from "@expo/ui";
 import { useEffect, type ReactNode } from "react";
-import {
-  Pressable,
-  StyleSheet,
-  type PressableProps,
-  type StyleProp,
-  type ViewStyle,
-  Text,
-  View,
-} from "react-native";
-import { colors } from "../theme";
+import { Pressable, type PressableProps, type StyleProp, type ViewStyle, Text, View } from "react-native";
+import { colors } from "../theme.ts";
 
 /**
  * 图标按钮：保留无障碍标签，扩大点击热区，适合工具栏场景。
@@ -36,7 +29,7 @@ export const IconButton = ({
   icon: ReactNode;
   label: string;
   style?: StyleProp<ViewStyle>;
-}) => (
+}): React.JSX.Element => (
   <Pressable
     accessibilityLabel={label}
     accessibilityRole="button"
@@ -69,7 +62,7 @@ export const Button = ({
   disabled?: boolean;
   onPress: () => void;
   tone?: "primary" | "secondary" | "danger";
-}) => (
+}): React.JSX.Element => (
   <Host
     colorScheme="light"
     matchContents={{ vertical: true }}
@@ -99,7 +92,7 @@ type FieldProps = Omit<ExpoTextInputProps, "value" | "style" | "textStyle"> & {
  * @param props 其余原生 TextInput 属性。
  * @returns 输入字段视图。
  */
-export const Field = ({ label, value = "", multiline, ...props }: FieldProps) => {
+export const Field = ({ label, value = "", multiline, ...props }: FieldProps): React.JSX.Element => {
   const nativeValue = useNativeState(value);
 
   useEffect(() => {
@@ -109,7 +102,12 @@ export const Field = ({ label, value = "", multiline, ...props }: FieldProps) =>
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
-      <Host colorScheme="light" matchContents={{ vertical: true }} seedColor={colors.primary} style={styles.controlHost}>
+      <Host
+        colorScheme="light"
+        matchContents={{ vertical: true }}
+        seedColor={colors.primary}
+        style={styles.controlHost}
+      >
         <ExpoTextInput
           multiline={multiline}
           numberOfLines={multiline ? 5 : 1}
@@ -131,11 +129,15 @@ export const Field = ({ label, value = "", multiline, ...props }: FieldProps) =>
  * @param props.value 当前开关状态。
  * @returns 开关视图。
  */
-export const Switch = ({ disabled, onValueChange, value }: {
+export const Switch = ({
+  disabled,
+  onValueChange,
+  value,
+}: {
   disabled?: boolean;
   onValueChange: (value: boolean) => void;
   value: boolean;
-}) => (
+}): React.JSX.Element => (
   <Host colorScheme="light" matchContents seedColor={colors.primary}>
     <ExpoSwitch disabled={disabled} onValueChange={onValueChange} value={value} />
   </Host>
@@ -149,49 +151,18 @@ export const Switch = ({ disabled, onValueChange, value }: {
  * @param props.value 当前勾选状态。
  * @returns 复选框视图。
  */
-export const Checkbox = ({ disabled, label, onValueChange, value }: {
+export const Checkbox = ({
+  disabled,
+  label,
+  onValueChange,
+  value,
+}: {
   disabled?: boolean;
   label: string;
   onValueChange: (value: boolean) => void;
   value: boolean;
-}) => (
+}): React.JSX.Element => (
   <Host colorScheme="light" matchContents seedColor={colors.primary}>
     <ExpoCheckbox disabled={disabled} label={label} onValueChange={onValueChange} value={value} />
   </Host>
 );
-
-const styles = StyleSheet.create({
-  iconButton: {
-    alignItems: "center",
-    borderRadius: 6,
-    height: 42,
-    justifyContent: "center",
-    width: 42,
-  },
-  pressed: { opacity: 0.62 },
-  controlHost: { width: "100%" },
-  nativeButton: { borderRadius: 6, height: 46, width: "100%" },
-  field: { gap: 7 },
-  label: { color: colors.text, fontSize: 14, fontWeight: "600" },
-  nativeInput: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: 6,
-    borderWidth: 1,
-    height: 46,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    width: "100%",
-  },
-  nativeTextarea: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: 6,
-    borderWidth: 1,
-    height: 108,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    width: "100%",
-  },
-  nativeInputText: { color: colors.text, fontSize: 15 },
-});

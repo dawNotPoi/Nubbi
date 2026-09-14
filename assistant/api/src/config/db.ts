@@ -1,7 +1,8 @@
 import mongoose from "mongoose";
-import { env } from "./env.js";
+import { env } from "./env.ts";
 
 // 独立的连接实例：与主服务共享 Mongo 实例，但拥有专属连接池与库名，避免相互干扰。
+/** Assistant 独立数据库连接，不复用主应用的模型注册表。 */
 export const assistantConnection = mongoose.createConnection(env.MONGO_URI, {
   dbName: env.ASSISTANT_MONGO_DB_NAME,
   // 连接池适中：既保证并发读写的吞吐，又不占用过多数据库连接。

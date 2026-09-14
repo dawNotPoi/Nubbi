@@ -1,12 +1,9 @@
 import { Logger } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
-import {
-  FastifyAdapter,
-  type NestFastifyApplication,
-} from "@nestjs/platform-fastify";
+import { FastifyAdapter, type NestFastifyApplication } from "@nestjs/platform-fastify";
 import "reflect-metadata";
-import { AppModule } from "./app.module.js";
-import { env } from "./config/env.js";
+import { AppModule } from "./app.module.ts";
+import { env } from "./config/env.ts";
 
 const logger = new Logger("Bootstrap");
 
@@ -19,18 +16,14 @@ const logger = new Logger("Bootstrap");
  */
 const tolerateEmptyJsonBody = (app: NestFastifyApplication): void => {
   // useBodyParser 会标记解析器已注册，避免 Nest init 阶段再次注册默认 JSON 解析器而冲突。
-  app.useBodyParser(
-    "application/json",
-    { bodyLimit: 1_048_576 },
-    (_request, body, done) => {
-      try {
-        const text = typeof body === "string" ? body : body.toString();
-        done(null, text.length > 0 ? JSON.parse(text) : undefined);
-      } catch (error) {
-        done(error as Error, undefined);
-      }
-    },
-  );
+  app.useBodyParser("application/json", { bodyLimit: 1_048_576 }, (_request, body, done) => {
+    try {
+      const text = typeof body === "string" ? body : body.toString();
+      done(null, text.length > 0 ? JSON.parse(text) : undefined);
+    } catch (error) {
+      done(error as Error, undefined);
+    }
+  });
 };
 
 /**
@@ -39,10 +32,7 @@ const tolerateEmptyJsonBody = (app: NestFastifyApplication): void => {
  * @returns 服务启动完成后的 Promise。
  */
 const bootstrap = async (): Promise<void> => {
-  const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule,
-    new FastifyAdapter({ bodyLimit: 1_048_576 }),
-  );
+  const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter({ bodyLimit: 1_048_576 }));
   // 宽容处理空 JSON body，避免旧客户端发起的空 body 请求直接被 400。
   tolerateEmptyJsonBody(app);
   app.setGlobalPrefix("api");
@@ -54,9 +44,6 @@ const bootstrap = async (): Promise<void> => {
 };
 
 void bootstrap().catch((error: unknown) => {
-  logger.error(
-    "Assistant API 启动失败",
-    error instanceof Error ? error.stack : error,
-  );
+  logger.error("Assistant API 启动失败", error instanceof Error ? error.stack : error);
   process.exitCode = 1;
 });
