@@ -2,6 +2,7 @@
 
 interface ImportMetaEnv {
   readonly VITE_API_URL?: string;
+  readonly VITE_AUTH_URL?: string;
   readonly VITE_SOCKET_URL?: string;
   readonly VITE_GITHUB_REPO?: string;
   readonly VITE_GITHUB_TOKEN?: string;
