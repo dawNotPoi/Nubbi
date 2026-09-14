@@ -1,6 +1,6 @@
 import { NodeViewContent, NodeViewProps, NodeViewWrapper } from "@tiptap/react";
 import { Select } from "antd";
-import { ChevronDown, Copy } from "lucide-react";
+import { ChevronRight, Copy } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 import MermaidPreview from "./components/MermaidPreview";
 
@@ -92,6 +92,20 @@ const CodeBlockComponent: React.FC<NodeViewProps> = ({
       data-expanded={isExpanded ? "true" : "false"}
     >
       <header className="toolbar flex items-center px-2 py-2">
+        <button
+          type="button"
+          aria-expanded={isExpanded}
+          aria-label={isExpanded ? "收起代码" : "展开代码"}
+          className="codeToolbarButton flex size-[28px] shrink-0 items-center justify-center overflow-hidden rounded-md p-1"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={handleToggleExpanded}
+          title={isExpanded ? "收起代码" : "展开代码"}
+        >
+          <ChevronRight
+            className={`transition-transform ${isExpanded ? "rotate-90" : ""}`}
+            size={16}
+          />
+        </button>
         <div className="flex-1"></div>
         <div className="codeToolbar flex h-[32px] items-center gap-1 overflow-hidden rounded-md p-0.5">
           {isEditable ? (
@@ -114,20 +128,6 @@ const CodeBlockComponent: React.FC<NodeViewProps> = ({
               {selectedLanguage}
             </span>
           )}
-          <button
-            type="button"
-            aria-expanded={isExpanded}
-            aria-label={isExpanded ? "收起代码" : "展开代码"}
-            className="codeToolbarButton flex size-[28px] items-center justify-center overflow-hidden rounded-md p-1"
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={handleToggleExpanded}
-            title={isExpanded ? "收起代码" : "展开代码"}
-          >
-            <ChevronDown
-              className={`transition-transform ${isExpanded ? "rotate-180" : ""}`}
-              size={16}
-            />
-          </button>
           <button
             type="button"
             aria-label="复制代码"
