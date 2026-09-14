@@ -7,6 +7,7 @@ import {
   PluginKey,
   TextSelection,
 } from "@tiptap/pm/state";
+import { Decoration, DecorationSet } from "@tiptap/pm/view";
 
 type SmartSelectMode = "idle" | "block-selected" | "all-selected";
 
@@ -42,11 +43,17 @@ const CONTENT_SELECTION_NODE_NAMES = new Set([
   "codeBlock",
   "blockquote",
 ]);
-const TABLE_NODE_NAMES = new Set([
+const ALL_SELECTION_BLOCK_NODE_NAMES = new Set([
+  "paragraph",
+  "heading",
+  "bulletList",
+  "orderedList",
+  "listItem",
+  "blockquote",
+  "codeBlock",
+  "image",
   "table",
-  "tableRow",
-  "tableCell",
-  "tableHeader",
+  "horizontalRule",
 ]);
 
 const createAllSelectedState = (docSize: number): SmartSelectState => ({
@@ -61,16 +68,43 @@ const isSameSelection = (state: SmartSelectState, from: number, to: number) => {
   return state.mode === "block-selected" && state.from === from && state.to === to;
 };
 
-const isInsideTable = (editorState: EditorState) => {
-  const { $from } = editorState.selection;
+const createBlockSelectionState = (
+  target: TextSelectionTarget,
+): SmartSelectState => ({
+  mode: target.mode,
+  from: target.from,
+  to: target.to,
+  kind: target.kind,
+  nodeType: target.nodeType,
+});
 
-  for (let depth = $from.depth; depth > 0; depth -= 1) {
-    if (TABLE_NODE_NAMES.has($from.node(depth).type.name)) {
-      return true;
-    }
+const toNodeTypeClass = (nodeType: string) =>
+  nodeType.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+
+const createAllSelectionDecorations = (editorState: EditorState) => {
+  const pluginState = SMART_SELECT_ALL_KEY.getState(editorState) ?? IDLE_STATE;
+
+  if (pluginState.mode !== "all-selected") {
+    return DecorationSet.empty;
   }
 
-  return false;
+  const decorations: Decoration[] = [];
+
+  editorState.doc.descendants((node, pos) => {
+    if (!ALL_SELECTION_BLOCK_NODE_NAMES.has(node.type.name)) {
+      return true;
+    }
+
+    decorations.push(
+      Decoration.node(pos, pos + node.nodeSize, {
+        class: `dn-editor__block-selection dn-editor__block-selection--${toNodeTypeClass(node.type.name)}`,
+      }),
+    );
+
+    return false;
+  });
+
+  return DecorationSet.create(editorState.doc, decorations);
 };
 
 const isManualCrossBlockSelection = (
@@ -95,10 +129,6 @@ const resolveTextSelectTarget = (
   editorState: EditorState,
 ): TextSelectionTarget | null => {
   const { selection, doc } = editorState;
-
-  if (isInsideTable(editorState)) {
-    return null;
-  }
 
   if (selection instanceof NodeSelection && selection.node.isAtom) {
     return {
@@ -207,9 +237,6 @@ export const SmartSelectAllExtension = Extension.create({
         }
 
         const target = resolveTextSelectTarget(state);
-        if (isInsideTable(state)) {
-          return false;
-        }
 
         if (isManualCrossBlockSelection(state, pluginState, target)) {
           const tr = state.tr
@@ -246,13 +273,7 @@ export const SmartSelectAllExtension = Extension.create({
 
         const tr = state.tr
           .setSelection(target.selection)
-          .setMeta(SMART_SELECT_ALL_KEY, {
-            mode: target.mode,
-            from: target.from,
-            to: target.to,
-            kind: target.kind,
-            nodeType: target.nodeType,
-          } satisfies SmartSelectState);
+          .setMeta(SMART_SELECT_ALL_KEY, createBlockSelectionState(target));
         view.dispatch(tr.scrollIntoView());
         return true;
       },
@@ -300,6 +321,7 @@ export const SmartSelectAllExtension = Extension.create({
           },
         },
         props: {
+          decorations: createAllSelectionDecorations,
           handleDOMEvents: {
             blur: (view) => {
               const currentState =

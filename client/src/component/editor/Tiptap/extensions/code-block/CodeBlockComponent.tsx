@@ -58,7 +58,7 @@ const CodeBlockComponent: React.FC<NodeViewProps> = ({
 
   return (
     <NodeViewWrapper
-      className="blockCodeWrapper group my-3 rounded-xl pb-3"
+      className="blockCodeWrapper group rounded-xl pb-3"
       data-language={selectedLanguage}
     >
       <header className="toolbar flex items-center px-2 py-2">
