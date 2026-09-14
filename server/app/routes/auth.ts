@@ -37,6 +37,7 @@ import { UploadTask } from "@/models/file/uploadTask";
 import MeetingComment from "@/models/meetingComment";
 import express from "express";
 import fse from "fs-extra";
+import { ObjectId } from "mongodb";
 import { asyncHandler } from "../middleware/common";
 import { successResponse } from "./utils";
 
@@ -44,6 +45,10 @@ const router = express.Router();
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const usernamePattern = /^[a-zA-Z0-9_]+$/;
+type AuthUserDocument = {
+  _id?: ObjectId | string;
+  id?: string;
+};
 const emailDomainCorrections: Record<string, string> = {
   "foxmai.com": "foxmail.com",
   "gamil.com": "gmail.com",
@@ -140,7 +145,16 @@ const deleteUserAccountData = async ({
     mongoDb.collection("account_deletion_codes").deleteMany({ userId }),
   ]);
 
-  await mongoDb.collection<{ _id: string }>("user").deleteOne({ _id: userId });
+  const userIdObject = ObjectId.isValid(userId) ? new ObjectId(userId) : null;
+  const userDeleteFilters: Array<Partial<AuthUserDocument>> = [
+    { id: userId },
+    { _id: userId },
+    ...(userIdObject ? [{ _id: userIdObject }] : []),
+  ];
+
+  await mongoDb.collection<AuthUserDocument>("user").deleteOne({
+    $or: userDeleteFilters,
+  });
   await removeOrphanedStorageFiles(storagePaths);
 };
 
@@ -413,9 +427,14 @@ router.post(
     const user = await getUser(req);
     const email = user.email?.trim().toLowerCase();
     const code = String(req.body?.code || "").trim();
+    const confirmed = req.body?.confirmed === true;
 
     if (!email) {
       return errorResponse(res, 400, "当前账号没有可用邮箱，无法注销账号");
+    }
+
+    if (!confirmed) {
+      return errorResponse(res, 400, "请先确认注销账号操作");
     }
 
     if (!/^\d{6}$/.test(code)) {

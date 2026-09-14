@@ -1,5 +1,5 @@
 import { useAuth } from "@/hooks/useAuth";
-import { Alert, Button, Input, Modal, Typography, message } from "antd";
+import { Alert, Button, Checkbox, Input, Modal, Typography, message } from "antd";
 import { useEffect, useState } from "react";
 
 type AccountDeletionModalProps = {
@@ -18,6 +18,7 @@ const AccountDeletionModal = ({
   const [sendingCode, setSendingCode] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [email, setEmail] = useState(userEmail || "");
+  const [confirmedDeletion, setConfirmedDeletion] = useState(false);
 
   useEffect(() => {
     setEmail(userEmail || "");
@@ -28,6 +29,7 @@ const AccountDeletionModal = ({
       setCode("");
       setCooldown(0);
       setSendingCode(false);
+      setConfirmedDeletion(false);
     }
   }, [open]);
 
@@ -64,6 +66,11 @@ const AccountDeletionModal = ({
   };
 
   const handleConfirmDeletion = async () => {
+    if (!confirmedDeletion) {
+      message.error("请先确认已了解注销后果");
+      return;
+    }
+
     if (!/^\d{6}$/.test(code)) {
       message.error("请输入 6 位数字验证码");
       return;
@@ -93,6 +100,7 @@ const AccountDeletionModal = ({
           danger
           type="primary"
           loading={loading}
+          disabled={!confirmedDeletion || !/^\d{6}$/.test(code)}
           onClick={handleConfirmDeletion}
         >
           确认注销
@@ -107,6 +115,13 @@ const AccountDeletionModal = ({
           message="账号注销后不可恢复"
           description="你的账号、登录会话以及个人笔记和文件记录将被删除。"
         />
+
+        <Checkbox
+          checked={confirmedDeletion}
+          onChange={(event) => setConfirmedDeletion(event.target.checked)}
+        >
+          我确认要注销当前账号，并了解该操作不可恢复。
+        </Checkbox>
 
         <div className="space-y-2">
           <Typography.Text type="secondary">

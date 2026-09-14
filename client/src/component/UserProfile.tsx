@@ -6,7 +6,7 @@ import {
   SettingOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import { Avatar, Button, Dropdown, Menu } from "antd";
+import { Avatar, Button, Dropdown, Menu, Modal } from "antd";
 import React, { useState } from "react";
 
 const UserProfile: React.FC = () => {
@@ -19,6 +19,17 @@ const UserProfile: React.FC = () => {
       // 可以在这里添加登出后的处理逻辑
       console.log("登出成功");
     }
+  };
+
+  const handleRequestAccountDeletion = () => {
+    Modal.confirm({
+      title: "确认注销账号？",
+      content: "注销会删除账号、登录会话以及个人数据。继续后需要邮箱验证码验证。",
+      okText: "继续验证",
+      cancelText: "取消",
+      okButtonProps: { danger: true },
+      onOk: () => setDeletionModalOpen(true),
+    });
   };
 
   const menu = (
@@ -34,7 +45,7 @@ const UserProfile: React.FC = () => {
         key="delete-account"
         danger
         icon={<DeleteOutlined />}
-        onClick={() => setDeletionModalOpen(true)}
+        onClick={handleRequestAccountDeletion}
       >
         注销账号
       </Menu.Item>

@@ -785,6 +785,7 @@ export const deleteAccountWithCode = async (
       headers: getAuthorizedJsonHeaders(),
       body: JSON.stringify({
         code,
+        confirmed: true,
       }),
     });
 
