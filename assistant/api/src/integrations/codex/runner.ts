@@ -56,6 +56,7 @@ export const runCodex = async (input: CodexRunInput): Promise<AgentRunResult> =>
     try {
       const response = await codexClient.request<TurnResponse>("turn/start", {
         threadId,
+        model: input.modelConfig.model,
         input: [
           {
             type: "text",

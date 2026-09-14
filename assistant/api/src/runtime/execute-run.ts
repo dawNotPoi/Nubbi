@@ -48,7 +48,7 @@ export async function executePreparedRun(input: PreparedRunInput): Promise<Runti
     collector.record(event);
     emitter.emit(event);
   };
-  emitter.emit({ type: "run-started", provider: input.modelConfig.provider });
+  emitter.emit({ type: "run-started", provider: input.modelConfig.provider, model: input.modelConfig.model });
   emitter.emit({
     type: "context-status",
     usedTokens: input.context.usedTokens,
@@ -90,7 +90,9 @@ export async function executePreparedRun(input: PreparedRunInput): Promise<Runti
     messageParts = [...collector.snapshot(), { type: "error", message: failureMessage }];
   }
   try {
-    const message = await appendMessage(input.conversationId, "assistant", messageParts);
+    const message = await appendMessage(input.conversationId, "assistant", messageParts, {
+      model: input.modelConfig.model, provider: input.modelConfig.provider,
+    });
     const usage = runUsage.snapshot();
     if (usage) {
       await accumulateTokenUsage(input.conversationId, usage);

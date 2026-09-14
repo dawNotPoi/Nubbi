@@ -63,7 +63,7 @@ function AppContent() {
 
   return (
     <>
-      <ChatScreen baseUrl={baseUrl} onOpenSettings={() => setSettingsOpen(true)} />
+      <ChatScreen baseUrl={baseUrl} settingsOpen={settingsOpen} onOpenSettings={() => setSettingsOpen(true)} />
       <Modal animationType="slide" onRequestClose={() => setSettingsOpen(false)} visible={settingsOpen}>
         <SettingsScreen
           baseUrl={baseUrl}

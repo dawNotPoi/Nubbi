@@ -11,12 +11,15 @@ import type { Conversation, Message, MessagePart } from "../../types.ts";
 const toConversation = (document: HydratedDocument<StoredConversation>): Conversation => ({
   id: document.id,
   title: document.title,
+  model: document.model,
   createdAt: document.createdAt,
   updatedAt: document.updatedAt,
   // 展开 messages 并复制 parts，避免调用方直接修改数据库文档对象。
   messages: document.messages.map((message) => ({
     id: message.id,
     role: message.role,
+    model: message.model,
+    provider: message.provider,
     parts: [...message.parts] as MessagePart[],
     createdAt: message.createdAt,
   })),
@@ -41,6 +44,7 @@ export const listConversations = async (): Promise<Omit<Conversation, "messages"
   return documents.map((document) => ({
     id: document.id,
     title: document.title,
+    model: document.model,
     createdAt: document.createdAt,
     updatedAt: document.updatedAt,
     codexThreadId: document.codexThreadId,
@@ -58,13 +62,15 @@ export const listConversations = async (): Promise<Omit<Conversation, "messages"
 
 /**
  * 创建一个标题为“新对话”的空对话。
+ * @param model 新会话的默认模型快照。
  * @returns 新建的对话对象。
  */
-export const createConversation = async (): Promise<Conversation> => {
+export const createConversation = async (model: string): Promise<Conversation> => {
   const now = new Date().toISOString();
   const document = await ConversationModel.create({
     id: randomUUID(),
     title: "新对话",
+    model,
     createdAt: now,
     updatedAt: now,
     messages: [],
@@ -97,11 +103,14 @@ export const deleteConversation = async (id: string): Promise<boolean> => {
  * @param id 对话的唯一 ID。
  * @param role 消息角色（用户或助手）。
  * @param parts 消息内容块列表。
+ * @param execution 本次运行的模型信息；兼容未记录模型的旧调用。
  * @returns 新追加的消息；对话不存在时抛出异常。
  */
-export const appendMessage = async (id: string, role: Message["role"], parts: MessagePart[]): Promise<Message> => {
+export const appendMessage = async (
+  id: string, role: Message["role"], parts: MessagePart[], execution: Pick<Message, "model" | "provider"> = {},
+): Promise<Message> => {
   const now = new Date().toISOString();
-  const message: Message = { id: randomUUID(), role, parts, createdAt: now };
+  const message: Message = { id: randomUUID(), role, parts, createdAt: now, ...execution };
   // 先插入消息再读取，若对话不存在则直接失败。
   const previous = await ConversationModel.findOneAndUpdate(
     { id },

@@ -37,14 +37,14 @@ export const ModelSwitcher = ({
       <div className="relative">
         <button
           className="flex h-7 items-center gap-1.5 rounded-full border bg-background px-2.5 text-xs shadow-sm transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
-          disabled={!unlocked}
+          disabled={!unlocked || loading}
           onClick={() => setOpen((value) => !value)}
-          title={currentModel || "切换模型"}
+          title="会话下次使用的模型，保存后生效"
           type="button"
         >
           <Sparkles className="size-3.5 shrink-0 text-primary" />
           <span className="max-w-44 truncate font-medium text-foreground">
-            {currentModel || (unlocked ? "选择模型" : "未解锁模型切换")}
+            {currentModel ? `下次：${currentModel}` : (unlocked ? "选择模型" : "未解锁模型切换")}
           </span>
           {unlocked ? (
             <ChevronDown className={cn("size-3.5 text-muted-foreground transition-transform", open && "rotate-180")} />
@@ -59,7 +59,7 @@ export const ModelSwitcher = ({
               type="button"
             />
             <div className="absolute bottom-full left-0 z-40 mb-2 max-h-72 w-64 overflow-y-auto rounded-xl border bg-background py-1 shadow-lg">
-              <p className="border-b px-3 py-2 text-xs font-medium text-muted-foreground">切换模型</p>
+              <p className="border-b px-3 py-2 text-xs font-medium text-muted-foreground">会话模型 · 下次发送使用</p>
               {options.map((model) => (
                 <button
                   className={cn(
@@ -77,7 +77,7 @@ export const ModelSwitcher = ({
                     className={cn("size-2 shrink-0 rounded-full", model === currentModel ? "bg-primary" : "bg-border")}
                   />
                   <span className="truncate">{model}</span>
-                  {model === currentModel ? <span className="ml-auto text-xs text-muted-foreground">当前</span> : null}
+                  {model === currentModel ? <span className="ml-auto text-xs text-muted-foreground">已选择</span> : null}
                 </button>
               ))}
               {!options.length ? (

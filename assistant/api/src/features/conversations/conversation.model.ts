@@ -15,6 +15,8 @@ const messageSchema = new Schema<StoredMessage>(
   {
     id: { type: String, required: true },
     role: { type: String, enum: ["user", "assistant"], required: true },
+    model: { type: String },
+    provider: { type: String, enum: ["openai-compatible", "codex-subscription"] },
     parts: { type: [Schema.Types.Mixed], required: true },
     createdAt: { type: String, required: true },
   },
@@ -25,6 +27,7 @@ const conversationSchema = new Schema<StoredConversation>(
   {
     id: { type: String, required: true, unique: true, index: true },
     title: { type: String, required: true },
+    model: { type: String },
     createdAt: { type: String, required: true },
     // updatedAt 建索引：对话列表按它倒序排序。
     updatedAt: { type: String, required: true, index: true },

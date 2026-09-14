@@ -1,19 +1,14 @@
 import { Injectable } from "@nestjs/common";
-import { runCoordinator, type PreparedRun } from "../../runtime/run-coordinator.ts";
+import { runCoordinator, type PreparedRun, type PrepareRunInput } from "../../runtime/run-coordinator.ts";
+import { readModelConfig } from "../settings/model-config.repository.ts";
+import { saveConversationModel } from "./conversation-model.repository.ts";
 import {
   createConversation,
   deleteConversation,
   getConversation,
   listConversations,
 } from "./conversation.repository.ts";
-import type { Conversation, RuntimeEvent } from "../../types.ts";
-
-type PrepareRunInput = {
-  conversationId: string;
-  content: string;
-  onEvent: (event: RuntimeEvent) => void;
-  connectionSignal?: AbortSignal;
-};
+import type { Conversation } from "../../types.ts";
 
 /**
  * 对话应用服务。
@@ -21,6 +16,15 @@ type PrepareRunInput = {
  */
 @Injectable()
 export class ConversationsService {
+  /**
+   * 保存会话的下次模型，不修改正在运行的任务。
+   * @param id 会话 ID。
+   * @param model 模型 ID。
+   * @returns 是否找到并更新会话。
+   */
+  saveModel(id: string, model: string): Promise<boolean> {
+    return saveConversationModel(id, model);
+  }
   /**
    * 列出全部对话（不含消息内容）。
    * @returns 对话摘要列表。
@@ -33,8 +37,8 @@ export class ConversationsService {
    * 创建一个新对话。
    * @returns 新建的对话对象。
    */
-  create(): Promise<Conversation> {
-    return createConversation();
+  async create(): Promise<Conversation> {
+    return createConversation((await readModelConfig()).model);
   }
 
   /**

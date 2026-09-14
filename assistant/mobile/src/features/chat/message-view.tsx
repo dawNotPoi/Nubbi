@@ -15,6 +15,7 @@ export const MessageView = ({ message }: { message: Message }): React.JSX.Elemen
   return (
     <View style={[styles.messageRow, user && styles.userMessageRow]}>
       <View style={[styles.message, user ? styles.userMessage : styles.assistantMessage]}>
+        {!user && message.model ? <Text style={styles.capabilityText}>本次模型：{message.model}</Text> : null}
         {message.parts.map((part, index) => {
           const key = `${message.id}-${part.type}-${index}`;
           if (part.type === "text") {

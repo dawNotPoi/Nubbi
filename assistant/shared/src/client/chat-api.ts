@@ -13,6 +13,7 @@ export type ChatApi = Pick<
   | "listConversations"
   | "getConversation"
   | "createConversation"
+  | "updateConversationModel"
   | "deleteConversation"
   | "streamMessage"
   | "stopGeneration"

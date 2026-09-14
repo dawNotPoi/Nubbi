@@ -6,6 +6,7 @@ import { readResponseError, type AssistantConnection } from "./http-transport.ts
 export type StreamMessageInput = {
   conversationId: string;
   content: string;
+  model: string;
   signal: AbortSignal;
   onEvent: (event: StreamEvent) => void;
 };
@@ -25,7 +26,7 @@ export async function streamAssistantMessage(
     {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
-      body: JSON.stringify({ content: input.content }),
+      body: JSON.stringify({ content: input.content, model: input.model }),
       signal: input.signal,
     },
   );

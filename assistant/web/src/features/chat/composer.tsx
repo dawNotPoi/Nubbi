@@ -10,6 +10,7 @@ import { Button } from "../../components/ui/button.tsx";
  * 以 / 开头时先弹出命令推荐行，选择 /model 后进入模型选择子菜单，
  * /skill 与 /mcp 则展示已配置的技能与 MCP 服务（含启用状态）。
  * @param props.generating 是否正在生成，生成中禁用输入并显示停止按钮。
+ * @param props.sendDisabled 模型尚未就绪时保留草稿并阻止发送。
  * @param props.onSend 发送消息回调。
  * @param props.onStop 停止生成回调。
  * @param props.models 可用模型 ID 列表，供 /model 筛选。
@@ -25,6 +26,7 @@ import { Button } from "../../components/ui/button.tsx";
  */
 export const Composer = ({
   generating,
+  sendDisabled,
   onSend,
   onStop,
   models,
@@ -38,6 +40,7 @@ export const Composer = ({
   onToggleServer,
 }: {
   generating: boolean;
+  sendDisabled: boolean;
   onSend: (content: string) => Promise<void>;
   onStop: () => Promise<void>;
   models: string[];
@@ -52,6 +55,7 @@ export const Composer = ({
 }): React.JSX.Element => {
   const slash = useSlashCommand({
     generating,
+    sendDisabled,
     onSend,
     onSelectModel,
     onToggleSkill,
@@ -103,7 +107,7 @@ export const Composer = ({
           ) : (
             <Button
               aria-label="发送消息"
-              disabled={!slash.value.trim()}
+              disabled={sendDisabled || !slash.value.trim()}
               onClick={() => void slash.submit()}
               size="icon"
             >

@@ -6,7 +6,7 @@ import type { ConversationSummary } from "../../types.ts";
 
 /** 移动端保留原生删除确认，其他业务行为与 Web 一致。 */
 export type MobileChatState = ChatViewState &
-  Pick<ChatSession, "selectConversation" | "sendMessage" | "stopGeneration" | "decideApproval"> & {
+  Pick<ChatSession, "modelSelection" | "selectConversation" | "sendMessage" | "stopGeneration" | "decideApproval"> & {
     deleteConversation: (conversation: ConversationSummary) => void;
   };
 
@@ -46,6 +46,7 @@ export function useMobileChat(assistantApiBaseUrl: string): MobileChatState {
   };
   return {
     ...state,
+    modelSelection: session.modelSelection,
     selectConversation: session.selectConversation,
     sendMessage: session.sendMessage,
     stopGeneration: session.stopGeneration,

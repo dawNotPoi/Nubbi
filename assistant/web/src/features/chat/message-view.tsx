@@ -95,6 +95,7 @@ export const MessageView = ({ message }: { message: Message }): React.JSX.Elemen
   return (
     <article className={cn("flex w-full", user && "justify-end")}>
       <div className={cn("min-w-0", user ? "max-w-[86%] rounded-md bg-muted px-4 py-2.5" : "w-full")}>
+        {!user && message.model ? <p className="mb-2 text-xs text-muted-foreground">本次模型：{message.model}</p> : null}
         {message.parts.map((part, index) => {
           const key = `${message.id}-${part.type}-${index}`;
           if (part.type === "text") {

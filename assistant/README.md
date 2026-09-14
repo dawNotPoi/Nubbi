@@ -42,6 +42,12 @@ pnpm dev:assistant
 
 ## 模型配置
 
+发送消息使用 `POST /api/conversations/:id/messages`，请求体为 `{ content: string, model: string }`，两项均必填。请求类型由 Zod 规则推导，同时保留运行时校验；旧客户端缺少模型返回 400。本请求不支持切换 Provider 或传入密钥。
+
+会话的 `model` 保存到 MongoDB，表示下次发送使用的模型。选择器通过 `PATCH /api/conversations/:id/model` 保存 `{ model }`，成功后才更新选择，保存期间禁用发送；切换不写全局配置，失败保留原选择。重新打开历史会话时恢复已保存模型，新会话从设置复制默认模型。旧会话尚未保存模型时暂用配置默认值，在首次选择或发送时保存；旧消息的模型不补猜。Web 提供模型列表，Mobile 可填写并保存模型 ID。
+
+Runtime 从消息 body 固定本次 Run 的模型，与会话下次模型分离；模型调用及工具循环期间都不重新读取选择。Codex 每次 `turn/start` 也显式传入模型。运行开始事件和消息记录分别携带本次配置的 `model`、`provider`，生成中修改会话模型不改写本次回复。设置页继续管理全局连接、密钥和新会话默认模型，现有会话的模型 ID 不随默认值改变；若切换 Provider，应为会话选择该 Provider 支持的模型。
+
 在手机 App 的“设置 → 模型”中选择一种来源：
 
 ### OpenAI-compatible API

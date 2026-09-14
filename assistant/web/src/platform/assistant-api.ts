@@ -7,6 +7,7 @@ export const {
   listConversations,
   getConversation,
   createConversation,
+  updateConversationModel,
   deleteConversation,
   stopGeneration,
   resolveApproval,

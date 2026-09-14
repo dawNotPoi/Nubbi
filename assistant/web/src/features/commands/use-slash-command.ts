@@ -5,6 +5,7 @@ import { COMMANDS, type CommandKey, type McpServerRef, type SkillRef } from "./s
 /** useSlashCommand 的输入参数。 */
 export type UseSlashCommandInput = {
   generating: boolean;
+  sendDisabled: boolean;
   onSend: (content: string) => Promise<void>;
   onSelectModel: (model: string) => Promise<void>;
   onToggleSkill: (name: string, enabled: boolean) => void;
@@ -75,7 +76,7 @@ export const useSlashCommand = (input: UseSlashCommandInput): SlashCommandState 
    */
   const submit = async (): Promise<void> => {
     const content = value.trim();
-    if (!content || generating) return;
+    if (!content || generating || input.sendDisabled) return;
     setValue("");
     await onSend(content);
   };

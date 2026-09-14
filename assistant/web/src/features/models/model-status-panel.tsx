@@ -64,7 +64,7 @@ export const ModelStatusPanel = ({ info }: { info: ModelStatusInfo }): React.JSX
     <div className="py-1">
       <SectionTitle icon={<Cpu className="size-3.5" />} text="模型" />
       <div className="py-1">
-        <Row label="模型">{info.model || "未配置"}</Row>
+        <Row label="下次模型">{info.model || "未配置"}</Row>
         <Row label="提供方">{providerLabel}</Row>
         <Row label="Base URL">{info.baseUrl || "—"}</Row>
         {info.contextWindow ? <Row label="上下文窗口">{formatTokens(info.contextWindow)} tokens</Row> : null}

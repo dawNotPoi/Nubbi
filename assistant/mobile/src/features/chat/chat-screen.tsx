@@ -17,19 +17,24 @@ import { HistoryModal } from "../conversations/history-modal.tsx";
 import { MessageView } from "./message-view.tsx";
 import { chatStyles as styles } from "./styles.ts";
 import { useMobileChat } from "./use-mobile-chat.ts";
+import { useDefaultModel } from "./use-default-model.ts";
+import { ConversationModelPicker } from "./conversation-model-picker.tsx";
 
 /**
  * 聊天主屏：消息流、输入框与历史/设置入口。
  * @param props.baseUrl Assistant API 基础地址。
  * @param props.onOpenSettings 打开设置的回调。
+ * @param props.settingsOpen 设置是否打开，用于刷新默认模型。
  * @returns 聊天主屏视图。
  */
 export const ChatScreen = ({
   baseUrl,
   onOpenSettings,
+  settingsOpen,
 }: {
   baseUrl: string;
   onOpenSettings: () => void;
+  settingsOpen: boolean;
 }): React.JSX.Element => {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [draft, setDraft] = useState("");
@@ -37,6 +42,9 @@ export const ChatScreen = ({
   // 记录已展示的审批弹窗，防止同一审批重复弹出。
   const shownApproval = useRef<string | null>(null);
   const chat = useMobileChat(baseUrl);
+  const defaultModel = useDefaultModel(baseUrl, settingsOpen);
+  const selectedModel = chat.selectedConversation?.model ?? defaultModel.model;
+  const modelBusy = chat.loading || chat.modelSaving || (chat.generating && !chat.traceRunId);
 
   // 新消息到达后自动滚到底部；延迟 30ms 等待布局完成。
   useEffect(() => {
@@ -81,9 +89,9 @@ export const ChatScreen = ({
    */
   const send = (): void => {
     const content = draft.trim();
-    if (!content) return;
+    if (!content || !selectedModel || modelBusy || chat.generating) return;
     setDraft("");
-    void chat.sendMessage(content);
+    void chat.sendMessage(content, selectedModel);
   };
 
   return (
@@ -128,7 +136,9 @@ export const ChatScreen = ({
           </ScrollView>
         )}
         {chat.error ? <Text style={styles.bannerError}>{chat.error}</Text> : null}
+        {!selectedModel && defaultModel.error ? <Text style={styles.bannerError}>{defaultModel.error}</Text> : null}
         <View style={styles.composerArea}>
+          <ConversationModelPicker model={selectedModel} disabled={modelBusy} onSelect={chat.modelSelection.select} />
           <View style={styles.composer}>
             <TextInput
               editable={!chat.generating}
@@ -141,7 +151,7 @@ export const ChatScreen = ({
               value={draft}
             />
             <IconButton
-              disabled={!chat.generating && !draft.trim()}
+              disabled={!chat.generating && (!draft.trim() || !selectedModel || modelBusy)}
               icon={
                 chat.generating ? (
                   <Square color={colors.primary} fill={colors.primary} size={18} />

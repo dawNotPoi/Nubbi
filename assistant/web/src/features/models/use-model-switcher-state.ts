@@ -4,11 +4,9 @@ import type { ModelConfig } from "../../types.ts";
 export type ModelSwitcherState = {
   config: ModelConfig | null;
   models: string[];
-  currentModel: string;
   planType: string | undefined;
   loading: boolean;
   error: string | null;
   unlocked: boolean;
   refresh: () => Promise<void>;
-  switchModel: (model: string) => Promise<void>;
 };

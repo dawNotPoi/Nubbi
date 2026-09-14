@@ -8,11 +8,13 @@ import { listSkills } from "../integrations/skills/skill-store.ts";
 import { appendMessage, getConversation } from "../features/conversations/conversation.repository.ts";
 import { buildAgentContext } from "../agent/context-builder.ts";
 import { executePreparedRun, type RuntimeOutcome } from "./execute-run.ts";
+import { createRunModelConfig } from "./run-model-config.ts";
 
 /** 创建运行所需的业务参数，不包含模型协议。 */
 export type PrepareRunInput = {
   conversationId: string;
   content: string;
+  model: string;
   onEvent: (event: RuntimeEvent) => void;
   connectionSignal?: AbortSignal;
   agentId?: string;
@@ -35,6 +37,8 @@ export class RunCoordinator {
    * @returns 只能执行一次的运行句柄。
    */
   public async prepareRun(input: PrepareRunInput): Promise<PreparedRun> {
+    const requestedModel = input.model.trim();
+    if (!requestedModel) throw new Error("请选择本次使用的模型");
     if (this.activeRuns.has(input.conversationId)) throw new RuntimeConflictError("当前对话已有任务正在生成");
     const runId = randomUUID();
     const controller = new AbortController();
@@ -48,7 +52,7 @@ export class RunCoordinator {
     try {
       if (input.connectionSignal?.aborted) cancelConnection();
       controller.signal.throwIfAborted();
-      const [conversation, modelConfig, skills, mcpTools] = await Promise.all([
+      const [conversation, storedModelConfig, skills, mcpTools] = await Promise.all([
         getConversation(input.conversationId),
         readModelConfig(),
         listSkills(),
@@ -56,7 +60,10 @@ export class RunCoordinator {
       ]);
       controller.signal.throwIfAborted();
       if (!conversation) throw new Error("对话不存在");
-      const userMessage = await appendMessage(input.conversationId, "user", [{ type: "text", text: input.content }]);
+      const modelConfig = createRunModelConfig(storedModelConfig, requestedModel);
+      const userMessage = await appendMessage(input.conversationId, "user", [{ type: "text", text: input.content }], {
+        model: modelConfig.model, provider: modelConfig.provider,
+      });
       const updatedConversation = await getConversation(input.conversationId);
       if (!updatedConversation) throw new Error("对话不存在");
       const context = buildAgentContext(

@@ -1,11 +1,13 @@
 import type { ActiveGeneration, ChatApi } from "./chat-api.ts";
-
 import { ChatStateStore, createChatViewState, createRunViewPatch, reduceChatEvent } from "./chat-state.ts";
 import { createPendingMessage } from "./message-state.ts";
+import { ConversationModelSelection } from "./conversation-model-selection.ts";
+import { prepareMessageConversation } from "./message-conversation.ts";
 
 /** 两端共用的聊天业务状态机，UI 自行订阅与展示。 */
 export class ChatSession {
   public readonly store = new ChatStateStore();
+  public readonly modelSelection: ConversationModelSelection;
   private revision = 0;
   private listRevision = 0;
   private activeGeneration: ActiveGeneration | null = null;
@@ -14,7 +16,7 @@ export class ChatSession {
    * 绑定业务客户端。
    * @param api 平台已配置的请求方法。
    */
-  public constructor(private readonly api: ChatApi) {}
+  public constructor(private readonly api: ChatApi) { this.modelSelection = new ConversationModelSelection(this.store, api); }
 
   /**
    * 首次加载，移动端可自动打开最近对话。
@@ -40,6 +42,7 @@ export class ChatSession {
    * @returns 无返回值。
    */
   public dispose(): void {
+    this.modelSelection.invalidate();
     this.revision += 1;
     this.listRevision += 1;
     this.cancelLocalGeneration();
@@ -51,6 +54,7 @@ export class ChatSession {
    * @returns 加载完成的 Promise。
    */
   public selectConversation = async (conversationId?: string): Promise<void> => {
+    this.modelSelection.invalidate();
     this.cancelLocalGeneration();
     const revision = ++this.revision;
     this.store.update({ ...createChatViewState(), conversations: this.store.getSnapshot().conversations });
@@ -67,16 +71,22 @@ export class ChatSession {
   /**
    * 创建或续接对话并接收回复，同步占位防止双击重复发送。
    * @param content 用户输入。
+   * @param model 发送瞬间选定的模型，异步创建对话期间也保持不变。
    * @returns 发送结束的 Promise。
    */
-  public sendMessage = async (content: string): Promise<void> => {
+  public sendMessage = async (content: string, model: string): Promise<void> => {
     const text = content.trim();
-    if (!text || this.activeGeneration) return;
+    if (!text || this.activeGeneration || this.store.getSnapshot().modelSaving) return;
+    const requestedModel = model.trim();
+    if (!requestedModel) return this.reportError(new Error("请选择本次使用的模型"));
     const generation: ActiveGeneration = { revision: ++this.revision, controller: new AbortController() };
     this.activeGeneration = generation;
     this.store.update(createRunViewPatch());
     try {
-      const conversation = this.store.getSnapshot().selectedConversation ?? (await this.api.createConversation());
+      const conversation = await prepareMessageConversation({
+        api: this.api, conversation: this.store.getSnapshot().selectedConversation,
+        model: requestedModel, signal: generation.controller.signal,
+      });
       if (!this.isCurrent(generation)) return;
       generation.conversationId = conversation.id;
       this.store.update({
@@ -89,6 +99,7 @@ export class ChatSession {
       await this.api.streamMessage({
         conversationId: conversation.id,
         content: text,
+        model: requestedModel,
         signal: generation.controller.signal,
         onEvent: (event) => {
           if (!this.isCurrent(generation)) return;
@@ -99,7 +110,8 @@ export class ChatSession {
       });
       const savedConversation = await this.api.getConversation(conversation.id);
       if (!this.isCurrent(generation)) return;
-      this.store.update({ selectedConversation: savedConversation, pendingMessages: [], runTokenUsage: null });
+      const model = this.store.getSnapshot().selectedConversation?.model ?? savedConversation.model;
+      this.store.update({ selectedConversation: { ...savedConversation, model }, pendingMessages: [], runTokenUsage: null });
       await this.refreshConversations();
     } catch (error) {
       if (this.isCurrent(generation)) this.reportError(error);
@@ -171,11 +183,8 @@ export class ChatSession {
 
   /** 判断回调是否仍属于当前未取消的请求。 */
   private isCurrent(generation: ActiveGeneration): boolean {
-    return (
-      this.activeGeneration === generation &&
-      generation.revision === this.revision &&
-      !generation.controller.signal.aborted
-    );
+    return this.activeGeneration === generation && generation.revision === this.revision
+      && !generation.controller.signal.aborted;
   }
 
   /** 废弃本地流，服务端通过连接关闭停止对应任务。 */

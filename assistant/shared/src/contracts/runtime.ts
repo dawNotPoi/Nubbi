@@ -65,6 +65,8 @@ export type RuntimeEventPayload =
   | {
       type: "run-started";
       provider: "openai-compatible" | "codex-subscription";
+      /** 旧运行记录可能未保存模型。 */
+      model?: string;
     }
   | {
       type: "context-status";

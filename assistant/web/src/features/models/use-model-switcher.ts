@@ -1,138 +1,68 @@
 import type { ModelSwitcherState } from "./use-model-switcher-state.ts";
 import { readConfigAccessToken, saveConfigAccessToken } from "../../platform/config-access-storage.ts";
-import { useCallback, useEffect, useState } from "react";
-import {
-  fetchCodexModels,
-  fetchProviderModels,
-  getCodexAccount,
-  getModelConfig,
-  saveModelConfig,
-} from "../../platform/assistant-api.ts";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { fetchCodexModels, fetchProviderModels, getCodexAccount, getModelConfig } from "../../platform/assistant-api.ts";
 import type { ModelConfig } from "../../types.ts";
 
-/** 设置管理密钥在 sessionStorage 中的键名，与设置抽屉保持一致。 */
-
 /**
- * 聊天页的模型切换：读取当前模型配置、拉取可用模型列表并切换默认模型。
- * 切换只更新全局配置的 model 字段，下一次发送消息即生效。
- * @returns 模型切换所需的状态与操作（当前模型、模型列表、切换与刷新）。
+ * 加载默认连接与可选模型；会话模型由聊天状态保存，不写全局配置。
+ * @returns 配置与模型目录，供新会话和选择器使用。
  */
 export const useModelSwitcher = (): ModelSwitcherState => {
   const [config, setConfig] = useState<ModelConfig | null>(null);
   const [models, setModels] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // ChatGPT 订阅计划（仅订阅模式有值），供 /status 展示。
   const [planType, setPlanType] = useState<string | undefined>(undefined);
+  const refreshRevision = useRef(0);
 
   /**
-   * 重新读取配置与模型列表；未解锁时清空状态。
-   * 模型列表拉取失败只清空列表，不阻塞配置展示。
-   * @returns 刷新完成后的 Promise。
+   * 读取配置与模型目录，过期请求和卸载后的回调不更新状态。
+   * @returns 刷新完成的 Promise。
    */
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (): Promise<void> => {
+    const revision = ++refreshRevision.current;
     const accessToken = readConfigAccessToken() ?? "";
+    setModels([]);
+    setPlanType(undefined);
+    setError(null);
     if (!accessToken) {
       setConfig(null);
-      setModels([]);
-      setPlanType(undefined);
-      setError(null);
+      setLoading(false);
       return;
     }
     setLoading(true);
-    setError(null);
     try {
       const next = await getModelConfig(accessToken);
+      if (revision !== refreshRevision.current) return;
       setConfig(next);
       try {
         if (next.provider === "codex-subscription") {
-          const [account, modelResult] = await Promise.all([
-            getCodexAccount(accessToken),
-            fetchCodexModels(accessToken),
-          ]);
-          setModels(modelResult.models.map((item) => item.model || item.id));
+          const [account, result] = await Promise.all([getCodexAccount(accessToken), fetchCodexModels(accessToken)]);
+          if (revision !== refreshRevision.current) return;
+          setModels(result.models.map((item) => item.model || item.id));
           setPlanType(account.account?.type === "chatgpt" ? account.account.planType : undefined);
-        } else {
-          setPlanType(undefined);
-          if (next.baseUrl.trim()) {
-            const result = await fetchProviderModels(accessToken, {
-              baseUrl: next.baseUrl.trim(),
-            });
-            setModels(result.models);
-          } else {
-            setModels([]);
-          }
+        } else if (next.baseUrl.trim()) {
+          const result = await fetchProviderModels(accessToken, { baseUrl: next.baseUrl.trim() });
+          if (revision === refreshRevision.current) setModels(result.models);
         }
       } catch {
-        setModels([]);
-        setPlanType(undefined);
+        // 目录查询失败不影响已配置模型继续使用。
       }
     } catch (caught) {
+      if (revision !== refreshRevision.current) return;
+      setConfig(null);
       setError(caught instanceof Error ? caught.message : "加载模型配置失败");
-      if (caught instanceof Error && caught.message.includes("密钥无效")) {
-        saveConfigAccessToken("");
-        setConfig(null);
-        setModels([]);
-        setPlanType(undefined);
-      }
+      if (caught instanceof Error && caught.message.includes("密钥无效")) saveConfigAccessToken("");
     } finally {
-      setLoading(false);
+      if (revision === refreshRevision.current) setLoading(false);
     }
   }, []);
 
-  // 首次挂载时读取一次配置与模型。
   useEffect(() => {
     void refresh();
+    return () => { refreshRevision.current += 1; };
   }, [refresh]);
 
-  /**
-   * 切换默认模型并保存配置；失败时写入 error 供界面提示。
-   * @param model 目标模型 ID。
-   * @returns 保存完成后的 Promise。
-   */
-  const switchModel = useCallback(
-    async (model: string) => {
-      if (!config) {
-        setError("请先解锁配置");
-        return;
-      }
-      const accessToken = readConfigAccessToken() ?? "";
-      if (!accessToken) {
-        setError("请先解锁配置");
-        return;
-      }
-      setLoading(true);
-      setError(null);
-      try {
-        const saved = await saveModelConfig(accessToken, {
-          provider: config.provider,
-          authType: config.authType,
-          baseUrl: config.baseUrl,
-          model,
-          systemPrompt: config.systemPrompt,
-          headers: config.headers,
-          temperature: config.temperature,
-          contextWindow: config.contextWindow,
-        });
-        setConfig(saved);
-      } catch (caught) {
-        setError(caught instanceof Error ? caught.message : "切换模型失败");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [config],
-  );
-
-  return {
-    config,
-    models,
-    currentModel: config?.model ?? "",
-    planType,
-    loading,
-    error,
-    unlocked: Boolean(readConfigAccessToken()),
-    refresh,
-    switchModel,
-  };
+  return { config, models, planType, loading, error, unlocked: Boolean(readConfigAccessToken()), refresh };
 };

@@ -6,6 +6,7 @@ export type ConversationsApi = {
   listConversations: () => Promise<ConversationSummary[]>;
   getConversation: (id: string) => Promise<Conversation>;
   createConversation: () => Promise<Conversation>;
+  updateConversationModel: (id: string, model: string) => Promise<{ model: string }>;
   deleteConversation: (id: string) => Promise<void>;
   stopGeneration: (conversationId: string) => Promise<void>;
   resolveApproval: (id: string, approved: boolean) => Promise<void>;
@@ -37,6 +38,15 @@ export function createConversationsApi(transport: HttpTransport): ConversationsA
    * @returns 新建的对话对象。
    */
   const createConversation = (): Promise<Conversation> => transport.request("/api/conversations", { method: "POST" });
+
+  /**
+   * 保存会话的下次模型，不修改全局配置或历史消息。
+   * @param id 会话 ID。
+   * @param model 模型 ID。
+   * @returns 服务端确认的模型。
+   */
+  const updateConversationModel = (id: string, model: string): Promise<{ model: string }> =>
+    transport.request(`/api/conversations/${id}/model`, { method: "PATCH", body: JSON.stringify({ model }) });
 
   /**
    * 删除指定对话。
@@ -84,6 +94,7 @@ export function createConversationsApi(transport: HttpTransport): ConversationsA
     listConversations,
     getConversation,
     createConversation,
+    updateConversationModel,
     deleteConversation,
     stopGeneration,
     resolveApproval,

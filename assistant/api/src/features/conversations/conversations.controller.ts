@@ -13,20 +13,13 @@ import {
   Res,
 } from "@nestjs/common";
 import type { ServerResponse } from "node:http";
-import { z } from "zod";
-import { RuntimeConflictError, type PreparedRun } from "../../runtime/run-coordinator.ts";
-import { ConversationsService } from "./conversations.service.ts";
+import {
+  RuntimeConflictError,
+  type PreparedRun,
+} from "../../runtime/run-coordinator.ts";
 import type { Conversation, RuntimeEvent } from "../../types.ts";
-
-// 拒绝含 U+FFFD（替换字符）的消息：说明客户端未按 UTF-8 发送，避免把乱码存进对话历史。
-const messageSchema = z.object({
-  content: z
-    .string()
-    .trim()
-    .min(1)
-    .max(20_000)
-    .refine((value) => !value.includes("\uFFFD"), "消息内容包含无法识别的字符，请检查输入编码"),
-});
+import { ConversationsService } from "./conversations.service.ts";
+import { sendMessageSchema, type SendMessageInput } from "./send-message.schema.ts";
 
 /**
  * 手动接管 Fastify 响应所需的最小类型，仅声明用到的两个成员：
@@ -46,7 +39,11 @@ type StreamingReply = {
  * @param data 事件负载，序列化为 JSON 写入 data 字段。
  * @returns 无返回值。
  */
-const sendEvent = (response: ServerResponse, event: string, data: unknown): void => {
+const sendEvent = (
+  response: ServerResponse,
+  event: string,
+  data: unknown,
+): void => {
   if (response.writableEnded || response.destroyed) return;
   response.write(`event: ${event}\n`);
   response.write(`data: ${JSON.stringify(data)}\n\n`);
@@ -58,7 +55,10 @@ const sendEvent = (response: ServerResponse, event: string, data: unknown): void
  */
 @Controller("conversations")
 export class ConversationsController {
-  constructor(@Inject(ConversationsService) private readonly conversations: ConversationsService) {}
+  constructor(
+    @Inject(ConversationsService)
+    private readonly conversations: ConversationsService,
+  ) {}
 
   /**
    * 列出全部对话。
@@ -101,26 +101,28 @@ export class ConversationsController {
     if (this.conversations.isActive(id)) {
       throw new ConflictException("请先停止当前对话的生成任务");
     }
-    if (!(await this.conversations.delete(id))) throw new NotFoundException("对话不存在");
+    if (!(await this.conversations.delete(id)))
+      throw new NotFoundException("对话不存在");
   }
 
   /**
    * 发送用户消息并以 SSE 流式返回助手输出。
    * @param conversationId 对话的唯一 ID。
-   * @param input 请求体，含消息内容。
+   * @param input 请求体，含消息内容与本次使用的模型。
    * @param reply 手动控制的 Fastify 响应。
    * @returns 无返回值，结果通过 SSE 流式写入。
    */
   @Post(":id/messages")
   async send(
     @Param("id") conversationId: string,
-    @Body() input: unknown,
+    @Body() input: SendMessageInput,
     // @Res() 未传 passthrough:true，表示本路由的响应完全由手动控制，
     // NestJS 不会自动发送返回值，这正是 SSE 流式输出所需的自由度。
     @Res() reply: StreamingReply,
   ): Promise<void> {
-    const body = messageSchema.safeParse(input);
-    if (!body.success) throw new BadRequestException("消息内容无效");
+    const body = sendMessageSchema.safeParse(input);
+
+    if (!body.success) throw new BadRequestException(body.error.issues[0]?.message ?? "消息请求无效");
     if (!(await this.conversations.get(conversationId))) {
       throw new NotFoundException("对话不存在");
     }
@@ -142,11 +144,14 @@ export class ConversationsController {
       run = await this.conversations.prepareRun({
         conversationId,
         content: body.data.content,
+        model: body.data.model,
         connectionSignal: connectionController.signal,
-        onEvent: (event: RuntimeEvent) => sendEvent(response, event.type, event),
+        onEvent: (event: RuntimeEvent) =>
+          sendEvent(response, event.type, event),
       });
     } catch (error) {
-      if (error instanceof RuntimeConflictError) throw new ConflictException(error.message);
+      if (error instanceof RuntimeConflictError)
+        throw new ConflictException(error.message);
       throw error;
     }
 
@@ -166,8 +171,15 @@ export class ConversationsController {
     try {
       const outcome = await run.execute();
       // 生成失败也以 SSE 事件上报，前端可据此展示错误而非断流。
-      if (outcome.error) sendEvent(response, "error", { message: outcome.error, runId: run.runId });
-      sendEvent(response, "done", { message: outcome.message, runId: run.runId });
+      if (outcome.error)
+        sendEvent(response, "error", {
+          message: outcome.error,
+          runId: run.runId,
+        });
+      sendEvent(response, "done", {
+        message: outcome.message,
+        runId: run.runId,
+      });
     } finally {
       // 无论执行成功与否都主动结束响应，关闭 SSE 连接。
       response.end();

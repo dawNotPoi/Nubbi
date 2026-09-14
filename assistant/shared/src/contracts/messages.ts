@@ -1,5 +1,7 @@
 /** 会话列表所需摘要，不携带完整消息历史。 */
 export type ConversationSummary = {
+  /** 会话下次发送选择的模型，旧会话可能缺失。 */
+  model?: string;
   id: string;
   title: string;
   createdAt: string;
@@ -49,6 +51,9 @@ export type Message = {
   id: string;
   role: "user" | "assistant";
   parts: MessagePart[];
+  /** 本次 Run 配置的模型；旧消息缺失时保持未知。 */
+  model?: string;
+  provider?: "openai-compatible" | "codex-subscription";
   createdAt: string;
 };
 

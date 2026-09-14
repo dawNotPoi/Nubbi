@@ -21,6 +21,7 @@ export type ChatViewState = {
   traceRunId: string | null;
   traceText: string;
   generating: boolean;
+  modelSaving: boolean;
   loading: boolean;
   error: string | null;
 };
@@ -42,6 +43,7 @@ export function createChatViewState(): ChatViewState {
     traceRunId: null,
     traceText: "",
     generating: false,
+    modelSaving: false,
     loading: true,
     error: null,
   };
@@ -72,9 +74,14 @@ export function createRunViewPatch(): Partial<ChatViewState> {
  */
 export function reduceChatEvent(state: ChatViewState, event: StreamEvent): Partial<ChatViewState> {
   const patch: Partial<ChatViewState> = {
-    pendingMessages: state.pendingMessages.map((message) =>
-      message.role === "assistant" ? { ...message, parts: applyMessageEvent(message.parts, event) } : message,
-    ),
+    pendingMessages: state.pendingMessages.map((message) => {
+      if (message.role !== "assistant") return message;
+      const metadata = event.type === "run-started" ? { model: event.model, provider: event.provider } : {};
+      return {
+        ...message, ...metadata, ...(event.type === "done" ? event.message : {}),
+        parts: applyMessageEvent(message.parts, event),
+      };
+    }),
   };
   if (event.type === "approval-request") patch.approval = event;
   if (event.type === "approval-resolved" && event.approvalId === state.approval?.approvalId) patch.approval = null;

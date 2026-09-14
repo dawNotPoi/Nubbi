@@ -26,13 +26,15 @@ export default function App(): React.JSX.Element {
  * 聊天应用主体：组装消息流、输入区与抽屉式设置/历史面板。
  * @returns 聊天主界面视图。
  */
-const ChatApp = () => {
+const ChatApp = (): React.JSX.Element => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [traceOpen, setTraceOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const chat = useChat();
   const modelSwitcher = useModelSwitcher();
+  const selectedModel = chat.selectedConversation?.model ?? modelSwitcher.config?.model ?? "";
+  const modelBusy = chat.modelSaving || chat.loading || modelSwitcher.loading || (chat.generating && !chat.traceRunId);
   const extensions = useExtensions();
 
   // 新消息到达后滚动到底部。
@@ -51,7 +53,7 @@ const ChatApp = () => {
   // /status 面板的数据：模型、token 用量、上下文、会话与能力。
   const statusInfo = {
     provider: modelSwitcher.config?.provider ?? "openai-compatible",
-    model: modelSwitcher.config?.model ?? "",
+    model: selectedModel,
     baseUrl: modelSwitcher.config?.baseUrl ?? "",
     contextWindow: modelSwitcher.config?.contextWindow,
     planType: modelSwitcher.planType,
@@ -131,11 +133,11 @@ const ChatApp = () => {
       ) : null}
       <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-2 px-4 pb-1">
         <ModelSwitcher
-          currentModel={modelSwitcher.currentModel}
+          currentModel={selectedModel}
           error={modelSwitcher.error}
-          loading={modelSwitcher.loading}
+          loading={modelBusy}
           models={modelSwitcher.models}
-          onSwitch={modelSwitcher.switchModel}
+          onSwitch={chat.modelSelection.select}
           unlocked={modelSwitcher.unlocked}
         />
         <ContextStatus
@@ -145,12 +147,13 @@ const ChatApp = () => {
         />
       </div>
       <Composer
-        currentModel={modelSwitcher.currentModel}
+        currentModel={selectedModel}
+        sendDisabled={modelBusy || !selectedModel}
         generating={chat.generating}
         mcpServers={extensions.servers}
         models={modelSwitcher.models}
-        onSelectModel={modelSwitcher.switchModel}
-        onSend={chat.sendMessage}
+        onSelectModel={chat.modelSelection.select}
+        onSend={(content) => chat.sendMessage(content, selectedModel)}
         onStop={chat.stopGeneration}
         onToggleServer={extensions.toggleServer}
         onToggleSkill={extensions.toggleSkill}
