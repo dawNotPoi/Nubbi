@@ -7,7 +7,7 @@ import {
   buildTargetChildrenByParentId,
   getTopLevelTargetNotes,
   type NoteTarget,
-} from "../model/targetPicker";
+} from "../model/hierarchy";
 import { NoteTargetPickerLoadingRows } from "./NoteTargetPickerLoadingRows";
 import { NoteTargetPickerTree } from "./NoteTargetPickerTree";
 

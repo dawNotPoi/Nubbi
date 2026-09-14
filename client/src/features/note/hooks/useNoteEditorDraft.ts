@@ -1,8 +1,9 @@
 import type { NoteWithContent } from "@/api/note";
-import { patchNotePropertiesCacheAtom } from "@/store/atom/note/noteAtom";
 import { updateNotePropertiesAtom } from "@/store/atom/note/noteMutationAtom";
+import { patchNoteAcrossCaches } from "@/features/note/model/cache";
+import { queryClient } from "@/utils/queryClient";
 import { debounceWithControls } from "@/utils/common";
-import { useAtomValue, useSetAtom } from "jotai";
+import { useAtomValue } from "jotai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { NotePropertiesInput, NoteSaveStatus } from "../model/types";
 import { useNoteContentDraft } from "./useNoteContentDraft";
@@ -27,7 +28,6 @@ export const useNoteEditorDraft = ({
   noteId,
 }: UseNoteEditorDraftOptions) => {
   const propertiesMutation = useAtomValue(updateNotePropertiesAtom);
-  const patchNotePropertiesCache = useSetAtom(patchNotePropertiesCacheAtom);
   const [title, setTitleState] = useState("");
   const [titleDebouncing, setTitleDebouncing] = useState(false);
   const [hasAutoSaved, setHasAutoSaved] = useState(false);
@@ -134,14 +134,12 @@ export const useNoteEditorDraft = ({
       if (!noteId) return;
 
       setTitleDebouncing(true);
-      patchNotePropertiesCache({
-        noteId,
-        parentId: data?.parentId,
-        properties: { title: nextTitle },
+      patchNoteAcrossCaches(queryClient, data?.parentId, noteId, {
+        title: nextTitle,
       });
       debouncedUpdateTitle(noteId, data?.parentId, nextTitle);
     },
-    [data?.parentId, debouncedUpdateTitle, patchNotePropertiesCache, noteId],
+    [data?.parentId, debouncedUpdateTitle, noteId],
   );
 
   const updateProperties = useCallback(

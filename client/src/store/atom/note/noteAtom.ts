@@ -1,9 +1,6 @@
-import { atom } from "jotai";
 import { atomWithQuery } from "jotai-tanstack-query";
 import { atomWithStorage } from "jotai/utils";
-import { patchNoteAcrossCaches } from "@/features/note/model/cache";
 import { noteKeys } from "@/features/note/model/keys";
-import type { PatchNoteCacheVariables } from "@/features/note/model/types";
 import { getAllNotes, getRecentNotes } from "../../../api/note";
 import { queryClient } from "../../../utils/queryClient";
 
@@ -41,11 +38,3 @@ export const recentNoteAtom = atomWithQuery(() => ({
     return response.data || [];
   },
 }));
-
-/** 写入 atom：同时 patch 树缓存和详情缓存 */
-export const patchNotePropertiesCacheAtom = atom(
-  null,
-  (_get, _set, { noteId, parentId, properties }: PatchNoteCacheVariables) => {
-    patchNoteAcrossCaches(queryClient, parentId, noteId, properties);
-  },
-);
