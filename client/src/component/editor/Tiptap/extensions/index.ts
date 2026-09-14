@@ -9,6 +9,7 @@ import image from "./image";
 import { ListIndentExtension } from "./list-indent";
 import { SlashCommandExtension } from "./slash-command";
 import { SmartSelectAllExtension } from "./smart-select-all";
+import { PasteMarkdownExtension } from "./paste-markdown";
 import { EDITOR_PLACEHOLDER } from "../constants";
 
 export interface CreateExtensionsOptions {
@@ -67,5 +68,6 @@ export function createExtensions(options: CreateExtensionsOptions = {}) {
     SlashCommandExtension,
     ListIndentExtension,
     SmartSelectAllExtension,
+    PasteMarkdownExtension,
   ];
 }

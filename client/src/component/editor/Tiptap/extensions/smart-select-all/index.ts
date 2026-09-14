@@ -245,7 +245,7 @@ export const SmartSelectAllExtension = Extension.create({
               SMART_SELECT_ALL_KEY,
               createAllSelectedState(state.doc.content.size),
             );
-          view.dispatch(tr.scrollIntoView());
+          view.dispatch(tr);
           return true;
         }
 
@@ -256,7 +256,7 @@ export const SmartSelectAllExtension = Extension.create({
               SMART_SELECT_ALL_KEY,
               createAllSelectedState(state.doc.content.size),
             );
-          view.dispatch(tr.scrollIntoView());
+          view.dispatch(tr);
           return true;
         }
 
@@ -267,7 +267,7 @@ export const SmartSelectAllExtension = Extension.create({
               SMART_SELECT_ALL_KEY,
               createAllSelectedState(state.doc.content.size),
             );
-          view.dispatch(tr.scrollIntoView());
+          view.dispatch(tr);
           return true;
         }
 
