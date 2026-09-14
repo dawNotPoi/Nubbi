@@ -26,6 +26,7 @@ import {
   createNote,
   deleteNote,
   getAllNotes,
+  Note,
   getDirectChildren,
   getNoteAncestors,
   getNoteDetail,
@@ -246,6 +247,17 @@ export const updateNotePropertiesAtom = atomWithMutation(() => ({
     const nextParentId = _variables.properties.parentId;
     if (typeof nextParentId === "string") {
       patchNoteAcrossCaches(queryClient, nextParentId, { hasChildren: true });
+    }
+
+    const prevParentId = _variables.parentId;
+    if (
+      typeof prevParentId === "string" &&
+      prevParentId !== nextParentId &&
+      queryClient.getQueryData<Note[]>(
+        noteListQueryKey({ parentId: prevParentId }),
+      )?.length === 0
+    ) {
+      patchNoteAcrossCaches(queryClient, prevParentId, { hasChildren: false });
     }
 
     if (context) {

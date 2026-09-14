@@ -10,9 +10,13 @@ import {
   expandedNodesAtom,
   noteChildrenAtom,
 } from "@/store/atom/noteAtom";
+import { useDraggable } from "@dnd-kit/core";
+import clsx from "clsx";
 import { useAtom, useAtomValue } from "jotai";
 import { Plus, Trash2 } from "lucide-react";
 import { useParams } from "react-router-dom";
+import { NoteDragData, noteDragId } from "../NoteDnd/NoteDndProvider";
+import { useNoteDropTarget } from "../NoteDnd/useNoteDropTarget";
 import { WrittingModal } from "./WritingModal";
 
 type NoteTreeProps = {
@@ -78,6 +82,15 @@ function NoteTreeNode({ note, owner, depth }: NoteTreeNodeProps) {
   const { mutate: deleteNote } = useAtomValue(deleteSingleNoteAtom);
   const open = expandedNodes.includes(note._id);
 
+  const {
+    isDragging,
+    listeners,
+    setNodeRef: setDragRef,
+  } = useDraggable({
+    id: noteDragId(note._id),
+    data: { type: "note", note } satisfies NoteDragData,
+  });
+
   const setOpen = (nextOpen: boolean | ((prev: boolean) => boolean)) => {
     setExpandedNodes((prev) => {
       const currentOpen = prev.includes(note._id);
@@ -91,6 +104,13 @@ function NoteTreeNode({ note, owner, depth }: NoteTreeNodeProps) {
       return prev.filter((id) => id !== note._id);
     });
   };
+
+  const { dropClassName, setNodeRef: setDropRef } = useNoteDropTarget(note, {
+    expanded: open,
+    onExpand: () => {
+      setOpen(true);
+    },
+  });
 
   const actions: SidebarTreeAction[] = [
     {
@@ -134,18 +154,28 @@ function NoteTreeNode({ note, owner, depth }: NoteTreeNodeProps) {
 
   return (
     <>
-      <SidebarTreeItem
-        actions={actions}
-        active={note._id === Id}
-        depth={depth}
-        expanded={open}
-        hasChildren={note.hasChildren}
-        onToggle={() => {
-          setOpen((value) => !value);
+      <div
+        className={clsx(isDragging && "opacity-40")}
+        ref={(element) => {
+          setDragRef(element);
+          setDropRef(element);
         }}
-        title={normalizeNoteTitle(note.title)}
-        to={`/note/${note._id}`}
-      />
+        {...listeners}
+      >
+        <SidebarTreeItem
+          actions={actions}
+          active={note._id === Id}
+          className={dropClassName}
+          depth={depth}
+          expanded={open}
+          hasChildren={note.hasChildren}
+          onToggle={() => {
+            setOpen((value) => !value);
+          }}
+          title={normalizeNoteTitle(note.title)}
+          to={`/note/${note._id}`}
+        />
+      </div>
       {open && note.hasChildren ? (
         <NoteChildren depth={depth + 1} owner={owner} noteId={note._id} />
       ) : null}

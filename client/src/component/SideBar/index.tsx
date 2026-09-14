@@ -21,6 +21,7 @@ import ChangeAvatarModal from "../ChangeAvatarModal";
 import Image from "../UI/Image";
 import Popover from "../UI/Popover";
 import { IconButton, MenuItemContainer } from "./components";
+import { NoteDndProvider, TrashDropTarget } from "./NoteDnd/NoteDndProvider";
 import NoteMenu from "./NoteMenu";
 import ResizeTab from "./ResizeTab";
 
@@ -115,23 +116,27 @@ const SideBar: React.FC = () => {
           </div>
         </div>
         <div className="flex mt-2 flex-col flex-1 gap-2 overflow-auto ">
-          <MenuItemContainer to={routes.home}>
-            <House size={16} /> 主页
-          </MenuItemContainer>
+          <NoteDndProvider>
+            <MenuItemContainer to={routes.home}>
+              <House size={16} /> 主页
+            </MenuItemContainer>
 
-          <MenuItemContainer to={routes.file}>
-            <FolderTree size={16} />
-            <span>文件</span>
-          </MenuItemContainer>
-          <MenuItemContainer to={routes.meetings}>
-            <Presentation size={16} />
-            <span>会议</span>
-          </MenuItemContainer>
-          <NoteMenu />
-          <MenuItemContainer to={routes.noteTrash}>
-            <Trash2 size={16} />
-            <span>回收站</span>
-          </MenuItemContainer>
+            <MenuItemContainer to={routes.file}>
+              <FolderTree size={16} />
+              <span>文件</span>
+            </MenuItemContainer>
+            <MenuItemContainer to={routes.meetings}>
+              <Presentation size={16} />
+              <span>会议</span>
+            </MenuItemContainer>
+            <NoteMenu />
+            <TrashDropTarget>
+              <MenuItemContainer to={routes.noteTrash}>
+                <Trash2 size={16} />
+                <span>回收站</span>
+              </MenuItemContainer>
+            </TrashDropTarget>
+          </NoteDndProvider>
         </div>
       </div>
       <AccountDeletionModal
