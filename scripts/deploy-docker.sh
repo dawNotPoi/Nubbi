@@ -163,9 +163,11 @@ preserve_ports
 
 log "building and starting all containers"
 # 先停止旧容器，确保端口完全释放，避免重建时端口冲突
-docker compose stop server mcp client || true
-docker compose rm -f server mcp client || true
-docker compose up -d --build --remove-orphans server mcp client
+# 注意：mcp 容器不再由 CI 部署（assistant 通过本地 stdio 连接，服务器内存有限），
+# 需要时可手动执行 docker compose up -d mcp。
+docker compose stop server client || true
+docker compose rm -f server client || true
+docker compose up -d --build --remove-orphans server client
 
 if command -v curl >/dev/null 2>&1; then
   HEALTHCHECK_URL="$(resolve_healthcheck_url)"
