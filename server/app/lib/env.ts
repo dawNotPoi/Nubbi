@@ -2,42 +2,68 @@ import log from "@/common/chalk";
 import "dotenv/config";
 import { z } from "zod";
 
+const emptyToUndefined = (value: unknown) => {
+  if (typeof value !== "string") return value;
+
+  const trimmedValue = value.trim();
+  return trimmedValue === "" ? undefined : trimmedValue;
+};
+
+const requiredString = (name: string) =>
+  z.preprocess(
+    emptyToUndefined,
+    z.string({ required_error: `Missing required env var: ${name}` }).min(1),
+  );
+
+const optionalString = () =>
+  z.preprocess(emptyToUndefined, z.string().optional());
+
+const optionalNumber = () =>
+  z.preprocess(emptyToUndefined, z.coerce.number().optional());
+
+const optionalBooleanString = () =>
+  z
+    .preprocess((value) => {
+      const nextValue = emptyToUndefined(value);
+      return typeof nextValue === "string" ? nextValue.toLowerCase() : nextValue;
+    }, z.enum(["true", "false"]).optional())
+    .transform((value) => value === "true");
+
 const envSchema = z.object({
-  MONGO_URI: z.string(),
-  SERVER_PORT: z.string(),
-  SOCKET_PORT: z.string(),
-  BETTER_AUTH_SECRET: z.string(),
-  BETTER_AUTH_URL: z.string(),
-  CLIENT_URL: z.string().optional().default("http://localhost:5173"),
-  AUTH_GITHUB_ID: z.string(),
-  AUTH_GITHUB_SECRET: z.string(),
-  AUTH_GOOGLE_ID: z.string().optional(),
-  AUTH_GOOGLE_SECRET: z.string().optional(),
-  AUTH_GOOLE_ID: z.string().optional(),
-  AUTH_GOOLE_SECRET: z.string().optional(),
-  EMAIL_USER: z.string(),
-  EMAIL_PASS: z.string(),
-  EMAIL_FROM: z.string().optional(),
-  EMAIL_SERVICE: z.string().optional(),
-  AI_CONFIG_SECRET: z.string().optional(),
-  GH_IMAGE_REPO: z.string().optional(),
-  GH_IMAGE_TOKEN: z.string().optional(),
-  GH_IMAGE_BRANCH: z.string().optional(),
-  GITHUB_IMAGE_REPO: z.string().optional(),
-  GITHUB_IMAGE_TOKEN: z.string().optional(),
-  GITHUB_IMAGE_BRANCH: z.string().optional(),
+  MONGO_URI: requiredString("MONGO_URI"),
+  SERVER_PORT: requiredString("SERVER_PORT"),
+  SOCKET_PORT: requiredString("SOCKET_PORT"),
+  BETTER_AUTH_SECRET: requiredString("BETTER_AUTH_SECRET"),
+  BETTER_AUTH_URL: requiredString("BETTER_AUTH_URL"),
+  CLIENT_URL: optionalString().default("http://localhost:5173"),
+  AUTH_GITHUB_ID: requiredString("AUTH_GITHUB_ID"),
+  AUTH_GITHUB_SECRET: requiredString("AUTH_GITHUB_SECRET"),
+  AUTH_GOOGLE_ID: optionalString(),
+  AUTH_GOOGLE_SECRET: optionalString(),
+  AUTH_GOOLE_ID: optionalString(),
+  AUTH_GOOLE_SECRET: optionalString(),
+  EMAIL_USER: requiredString("EMAIL_USER"),
+  EMAIL_PASS: requiredString("EMAIL_PASS"),
+  EMAIL_FROM: optionalString(),
+  EMAIL_SERVICE: optionalString(),
+  AI_CONFIG_SECRET: optionalString(),
+  GH_IMAGE_REPO: optionalString(),
+  GH_IMAGE_TOKEN: optionalString(),
+  GH_IMAGE_BRANCH: optionalString(),
+  GITHUB_IMAGE_REPO: optionalString(),
+  GITHUB_IMAGE_TOKEN: optionalString(),
+  GITHUB_IMAGE_BRANCH: optionalString(),
   WEB_SEARCH_PROVIDER: z
-    .enum(["tavily", "brave", "serpapi", "searxng", ""])
-    .optional()
-    .default(""),
-  WEB_SEARCH_API_KEY: z.string().optional(),
-  WEB_SEARCH_BASE_URL: z.string().optional(),
-  SMTP_HOST: z.string().optional(),
-  SMTP_PORT: z.coerce.number().optional(),
-  SMTP_SECURE: z
-    .enum(["true", "false"])
-    .optional()
-    .transform((value) => value === "true"),
+    .preprocess((value) => {
+      const nextValue = emptyToUndefined(value);
+      return typeof nextValue === "string" ? nextValue.toLowerCase() : nextValue;
+    }, z.enum(["tavily", "brave", "serpapi", "searxng"]).optional())
+    .transform((value) => value || ""),
+  WEB_SEARCH_API_KEY: optionalString(),
+  WEB_SEARCH_BASE_URL: optionalString(),
+  SMTP_HOST: optionalString(),
+  SMTP_PORT: optionalNumber(),
+  SMTP_SECURE: optionalBooleanString(),
 });
 
 const parsedEnv = envSchema.parse(process.env);
