@@ -1,37 +1,55 @@
 import type { Note } from "@/api/note";
-import { formatNoteEditedTime } from "@/features/note/model/library";
+import {
+  formatNoteEditedTime,
+  type NoteLibraryRow as NoteLibraryRowModel,
+  type NoteLibraryViewMode,
+} from "@/features/note/model/library";
 import { normalizeNoteTitle } from "@/features/note/model/hierarchy";
 import type { MenuProps } from "antd";
 import { Checkbox, Dropdown } from "antd";
 import clsx from "clsx";
-import { ChevronRight, FileText, FolderInput, MoreHorizontal, Trash2 } from "lucide-react";
+import {
+  ChevronRight,
+  FileText,
+  FolderInput,
+  LocateFixed,
+  MoreHorizontal,
+  Trash2,
+} from "lucide-react";
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 
 type NoteLibraryRowProps = {
-  note: Note;
+  row: NoteLibraryRowModel;
   selected: boolean;
+  viewMode: NoteLibraryViewMode;
   onDelete: (note: Note) => void;
   onMove: (notes: Note[]) => void;
   onOpen: (note: Note) => void;
   onRename: (note: Note, title: string) => void;
+  onRevealInTree: (noteId: string) => void;
   onToggle: (checked: boolean, noteId: string) => void;
+  onToggleExpand: (noteId: string) => void;
 };
 
 export function NoteLibraryRow({
-  note,
   onDelete,
   onMove,
   onOpen,
   onRename,
+  onRevealInTree,
   onToggle,
+  onToggleExpand,
+  row,
   selected,
+  viewMode,
 }: NoteLibraryRowProps) {
+  const { note } = row;
   const noteTitle = normalizeNoteTitle(note.title);
   const [editing, setEditing] = useState(false);
   const [draftTitle, setDraftTitle] = useState(noteTitle);
   const inputRef = useRef<HTMLInputElement>(null);
   const skipBlurCommitRef = useRef(false);
-  const hasChildren = Array.isArray(note.children) && note.children.length > 0;
+  const canExpand = viewMode === "tree" && row.hasChildren;
   const menuItems: MenuProps["items"] = [
     {
       key: "move",
@@ -84,78 +102,116 @@ export function NoteLibraryRow({
   return (
     <li
       className={clsx(
-        "group/note-row grid h-11 cursor-pointer grid-cols-[40px_minmax(280px,1fr)_minmax(180px,28vw)_132px] items-center border-b border-[#efefed] text-[14px] transition-colors",
+        "group/note-row grid cursor-pointer grid-cols-[40px_minmax(280px,1fr)_minmax(180px,28vw)_132px] items-center border-b border-[#efefed] text-[14px] transition-colors",
         "hover:bg-[#f7f7f5] focus-within:bg-[#f7f7f5]",
+        viewMode === "search" ? "min-h-[54px] py-1" : "h-11",
         selected && "bg-[#f1f1ef]",
       )}
       onClick={() => onToggle(!selected, note._id)}
     >
       <div
-        className="relative flex h-full items-center justify-center"
+        className="flex h-full items-center justify-center"
         onClick={(event) => event.stopPropagation()}
       >
-        <span
-          className={clsx(
-            "flex size-5 items-center justify-center text-[#37352f] transition-opacity",
-            selected && "opacity-0",
-            !selected && "group-hover/note-row:opacity-0",
-            !hasChildren && "invisible",
-          )}
-        >
-          <ChevronRight className="size-4" strokeWidth={2.2} />
-        </span>
         <Checkbox
           checked={selected}
           className={clsx(
-            "absolute opacity-0 transition-opacity",
+            "opacity-0 transition-opacity",
             "group-hover/note-row:opacity-100 group-focus-within/note-row:opacity-100",
             selected && "opacity-100",
           )}
           onChange={(event) => onToggle(event.target.checked, note._id)}
         />
       </div>
-      <div className="flex min-w-0 items-center gap-2 pr-4 text-[#37352f]">
-        <FileText className="size-5 shrink-0 text-[#9b9a97]" />
-        {editing ? (
-          <input
-            ref={inputRef}
-            className="h-8 min-w-0 flex-1 rounded-md border border-[#d9d7d2] bg-white px-2 font-medium outline-none shadow-[0_0_0_2px_rgba(35,131,226,0.12)]"
-            onBlur={() => {
-              if (skipBlurCommitRef.current) {
-                skipBlurCommitRef.current = false;
-                return;
-              }
-              finishRename();
-            }}
-            onChange={(event) => setDraftTitle(event.target.value)}
-            onClick={(event) => event.stopPropagation()}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                finishRename();
-              }
-              if (event.key === "Escape") {
-                event.preventDefault();
-                cancelRename();
-              }
-            }}
-            value={draftTitle}
-          />
-        ) : (
-          <button
-            className="min-w-0 flex-1 truncate rounded px-1 py-1 text-left font-medium outline-none hover:bg-[#ededeb] focus-visible:ring-2 focus-visible:ring-[#d3d1cb]"
-            onClick={startRename}
-            title="重命名"
-            type="button"
-          >
-            {noteTitle}
-          </button>
-        )}
+      <div className="flex min-w-0 items-center pr-4 text-[#37352f]">
+        <div
+          className="flex min-w-0 flex-1 items-center gap-2"
+          style={{ paddingLeft: viewMode === "tree" ? row.depth * 22 : 0 }}
+        >
+          {viewMode === "tree" ? (
+            <button
+              className={clsx(
+                "flex size-5 shrink-0 items-center justify-center rounded text-[#9b9a97] transition-colors hover:bg-[#e9e9e7] hover:text-[#37352f]",
+                !canExpand && "invisible",
+              )}
+              onClick={(event) => {
+                event.stopPropagation();
+                if (canExpand) onToggleExpand(note._id);
+              }}
+              title={row.expanded ? "收起" : "展开"}
+              type="button"
+            >
+              <ChevronRight
+                className={clsx(
+                  "size-4 transition-transform",
+                  row.expanded && "rotate-90",
+                )}
+                strokeWidth={2.2}
+              />
+            </button>
+          ) : null}
+          <FileText className="size-5 shrink-0 text-[#9b9a97]" />
+          <div className="flex min-w-0 flex-1 flex-col justify-center">
+            {editing ? (
+              <input
+                ref={inputRef}
+                className="h-8 min-w-0 rounded-md border border-[#d9d7d2] bg-white px-2 font-medium outline-none shadow-[0_0_0_2px_rgba(35,131,226,0.12)]"
+                onBlur={() => {
+                  if (skipBlurCommitRef.current) {
+                    skipBlurCommitRef.current = false;
+                    return;
+                  }
+                  finishRename();
+                }}
+                onChange={(event) => setDraftTitle(event.target.value)}
+                onClick={(event) => event.stopPropagation()}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    finishRename();
+                  }
+                  if (event.key === "Escape") {
+                    event.preventDefault();
+                    cancelRename();
+                  }
+                }}
+                value={draftTitle}
+              />
+            ) : (
+              <button
+                className="min-w-0 truncate rounded px-1 py-1 text-left font-medium outline-none hover:bg-[#ededeb] focus-visible:ring-2 focus-visible:ring-[#d3d1cb]"
+                onClick={startRename}
+                title="重命名"
+                type="button"
+              >
+                {noteTitle}
+              </button>
+            )}
+            {viewMode === "search" && row.pathLabel ? (
+              <span className="truncate px-1 text-xs text-[#9b9a97]">
+                {row.pathLabel}
+              </span>
+            ) : null}
+          </div>
+        </div>
       </div>
       <span className="truncate text-[#4b5563]">
         {formatNoteEditedTime(note)}
       </span>
       <div className="flex items-center justify-end gap-1 pr-2 opacity-0 transition-opacity group-hover/note-row:opacity-100 group-focus-within/note-row:opacity-100">
+        {viewMode === "search" ? (
+          <button
+            className="flex size-7 items-center justify-center rounded text-[#9b9a97] hover:bg-[#e9e9e7] hover:text-[#37352f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d3d1cb]"
+            onClick={(event) => {
+              event.stopPropagation();
+              onRevealInTree(note._id);
+            }}
+            title="在树中定位"
+            type="button"
+          >
+            <LocateFixed className="size-4" />
+          </button>
+        ) : null}
         <button
           className="h-7 rounded-md border border-[#d9d7d2] bg-white px-3 text-sm font-medium text-[#37352f] shadow-sm transition-colors hover:border-[#bdbab4] hover:bg-[#f7f7f5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d3d1cb]"
           onClick={(event) => {

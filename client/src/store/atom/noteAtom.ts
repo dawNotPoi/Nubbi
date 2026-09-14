@@ -41,6 +41,11 @@ export const expandedNodesAtom = atomWithStorage<string[]>(
   [],
 );
 
+export const libraryExpandedNodesAtom = atomWithStorage<string[]>(
+  "note-library-expanded-nodes",
+  [],
+);
+
 export const rootNotesAtom = atomFamily((owner: string) =>
   atomWithQuery(
     () => ({

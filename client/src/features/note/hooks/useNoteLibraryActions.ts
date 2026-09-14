@@ -1,4 +1,5 @@
 import { newNote, type Note, type NoteWithContent } from "@/api/note";
+import { getTopLevelSelectedNotes } from "@/features/note/model/library";
 import {
   createNoteAtom,
   deleteSingleNoteAtom,
@@ -13,6 +14,7 @@ import { useNavigate } from "react-router-dom";
 type MessageApi = ReturnType<typeof message.useMessage>[0];
 
 type UseNoteLibraryActionsOptions = {
+  allNotes: Note[];
   blockedMoveTargetIds: Set<string>;
   messageApi: MessageApi;
   moveCandidates: Note[];
@@ -24,6 +26,7 @@ type UseNoteLibraryActionsOptions = {
 };
 
 export const useNoteLibraryActions = ({
+  allNotes,
   blockedMoveTargetIds,
   messageApi,
   moveCandidates,
@@ -57,6 +60,8 @@ export const useNoteLibraryActions = ({
   const confirmDelete = (notes: Note[]) => {
     if (notes.length === 0) return;
 
+    const actionNotes = getTopLevelSelectedNotes(notes, allNotes);
+
     Modal.confirm({
       cancelText: "取消",
       content:
@@ -69,7 +74,7 @@ export const useNoteLibraryActions = ({
       onOk: async () => {
         try {
           await Promise.all(
-            notes.map((note) =>
+            actionNotes.map((note) =>
               deleteNote({
                 noteId: note._id,
                 owner,
@@ -91,7 +96,7 @@ export const useNoteLibraryActions = ({
 
   const openMoveModal = (notes: Note[]) => {
     if (notes.length === 0) return;
-    setMoveCandidates(notes);
+    setMoveCandidates(getTopLevelSelectedNotes(notes, allNotes));
     setMoveOpen(true);
   };
 

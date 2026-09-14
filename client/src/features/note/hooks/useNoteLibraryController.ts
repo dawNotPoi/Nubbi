@@ -1,14 +1,20 @@
 import type { Note } from "@/api/note";
 import { collectBlockedMoveTargetIds } from "@/features/note/model/hierarchy";
 import {
-  filterAndSortLibraryNotes,
+  getNoteAncestorIds,
+  getNoteCascadeIds,
+  getNoteLibraryRows,
   getRecentTargetNotes,
   type NoteLibrarySortMode,
 } from "@/features/note/model/library";
-import { allNotesAtom, recentNoteAtom } from "@/store/atom/noteAtom";
+import {
+  allNotesAtom,
+  libraryExpandedNodesAtom,
+  recentNoteAtom,
+} from "@/store/atom/noteAtom";
 import { useSession } from "@/utils/auth";
 import { message } from "antd";
-import { useAtomValue } from "jotai";
+import { useAtom, useAtomValue } from "jotai";
 import { useMemo, useState } from "react";
 import { useMarkdownNoteImport } from "./useMarkdownNoteImport";
 import { useNoteLibraryActions } from "./useNoteLibraryActions";
@@ -30,11 +36,20 @@ export const useNoteLibraryController = () => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [moveOpen, setMoveOpen] = useState(false);
   const [moveCandidates, setMoveCandidates] = useState<Note[]>([]);
+  const [expandedLibraryNodeIds, setExpandedLibraryNodeIds] = useAtom(
+    libraryExpandedNodesAtom,
+  );
   const [messageApi, contextHolder] = message.useMessage();
 
-  const filteredNotes = useMemo(
-    () => filterAndSortLibraryNotes(allNotes, filterText, sortMode),
-    [allNotes, filterText, sortMode],
+  const { rows: libraryRows, viewMode } = useMemo(
+    () =>
+      getNoteLibraryRows({
+        expandedIds: expandedLibraryNodeIds,
+        filterText,
+        notes: allNotes,
+        sortMode,
+      }),
+    [allNotes, expandedLibraryNodeIds, filterText, sortMode],
   );
 
   const selectedNotes = useMemo(() => {
@@ -53,8 +68,8 @@ export const useNoteLibraryController = () => {
   );
 
   const visibleIds = useMemo(
-    () => filteredNotes.map((note) => note._id),
-    [filteredNotes],
+    () => libraryRows.map((row) => row.note._id),
+    [libraryRows],
   );
   const visibleSelectedCount = visibleIds.filter((id) =>
     selectedIds.includes(id),
@@ -65,6 +80,7 @@ export const useNoteLibraryController = () => {
     visibleSelectedCount > 0 && visibleSelectedCount < visibleIds.length;
   const emptyDescription = filterText.trim() ? "没有匹配的页面" : "暂无页面";
   const actions = useNoteLibraryActions({
+    allNotes,
     blockedMoveTargetIds,
     messageApi,
     moveCandidates,
@@ -81,25 +97,49 @@ export const useNoteLibraryController = () => {
   });
 
   const toggleSelected = (checked: boolean, noteId: string) => {
+    const cascadeIds = getNoteCascadeIds([noteId], allNotes);
+    const cascadeSet = new Set(cascadeIds);
+
     setSelectedIds((current) => {
       if (checked) {
-        return current.includes(noteId) ? current : [...current, noteId];
+        return Array.from(new Set([...current, ...cascadeIds]));
       }
 
-      return current.filter((id) => id !== noteId);
+      return current.filter((id) => !cascadeSet.has(id));
     });
   };
 
   const toggleAllVisible = (checked: boolean) => {
+    const visibleCascadeIds = getNoteCascadeIds(visibleIds, allNotes);
+    const visibleSet = new Set(visibleCascadeIds);
+
     setSelectedIds((current) => {
-      const visibleSet = new Set(visibleIds);
       if (!checked) return current.filter((id) => !visibleSet.has(id));
-      return Array.from(new Set([...current, ...visibleIds]));
+      return Array.from(new Set([...current, ...visibleCascadeIds]));
     });
   };
 
   const clearSelection = () => {
     setSelectedIds([]);
+  };
+
+  const toggleLibraryNodeExpanded = (noteId: string) => {
+    setExpandedLibraryNodeIds((current) => {
+      if (current.includes(noteId)) {
+        return current.filter((id) => id !== noteId);
+      }
+
+      return [...current, noteId];
+    });
+  };
+
+  const revealInTree = (noteId: string) => {
+    const ancestorIds = getNoteAncestorIds(noteId, allNotes);
+    setExpandedLibraryNodeIds((current) =>
+      Array.from(new Set([...current, ...ancestorIds])),
+    );
+    setFilterText("");
+    setSearchOpen(false);
   };
 
   return {
@@ -111,7 +151,7 @@ export const useNoteLibraryController = () => {
     contextHolder,
     emptyDescription,
     filterText,
-    filteredNotes,
+    libraryRows,
     allNotes,
     isError,
     isLoading,
@@ -128,7 +168,10 @@ export const useNoteLibraryController = () => {
     setSortMode,
     sortMode,
     toggleAllVisible,
+    toggleLibraryNodeExpanded,
     toggleSelected,
+    revealInTree,
     visibleIds,
+    viewMode,
   };
 };

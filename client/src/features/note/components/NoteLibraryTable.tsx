@@ -1,4 +1,8 @@
 import type { Note } from "@/api/note";
+import type {
+  NoteLibraryRow as NoteLibraryRowModel,
+  NoteLibraryViewMode,
+} from "@/features/note/model/library";
 import { Button, Checkbox, Empty } from "antd";
 import { Clock, FileText, Plus } from "lucide-react";
 import { NoteLibraryBatchActionBar } from "./NoteLibraryBatchActionBar";
@@ -12,21 +16,24 @@ type NoteLibraryTableProps = {
   isError: boolean;
   isLoading: boolean;
   moving: boolean;
-  notes: Note[];
   owner: string;
   partiallyVisibleSelected: boolean;
+  rows: NoteLibraryRowModel[];
   selectedIds: string[];
   selectedNotes: Note[];
   visibleIds: string[];
+  viewMode: NoteLibraryViewMode;
   onClearSelection: () => void;
   onCreate: () => void;
   onDelete: (notes: Note[]) => void;
   onMove: (notes: Note[]) => void;
   onOpen: (note: Note) => void;
   onRename: (note: Note, title: string) => void;
+  onRevealInTree: (noteId: string) => void;
   onRetry: () => void;
   onToggle: (checked: boolean, noteId: string) => void;
   onToggleAll: (checked: boolean) => void;
+  onToggleExpand: (noteId: string) => void;
 };
 
 export function NoteLibraryTable({
@@ -36,21 +43,24 @@ export function NoteLibraryTable({
   isError,
   isLoading,
   moving,
-  notes,
   onClearSelection,
   onCreate,
   onDelete,
   onMove,
   onOpen,
   onRename,
+  onRevealInTree,
   onRetry,
   onToggle,
   onToggleAll,
+  onToggleExpand,
   owner,
   partiallyVisibleSelected,
+  rows,
   selectedIds,
   selectedNotes,
   visibleIds,
+  viewMode,
 }: NoteLibraryTableProps) {
   return (
     <section>
@@ -95,7 +105,7 @@ export function NoteLibraryTable({
           <Empty description="加载 note 失败" />
           <Button onClick={onRetry}>重试</Button>
         </div>
-      ) : notes.length === 0 ? (
+      ) : rows.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 py-16">
           <Empty description={emptyDescription} />
           {!filterText.trim() ? (
@@ -106,16 +116,19 @@ export function NoteLibraryTable({
         </div>
       ) : (
         <ul>
-          {notes.map((note) => (
+          {rows.map((row) => (
             <NoteLibraryRow
-              key={note._id}
-              note={note}
-              selected={selectedIds.includes(note._id)}
+              key={row.note._id}
+              row={row}
+              selected={selectedIds.includes(row.note._id)}
+              viewMode={viewMode}
               onDelete={(targetNote) => onDelete([targetNote])}
               onMove={onMove}
               onOpen={onOpen}
               onRename={onRename}
+              onRevealInTree={onRevealInTree}
               onToggle={onToggle}
+              onToggleExpand={onToggleExpand}
             />
           ))}
         </ul>

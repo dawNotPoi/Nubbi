@@ -53,21 +53,24 @@ export default function NoteLibrary() {
           isError={library.isError}
           isLoading={library.isLoading}
           moving={library.moving}
-          notes={library.filteredNotes}
           owner={library.owner}
           partiallyVisibleSelected={library.partiallyVisibleSelected}
+          rows={library.libraryRows}
           selectedIds={library.selectedIds}
           selectedNotes={library.selectedNotes}
           visibleIds={library.visibleIds}
+          viewMode={library.viewMode}
           onClearSelection={library.clearSelection}
           onCreate={() => void library.createRootNote()}
           onDelete={library.confirmDelete}
           onMove={library.openMoveModal}
           onOpen={library.openNote}
           onRename={library.renameNote}
+          onRevealInTree={library.revealInTree}
           onRetry={() => void library.refetch()}
           onToggle={library.toggleSelected}
           onToggleAll={library.toggleAllVisible}
+          onToggleExpand={library.toggleLibraryNodeExpanded}
         />
       </main>
 
