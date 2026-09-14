@@ -2,7 +2,7 @@ import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { bearer, jwt } from "better-auth/plugins";
 import { AsyncLocalStorage } from "async_hooks";
-import log from "@/common/chalk";
+import logger from "@/common/logger";
 import { db } from "./db";
 import { createEmailVerificationCode } from "./emailVerification";
 import { sendPasswordResetEmail, sendVerificationEmail } from "./email";
@@ -51,19 +51,15 @@ export const auth = betterAuth({
     level: "debug",
     log(level, message, ...args) {
       const authArgs = args.map(serializeAuthLogArg);
-      const prefixedMessage = `[better-auth:${level}] ${message}`;
+      const msg = `[better-auth] ${message}`;
 
       if (level === "error") {
-        log.error(prefixedMessage, ...authArgs);
-        return;
+        logger.error(msg, ...authArgs);
+      } else if (level === "warn") {
+        logger.warn(msg, ...authArgs);
+      } else {
+        logger.info(msg, ...authArgs);
       }
-
-      if (level === "warn") {
-        log.warn(prefixedMessage, ...authArgs);
-        return;
-      }
-
-      log.info(prefixedMessage, ...authArgs);
     },
   },
   onAPIError: {

@@ -1,5 +1,4 @@
-import log from "@/common/chalk";
-import "dotenv/config";
+import logger from "@/common/logger";
 import { z } from "zod";
 
 const emptyToUndefined = (value: unknown) => {
@@ -94,6 +93,6 @@ if (!env.AUTH_GOOGLE_ID || !env.AUTH_GOOGLE_SECRET) {
   );
 }
 
-log.success("环境变量加载成功", envForLog);
+logger.info("环境变量加载成功", envForLog);
 
 export default env;

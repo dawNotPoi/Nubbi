@@ -3,6 +3,7 @@ import { File } from "@/models/file/file";
 import { Folder } from "@/models/file/folder";
 import { UploadTask } from "@/models/file/uploadTask";
 import env from "@/lib/env";
+import logger from "@/common/logger";
 import crypto from "crypto";
 import express from "express";
 import fse from "fs-extra";
@@ -298,13 +299,16 @@ const removeOrphanedStorageFiles = async (storagePaths: string[]) => {
       const otherReferences = await File.countDocuments({ storagePath });
 
       if (otherReferences > 0) {
-        console.log(`保留物理文件，仍有 ${otherReferences} 个引用。`);
+        logger.debug("保留物理文件，仍有引用", {
+          storagePath,
+          references: otherReferences,
+        });
         return;
       }
 
       if (await fse.pathExists(storagePath)) {
         await fse.remove(storagePath);
-        console.log(`物理文件已删除: ${storagePath}`);
+        logger.info("物理文件已删除", { storagePath });
       }
     }),
   );
@@ -472,7 +476,7 @@ router.post(
         uploadedChunks: task.uploadedChunks,
       });
     } catch (error) {
-      console.error(error);
+      logger.error("上传初始化失败", { error });
       res.status(500).json({ message: "初始化失败" });
     }
   }),
@@ -485,7 +489,7 @@ router.post(
   asyncHandler(async (req, res) => {
     const { uploadId, chunkIndex } = req.body;
     const userId = req.user?.id;
-    console.log(chunkIndex);
+    logger.debug("上传分片", { chunkIndex });
     if (!req.file) {
       return res.status(400).send("No chunk file");
     }

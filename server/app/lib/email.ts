@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import logger from "@/common/logger";
 import env from "./env";
 
 const transporter = env.SMTP_HOST
@@ -47,10 +48,10 @@ export const sendVerificationEmail = async (
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log("Verification email sent:", to);
+    logger.info("邮箱验证码已发送", { to, type: "verification" });
     return { success: true };
   } catch (error) {
-    console.error("Verification email failed:", error);
+    logger.error("邮箱验证码发送失败", { to, type: "verification", error });
     return { success: false, error };
   }
 };
@@ -83,10 +84,10 @@ export const sendRegisterVerificationEmail = async (
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log("Register verification email sent:", to);
+    logger.info("注册验证码已发送", { to, type: "register" });
     return { success: true };
   } catch (error) {
-    console.error("Register verification email failed:", error);
+    logger.error("注册验证码发送失败", { to, type: "register", error });
     return { success: false, error };
   }
 };
@@ -119,10 +120,10 @@ export const sendAccountDeletionVerificationEmail = async (
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log("Account deletion verification email sent:", to);
+    logger.info("注销验证码已发送", { to, type: "account-deletion" });
     return { success: true };
   } catch (error) {
-    console.error("Account deletion verification email failed:", error);
+    logger.error("注销验证码发送失败", { to, type: "account-deletion", error });
     return { success: false, error };
   }
 };
@@ -155,10 +156,10 @@ export const sendPasswordResetEmail = async (to: string, resetCode: string) => {
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log("Password reset email sent:", to);
+    logger.info("密码重置邮件已发送", { to, type: "password-reset" });
     return { success: true };
   } catch (error) {
-    console.error("Password reset email failed:", error);
+    logger.error("密码重置邮件发送失败", { to, type: "password-reset", error });
     return { success: false, error };
   }
 };
