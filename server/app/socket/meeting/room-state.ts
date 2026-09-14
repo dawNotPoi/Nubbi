@@ -3,23 +3,31 @@ import type { Server, Socket } from "socket.io";
 import type { RoomMedia } from "./schemas";
 import type { RoomUserInfo } from "./types";
 
+/** socketId → roomId 的映射 */
 const socketRooms = new Map<string, string>();
+/** roomId → 房间成员信息映射 */
 const roomUsers = new Map<string, Map<string, RoomUserInfo>>();
+/** roomId → 房间过期定时器 */
 const roomExpirationTimers = new Map<string, NodeJS.Timeout>();
+/** setTimeout 最大延迟（约 24.8 天），超出需分块调度 */
 const MAX_TIMEOUT_DELAY_MS = 2_147_483_647;
 
+/** 查询 socket 所在的房间 */
 export function getSocketRoom(socketId: string): string | null {
   return socketRooms.get(socketId) ?? null;
 }
 
+/** 获取房间内的全部成员信息 */
 export function getRoomUsers(roomId: string): RoomUserInfo[] {
   return Array.from(roomUsers.get(roomId)?.values() ?? []);
 }
 
+/** 向房间广播最新的成员列表 */
 export function syncRoomUsers(io: Server, roomId: string): void {
   io.to(roomId).emit("room-users-sync", getRoomUsers(roomId));
 }
 
+/** 将用户加入房间并登记成员信息，返回成员对象 */
 export function upsertRoomUser(input: {
   roomId: string;
   socketId: string;
@@ -44,6 +52,7 @@ export function upsertRoomUser(input: {
   return nextUser;
 }
 
+/** 移除房间成员，返回其所在房间 ID（若存在） */
 export function removeRoomUser(socketId: string): string | null {
   const roomId = socketRooms.get(socketId);
   if (!roomId) return null;
@@ -55,6 +64,7 @@ export function removeRoomUser(socketId: string): string | null {
   return roomId;
 }
 
+/** 让 socket 离开房间并广播通知 */
 export function leaveRoom(
   io: Server,
   socket: Socket,
@@ -68,6 +78,7 @@ export function leaveRoom(
   syncRoomUsers(io, removedRoomId);
 }
 
+/** 判断两个 socket 是否在同一房间 */
 export function areSocketsInSameRoom(
   sourceSocketId: string,
   targetSocketId: string,
@@ -76,6 +87,7 @@ export function areSocketsInSameRoom(
   return Boolean(roomId && getSocketRoom(targetSocketId) === roomId);
 }
 
+/** 结束会议房间：清空定时器、广播通知、断开所有成员 */
 export async function endMeetingRoom(
   io: Server,
   roomId: string,
@@ -95,6 +107,7 @@ export async function endMeetingRoom(
   roomUsers.delete(roomId);
 }
 
+/** 分块调度会议过期：避免超出 setTimeout 最大延迟 */
 function scheduleExpirationChunk(
   io: Server,
   roomId: string,
@@ -119,6 +132,7 @@ function scheduleExpirationChunk(
   roomExpirationTimers.set(roomId, timer);
 }
 
+/** 安排会议房间在指定时间自动结束 */
 export function scheduleMeetingRoomExpiration(
   io: Server,
   roomId: string,

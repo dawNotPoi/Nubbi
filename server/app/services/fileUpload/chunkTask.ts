@@ -25,9 +25,11 @@ import type {
   UploadedFileDto,
 } from "./types";
 
+/** 计算任务的新过期时间 */
 const nextExpiry = () => new Date(Date.now() + fileUploadConfig.taskTtlMs);
 const UPLOAD_MERGE_FAILED_MESSAGE = "文件合并失败，请稍后重试";
 
+/** 清理合并失败后的物理文件 */
 const cleanupFailedMerge = async (
   ownerId: string,
   uploadId: string,
@@ -48,6 +50,7 @@ const cleanupFailedMerge = async (
   });
 };
 
+/** 将失败的合并任务标记为 failed 并清理残留文件 */
 const failClaimedMerge = (
   ownerId: string,
   uploadId: string,
@@ -81,6 +84,7 @@ const failClaimedMerge = (
   );
 });
 
+/** 存储上传分片：校验任务状态、分片大小，移动分片文件并登记 */
 export const storeUploadChunk = ({
   ownerId,
   uploadId,
@@ -138,6 +142,7 @@ export const storeUploadChunk = ({
   return { chunkIndex };
   });
 
+/** 完成上传：声明合并权、合并分片、落库，失败时清理并标记任务 */
 export const completeUpload = async (
   ownerId: string,
   uploadId: string,

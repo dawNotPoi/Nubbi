@@ -7,10 +7,13 @@ import {
 import { collectDescendantFolderIds } from "./moveGraph";
 import { withFileFolderStructureLock } from "./structureLock";
 
+/** 删除目标类型 */
 export type DeleteTargetKind = "file" | "folder";
 export type DeleteTarget = { id: string; kind: DeleteTargetKind };
 
+/** 待删除的文件记录 */
 type FileToDelete = { _id: unknown; storagePath: string };
+/** 删除目标解析结果 */
 export type DeleteTargetsResult = {
   filesToDelete: FileToDelete[];
   folderIdsToDelete: string[];
@@ -18,6 +21,7 @@ export type DeleteTargetsResult = {
   missingFolderIds: string[];
 };
 
+/** 解析删除目标：展开文件夹的后代，合并文件与嵌套文件 */
 const resolveDeleteTargets = async (
   userId: string | undefined,
   targets: DeleteTarget[],
@@ -87,6 +91,7 @@ const resolveDeleteTargets = async (
   };
 };
 
+/** 无锁删除：删除文件记录并入队物理文件清理，级联删除文件夹 */
 const deleteOwnedTargetsUnlocked = async (
   userId: string | undefined,
   targets: DeleteTarget[],
@@ -112,6 +117,7 @@ const deleteOwnedTargetsUnlocked = async (
   return resolved;
 };
 
+/** 删除归属目标：带目录结构锁保护，空目标直接执行 */
 export const deleteOwnedTargets = (
   userId: string | undefined,
   targets: DeleteTarget[],

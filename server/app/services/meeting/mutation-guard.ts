@@ -1,9 +1,13 @@
 import { httpError } from "@/common/http-error";
 
+/** 正在关闭的会议集合 */
 const closingMeetings = new Set<string>();
+/** 每个会议当前活跃的写操作计数 */
 const activeMutationCounts = new Map<string, number>();
+/** 等待会议写操作排空的等待者集合 */
 const drainWaiters = new Map<string, Set<() => void>>();
 
+/** 通知等待该会议写操作排空的等待者继续执行 */
 const notifyDrain = (meetingId: string): void => {
   const waiters = drainWaiters.get(meetingId);
   if (!waiters) return;
@@ -12,6 +16,7 @@ const notifyDrain = (meetingId: string): void => {
   waiters.forEach((resolve) => resolve());
 };
 
+/** 获取会议写锁，关闭中的会议直接拒绝；返回释放锁的函数 */
 const acquireMeetingMutation = (meetingId: string): (() => void) => {
   if (closingMeetings.has(meetingId)) {
     throw httpError(409, "会议正在关闭，不能继续修改");
@@ -36,6 +41,7 @@ const acquireMeetingMutation = (meetingId: string): (() => void) => {
   };
 };
 
+/** 在会议写锁保护下执行操作，完成后自动释放 */
 export const runMeetingMutation = async <Result>(
   meetingId: string,
   operation: () => Promise<Result>,
@@ -48,6 +54,7 @@ export const runMeetingMutation = async <Result>(
   }
 };
 
+/** 开始关闭会议：登记关闭态并等待活跃写操作排空 */
 export const beginMeetingClosures = async (
   meetingIds: readonly string[],
 ): Promise<void> => {
@@ -70,6 +77,7 @@ export const beginMeetingClosures = async (
   );
 };
 
+/** 取消会议关闭流程（操作失败时回滚） */
 export const cancelMeetingClosures = (
   meetingIds: readonly string[],
 ): void => {

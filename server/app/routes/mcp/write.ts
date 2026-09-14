@@ -27,6 +27,7 @@ import {
 } from "./schemas";
 
 const router = express.Router();
+/** MCP 写入路由注册器：仅接受 MCP API Key，全部为写操作 */
 const mcpWriteRoutes = createJsonRouteRegistrar<
   McpNoteAction,
   AuthenticatedUser
@@ -35,6 +36,7 @@ const mcpWriteRoutes = createJsonRouteRegistrar<
   resolveActor: requireAuthenticatedUser,
 });
 
+/** 创建笔记 */
 mcpWriteRoutes.post("/notes", {
   action: "create",
   body: createNoteSchema,
@@ -42,6 +44,7 @@ mcpWriteRoutes.post("/notes", {
   handler: ({ actor, body }) => createMcpNote(actor.id, body),
 });
 
+/** 编辑笔记正文内容 */
 mcpWriteRoutes.patch("/notes/:noteId/content", {
   action: "update",
   params: noteParamsSchema,
@@ -51,6 +54,7 @@ mcpWriteRoutes.patch("/notes/:noteId/content", {
     editMcpNoteContent(actor.id, params.noteId, body),
 });
 
+/** 更新笔记属性 */
 mcpWriteRoutes.patch("/notes/:noteId/properties", {
   action: "update",
   params: noteParamsSchema,
@@ -60,6 +64,7 @@ mcpWriteRoutes.patch("/notes/:noteId/properties", {
     updateMcpNoteProperties(actor.id, params.noteId, body),
 });
 
+/** 移动笔记到新位置 */
 mcpWriteRoutes.post("/notes/:noteId/move", {
   action: "move",
   params: noteParamsSchema,
@@ -69,6 +74,7 @@ mcpWriteRoutes.post("/notes/:noteId/move", {
     moveMcpNote(actor.id, params.noteId, body),
 });
 
+/** 设置笔记归档状态 */
 mcpWriteRoutes.post("/notes/:noteId/archive", {
   action: "archive",
   params: noteParamsSchema,
@@ -78,6 +84,7 @@ mcpWriteRoutes.post("/notes/:noteId/archive", {
     archiveMcpNote(actor.id, params.noteId, body),
 });
 
+/** 将笔记移入回收站 */
 mcpWriteRoutes.post("/notes/:noteId/trash", {
   action: "trash",
   params: noteParamsSchema,
@@ -87,6 +94,7 @@ mcpWriteRoutes.post("/notes/:noteId/trash", {
     trashMcpNote(actor.id, params.noteId, body),
 });
 
+/** 从回收站恢复笔记 */
 mcpWriteRoutes.post("/notes/:noteId/restore", {
   action: "restore",
   params: noteParamsSchema,

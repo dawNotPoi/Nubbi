@@ -1,3 +1,4 @@
+/** 计算指定分片的预期字节数（最后一片按余量计算，非法的索引返回 null） */
 export const expectedChunkBytes = (
   totalSize: number,
   chunkSize: number,

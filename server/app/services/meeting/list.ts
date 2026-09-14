@@ -11,6 +11,7 @@ import type {
   MeetingPageResult,
 } from "./types";
 
+/** 分页查询全部会议（新 schema） */
 export const getMeetingPage = async (
   pagination: PaginationInput,
 ): Promise<MeetingPageResult> => {
@@ -30,6 +31,7 @@ export const getMeetingPage = async (
   );
 };
 
+/** 按旧版 schema 分页查询会议（含筛选条件） */
 export const getLegacyMeetingPage = async (
   input: LegacyMeetingPageInput,
 ): Promise<LegacyMeetingPageResult> => {

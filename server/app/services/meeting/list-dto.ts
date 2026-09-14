@@ -1,3 +1,4 @@
+/** 会议列表记录的源类型 */
 type MeetingListSource = {
   password?: unknown;
   passwordHash?: unknown;
@@ -9,6 +10,7 @@ export type MeetingListItem = Record<string, unknown> & {
   hasPassword: boolean;
 };
 
+/** 会议列表项：隐藏密码字段，暴露 hasPassword 标记 */
 export const serializeMeetingListItem = (item: unknown): MeetingListItem => {
   const source = item as MeetingListSource;
   const plain =

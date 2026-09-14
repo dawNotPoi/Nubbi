@@ -1,6 +1,7 @@
 import { isTrustedOrigin } from "@/lib/trusted-origins";
 import type { NextFunction, Request, Response } from "express";
 
+/** 限制敏感操作（如 API Key 管理）仅允许来自受信任 Origin 的请求 */
 export const requireTrustedOrigin = (
   req: Request,
   res: Response,

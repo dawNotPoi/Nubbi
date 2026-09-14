@@ -2,6 +2,7 @@ import { getSessionAuthContext } from "@/middleware/authentication";
 import { trackAuthenticatedMutation } from "@/middleware/account-mutation";
 import type { NextFunction, Request, Response } from "express";
 
+/** 安全的 HTTP 方法，不纳入账号注销互斥 */
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
 /** 将 Better Auth 中已有登录态的写请求纳入账号注销互斥。 */

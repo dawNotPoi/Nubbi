@@ -41,6 +41,7 @@ type AccountDeletionProgress = {
   accountCommitted: boolean;
 };
 
+/** 删除用户全部文件：先记录存储路径，再删记录并清理物理文件 */
 const deleteUserFiles = async (userId: string): Promise<void> => {
   await withFileFolderStructureLock(userId, async () => {
     const userFiles = await File.find({ ownerId: userId })
@@ -61,6 +62,7 @@ const deleteUserFiles = async (userId: string): Promise<void> => {
   });
 };
 
+/** 删除账号全部数据（无注销互斥保护，供已持锁调用方使用） */
 const deleteUserAccountDataUnlocked = async ({
   userId,
   email,
@@ -175,6 +177,7 @@ const deleteUserAccountDataUnlocked = async ({
   });
 };
 
+/** 删除账号全部数据：在注销互斥锁保护下执行，失败时回滚注销态 */
 export const deleteUserAccountData = async (input: {
   userId: string;
   email: string;

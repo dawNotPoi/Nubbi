@@ -12,11 +12,14 @@ import type {
 } from "./common";
 import { trackAuthenticatedMutation } from "./account-mutation";
 
+/** JWK 公钥条目类型 */
 type JwkKey = Record<string, unknown> & { alg?: string };
 
 let jwksCache: { keys: JwkKey[]; cachedAt: number } | null = null;
+/** JWKS 公钥缓存有效期（1 小时） */
 const JWKS_TTL = 60 * 60 * 1000;
 
+/** 获取 Better Auth 的 JWKS 公钥列表，带缓存 */
 const getPublicKeys = async (): Promise<JwkKey[]> => {
   const now = Date.now();
   if (jwksCache && now - jwksCache.cachedAt < JWKS_TTL) {
@@ -28,6 +31,7 @@ const getPublicKeys = async (): Promise<JwkKey[]> => {
   return keys;
 };
 
+/** 使用 jose 校验 JWT，遍历所有公钥直到匹配成功 */
 const verifyJwt = async (
   token: string,
 ): Promise<Record<string, unknown> | null> => {
@@ -47,15 +51,18 @@ const verifyJwt = async (
   return null;
 };
 
+/** 查找 Better Auth 中已存在的用户记录 */
 const findExistingAuthUser = async (userId: string) => {
   const authContext = await auth.$context;
   return authContext.internalAdapter.findUserById(userId);
 };
 
+/** 返回 401 未认证的标准响应 */
 export const unauthorized = (res: Response): void => {
   res.status(401).json({ code: 0, message: "Unauthorized", data: null });
 };
 
+/** 认证错误分发：按状态码决定直接响应或交给统一错误处理 */
 export const sendAuthenticationError = (
   res: Response,
   error: unknown,
@@ -81,6 +88,7 @@ export const sendAuthenticationError = (
   next(error);
 };
 
+/** 将认证上下文附加到请求对象，供后续处理器读取 */
 export const attachAuthContext = (
   req: Request,
   context: RequestAuthContext,
@@ -90,11 +98,13 @@ export const attachAuthContext = (
   authRequest.authContext = context;
 };
 
+/** 从请求头中解析认证上下文（JWT 优先，回退 session） */
 export const getSessionAuthContext = async (
   req: Request,
 ): Promise<RequestAuthContext | null> =>
   getSessionAuthContextFromHeaders(req.headers);
 
+/** 从 HTTP 请求头中解析认证上下文：优先 Bearer JWT，其次 Better Auth session */
 export const getSessionAuthContextFromHeaders = async (
   headers: IncomingHttpHeaders,
 ): Promise<RequestAuthContext | null> => {
@@ -134,6 +144,7 @@ export const getSessionAuthContextFromHeaders = async (
   };
 };
 
+/** 通过 Better Auth 校验 API Key，返回认证上下文（含限流处理） */
 export const getApiKeyContext = async (
   key: string,
 ): Promise<RequestAuthContext | null> => {
@@ -160,6 +171,7 @@ export const getApiKeyContext = async (
   };
 };
 
+/** 认证入口：已有上下文直接返回，否则按 API Key → session 顺序尝试 */
 export const authenticateWithApiKey = async (
   req: Request,
 ): Promise<RequestAuthContext | null> => {
@@ -170,6 +182,7 @@ export const authenticateWithApiKey = async (
   return key ? getApiKeyContext(key) : getSessionAuthContext(req);
 };
 
+/** 基于 session 的认证中间件：解析用户、附加上下文并登记变更锁 */
 export const authenticateBySession = async (
   req: Request,
   res: Response,

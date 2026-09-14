@@ -1,5 +1,6 @@
 import type { MeetingCommentInfo } from "./types";
 
+/** 会议评论的数据库记录源类型 */
 type MeetingCommentSource = {
   _id?: unknown;
   roomId?: unknown;
@@ -13,12 +14,14 @@ type MeetingCommentSource = {
   toObject?: () => Record<string, unknown>;
 };
 
+/** 将评论记录安全转为日期对象，无效值回退到纪元时间 */
 const toDate = (value: unknown): Date => {
   if (value instanceof Date) return value;
   const parsed = new Date(typeof value === "string" ? value : 0);
   return Number.isNaN(parsed.getTime()) ? new Date(0) : parsed;
 };
 
+/** 将会议评论记录序列化为业务对象 */
 export function serializeMeetingComment(value: unknown): MeetingCommentInfo {
   const source = value as MeetingCommentSource;
   const plain =

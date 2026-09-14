@@ -1,5 +1,6 @@
 import meeting from "@/models/meeting";
 
+/** 会议生命周期相关的可读字段类型 */
 type MeetingLifecycleItem = {
   _id?: unknown;
   startTime?: string | number | Date | null;
@@ -9,6 +10,7 @@ type MeetingLifecycleItem = {
   toObject?: () => Record<string, unknown>;
 };
 
+/** 计算会议结束时间戳（开始时间 + 时长），无效时返回 null */
 export const getMeetingEndTimestamp = (
   item: MeetingLifecycleItem,
 ): number | null => {
@@ -20,6 +22,7 @@ export const getMeetingEndTimestamp = (
   return start + item.duration * 60 * 1000;
 };
 
+/** 判断会议是否已超时（未显式结束时按开始时间 + 时长计算） */
 const isMeetingExpired = (item: MeetingLifecycleItem) => {
   if (item.endedAt) return false;
   const endTimestamp = getMeetingEndTimestamp(item);
@@ -32,6 +35,7 @@ const toLifecycleItem = (item: unknown): MeetingLifecycleItem =>
 const toPlainObject = (item: MeetingLifecycleItem) =>
   typeof item.toObject === "function" ? item.toObject() : { ...item };
 
+/** 批量自动结束已超时的会议并返回更新后的列表 */
 export const autoEndExpiredMeetings = async <T>(items: T[]): Promise<T[]> => {
   const meetings = items.map(toLifecycleItem);
   const now = new Date();
@@ -55,6 +59,7 @@ export const autoEndExpiredMeetings = async <T>(items: T[]): Promise<T[]> => {
   });
 };
 
+/** 自动结束单个已超时的会议并返回更新后的对象 */
 export const autoEndExpiredMeeting = async <T>(value: T): Promise<T> => {
   if (!value) return value;
   const item = toLifecycleItem(value);

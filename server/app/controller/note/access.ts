@@ -2,6 +2,7 @@ import { httpError } from "@/common/http-error";
 import Note from "@/models/note";
 import NotePurgeTask from "@/models/notePurgeTask";
 
+/** 笔记访问快照：来源、父节点、内容修订号和更新时间 */
 export type NoteAccessSnapshot = {
   id: string;
   source: "user" | "agent";
@@ -11,6 +12,7 @@ export type NoteAccessSnapshot = {
   deletedAt: Date | null;
 };
 
+/** 获取用户笔记的访问快照，不存在抛 404 */
 export const getOwnedNoteSnapshot = async (
   userId: string,
   noteId: string,
@@ -36,8 +38,10 @@ export const getOwnedNoteSnapshot = async (
   };
 };
 
+/** 断言笔记归属（与 getOwnedNoteSnapshot 等价） */
 export const assertOwnedNote = getOwnedNoteSnapshot;
 
+/** 断言笔记不在待永久删除队列中 */
 export const assertNotesNotPendingPurge = async (
   userId: string,
   noteIds: readonly string[],
@@ -51,6 +55,7 @@ export const assertNotesNotPendingPurge = async (
   }
 };
 
+/** 断言笔记为 Agent 来源，否则拒绝 MCP 操作 */
 export const assertAgentNote = async (
   userId: string,
   noteId: string,
@@ -63,6 +68,7 @@ export const assertAgentNote = async (
   return item;
 };
 
+/** 断言笔记子树全部为 Agent 来源（不允许混入用户笔记） */
 export const assertPureAgentSubtree = async (
   userId: string,
   noteId: string,

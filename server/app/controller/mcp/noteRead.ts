@@ -12,6 +12,7 @@ import {
 import type * as McpTypes from "./types";
 import { canRestoreMcpTrashNote } from "./trash-state";
 
+/** 列表查询的输入参数 */
 export type ListNotesInput = {
   limit: number;
   offset: number;
@@ -21,6 +22,7 @@ export type ListNotesInput = {
   tag?: string;
 };
 
+/** 构建活跃笔记的查询过滤条件 */
 const buildActiveFilter = (userId: string, input: ListNotesInput) => ({
   userId,
   deletedAt: null,
@@ -30,6 +32,7 @@ const buildActiveFilter = (userId: string, input: ListNotesInput) => ({
   ...(input.tag ? { tags: input.tag } : {}),
 });
 
+/** 分页查询笔记列表（排除正文等大字段，控制响应体积） */
 export const listMcpNotes = async (
   userId: string,
   input: ListNotesInput,
@@ -52,10 +55,12 @@ export const listMcpNotes = async (
   );
 };
 
+/** 搜索笔记的输入参数 */
 export type SearchNotesInput = Omit<ListNotesInput, "parentId"> & {
   query: string;
 };
 
+/** 生成搜索结果摘要：高亮命中位置附近的上下文文本 */
 const createExcerpt = (content: string, query: string): string => {
   const index = content.toLocaleLowerCase().indexOf(query.toLocaleLowerCase());
   if (index < 0) return content.slice(0, 240);
@@ -66,6 +71,7 @@ const createExcerpt = (content: string, query: string): string => {
   }`;
 };
 
+/** 搜索笔记：匹配标题、正文和标签，返回摘要和路径 */
 export const searchMcpNotes = async (
   userId: string,
   input: SearchNotesInput,
@@ -104,6 +110,7 @@ export const searchMcpNotes = async (
   return paginationResult(fitResponseItems(results), total, input.offset);
 };
 
+/** 查询笔记详情：支持分片读取正文和元数据截断 */
 export const getMcpNote = async (
   userId: string,
   noteId: string,
@@ -152,6 +159,7 @@ export const getMcpNote = async (
   };
 };
 
+/** 分页查询回收站笔记，标注可恢复状态 */
 export const listMcpTrash = async (
   userId: string,
   input: Pick<ListNotesInput, "limit" | "offset" | "source">,

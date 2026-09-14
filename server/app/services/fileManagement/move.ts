@@ -12,6 +12,7 @@ import {
   type FolderGraph,
 } from "./moveGraph";
 
+/** 移动项的类型 */
 type MoveKind = MoveTarget["kind"];
 
 export type MovedItem = MoveTarget & { targetFolderId: string | null };
@@ -22,14 +23,17 @@ export type MoveBatchResult = {
   failed: UnmovedItem[];
 };
 
+/** 移动单项的内部结果 */
 type InternalOutcome =
   | { state: "moved"; item: MovedItem }
   | { state: "skipped"; item: UnmovedItem }
   | { state: "failed"; item: UnmovedItem; status: number };
 
+/** 判断当前父级是否已是目标目录 */
 const sameFolder = (current: unknown, target: string | null): boolean =>
   (current ? String(current) : null) === target;
 
+/** 加载用户的文件夹层级图，用于环路检测 */
 const loadFolderGraph = async (ownerId: string): Promise<FolderGraph> => {
   const folders = await Folder.find({ ownerId })
     .select("_id parentId")
@@ -42,6 +46,7 @@ const loadFolderGraph = async (ownerId: string): Promise<FolderGraph> => {
   );
 };
 
+/** 校验目标文件夹存在且属于当前用户 */
 const validateDestination = (
   targetFolderId: string | null,
   graph: FolderGraph,
@@ -51,12 +56,14 @@ const validateDestination = (
   }
 };
 
+/** 构造失败结果 */
 const failed = (
   target: MoveTarget,
   reason: string,
   status: number,
 ): InternalOutcome => ({ state: "failed", item: { ...target, reason }, status });
 
+/** 移动单个文件：校验归属和状态，更新 folderId */
 const moveFile = async (
   ownerId: string,
   target: MoveTarget,
@@ -84,6 +91,7 @@ const moveFile = async (
   return { state: "moved", item: { ...target, targetFolderId } };
 };
 
+/** 移动单个文件夹：校验环路（不能移入自身或后代），更新 parentId */
 const moveFolder = async (
   ownerId: string,
   target: MoveTarget,
@@ -111,6 +119,7 @@ const moveFolder = async (
   return { state: "moved", item: { ...target, targetFolderId } };
 };
 
+/** 按目标类型分发移动操作 */
 const moveOne = (
   ownerId: string,
   target: MoveTarget,
@@ -121,6 +130,7 @@ const moveOne = (
     ? moveFolder(ownerId, target, targetFolderId, graph)
     : moveFile(ownerId, target, targetFolderId);
 
+/** 单文件移动（无锁版，供已持锁调用方使用） */
 const moveFileItemUnlocked = async (ownerId: string, input: MoveFileInput) => {
   const graph = await loadFolderGraph(ownerId);
   validateDestination(input.targetFolderId, graph);
@@ -136,6 +146,7 @@ const moveFileItemUnlocked = async (ownerId: string, input: MoveFileInput) => {
   return outcome.item;
 };
 
+/** 移动单个文件/文件夹（带目录结构锁） */
 export const moveFileItem = (
   ownerId: string,
   input: MoveFileInput,
@@ -144,6 +155,7 @@ export const moveFileItem = (
     moveFileItemUnlocked(ownerId, input),
   );
 
+/** 批量移动（无锁版）：逐项移动并汇总结果，跳过重复项 */
 const moveFileBatchUnlocked = async (
   ownerId: string,
   input: MoveBatchInput,
@@ -175,6 +187,7 @@ const moveFileBatchUnlocked = async (
   return { moved, skipped, failed: failedItems };
 };
 
+/** 批量移动文件/文件夹（带目录结构锁） */
 export const moveFileBatch = (
   ownerId: string,
   input: MoveBatchInput,

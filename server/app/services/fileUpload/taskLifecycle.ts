@@ -15,6 +15,7 @@ import type {
 } from "./types";
 import { serializeUploadedFile } from "./file-dto";
 
+/** 解析任务的实际存储路径：优先使用已有路径，否则按规则计算 */
 const resolveTaskStoragePath = (task: {
   storagePath?: string | null;
   ownerId: string;
@@ -28,6 +29,7 @@ const resolveTaskStoragePath = (task: {
   task.fileName,
 );
 
+/** 查询上传任务状态，返回给前端的 DTO */
 export const getUploadTaskStatus = async (
   ownerId: string,
   uploadId: string,
@@ -54,6 +56,7 @@ export const getUploadTaskStatus = async (
   };
 };
 
+/** 取消上传任务：删除分片、暂存文件和最终文件，受目录结构锁保护 */
 export const cancelUploadTask = (
   ownerId: string,
   uploadId: string,
@@ -79,6 +82,7 @@ export const cancelUploadTask = (
     return { cancelled: true };
   });
 
+/** 删除用户全部上传任务及其关联文件（无锁版本，供已持锁的调用方使用） */
 export const deleteUserUploadTasksUnlocked = async (
   ownerId: string,
 ): Promise<void> => {
@@ -104,6 +108,7 @@ export const deleteUserUploadTasksUnlocked = async (
   });
 };
 
+/** 删除用户全部上传任务，带目录结构锁保护 */
 export const deleteUserUploadTasks = (ownerId: string): Promise<void> =>
   withFileFolderStructureLock(ownerId, () =>
     deleteUserUploadTasksUnlocked(ownerId),

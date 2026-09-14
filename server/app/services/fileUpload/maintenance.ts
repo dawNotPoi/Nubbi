@@ -21,6 +21,7 @@ import { cleanupExpiredUploadTaskUnlocked } from "./expiredTask";
 let preparePromise: Promise<void> | null = null;
 let maintenancePromise: Promise<void> | null = null;
 
+/** 迁移历史数据：把 size 字段从字符串转为数字，补齐 UploadTask 的缺失字段 */
 const migrateNumericFields = async () => {
   await File.collection.updateMany(
     { size: { $type: "string" } },
@@ -75,6 +76,7 @@ const migrateNumericFields = async () => {
   );
 };
 
+/** 重建上传任务与文件表的索引，删除旧索引并创建新索引 */
 const ensureIndexes = async () => {
   await UploadTask.collection.dropIndex("ownerId_1_fileHash_1").catch(() => undefined);
   await UploadTask.collection.dropIndex("createdAt_1").catch(() => undefined);
@@ -101,6 +103,7 @@ const ensureIndexes = async () => {
   ]);
 };
 
+/** 启动前准备工作（幂等）：创建目录、迁移字段、建立索引 */
 export const prepareFileUploadInfrastructure = (): Promise<void> => {
   preparePromise ??= (async () => {
     await ensureUploadDirectories();
@@ -110,6 +113,7 @@ export const prepareFileUploadInfrastructure = (): Promise<void> => {
   return preparePromise;
 };
 
+/** 清理目录中的过期残留文件（不在活跃列表且超过截止时间） */
 const removeStaleEntries = async (
   directory: string,
   activePaths: Set<string>,
@@ -126,6 +130,7 @@ const removeStaleEntries = async (
   );
 };
 
+/** 清理所有已过期的上传任务及其临时文件，并清理残留目录 */
 export const cleanupExpiredUploads = async (): Promise<void> => {
   await prepareFileUploadInfrastructure();
   const now = new Date();
@@ -163,6 +168,7 @@ export const cleanupExpiredUploads = async (): Promise<void> => {
   await removeStaleEntries(MULTER_TEMP_DIR, new Set(), Date.now() - 60 * 60 * 1000);
 };
 
+/** 启动上传维护任务：立即清理一次，之后每小时轮询一次 */
 const runFileUploadMaintenance = async () => {
   await cleanupExpiredUploads().catch((error) => {
     logger.error("首次上传维护执行失败", { error });

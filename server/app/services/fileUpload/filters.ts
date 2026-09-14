@@ -1,5 +1,6 @@
 import type { InitUploadInput } from "./types";
 
+/** 构建秒传检测的文件过滤条件 */
 export const buildInstantFileFilter = (
   ownerId: string,
   input: Pick<InitUploadInput, "fileHash" | "totalSize">,

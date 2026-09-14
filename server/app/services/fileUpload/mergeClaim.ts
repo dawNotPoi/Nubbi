@@ -11,6 +11,7 @@ import { getActiveUploadTaskGuard } from "./taskPolicy";
 import type { UploadedFileDto } from "./types";
 import { serializeUploadedFile } from "./file-dto";
 
+/** 已认领合并的上传任务信息 */
 type ClaimedUploadTask = {
   _id: unknown;
   ownerId: string;
@@ -27,10 +28,12 @@ type ClaimedUploadTask = {
   mergeToken?: string | null;
 };
 
+/** 认领合并的结果：要么返回已完成文件，要么返回可合并的任务 */
 type ClaimUploadResult =
   | { completedFile: UploadedFileDto; task: null }
   | { completedFile: null; task: ClaimedUploadTask };
 
+/** 恢复已完成的任务：找回已落库文件，更新任务状态并返回文件 DTO */
 const recoverCompletedFile = async (ownerId: string, task: {
   _id: unknown;
   fileId?: unknown;
@@ -53,6 +56,7 @@ const recoverCompletedFile = async (ownerId: string, task: {
   return serializeUploadedFile(file);
 };
 
+/** 认领上传任务进行合并：恢复已完成任务或为任务签发合并租约 */
 export const claimUploadForMerge = (
   ownerId: string,
   uploadId: string,

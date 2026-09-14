@@ -11,6 +11,7 @@ import type {
   MeetingJoinResult,
 } from "./types";
 
+/** 查询活跃会议：自动结束已过期会议，过滤已结束或未批准状态 */
 async function findActiveMeeting(meetingId: string) {
   const item = await autoEndExpiredMeeting(await meeting.findById(meetingId));
   if (!item) return null;
@@ -19,6 +20,7 @@ async function findActiveMeeting(meetingId: string) {
   return item;
 }
 
+/** 校验会议加入权限：验证访问令牌、会议状态和有效期 */
 export async function authorizeMeetingJoin(input: {
   meetingId: string;
   userId: string;
@@ -48,10 +50,12 @@ export async function authorizeMeetingJoin(input: {
   return { ok: true, expiresAt };
 }
 
+/** 判断会议是否仍处于活跃状态 */
 export async function isMeetingActive(meetingId: string): Promise<boolean> {
   return Boolean(await findActiveMeeting(meetingId));
 }
 
+/** 判断会议是否由指定主持人持有 */
 export async function isMeetingHostedBy(input: {
   meetingId: string;
   hostId: string;
@@ -65,6 +69,7 @@ export async function isMeetingHostedBy(input: {
   );
 }
 
+/** 查询会议的实时评论列表 */
 export async function findRealtimeMeetingComments(
   meetingId: string,
 ): Promise<MeetingCommentInfo[]> {
@@ -74,6 +79,7 @@ export async function findRealtimeMeetingComments(
   return comments.map(serializeMeetingComment);
 }
 
+/** 创建实时会议评论（受会议写锁保护） */
 export function createRealtimeMeetingComment(input: {
   meetingId: string;
   actor: AuthenticatedUser;
@@ -95,6 +101,7 @@ export function createRealtimeMeetingComment(input: {
   });
 }
 
+/** 结束会议（仅主持人可操作），返回是否成功 */
 export async function endHostedMeeting(input: {
   meetingId: string;
   hostId: string;

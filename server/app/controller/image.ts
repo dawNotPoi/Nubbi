@@ -11,6 +11,7 @@ import {
   type GitHubImageUpload,
 } from "@/services/image/github-storage";
 
+/** 图片创建输入参数 */
 export type CreateImageInput = {
   ownerId: string;
   name: string;
@@ -21,6 +22,7 @@ export type CreateImageInput = {
   remoteSha?: string;
 };
 
+/** 图片业务结果类型 */
 export type ImageResult = {
   _id: string;
   name: string;
@@ -30,6 +32,7 @@ export type ImageResult = {
   updatedAt?: Date;
 };
 
+/** 图片数据库记录的序列化源类型 */
 type ImageResultSource = {
   _id: unknown;
   name: string;
@@ -39,6 +42,7 @@ type ImageResultSource = {
   updatedAt?: Date;
 };
 
+/** 将数据库记录序列化为业务结果对象 */
 const serializeImage = (item: ImageResultSource): ImageResult => ({
   _id: String(item._id),
   name: item.name,
@@ -48,10 +52,12 @@ const serializeImage = (item: ImageResultSource): ImageResult => ({
   updatedAt: item.updatedAt,
 });
 
+/** 创建图片记录 */
 export const createImage = async (
   input: CreateImageInput,
 ): Promise<ImageResult> => serializeImage(await image.create(input));
 
+/** 按 ID 和归属查询图片 */
 export const findImage = async (
   id: string,
   ownerId: string,
@@ -60,6 +66,7 @@ export const findImage = async (
   return item ? serializeImage(item) : null;
 };
 
+/** 删除图片：清理 GitHub 远端文件，删除数据库记录 */
 export const deleteImage = async (
   id: string,
   ownerId: string,
@@ -85,6 +92,7 @@ export const deleteImage = async (
   return deleted ? serializeImage(deleted) : null;
 };
 
+/** 上传图片到 GitHub 并保存记录，失败时回滚远端文件（账号变更锁保护） */
 export const uploadOwnedImageToGitHub = async (
   ownerId: string,
   file: Express.Multer.File,

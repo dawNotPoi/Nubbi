@@ -13,6 +13,7 @@ import {
   type NotePropertiesInput,
 } from "./update";
 
+/** 创建用户笔记的命令参数 */
 export type CreateUserNoteCommand = {
   userId: string;
   input: Omit<CreateNoteInput, "userId" | "status">;
@@ -28,6 +29,7 @@ export const createUserNote = async ({
   return createdNote;
 };
 
+/** 更新用户笔记属性的命令参数 */
 export type UpdateUserNotePropertiesCommand = {
   userId: string;
   noteId: string;

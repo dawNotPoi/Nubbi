@@ -10,6 +10,7 @@ import {
 } from "@/lib/registerVerification";
 import { getExistingEmailData } from "@/services/auth/auth-user";
 
+/** 校验邮箱是否可注册：已注册则抛出 409（区分验证状态） */
 const assertEmailAvailable = async (email: string): Promise<void> => {
   const existingEmailData = await getExistingEmailData(email);
   if (!existingEmailData) return;
@@ -23,6 +24,7 @@ const assertEmailAvailable = async (email: string): Promise<void> => {
   );
 };
 
+/** 发送注册验证码：检查邮箱可用性、冷却时间，发送成功后返回策略参数 */
 export const sendRegisterCode = async (
   email: string,
 ): Promise<{
@@ -53,6 +55,7 @@ export const sendRegisterCode = async (
   };
 };
 
+/** 注册邮箱输入参数 */
 export type RegisterEmailInput = {
   username: string;
   email: string;
@@ -64,6 +67,7 @@ type RegisterEmailResult = Awaited<
   ReturnType<typeof signUpVerifiedEmailWithPassword>
 >;
 
+/** 完成邮箱注册：校验验证码后调用 Better Auth 创建已认证账号 */
 export const registerEmail = async (
   input: RegisterEmailInput,
   headers: HeadersInit,

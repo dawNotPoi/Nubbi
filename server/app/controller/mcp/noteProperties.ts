@@ -4,8 +4,10 @@ import { recordUserTags } from "@/controller/tag";
 import { assertExpectedDate, httpError, serializeNote } from "./shared";
 import type { McpNoteResult } from "./types";
 
+/** 笔记 meta 条目类型 */
 type MetaEntry = { key: string; value: unknown; type: string };
 
+/** MCP 更新笔记属性的输入参数 */
 export type PropertiesPatchInput = {
   expectedUpdatedAt: string;
   title?: string;
@@ -17,9 +19,11 @@ export type PropertiesPatchInput = {
   metaRemove?: string[];
 };
 
+/** 规范化标签列表：去空格、去重、过滤空值 */
 const normalizeTags = (items: string[]): string[] =>
   [...new Set(items.map((tag) => tag.trim()).filter(Boolean))];
 
+/** 规范化 meta 条目数组 */
 const normalizeMeta = (value: unknown): MetaEntry[] =>
   Array.isArray(value)
     ? value
@@ -34,6 +38,7 @@ const normalizeMeta = (value: unknown): MetaEntry[] =>
         }))
     : [];
 
+/** 对 meta 执行补丁操作：先移除指定 key，再合并新增 key */
 const patchMeta = (
   current: MetaEntry[],
   set: Record<string, unknown> = {},
@@ -54,6 +59,7 @@ const patchMeta = (
   return [...entries.values()];
 };
 
+/** 更新 Agent 笔记属性：基于时间戳乐观锁，支持标签和 meta 增量补丁 */
 export const updateMcpNoteProperties = async (
   userId: string,
   noteId: string,

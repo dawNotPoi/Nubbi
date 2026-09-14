@@ -11,8 +11,10 @@ import {
 } from "./listFilters";
 import type { FileListInput } from "./input-types";
 
+/** 文件列表查询的 MongoDB 过滤条件类型 */
 type MongoFilter = Record<string, unknown>;
 
+/** 文件夹文档结构 */
 type FolderDocument = {
   _id: unknown;
   name: string;
@@ -28,6 +30,7 @@ type FileDocument = FolderDocument & {
   folderId?: unknown;
 };
 
+/** 文件列表项的面包屑类型 */
 export type FileBreadcrumb = { _id: string | null; name: string };
 export type FolderListItem = {
   _id: string;
@@ -56,6 +59,7 @@ export type FileListResult = PaginationResult<
   breadcrumbs: FileBreadcrumb[];
 };
 
+/** 将文件夹文档序列化为列表项 */
 export const serializeFolderItem = (
   folder: FolderDocument,
 ): FolderListItem => ({
@@ -67,6 +71,7 @@ export const serializeFolderItem = (
   updatedAt: folder.updatedAt ?? null,
 });
 
+/** 将文件文档序列化为列表项 */
 export const serializeFileItem = (file: FileDocument): FileListItem => ({
   _id: String(file._id),
   kind: "file" as const,
@@ -79,6 +84,7 @@ export const serializeFileItem = (file: FileDocument): FileListItem => ({
   updatedAt: file.updatedAt ?? null,
 });
 
+/** 构建面包屑路径，检测文件夹层级循环 */
 const getBreadcrumbs = async (
   ownerId: string,
   parentId: string | null,
@@ -111,11 +117,13 @@ const getBreadcrumbs = async (
   return breadcrumbs.concat(ancestors.reverse());
 };
 
+/** 构建名称模糊搜索过滤条件 */
 const buildNameFilter = (query: string): MongoFilter =>
   query
     ? { name: { $regex: escapeSearchText(query), $options: "i" } }
     : {};
 
+/** 查询文件列表：文件夹与文件混合分页，返回面包屑 */
 export const listFiles = async (
   ownerId: string,
   input: FileListInput,

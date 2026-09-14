@@ -10,6 +10,7 @@ import type {
   NotePathItem,
 } from "./query-types";
 
+/** 查询笔记的祖先链（从根到父级），用于构建面包屑 */
 export const getNoteAncestors = async (
   noteId: string,
   userId: string,
@@ -51,6 +52,7 @@ export const getNoteAncestors = async (
   return ancestors;
 };
 
+/** 查询指定父节点的直属子笔记 */
 export const getDirectChildren = async (
   parentId: string,
   userId: string,
@@ -62,6 +64,7 @@ export const getDirectChildren = async (
     .select(NOTE_LIST_PROJECTION);
 };
 
+/** 校验移动目标合法性：不能移动到自身或其后代，目标父节点必须存在 */
 export const validateNoteMoveTarget = async ({
   noteId,
   parentId,

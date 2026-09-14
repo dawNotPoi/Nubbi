@@ -1,3 +1,4 @@
+/** 文件上传业务异常：携带 HTTP 状态码和错误码 */
 export class FileUploadError extends Error {
   status: number;
   errorCode: string;

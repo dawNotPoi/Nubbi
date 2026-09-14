@@ -4,12 +4,14 @@ import { fileUploadConfig } from "./config";
 import { FileUploadError } from "./errors";
 import { getActiveUploadTaskGuard } from "./taskPolicy";
 
+/** 活跃上传任务的过滤条件（排除已完成和已过期） */
 const activeTaskFilter = (ownerId: string) => ({
   ownerId,
   status: { $ne: "completed" },
   ...getActiveUploadTaskGuard(new Date()),
 });
 
+/** 校验用户存储配额：文件占用 + 未完成任务预留，超限抛 413 */
 export const assertUploadQuota = async (
   ownerId: string,
   size: number,
@@ -30,6 +32,7 @@ export const assertUploadQuota = async (
   }
 };
 
+/** 统计用户的活跃上传任务数 */
 export const countActiveUploadTasks = (
   ownerId: string,
 ): ReturnType<typeof UploadTask.countDocuments> =>

@@ -7,14 +7,17 @@ import {
 } from "./query-config";
 import type { NoteSearchItem } from "./query-types";
 
+/** 父笔记的路径信息（用于构造面包屑） */
 type ParentInfo = {
   title: string;
   parentId: string | null;
 };
 
+/** 转义正则表达式特殊字符 */
 const escapeRegExp = (value: string): string =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+/** 按标题模糊搜索笔记，附带祖先路径标签 */
 export const searchNotes = async (
   userId: string,
   title: string,

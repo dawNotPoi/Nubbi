@@ -3,6 +3,7 @@ import { assertAgentNote } from "@/controller/note/access";
 import { httpError, serializeNote, toIsoString } from "./shared";
 import type { McpContentNoteResult } from "./types";
 
+/** 内容编辑的输入参数：支持替换、追加、前置和文本片段替换 */
 export type ContentEditInput = {
   mode: "replace" | "append" | "prepend" | "replace_text";
   baseContentRevision: number;
@@ -11,6 +12,7 @@ export type ContentEditInput = {
   newText?: string;
 };
 
+/** 替换唯一文本片段：找不到或多处命中都返回 409 冲突 */
 const replaceUniqueText = (
   content: string,
   oldText: string,
@@ -35,6 +37,7 @@ const replaceUniqueText = (
   )}`;
 };
 
+/** 根据编辑模式构建目标内容 */
 const buildContent = (
   current: string,
   input: ContentEditInput,
@@ -54,6 +57,7 @@ const buildContent = (
   return content;
 };
 
+/** 编辑 Agent 笔记内容：基于 contentRevision 乐观锁检测冲突 */
 export const editMcpNoteContent = async (
   userId: string,
   noteId: string,

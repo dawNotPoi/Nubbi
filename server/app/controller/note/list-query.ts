@@ -13,6 +13,7 @@ import type {
   NotePaginationResult,
 } from "./query-types";
 
+/** 按 ID 查询活跃笔记 */
 export const getNoteById = async (
   id: string,
   userId: string,
@@ -20,6 +21,7 @@ export const getNoteById = async (
   return await note.findOne({ _id: id, userId, ...ACTIVE_NOTE_FILTER });
 };
 
+/** 查询根节点笔记（无父节点），按创建时间倒序 */
 export const getRootNotes = async (
   userId: string,
 ): Promise<NoteListDocument[]> => {
@@ -30,6 +32,7 @@ export const getRootNotes = async (
     .select(NOTE_LIST_PROJECTION);
 };
 
+/** 查询用户全部笔记，按更新时间倒序 */
 export const getAllNotes = async (
   userId: string,
 ): Promise<NoteListDocument[]> => {
@@ -40,6 +43,7 @@ export const getAllNotes = async (
     .select(NOTE_LIST_PROJECTION);
 };
 
+/** 查询叶子节点笔记（无子节点），供列表展示 */
 export const getNotes = async (
   userId: string,
 ): Promise<NoteListDocument[]> => {
@@ -53,6 +57,7 @@ export const getNotes = async (
     .select(NOTE_LIST_PROJECTION);
 };
 
+/** 查询最近更新的叶子节点笔记 */
 export const getRecentNotes = async (
   userId: string,
 ): Promise<NoteListDocument[]> => {
@@ -67,6 +72,7 @@ export const getRecentNotes = async (
     .select(NOTE_LIST_PROJECTION);
 };
 
+/** 分页查询回收站笔记 */
 export const getTrashNotes = async (
   userId: string,
   pagination: PaginationInput,

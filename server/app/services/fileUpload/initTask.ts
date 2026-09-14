@@ -25,6 +25,7 @@ import { isUploadTaskExpired } from "./taskPolicy";
 import type { InitUploadInput, InitializeUploadResult } from "./types";
 import { serializeUploadedFile } from "./file-dto";
 
+/** 按文件哈希查找已存在的上传任务 */
 const findUploadTask = (ownerId: string, input: InitUploadInput) =>
   UploadTask.findOne({
     ownerId,
@@ -32,12 +33,14 @@ const findUploadTask = (ownerId: string, input: InitUploadInput) =>
     totalSize: input.totalSize,
   });
 
+/** 秒传检测：查找已上传的相同文件 */
 const findInstantFile = async (ownerId: string, input: InitUploadInput) => {
   const file = await File.findOne(buildInstantFileFilter(ownerId, input));
   if (!file || !(await fse.pathExists(file.storagePath))) return null;
   return file;
 };
 
+/** 秒传：复用已存在文件的存储路径，直接创建文件记录 */
 const createInstantFile = async (ownerId: string, input: InitUploadInput) => {
   const sourceFile = await findInstantFile(ownerId, input);
   if (!sourceFile) return null;
@@ -56,6 +59,7 @@ const createInstantFile = async (ownerId: string, input: InitUploadInput) => {
   });
 };
 
+/** 创建新的上传任务：校验并发上限和配额，分配临时目录 */
 const createUploadTask = async (ownerId: string, input: InitUploadInput) => {
   const activeTasks = await countActiveUploadTasks(ownerId);
   if (activeTasks >= fileUploadConfig.maxActiveTasks) {
@@ -99,6 +103,7 @@ const createUploadTask = async (ownerId: string, input: InitUploadInput) => {
   };
 };
 
+/** 初始化上传：恢复未完成任务、尝试秒传，否则创建新上传任务 */
 export const initializeUpload = async (
   ownerId: string,
   input: InitUploadInput,

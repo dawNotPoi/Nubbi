@@ -2,6 +2,7 @@ import logger from "@/common/logger";
 import mongoose from "mongoose";
 import env from "./env";
 
+/** Mongoose 连接实例，启动时自动连接 MongoDB 并配置连接池参数 */
 const db = mongoose
   .connect(env.MONGO_URI, {
     dbName: env.MONGO_DB_NAME,
@@ -22,7 +23,7 @@ const db = mongoose
     throw err;
   });
 
-// 非生产环境默认启用 Mongoose 查询日志
+/** 非生产环境默认启用 Mongoose 查询日志，便于调试数据库操作 */
 if (env.LOG_DB_QUERIES || env.NODE_ENV !== "production") {
   mongoose.set(
     "debug",

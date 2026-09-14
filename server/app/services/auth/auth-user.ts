@@ -1,10 +1,12 @@
 import { auth } from "@/lib/auth";
 
+/** 已注册邮箱的查询结果类型 */
 export type ExistingEmailData = {
   emailRegistered: true;
   emailVerified: boolean;
 };
 
+/** 查询邮箱是否已注册及其验证状态 */
 export const getExistingEmailData = async (
   email: string,
 ): Promise<ExistingEmailData | null> => {
@@ -18,6 +20,7 @@ export const getExistingEmailData = async (
   };
 };
 
+/** 更新 auth 用户的头像字段 */
 export const updateAuthUserAvatar = async (
   userId: string,
   image: string,

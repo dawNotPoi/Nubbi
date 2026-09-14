@@ -27,6 +27,7 @@ import { notifyMeetingRoomClosure } from "@/services/meeting/room-events";
 import { issueMeetingAccessToken } from "./access-token";
 import type { MeetingAccessResult } from "./types";
 
+/** 创建会议输入参数 */
 type CreateMeetingInput = {
   title: string;
   startTime: Date;
@@ -34,11 +35,13 @@ type CreateMeetingInput = {
   password?: string;
 };
 
+/** 审核会议输入参数 */
 type VetMeetingInput = {
   id: string;
   status: "approved" | "rejected";
 };
 
+/** 校验会议访问输入参数 */
 type ValidateMeetingAccessInput = {
   id: string;
   password: string;
@@ -58,6 +61,7 @@ export async function createMeeting(
   return serializeMeetingListItem(created);
 }
 
+/** 审核会议：批准直接更新状态，拒绝则同时触发会议房间关闭通知 */
 export async function vetHostedMeeting(
   actor: AuthenticatedUser,
   input: VetMeetingInput,
@@ -93,6 +97,7 @@ export async function vetHostedMeeting(
   }
 }
 
+/** 删除自己主持的会议：触发房间关闭通知并清理评论 */
 export async function deleteHostedMeeting(
   actor: AuthenticatedUser,
   meetingId: string,
@@ -116,6 +121,7 @@ export async function deleteHostedMeeting(
   }
 }
 
+/** 校验会议访问权限：过期/密码/审批校验，通过后签发访问令牌 */
 export async function validateMeetingAccess(
   actor: AuthenticatedUser,
   input: ValidateMeetingAccessInput,

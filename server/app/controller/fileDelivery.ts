@@ -15,6 +15,7 @@ import {
 import { streamFileResponse } from "@/services/fileAccess/stream";
 import type { Response } from "express";
 
+/** 签名预览流控制器：校验签名 token，走内存缓存加速，支持 Range 断点续传 */
 export const signedStreamPreviewController = async (
   req: AuthRequest,
   res: Response,
@@ -66,6 +67,7 @@ export const signedStreamPreviewController = async (
   await streamFileResponse(res, file, req.headers.range);
 };
 
+/** 公开分享下载控制器：校验分享签名，返回文件下载响应 */
 export const publicDownloadController = async (
   req: AuthRequest,
   res: Response,
@@ -91,6 +93,7 @@ export const publicDownloadController = async (
   return res.download(file.storagePath, file.name);
 };
 
+/** 登录用户下载控制器：按文件归属校验，返回文件下载响应 */
 export const downloadFileController = async (
   req: AuthRequest,
   res: Response,
@@ -109,6 +112,7 @@ export const downloadFileController = async (
   return res.download(file.storagePath, file.name);
 };
 
+/** 登录用户预览控制器：校验文件归属，支持 Range 断点续传 */
 export const previewFileController = async (
   req: AuthRequest,
   res: Response,

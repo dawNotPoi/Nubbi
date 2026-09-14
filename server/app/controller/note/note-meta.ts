@@ -1,12 +1,15 @@
 import type { NoteEntity } from "@/models/note";
 
+/** 笔记 meta 子文档结构 */
 type NoteMetaSubdocument = NonNullable<NoteEntity["meta"]>[number];
 
+/** meta 条目类型 */
 export type MetaEntry = Pick<
   NoteMetaSubdocument,
   "key" | "value" | "type"
 >;
 
+/** 将外部传入的 meta 标准化为条目数组（数组或对象两种形态） */
 export const normalizeMetaEntries = (meta: unknown): MetaEntry[] => {
   if (!meta) return [];
 

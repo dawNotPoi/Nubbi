@@ -4,6 +4,7 @@ import Note from "@/models/note";
 import { httpError, serializeNote } from "./shared";
 import type { McpContentNoteResult } from "./types";
 
+/** MCP 创建笔记的输入参数 */
 export type CreateMcpNoteInput = {
   title?: string;
   content?: string;
@@ -14,6 +15,7 @@ export type CreateMcpNoteInput = {
   meta?: Array<{ key: string; value?: unknown; type: string }> | Record<string, unknown>;
 };
 
+/** 创建 Agent 笔记：校验父笔记存在，创建后进入收件箱并记录标签 */
 export const createMcpNote = async (
   userId: string,
   input: CreateMcpNoteInput,

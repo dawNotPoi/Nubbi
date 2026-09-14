@@ -9,6 +9,7 @@ import {
   PASSWORD_RESET_EXPIRES_IN_SECONDS,
 } from "@/lib/passwordReset";
 
+/** 发送密码重置验证码：遵守冷却时间，请求 Better Auth 发送重置邮件 */
 export const sendPasswordResetCode = async (
   email: string,
   headers: HeadersInit,
@@ -39,12 +40,14 @@ export const sendPasswordResetCode = async (
   };
 };
 
+/** 重置密码的输入参数 */
 export type ResetPasswordInput = {
   email: string;
   code: string;
   newPassword: string;
 };
 
+/** 通过验证码重置密码：校验验证码后调用 Better Auth */
 export const resetPasswordByCode = async (
   input: ResetPasswordInput,
   headers: HeadersInit,

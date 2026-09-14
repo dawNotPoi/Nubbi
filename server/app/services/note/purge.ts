@@ -4,6 +4,7 @@ import NotePurgeTask from "@/models/notePurgeTask";
 import Summary from "@/models/summary";
 import { recalculateHasChildren } from "./structure";
 
+/** 完成一个待处理的笔记永久删除任务，失败时记录错误并保留任务供重试 */
 export const completePendingNotePurge = async (
   userId: string,
   rootNoteId: string,
@@ -32,6 +33,7 @@ export const completePendingNotePurge = async (
   }
 };
 
+/** 批量处理待执行的笔记永久删除任务（每次最多 100 条） */
 export const processPendingNotePurges = async (): Promise<void> => {
   const tasks = await NotePurgeTask.find()
     .select("userId rootNoteId")
@@ -53,6 +55,7 @@ export const processPendingNotePurges = async (): Promise<void> => {
   }
 };
 
+/** 启动笔记永久删除后台维护：立即执行一次，之后每 5 分钟轮询 */
 let maintenanceStarted = false;
 
 export const startNotePurgeMaintenance = (): void => {

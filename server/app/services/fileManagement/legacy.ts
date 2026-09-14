@@ -4,6 +4,7 @@ import { Folder } from "@/models/file/folder";
 import path from "path";
 import { withFileFolderStructureLock } from "./structureLock";
 
+/** 旧版接口的文件夹/文件文档类型 */
 type LegacyFolderDocument = InstanceType<typeof Folder>;
 type LegacyFileDocument = InstanceType<typeof File>;
 
@@ -12,6 +13,7 @@ export type LegacyFileListResult = {
   files: LegacyFileDocument[];
 };
 
+/** 校验父文件夹存在且归属正确 */
 const assertOwnedParent = async (
   ownerId: string | undefined,
   parentId: unknown,
@@ -21,6 +23,7 @@ const assertOwnedParent = async (
   if (!exists) throw httpError(404, "父文件夹不存在或无权访问");
 };
 
+/** 旧版文件列表查询（兼容旧客户端） */
 export const listFilesLegacy = async (
   ownerId: string | undefined,
   parentId: unknown,
@@ -38,6 +41,7 @@ export const listFilesLegacy = async (
   return { folders, files };
 };
 
+/** 旧版创建文件夹 */
 export const createFolderLegacy = async (
   ownerId: string | undefined,
   name: unknown,
@@ -50,6 +54,7 @@ export const createFolderLegacy = async (
   return ownerId ? withFileFolderStructureLock(ownerId, create) : create();
 };
 
+/** 旧版查询全部文件夹 */
 export const getFoldersLegacy = (
   ownerId: string | undefined,
 ): ReturnType<typeof Folder.find> =>
@@ -57,6 +62,7 @@ export const getFoldersLegacy = (
     .select("_id name parentId createdAt updatedAt")
     .sort({ name: 1 });
 
+/** 旧版重命名文件/文件夹 */
 export const renameItemLegacy = async (
   ownerId: string | undefined,
   id: unknown,

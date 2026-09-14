@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { db } from "./db";
 import env from "./env";
 
+/** 密码重置验证码 MongoDB 文档结构 */
 type PasswordResetCodeDocument = {
   email: string;
   codeHash: string;
@@ -13,13 +14,18 @@ type PasswordResetCodeDocument = {
 };
 
 const PASSWORD_RESET_COLLECTION = "password_reset_codes";
+/** 验证码长度（6 位数字） */
 const PASSWORD_RESET_CODE_LENGTH = 6;
+/** 两次发送验证码的最小间隔（秒） */
 export const PASSWORD_RESET_COOLDOWN_SECONDS = 60;
+/** 验证码默认有效期（秒），1 小时 */
 export const PASSWORD_RESET_EXPIRES_IN_SECONDS = 60 * 60;
+/** 验证码最大错误尝试次数 */
 const PASSWORD_RESET_MAX_ATTEMPTS = 5;
 
 let indexesEnsured = false;
 
+/** 获取密码重置验证码集合，首次访问时自动建立索引（包括 TTL 过期索引） */
 const getPasswordResetCollection = async () => {
   const mongoDb = await db;
 
@@ -42,20 +48,24 @@ const getPasswordResetCollection = async () => {
   return collection;
 };
 
+/** 标准化邮箱地址 */
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
+/** 使用 SHA-256 哈希验证码 */
 const hashResetCode = (email: string, code: string) =>
   crypto
     .createHash("sha256")
     .update(`${env.BETTER_AUTH_SECRET}:${normalizeEmail(email)}:${code}`)
     .digest("hex");
 
+/** 生成 6 位随机数字验证码 */
 const generateResetCode = () =>
   crypto
     .randomInt(0, 10 ** PASSWORD_RESET_CODE_LENGTH)
     .toString()
     .padStart(PASSWORD_RESET_CODE_LENGTH, "0");
 
+/** 创建一次密码重置尝试记录（不含验证码，仅占冷却槽） */
 export const createPasswordResetAttempt = async (
   email: string,
 ): Promise<void> => {
@@ -78,6 +88,7 @@ export const createPasswordResetAttempt = async (
   });
 };
 
+/** 生成随机密码重置验证码，存储哈希值，返回明文 */
 export const createPasswordResetCode = async (
   email: string,
   token: string,
@@ -103,6 +114,7 @@ export const createPasswordResetCode = async (
   return code;
 };
 
+/** 查询该邮箱距离上次发送验证码还剩多少冷却秒数 */
 export const getPasswordResetRemainingSeconds = async (
   email: string,
 ): Promise<number> => {
@@ -128,6 +140,7 @@ export const getPasswordResetRemainingSeconds = async (
     : 0;
 };
 
+/** 校验并消费密码重置验证码：成功返回 Better Auth token，失败计入尝试并达到上限后作废 */
 export const consumePasswordResetCode = async (
   email: string,
   code: string,

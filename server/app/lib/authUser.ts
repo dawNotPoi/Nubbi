@@ -3,8 +3,10 @@ import type { AuthRequest } from "@/middleware/common";
 import { auth } from "./auth";
 import { toWebHeaders } from "./requestHeaders";
 
+/** 已认证用户类型，从 AuthRequest 的 user 字段推导 */
 export type AuthenticatedUser = NonNullable<AuthRequest["user"]>;
 
+/** 从请求中提取已认证用户，未认证时抛出 401 */
 export function requireAuthenticatedUser(
   req: AuthRequest,
 ): AuthenticatedUser {
@@ -12,6 +14,7 @@ export function requireAuthenticatedUser(
   return req.user;
 }
 
+/** 延迟获取已认证用户（先检查 req.user，缺失时通过 session token 解析） */
 export async function getUser(
   req: AuthRequest,
 ): Promise<AuthenticatedUser> {

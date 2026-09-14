@@ -9,17 +9,20 @@ import type { IncomingHttpHeaders } from "node:http";
 import { z } from "zod";
 
 type HttpMethod = "get" | "post" | "put" | "patch" | "delete";
+/** 请求参数校验位置 */
 type RequestLocation = "body" | "query" | "params";
 type OptionalSchema = z.ZodTypeAny | undefined;
 type SchemaOutput<Schema extends OptionalSchema> =
   Schema extends z.ZodTypeAny ? z.output<Schema> : undefined;
 
+/** 各位置校验失败的提示文案 */
 const VALIDATION_MESSAGES: Record<RequestLocation, string> = {
   body: "数据验证失败",
   query: "查询参数验证失败",
   params: "路径参数验证失败",
 };
 
+/** 请求参数校验失败时抛出的内部异常，包含字段级错误信息 */
 class RouteValidationError extends Error {
   constructor(
     readonly location: RequestLocation,
@@ -29,6 +32,7 @@ class RouteValidationError extends Error {
   }
 }
 
+/** 用 Zod 解析请求的指定部分，失败抛出 RouteValidationError */
 const parseRequestPart = <Schema extends OptionalSchema>(
   schema: Schema | undefined,
   value: unknown,
@@ -50,6 +54,7 @@ const parseRequestPart = <Schema extends OptionalSchema>(
   return result.data as SchemaOutput<Schema>;
 };
 
+/** 类型化 JSON 路由配置：声明权限动作、Zod Schema、成功消息和处理器 */
 export type JsonRouteConfig<
   Action extends string,
   Actor,
@@ -91,15 +96,14 @@ type RegisterJsonRoute<Action extends string, Actor> = <
   >,
 ) => void;
 
+/** 路由注册器接口：每个 HTTP 方法都接收一个路径和配置 */
 export type JsonRouteRegistrar<Action extends string, Actor> = Record<
   HttpMethod,
   RegisterJsonRoute<Action, Actor>
 >;
 
-/**
- * 创建类型安全的 JSON 路由注册器。
- * 固定执行权限校验、身份解析、Zod 参数解析、业务处理和统一成功响应。
- */
+/** 创建类型安全的 JSON 路由注册器。
+ * 固定执行权限校验、身份解析、Zod 参数解析、业务处理和统一成功响应。 */
 export const createJsonRouteRegistrar = <Action extends string, Actor>(
   router: Router,
   options: {
@@ -190,6 +194,7 @@ export const createJsonRouteRegistrar = <Action extends string, Actor>(
   return registrar;
 };
 
+/** 创建免登录的公开 JSON 路由注册器（自动通过权限校验） */
 export const createPublicJsonRouteRegistrar = <Action extends string>(
   router: Router,
 ): JsonRouteRegistrar<Action, undefined> =>

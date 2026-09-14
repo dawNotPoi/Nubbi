@@ -1,3 +1,4 @@
+/** 业务异常类型：携带 HTTP 状态码和可选数据，供统一错误处理使用 */
 export class HttpError extends Error {
   readonly status: number;
   readonly data?: unknown;
@@ -10,12 +11,14 @@ export class HttpError extends Error {
   }
 }
 
+/** 快捷创建 HttpError 的辅助函数 */
 export const httpError = (
   status: number,
   message: string,
   data?: unknown,
 ): HttpError => new HttpError(status, message, data);
 
+/** 判断值是否为合法的 HTTP 错误状态码（400-599） */
 const isHttpErrorStatus = (value: unknown): value is number =>
   typeof value === "number" &&
   Number.isInteger(value) &&

@@ -9,12 +9,14 @@ import type { NormalizedNoteProperties } from "./note-properties";
 
 export { recalculateHasChildren };
 
+/** 判断错误是否为事务不支持（非副本集环境） */
 const isTransactionUnsupported = (error: unknown): boolean =>
   error instanceof Error &&
   /Transaction numbers|replica set|Transaction.*not supported/i.test(
     error.message,
   );
 
+/** 带事务执行任务，事务不可用时回退到无事务执行 */
 const runWithOptionalTransaction = async <T>(
   task: (session?: ClientSession) => Promise<T>,
 ): Promise<T> => {

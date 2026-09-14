@@ -9,6 +9,7 @@ import {
   removeUploadStagingFiles,
 } from "./storageCleanup";
 
+/** 清理过期上传任务（无锁版）：标记清理 token 防并发，删除文件记录 */
 export const cleanupExpiredUploadTaskUnlocked = async (
   ownerId: string,
   uploadId: string,
@@ -45,6 +46,7 @@ export const cleanupExpiredUploadTaskUnlocked = async (
   return true;
 };
 
+/** 清理过期上传任务（带目录结构锁） */
 export const cleanupExpiredUploadTask = (
   ownerId: string,
   uploadId: string,

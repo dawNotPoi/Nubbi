@@ -12,6 +12,7 @@ import { getActiveUploadTaskGuard } from "./taskPolicy";
 import type { UploadedFileDto } from "./types";
 import { serializeUploadedFile } from "./file-dto";
 
+/** 合并任务信息 */
 type FinalizeTask = {
   _id: unknown;
   folderId?: unknown;
@@ -22,6 +23,7 @@ type FinalizeTask = {
   mergeToken?: string | null;
 };
 
+/** 完成上传：在合并租约校验通过后，创建文件记录并标记任务完成 */
 export const finalizeUploadFile = (
   ownerId: string,
   task: FinalizeTask,

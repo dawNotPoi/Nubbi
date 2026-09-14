@@ -4,6 +4,7 @@ import { FileUploadError } from "./errors";
 import { getActiveUploadTaskGuard } from "./taskPolicy";
 import type { InitUploadInput, UploadProgressDto } from "./types";
 
+/** 恢复未完成的上传任务：校验文件目标一致，延长过期时间并返回进度 */
 export const resumeUploadTaskUnlocked = async (
   ownerId: string,
   uploadId: string,

@@ -15,6 +15,7 @@ import {
 import type { McpAffectedNoteResult, McpNoteResult } from "./types";
 import { throwMcpUpdateConflict } from "./mutation-conflict";
 
+/** 移动 Agent 笔记：校验目标合法性和纯 Agent 子树后更新父节点 */
 const moveMcpNoteRecord = async (
   userId: string,
   noteId: string,
@@ -66,6 +67,7 @@ const moveMcpNoteRecord = async (
   return serializeNote(updated);
 };
 
+/** 移动 Agent 笔记的对外入口 */
 export const moveMcpNote = async (
   userId: string,
   noteId: string,
@@ -73,6 +75,7 @@ export const moveMcpNote = async (
 ): Promise<McpNoteResult> =>
   moveMcpNoteRecord(userId, noteId, input);
 
+/** 切换 Agent 笔记的归档状态 */
 export const archiveMcpNote = async (
   userId: string,
   noteId: string,
@@ -95,6 +98,7 @@ export const archiveMcpNote = async (
   return serializeNote(updated);
 };
 
+/** 将 Agent 笔记及其子树移入回收站 */
 const trashMcpNoteRecord = async (
   userId: string,
   noteId: string,
@@ -133,6 +137,7 @@ const trashMcpNoteRecord = async (
   return { ...serializeNote(updated), affectedCount: targetIds.length };
 };
 
+/** 将 Agent 笔记移入回收站的对外入口 */
 export const trashMcpNote = async (
   userId: string,
   noteId: string,
@@ -140,6 +145,7 @@ export const trashMcpNote = async (
 ): Promise<McpAffectedNoteResult> =>
   trashMcpNoteRecord(userId, noteId, input);
 
+/** 恢复回收站中的 Agent 笔记及其子树 */
 const restoreMcpNoteRecord = async (
   userId: string,
   noteId: string,
@@ -174,6 +180,7 @@ const restoreMcpNoteRecord = async (
   return { ...serializeNote(updated), affectedCount: targetIds.length };
 };
 
+/** 恢复 Agent 笔记的对外入口 */
 export const restoreMcpNote = async (
   userId: string,
   noteId: string,

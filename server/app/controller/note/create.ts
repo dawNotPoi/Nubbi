@@ -10,6 +10,7 @@ import { normalizeMetaEntries, type MetaEntry } from "./note-meta";
 type NoteSource = NonNullable<NoteEntity["source"]>;
 type NoteStatus = NonNullable<NoteEntity["status"]>;
 
+/** 笔记创建输入参数 */
 export type CreateNoteInput = {
   _id?: string;
   userId: string;
@@ -28,6 +29,7 @@ export type CreateNoteInput = {
   meta?: unknown;
 };
 
+/** 笔记创建数据（组装后的存储结构） */
 type CreateNoteData = {
   _id?: Types.ObjectId;
   userId: string;
@@ -45,9 +47,11 @@ type CreateNoteData = {
   meta: MetaEntry[];
 };
 
+/** 根据笔记来源推导初始状态：Agent 创建的笔记进入收件箱，用户创建的立即激活 */
 const resolveInitialStatus = (source?: NoteSource): NoteStatus =>
   source === "agent" ? "inbox" : "active";
 
+/** 创建笔记记录：校验父笔记存在、设置初始状态，并同步父节点的 hasChildren */
 const createNoteRecord = async (req: CreateNoteInput) => {
   const noteData: CreateNoteData = {
     userId: req.userId,
@@ -104,10 +108,12 @@ const createNoteRecord = async (req: CreateNoteInput) => {
   return createdNote;
 };
 
+/** 创建笔记的对外入口 */
 export const createNote = async (
   req: CreateNoteInput,
 ): Promise<NoteDocument> => createNoteRecord(req);
 
+/** 复制笔记：清空标识符、取消发布、复制元数据，可选移动新父节点 */
 const duplicateNoteRecord = async (
   noteId: string,
   userId: string,
@@ -160,6 +166,7 @@ const duplicateNoteRecord = async (
   return createdNote;
 };
 
+/** 复制笔记的对外入口 */
 export const duplicateNote = async (
   noteId: string,
   userId: string,

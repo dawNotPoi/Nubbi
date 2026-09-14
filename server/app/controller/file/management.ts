@@ -12,16 +12,19 @@ import type {
   MoveTarget,
 } from "@/services/fileManagement/input-types";
 
+/** 删除单个文件/文件夹的输入参数 */
 type DeleteItemInput = {
   fileId: string;
   kind: DeleteTarget["kind"];
 };
 
+/** 批量删除的输入参数 */
 type DeleteBatchInput = {
   fileIds?: string[];
   targets?: MoveTarget[];
 };
 
+/** 删除结果统计 */
 type DeleteResult = {
   deletedFileCount: number;
   deletedFolderCount: number;
@@ -29,11 +32,13 @@ type DeleteResult = {
   missingFolderIds: string[];
 };
 
+/** 批量删除结果统计 */
 type DeleteBatchResult = DeleteResult & {
   deletedCount: number;
   deletedIds: string[];
 };
 
+/** 没有任何目标被删除时抛出 404 */
 const assertAnyDeleted = (result: {
   filesToDelete: unknown[];
   folderIdsToDelete: string[];
@@ -43,21 +48,25 @@ const assertAnyDeleted = (result: {
   }
 };
 
+/** 查询文件列表 */
 export const getManagedFileList = (
   ownerId: string,
   input: FileListInput,
 ): ReturnType<typeof listFiles> => listFiles(ownerId, input);
 
+/** 移动单个文件/文件夹 */
 export const moveManagedItem = (
   ownerId: string,
   input: MoveFileInput,
 ): ReturnType<typeof moveFileItem> => moveFileItem(ownerId, input);
 
+/** 批量移动文件/文件夹 */
 export const moveManagedBatch = (
   ownerId: string,
   input: MoveBatchInput,
 ): ReturnType<typeof moveFileBatch> => moveFileBatch(ownerId, input);
 
+/** 删除单个文件/文件夹，统计删除结果 */
 export const deleteManagedItem = async (
   ownerId: string,
   input: DeleteItemInput,
@@ -74,6 +83,7 @@ export const deleteManagedItem = async (
   };
 };
 
+/** 批量删除文件/文件夹，合并 targets 和 fileIds 两种输入 */
 export const deleteManagedBatch = async (
   ownerId: string,
   input: DeleteBatchInput,

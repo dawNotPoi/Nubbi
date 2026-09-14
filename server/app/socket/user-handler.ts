@@ -1,6 +1,7 @@
 import logger from "@/common/logger";
 import type { Server, Socket } from "socket.io";
 
+/** 用户通用 Socket 处理器：统计网站在线人数并广播 */
 const userHandlers = (io: Server, socket: Socket): void => {
   socket.on("init", () => {
     socket.join("init");

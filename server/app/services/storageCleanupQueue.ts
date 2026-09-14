@@ -4,9 +4,11 @@ import { StorageCleanupTask } from "@/models/storageCleanupTask";
 import { withFileFolderStructureLock } from "./fileManagement/structureLock";
 import fse from "fs-extra";
 
+/** 去重存储路径，剔除空值 */
 const uniquePaths = (storagePaths: string[]) =>
   [...new Set(storagePaths.filter(Boolean))];
 
+/** 分批并发执行任务，控制并发量避免瞬时压力过大 */
 const runInBatches = async <T>(
   items: T[],
   batchSize: number,
@@ -17,6 +19,7 @@ const runInBatches = async <T>(
   }
 };
 
+/** 入队物理文件清理任务（按 storagePath 去重） */
 export const enqueueStorageCleanup = async (
   ownerId: string,
   storagePaths: string[],
@@ -32,6 +35,7 @@ export const enqueueStorageCleanup = async (
   ));
 };
 
+/** 执行物理文件清理：无引用时删除磁盘文件，失败记录错误供重试 */
 export const processStorageCleanupUnlocked = async (
   ownerId: string,
   storagePaths?: string[],
@@ -62,6 +66,7 @@ export const processStorageCleanupUnlocked = async (
   });
 };
 
+/** 在文件目录结构锁保护下执行物理文件清理 */
 export const processStorageCleanup = (
   ownerId: string,
   storagePaths?: string[],
@@ -71,6 +76,7 @@ export const processStorageCleanup = (
 
 let maintenanceStarted = false;
 
+/** 扫描所有清理任务的 owner 并逐个处理 */
 export const runStorageCleanupQueue = async (): Promise<void> => {
   const ownerIds = await StorageCleanupTask.distinct("ownerId");
   await runInBatches(ownerIds, 4, async (ownerId) => {

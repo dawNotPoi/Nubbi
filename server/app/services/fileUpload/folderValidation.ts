@@ -1,14 +1,17 @@
 import { Folder } from "@/models/file/folder";
 import { FileUploadError } from "./errors";
 
+/** 文件夹存在性检查的类型 */
 type FolderExists = (
   ownerId: string,
   folderId: string,
 ) => Promise<boolean>;
 
+/** 检查文件夹是否存在且属于当前用户 */
 const folderExists: FolderExists = async (ownerId, folderId) =>
   Boolean(await Folder.exists({ _id: folderId, ownerId }));
 
+/** 断言上传目标文件夹存在且可访问（final 阶段缺失视为目标失效） */
 export const assertOwnedUploadFolder = async (
   ownerId: string,
   folderId: unknown,

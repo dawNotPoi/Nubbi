@@ -1,5 +1,6 @@
 import type { UploadedFileDto } from "./types";
 
+/** 上传文件的数据库记录源类型 */
 type UploadedFileSource = {
   _id?: unknown;
   name?: unknown;
@@ -12,9 +13,11 @@ type UploadedFileSource = {
   toObject?: () => Record<string, unknown>;
 };
 
+/** 安全地读取可选字符串字段 */
 const optionalString = (value: unknown): string | undefined =>
   typeof value === "string" && value ? value : undefined;
 
+/** 安全地读取可选日期字段，无效日期返回 undefined */
 const optionalDate = (value: unknown): Date | undefined => {
   if (!value) return undefined;
   const date = value instanceof Date ? value : new Date(String(value));

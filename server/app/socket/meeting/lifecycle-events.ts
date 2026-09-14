@@ -26,6 +26,7 @@ import type {
 import { acknowledge } from "./acknowledgement";
 import { ensureMeetingRoomActive } from "./room-access";
 
+/** 注册会议生命周期相关的 Socket 事件（评论/结束会议） */
 export function registerMeetingLifecycleEvents(
   io: Server,
   socket: Socket,

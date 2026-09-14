@@ -3,6 +3,7 @@ import { getNoteAncestors } from "@/controller/note/hierarchy-query";
 import { MCP_LIMITS } from "@/lib/mcpPolicy";
 import type * as McpTypes from "./types";
 
+/** MCP 可序列化的笔记数据结构（宽松类型，适配数据库记录） */
 export type NoteLike = {
   _id: unknown;
   title?: unknown;
@@ -24,15 +25,18 @@ export type NoteLike = {
 
 export { httpError };
 
+/** 转义正则表达式特殊字符，用于安全的模糊搜索 */
 export const escapeRegExp = (value: string): string =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+/** 将值安全转为 ISO 字符串，无效日期返回 null */
 export const toIsoString = (value: unknown): string | null => {
   if (!value) return null;
   const date = value instanceof Date ? value : new Date(String(value));
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 };
 
+/** 将笔记数据库记录序列化为 MCP 响应格式（含字段截断） */
 export const serializeNote = (item: NoteLike): McpTypes.McpNoteResult => ({
   id: String(item._id),
   title:
@@ -59,9 +63,11 @@ export const serializeNote = (item: NoteLike): McpTypes.McpNoteResult => ({
   updatedAt: toIsoString(item.updatedAt),
 });
 
+/** 截断文本到指定长度，末尾加省略号 */
 export const truncateText = (value: string, limit: number): string =>
   value.length <= limit ? value : `${value.slice(0, Math.max(0, limit - 1))}…`;
 
+/** 控制响应总大小：按预算截断返回条目，防止超出 MCP 输出限制 */
 export const fitResponseItems = <T>(items: T[]): T[] => {
   const budget = MCP_LIMITS.maxResponseChars - 2_000;
   const result: T[] = [];
@@ -76,6 +82,7 @@ export const fitResponseItems = <T>(items: T[]): T[] => {
   return result;
 };
 
+/** 截断 meta 字段：单个条目标记超限时标记 truncated */
 export const fitMeta = (
   value: unknown,
 ): { meta: unknown[]; metaTruncated: boolean } => {
@@ -93,6 +100,7 @@ export const fitMeta = (
   return { meta: result, metaTruncated: false };
 };
 
+/** 获取笔记的路径信息（祖先链 + 拼接路径），祖先最多保留 50 个 */
 export const getNotePath = async (
   noteId: string,
   userId: string,
@@ -114,6 +122,7 @@ export const getNotePath = async (
   };
 };
 
+/** 构建分页结果 */
 export const paginationResult = <T>(
   items: T[],
   total: number,
@@ -127,6 +136,7 @@ export const paginationResult = <T>(
   nextOffset: offset + items.length < total ? offset + items.length : null,
 });
 
+/** 校验乐观并发：期望的日期与当前不一致时抛出 409 冲突 */
 export const assertExpectedDate = (
   expected: string,
   current: unknown,

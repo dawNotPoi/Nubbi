@@ -1,6 +1,8 @@
+/** 文件夹层级图：folderId → parentId */
 export type FolderGraph = Map<string, string | null>;
 export type FolderNode = { _id: string; parentId?: string | null };
 
+/** 收集文件夹的所有后代 ID（广度优先） */
 export const collectDescendantFolderIds = (
   folders: FolderNode[],
   rootId: string,
@@ -25,6 +27,7 @@ export const collectDescendantFolderIds = (
   return descendants;
 };
 
+/** 判断目标文件夹是否为源文件夹自身或其后代（不可移动） */
 export const isInvalidFolderTarget = (
   sourceId: string,
   targetId: string | null,

@@ -6,6 +6,7 @@ import {
 import type { RequestAuthContext } from "@/middleware/common";
 import { httpError, toIsoString } from "./shared";
 
+/** MCP 上下文结果类型：向 Agent 暴露账号、能力、限制信息 */
 export type McpContextResult = {
   user: { id: string };
   token: {
@@ -19,6 +20,7 @@ export type McpContextResult = {
   limits: typeof MCP_LIMITS;
 };
 
+/** 获取 MCP 上下文：校验 API Key 类型，返回 Agent 可用的能力和限制 */
 export const getMcpContext = (
   context?: RequestAuthContext,
 ): McpContextResult => {

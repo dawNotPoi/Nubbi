@@ -10,6 +10,7 @@ export type PageSlices = {
   fileLimit: number;
 };
 
+/** 扩展名过滤条件 */
 const extensionFilter = (extensions: string[]): MongoFilter => ({
   extension: {
     $regex: `^\\.?(${extensions.join("|")})$`,
@@ -17,6 +18,7 @@ const extensionFilter = (extensions: string[]): MongoFilter => ({
   },
 });
 
+/** 按分类预置的过滤条件（文档/图片/视频/音频/压缩包） */
 const CATEGORY_FILTERS = {
   document: {
     $or: [
@@ -55,9 +57,11 @@ const CATEGORY_FILTERS = {
   archive: extensionFilter(["zip", "rar", "7z", "tar", "gz", "bz2", "xz"]),
 } satisfies Record<string, MongoFilter>;
 
+/** 转义搜索文本中的正则特殊字符 */
 export const escapeSearchText = (value: string): string =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+/** 构建分类过滤条件（other 为不属于任何预置分类） */
 export const buildCategoryFilter = (
   category: FileListInput["category"],
 ): MongoFilter => {
@@ -68,6 +72,7 @@ export const buildCategoryFilter = (
   return CATEGORY_FILTERS[category];
 };
 
+/** 在文件夹和文件之间分配分页切片 */
 export const buildPageSlices = (
   folderCount: number,
   offset: number,
@@ -79,6 +84,7 @@ export const buildPageSlices = (
   return { folderSkip, folderLimit, fileSkip, fileLimit: limit - folderLimit };
 };
 
+/** 构建稳定的排序条件（附带 _id 作为唯一性兜底） */
 export const buildStableSort = (
   sortBy: FileListInput["sortBy"],
   sortOrder: FileListInput["sortOrder"],

@@ -12,6 +12,7 @@ export const UPLOAD_TEMP_DIR = fileUploadPaths.temp;
 export const MULTER_TEMP_DIR = fileUploadPaths.multerTemp;
 export const UPLOAD_FINAL_DIR = fileUploadPaths.final;
 
+/** 确保上传所需的目录结构存在 */
 export const ensureUploadDirectories = async (): Promise<void> => {
   await Promise.all([
     fse.ensureDir(UPLOAD_TEMP_DIR),
@@ -20,15 +21,19 @@ export const ensureUploadDirectories = async (): Promise<void> => {
   ]);
 };
 
+/** 获取上传任务的临时分片目录 */
 export const getTaskTempDir = (uploadId: string): string =>
   path.join(UPLOAD_TEMP_DIR, uploadId);
 
+/** 根据 ownerId 生成存储目录键（哈希截断，防止敏感信息暴露） */
 const getOwnerStorageKey = (ownerId: string) =>
   crypto.createHash("sha256").update(ownerId).digest("hex").slice(0, 24);
 
+/** 获取指定用户的最终文件存储目录 */
 export const getUploadOwnerDirectory = (ownerId: string): string =>
   path.join(UPLOAD_FINAL_DIR, getOwnerStorageKey(ownerId));
 
+/** 计算最终文件路径：owner 目录 + 哈希-大小 + 扩展名 */
 export const getUploadFinalPath = (
   ownerId: string,
   fileHash: string,
@@ -40,6 +45,7 @@ export const getUploadFinalPath = (
   return path.join(ownerDir, `${fileHash}-${totalSize}${extension}`);
 };
 
+/** 计算合并过程中的暂存文件路径（隐藏文件，带 merge token） */
 export const getUploadStagingPath = (
   ownerId: string,
   uploadId: string,
@@ -62,6 +68,7 @@ type MergeTask = {
   mergeToken?: string | null;
 };
 
+/** 合并上传分片为最终文件：校验完整性、顺序合并、校验大小并移动 */
 export const mergeTaskChunks = async (task: MergeTask): Promise<string> => {
   const expectedIndexes = Array.from(
     { length: task.totalChunks },

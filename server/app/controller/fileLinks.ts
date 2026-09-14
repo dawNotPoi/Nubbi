@@ -13,11 +13,13 @@ import {
   PREVIEW_STREAM_TTL_MS,
 } from "@/services/fileAccess/signatures";
 
+/** 生成的链接结果类型 */
 export type FileLinkResult = {
   url: string;
   expiresAt: number;
 };
 
+/** 校验文件归属且资源存在，返回文件记录 */
 const requireOwnedFileResource = async (fileId: string, userId: string) => {
   const file = await getOwnedActiveFile(fileId, userId);
   if (!file) throw httpError(404, "File not found or access denied");
@@ -27,6 +29,7 @@ const requireOwnedFileResource = async (fileId: string, userId: string) => {
   return file;
 };
 
+/** 创建带签名的预览流链接，并写入内存缓存（含预清理） */
 export const createPreviewUrl = async (
   fileId: string,
   userId: string,
@@ -50,6 +53,7 @@ export const createPreviewUrl = async (
   return { url, expiresAt };
 };
 
+/** 创建公开分享下载链接（带签名和过期时间） */
 export const createShareUrl = async (
   fileId: string,
   userId: string,

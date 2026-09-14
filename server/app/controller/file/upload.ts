@@ -17,6 +17,7 @@ import type {
 } from "@/services/fileUpload/types";
 import fse from "fs-extra";
 
+/** 初始化上传：确保基础设施就绪后创建/恢复上传任务 */
 export const initUpload = async (
   ownerId: string,
   input: InitUploadInput,
@@ -25,6 +26,7 @@ export const initUpload = async (
   return initializeUpload(ownerId, input);
 };
 
+/** 上传分片：在账号变更锁保护下存储分片，失败时清理临时文件 */
 export const uploadChunk = async (
   ownerId: string,
   input: UploadChunkInput | null,
@@ -57,17 +59,20 @@ export const uploadChunk = async (
   }
 };
 
+/** 合并上传分片并完成文件落库 */
 export const mergeUpload = (
   ownerId: string,
   uploadId: string,
 ): ReturnType<typeof completeUpload> => completeUpload(ownerId, uploadId);
 
+/** 查询上传任务状态 */
 export const getUploadStatus = (
   ownerId: string,
   uploadId: string,
 ): ReturnType<typeof getUploadTaskStatus> =>
   getUploadTaskStatus(ownerId, uploadId);
 
+/** 取消上传任务 */
 export const cancelUpload = (
   ownerId: string,
   uploadId: string,

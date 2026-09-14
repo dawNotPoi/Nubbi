@@ -3,11 +3,13 @@ import Image from "@/models/image";
 import ImageCleanupTask from "@/models/imageCleanupTask";
 import { deleteGitHubImage } from "./github-storage";
 
+/** 图片清理目标：GitHub 远程路径及其 SHA */
 export type ImageCleanupTarget = {
   remotePath: string;
   remoteSha: string;
 };
 
+/** 入队 GitHub 图片清理任务（按远程路径去重） */
 export const enqueueImageCleanup = async (
   ownerId: string,
   targets: ImageCleanupTarget[],
@@ -30,6 +32,7 @@ export const enqueueImageCleanup = async (
   );
 };
 
+/** 批量处理 GitHub 图片清理：有引用跳过，无引用删除远程文件 */
 export const processImageCleanup = async (
   ownerId?: string,
 ): Promise<void> => {
@@ -69,6 +72,7 @@ export const processImageCleanup = async (
 
 let maintenanceStarted = false;
 
+/** 启动 GitHub 图片清理后台维护：立即执行一次，之后每小时轮询 */
 export const startImageCleanupMaintenance = (): void => {
   if (maintenanceStarted) return;
   maintenanceStarted = true;

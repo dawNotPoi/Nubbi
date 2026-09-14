@@ -1,3 +1,4 @@
+/** 会议访问尝试的计数桶 */
 type AttemptBucket = {
   failures: number;
   inFlight: number;
@@ -10,12 +11,16 @@ export type MeetingAccessLimit = {
 };
 
 const WINDOW_MS = 10 * 60 * 1_000;
+/** 单用户单会议的最大失败次数 */
 const MAX_USER_FAILURES = 5;
+/** 单会议的最大失败次数（全局） */
 const MAX_MEETING_FAILURES = 50;
+/** 内存中最多保留的计数桶数 */
 const MAX_BUCKETS = 10_000;
 const userBuckets = new Map<string, AttemptBucket>();
 const meetingBuckets = new Map<string, AttemptBucket>();
 
+/** 获取指定 key 的活跃计数桶，过期则新建 */
 const getActiveBucket = (
   buckets: Map<string, AttemptBucket>,
   key: string,
@@ -33,6 +38,7 @@ const getActiveBucket = (
   return nextBucket;
 };
 
+/** 清理过期计数桶，并限制桶总量 */
 const cleanupBuckets = (
   buckets: Map<string, AttemptBucket>,
   now: number,
@@ -47,11 +53,13 @@ const cleanupBuckets = (
   }
 };
 
+/** 计算重试等待秒数 */
 const getRetryAfterSeconds = (
   bucket: AttemptBucket,
   now: number,
 ): number => Math.max(1, Math.ceil((bucket.resetAt - now) / 1_000));
 
+/** 预留一次访问尝试：超限返回禁止，否则计数并放行 */
 export const reserveMeetingAccessAttempt = (
   meetingId: string,
   userId: string,
@@ -84,6 +92,7 @@ export const reserveMeetingAccessAttempt = (
   return limit;
 };
 
+/** 结算访问尝试结果：成功清空失败计数，失败累加 */
 const settleBucket = (
   buckets: Map<string, AttemptBucket>,
   key: string,
@@ -106,6 +115,7 @@ const settleBucket = (
   if (bucket.failures === 0 && bucket.inFlight === 0) buckets.delete(key);
 };
 
+/** 结算会议访问尝试（用户级和会议级双桶） */
 export const settleMeetingAccessAttempt = (
   meetingId: string,
   userId: string,

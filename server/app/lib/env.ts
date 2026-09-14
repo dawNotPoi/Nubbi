@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { z } from "zod";
 
+/** 将空字符串转为 undefined，避免空环境变量被当作有效值 */
 const emptyToUndefined = (value: unknown) => {
   if (typeof value !== "string") return value;
 
@@ -8,18 +9,22 @@ const emptyToUndefined = (value: unknown) => {
   return trimmedValue === "" ? undefined : trimmedValue;
 };
 
+/** 必填字符串环境变量，空值视为未设置 */
 const requiredString = (name: string) =>
   z.preprocess(
     emptyToUndefined,
     z.string({ required_error: `Missing required env var: ${name}` }).min(1),
   );
 
+/** 可选字符串环境变量，空值视为未设置 */
 const optionalString = () =>
   z.preprocess(emptyToUndefined, z.string().optional());
 
+/** 可选数字环境变量，自动类型转换 */
 const optionalNumber = () =>
   z.preprocess(emptyToUndefined, z.coerce.number().optional());
 
+/** 有界整数环境变量，附带默认值和合法范围约束 */
 const boundedInteger = (
   defaultValue: number,
   minimum: number,
@@ -30,6 +35,7 @@ const boundedInteger = (
     z.coerce.number().int().min(minimum).max(maximum).default(defaultValue),
   );
 
+/** 端口号环境变量，自动类型转换并约束在 1-65535 范围 */
 const portNumber = (name: string, defaultValue: number) =>
   z.preprocess(
     emptyToUndefined,
@@ -41,6 +47,7 @@ const portNumber = (name: string, defaultValue: number) =>
       .default(defaultValue),
   );
 
+/** 可选布尔字符串（'true'/'false'），空值视为未设置 */
 const optionalBooleanString = () =>
   z
     .preprocess((value) => {
@@ -49,6 +56,7 @@ const optionalBooleanString = () =>
     }, z.enum(["true", "false"]).optional())
     .transform((value) => value === "true");
 
+/** 所有环境变量的 Zod Schema，启动时检验并自动填充默认值 */
 const envSchema = z.object({
   NODE_ENV: z
     .enum(["development", "test", "production"])
@@ -95,6 +103,7 @@ const envSchema = z.object({
 
 const parsedEnv = envSchema.parse(process.env);
 
+/** 聚合后的配置对象，包含旧字段兼容和默认值回填 */
 const env = {
   ...parsedEnv,
   AUTH_GOOGLE_ID: parsedEnv.AUTH_GOOGLE_ID || parsedEnv.AUTH_GOOLE_ID || "",

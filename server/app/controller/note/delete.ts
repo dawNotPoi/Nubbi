@@ -5,6 +5,7 @@ import { completePendingNotePurge } from "@/services/note/purge";
 import { assertNotesNotPendingPurge } from "./access";
 import { recalculateHasChildren } from "./structure-update";
 
+/** 收集笔记的所有后代 ID（广度优先遍历，含去重） */
 export const collectDescendantNoteIds = async (
   noteId: string,
   userId: string,
@@ -37,6 +38,7 @@ export const collectDescendantNoteIds = async (
   return descendantIds;
 };
 
+/** 删除笔记（移入回收站）：级联删除所有后代，更新父节点状态 */
 const deleteNoteRecord = async (
   noteId: string,
   userId: string,
@@ -62,12 +64,14 @@ const deleteNoteRecord = async (
   return await note.findOne({ _id: noteId, userId });
 };
 
+/** 删除笔记的对外入口 */
 export const deleteNote = async (
   noteId: string,
   userId: string,
 ): Promise<NoteDocument | null> =>
   deleteNoteRecord(noteId, userId);
 
+/** 恢复笔记：校验父节点不在回收站，级联恢复所有后代 */
 const restoreNoteRecord = async (
   noteId: string,
   userId: string,
@@ -111,12 +115,14 @@ const restoreNoteRecord = async (
   return await note.findOne({ _id: noteId, userId });
 };
 
+/** 恢复笔记的对外入口 */
 export const restoreNote = async (
   noteId: string,
   userId: string,
 ): Promise<NoteDocument | null> =>
   restoreNoteRecord(noteId, userId);
 
+/** 永久删除笔记：先登记任务再执行，失败可后台重试 */
 const purgeNoteRecord = async (
   noteId: string,
   userId: string,
@@ -162,6 +168,7 @@ const purgeNoteRecord = async (
   return result;
 };
 
+/** 永久删除笔记的对外入口 */
 export const purgeNote = async (
   noteId: string,
   userId: string,

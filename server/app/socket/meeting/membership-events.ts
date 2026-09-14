@@ -25,6 +25,7 @@ import type { JoinMeetingResponse } from "./types";
 import { acknowledge } from "./acknowledgement";
 import { ensureMeetingRoomActive } from "./room-access";
 
+/** 构造加入失败响应 */
 const failedJoin = (
   reason: Extract<JoinMeetingResponse, { ok: false }>["reason"],
 ): JoinMeetingResponse => ({
@@ -34,6 +35,7 @@ const failedJoin = (
   roomUsers: [],
 });
 
+/** 处理加入会议房间请求：校验权限、加入房间、同步成员 */
 async function joinMeeting(
   io: Server,
   socket: Socket,
@@ -110,6 +112,7 @@ async function joinMeeting(
   });
 }
 
+/** 注册会议成员相关的 Socket 事件（加入/同步/信令/断开） */
 export function registerMeetingMembershipEvents(
   io: Server,
   socket: Socket,

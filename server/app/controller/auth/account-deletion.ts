@@ -10,6 +10,7 @@ import { sendAccountDeletionVerificationEmail } from "@/lib/email";
 import type { AuthenticatedUser } from "@/lib/authUser";
 import { deleteUserAccountData } from "@/services/auth/account-deletion";
 
+/** 从用户信息中提取邮箱，缺失时抛出指定错误 */
 const requireEmail = (
   user: AuthenticatedUser,
   message: string,
@@ -19,6 +20,7 @@ const requireEmail = (
   return email;
 };
 
+/** 发送账号注销验证码：受冷却限制，发送成功后返回策略参数 */
 export const sendAccountDeletionCode = async (
   user: AuthenticatedUser,
 ): Promise<{
@@ -56,6 +58,7 @@ export const sendAccountDeletionCode = async (
   };
 };
 
+/** 确认注销账号：校验二次确认、验证码，最后删除用户全部数据 */
 export const confirmAccountDeletion = async (
   user: AuthenticatedUser,
   code: string,
