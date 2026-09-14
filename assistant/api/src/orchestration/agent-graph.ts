@@ -15,7 +15,7 @@ import { AgentState, type AgentStateValue } from "./agent-state.js";
 import type { ToolGateway } from "../runtime/tool-gateway.js";
 import { executeToolCalls } from "./tool-executor.js";
 
-const maxTurns = 8;
+const maxTurns = 8;  // 防止模型陷入无限工具调用循环
 const limitText = "已达到最大执行轮数，请缩小问题范围后重试。";
 
 export type AgentGraphContext = {
@@ -27,12 +27,14 @@ export type AgentGraphContext = {
   emit: (event: AgentEvent) => void;
 };
 
+// 把长文本切成小段逐个推送，前端能更流畅地渲染流式输出。
 const emitText = (text: string, emit: AgentGraphContext["emit"]): void => {
   (text.match(/[\s\S]{1,36}/g) ?? []).forEach((chunk) => {
     emit({ type: "text-delta", text: chunk });
   });
 };
 
+/** 模型节点：请求模型，若有工具调用则转工具节点，否则产出最终文本。 */
 const createModelNode = (context: AgentGraphContext) => async (
   state: AgentStateValue,
 ): Promise<Partial<AgentStateValue>> => {
@@ -58,6 +60,7 @@ const createModelNode = (context: AgentGraphContext) => async (
   };
 };
 
+/** 工具节点：并行执行待处理的工具调用，并把结果回填进消息历史。 */
 const createToolNode = (context: AgentGraphContext) => async (
   state: AgentStateValue,
 ): Promise<Partial<AgentStateValue>> => {
@@ -84,6 +87,7 @@ const createToolNode = (context: AgentGraphContext) => async (
   };
 };
 
+/** 达到最大轮数时的兜底节点：提示用户并结束。 */
 const createLimitNode = (context: AgentGraphContext) => (
   state: AgentStateValue,
 ): Partial<AgentStateValue> => {
@@ -91,6 +95,10 @@ const createLimitNode = (context: AgentGraphContext) => (
   return { parts: [...state.parts, { type: "text", text: limitText }] };
 };
 
+/**
+ * 用 LangGraph 编排“模型 → 工具 → 模型”的循环：
+ * model 返回工具调用时进入 tools，tools 执行完回到 model，直到无工具调用或达到轮数上限。
+ */
 export const createAgentGraph = (context: AgentGraphContext) => new StateGraph(AgentState)
   .addNode("model", createModelNode(context))
   .addNode("tools", createToolNode(context))

@@ -16,6 +16,7 @@ const emptyConfig = (): ModelConfig => ({
 
 const inputClass = "h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15";
 
+/** 模型设置面板：切换 Provider、配置 API Key 或 ChatGPT 登录、选择模型与系统提示词。 */
 export const ModelSettingsPanel = ({ token }: { token: string }) => {
   const [config, setConfig] = useState<ModelConfig>(emptyConfig);
   const [apiKey, setApiKey] = useState("");
@@ -94,6 +95,7 @@ export const ModelSettingsPanel = ({ token }: { token: string }) => {
     setModels([]);
     setConfig({ ...config, provider, authType: provider === "codex-subscription" ? "chatgpt" : "api-key" });
   };
+  // 当前已选模型不在拉取到的列表中时，仍保留它作为选项，避免保存时丢失。
   const modelOptions = config.model && !models.includes(config.model)
     ? [config.model, ...models]
     : models;

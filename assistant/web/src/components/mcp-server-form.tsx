@@ -9,6 +9,7 @@ import {
 } from "./mcp-form-utils";
 import { Button } from "./ui/button";
 
+// 表单草稿：请求头用键值对数组承载，便于编辑与增删。
 type Draft = {
   id: string;
   name: string;
@@ -38,6 +39,7 @@ const toConfig = (draft: Draft): McpServerConfig => {
     throw new Error("ID 只能包含小写字母、数字和连字符");
   }
   if (!url) throw new Error("请填写 MCP HTTP URL");
+  // URL 必须为 http/https，用 URL 构造函数做完整校验。
   try {
     const parsed = new URL(url);
     if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
@@ -57,6 +59,7 @@ const toConfig = (draft: Draft): McpServerConfig => {
 
 const inputClass = "h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15";
 
+/** MCP 服务新增/编辑表单。 */
 export const McpServerForm = ({
   server,
   busy,

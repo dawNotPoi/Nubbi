@@ -1,8 +1,10 @@
+/* Tailwind 的 base / components / utilities 三层指令入口。 */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  /* 设计令牌：以 HSL 色值定义，Tailwind 通过 hsl(var(--xxx)) 引用。 */
   :root {
     --background: 0 0% 100%;
     --foreground: 222 18% 16%;

@@ -4,9 +4,9 @@ import { requestApproval } from "../approvals.js";
 import { callMcpTool, type McpTool } from "../mcp.js";
 import type { AgentEvent, MessagePart, ModelToolCall } from "../types.js";
 
-const modelResultLimit = 30_000;
-const displayResultLimit = 2_000;
-const displayArgumentsLimit = 20_000;
+const modelResultLimit = 30_000;      // 回传给模型的工具结果上限
+const displayResultLimit = 2_000;     // 推送/展示给客户端的工具结果上限
+const displayArgumentsLimit = 20_000; // 展示给用户的参数上限
 const validatorProvider = new AjvJsonSchemaValidator();
 
 export type ToolExecutionResult = {
@@ -15,12 +15,14 @@ export type ToolExecutionResult = {
   success: boolean;
 };
 
+/** 参数过大时只给用户展示截断预览，避免弹窗渲染卡顿。 */
 const displayArguments = (value: Record<string, unknown>): Record<string, unknown> => {
   const source = JSON.stringify(value);
   if (source.length <= displayArgumentsLimit) return value;
   return { preview: source.slice(0, displayArgumentsLimit), truncated: true };
 };
 
+/** 统一的工具失败 JSON 结构，模型可通过 error 字段判断失败原因。 */
 const errorContent = (error: string, message: string): string =>
   JSON.stringify({ success: false, error, message });
 
@@ -45,6 +47,7 @@ export class ToolGateway {
     this.signal = input.signal;
   }
 
+  /** 依据 MCP 注解判断工具是否只读：只读工具可并行，可并行执行上限 4 个。 */
   public isReadOnly(toolName: string): boolean {
     const annotations = this.tools.get(toolName)?.annotations;
     return annotations?.readOnlyHint === true && annotations.destructiveHint !== true;
@@ -54,6 +57,11 @@ export class ToolGateway {
     return Promise.all(calls.map((call) => this.execute(call)));
   }
 
+  /**
+   * 调度一次工具执行：
+   * - 只读工具通过 withReadSlot 并发执行（上限 4）；
+   * - 写操作串行排队，避免并发工具间相互覆盖状态。
+   */
   public execute(call: ModelToolCall): Promise<ToolExecutionResult> {
     const operation = () => this.executeNow(call);
     if (this.isReadOnly(call.name)) return this.withReadSlot(operation);
@@ -62,6 +70,7 @@ export class ToolGateway {
     return pending;
   }
 
+  /** 只读并发槽：超过 4 个时排队等待，限制对远程 MCP 服务的并发压力。 */
   private async withReadSlot<T>(operation: () => Promise<T>): Promise<T> {
     if (this.readActive >= 4) {
       await new Promise<void>((resolve) => this.readWaiters.push(resolve));
@@ -75,6 +84,7 @@ export class ToolGateway {
     }
   }
 
+  /** 按工具声明的 JSON Schema 校验参数，避免把非法参数传给远端 MCP 服务。 */
   private validate(tool: McpTool, value: Record<string, unknown>): string | null {
     try {
       const validator = validatorProvider.getValidator<Record<string, unknown>>(
@@ -100,6 +110,7 @@ export class ToolGateway {
     }
 
     const parts: MessagePart[] = [];
+    // 非只读工具必须先获得用户审批，避免任意修改外部系统。
     if (!this.isReadOnly(call.name)) {
       const approval = await requestApproval({
         threadId: this.runId,

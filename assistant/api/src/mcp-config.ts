@@ -20,6 +20,7 @@ export const mcpServerSchema = z.object({
 export type McpServerConfig = z.infer<typeof mcpServerSchema>;
 const configFile = path.join(projectRoot, "config", "mcp.json");
 
+/** 兼容旧的 stdio 配置：遇到不支持的类型直接丢弃，其余字段按新 Schema 校验。 */
 const normalizeLegacyServer = (value: unknown): unknown => {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return value;
   const record = value as Record<string, unknown>;
@@ -33,6 +34,7 @@ export const listMcpServers = async (): Promise<McpServerConfig[]> => {
   if (!source) return [];
   const parsed = z.object({ servers: z.array(z.unknown()).default([]) })
     .parse(JSON.parse(source));
+  // 逐条校验：单条非法配置只丢弃，不影响其余服务可用。
   return parsed.servers.flatMap((server) => {
     const result = mcpServerSchema.safeParse(normalizeLegacyServer(server));
     return result.success ? [result.data] : [];
@@ -46,6 +48,10 @@ const writeMcpServers = async (servers: McpServerConfig[]): Promise<void> => {
 
 let mutationQueue: Promise<void> = Promise.resolve();
 
+/**
+ * 串行化所有配置变更：文件读写没有事务，
+ * 通过排队保证“读 - 改 - 写”不被并发请求交错，防止覆盖丢失。
+ */
 const mutateServers = async <T>(
   operation: (servers: McpServerConfig[]) => Promise<T>,
 ): Promise<T> => {

@@ -1,9 +1,11 @@
 export type KeyValuePair = { key: string; value: string };
 
+/** 对象 → 键值对数组，用于表单编辑。 */
 export const recordToPairs = (
   record: Record<string, string>,
 ): KeyValuePair[] => Object.entries(record).map(([key, value]) => ({ key, value }));
 
+/** 键值对数组 → 对象；过滤空 key，key 做去空白处理。 */
 export const pairsToRecord = (
   pairs: KeyValuePair[],
 ): Record<string, string> => Object.fromEntries(

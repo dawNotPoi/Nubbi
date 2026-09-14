@@ -24,6 +24,7 @@ const emptyModel = (): ModelConfig => ({
   systemPrompt: "",
   apiKeyConfigured: false,
 });
+
 export const ModelPanel = ({ baseUrl, token }: { baseUrl: string; token: string }) => {
   const [config, setConfig] = useState(emptyModel);
   const [apiKey, setApiKey] = useState("");
@@ -38,6 +39,7 @@ export const ModelPanel = ({ baseUrl, token }: { baseUrl: string; token: string 
     setDanger(true);
     setMessage(caught instanceof Error ? caught.message : fallback);
   };
+  // 刷新 Codex 登录态与模型列表；已登录返回 true。
   const refreshCodex = useCallback(async (): Promise<boolean> => {
     const nextAccount = await getCodexAccount(baseUrl, token);
     setAccount(nextAccount);
@@ -63,6 +65,7 @@ export const ModelPanel = ({ baseUrl, token }: { baseUrl: string; token: string 
       .catch((caught: unknown) => report(caught, "加载模型配置失败"))
       .finally(() => setBusy(false));
   }, [baseUrl, refreshCodex, token]);
+  // 登录流程启动后轮询登录结果，直到 Codex 返回已登录。
   useEffect(() => {
     if (!login) return;
     const timer = setInterval(() => {
@@ -126,6 +129,7 @@ export const ModelPanel = ({ baseUrl, token }: { baseUrl: string; token: string 
       setBusy(false);
     }
   };
+  // 保存配置时：订阅模式固定为 ChatGPT 登录，API 模式固定为 api-key。
   const save = async (): Promise<void> => {
     setBusy(true);
     try {

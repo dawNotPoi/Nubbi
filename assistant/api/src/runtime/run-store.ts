@@ -4,6 +4,7 @@ import { RunEventModel, type RunEventRecord } from "./run-event-model.js";
 
 const terminalTypes = new Set(["run-completed", "run-failed", "run-abandoned"]);
 
+/** 将完整事件拆分为平铺的元信息 + 业务 payload，适配数据库结构。 */
 const toRecord = (event: RuntimeEvent): RunEventRecord => {
   const {
     eventId,
@@ -45,6 +46,7 @@ export const appendRunEvent = async (event: RuntimeEvent): Promise<void> => {
   await RunEventModel.create(toRecord(event));
 };
 
+/** 依据事件的终态推导 Run 的汇总状态：失败事件区分“被取消”与“真正失败”。 */
 const statusOf = (event: RuntimeEvent): RunStatus => {
   if (event.type === "run-completed") return "completed";
   if (event.type === "run-abandoned") return "abandoned";
@@ -83,6 +85,10 @@ export const listRunSummaries = async (conversationId: string): Promise<RunSumma
   }).sort((left, right) => right.startedAt.localeCompare(left.startedAt));
 };
 
+/**
+ * 服务重启后把没有终态事件的 Run 标记为 abandoned：
+ * 进程已退出，无法继续执行，只能补一条终态事件让审计闭环。
+ */
 export const abandonIncompleteRuns = async (): Promise<void> => {
   const starts = await RunEventModel.find({ type: "run-started" }).exec();
   const runIds = starts.map((event) => event.runId);

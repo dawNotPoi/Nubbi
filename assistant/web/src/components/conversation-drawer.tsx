@@ -3,6 +3,7 @@ import { Button } from "./ui/button";
 import { cn } from "../lib/utils";
 import type { ConversationSummary } from "../types";
 
+/** 左侧历史对话抽屉：切换会话、新建与删除。 */
 export const ConversationDrawer = ({
   open,
   conversations,

@@ -2,6 +2,7 @@ import { loadSkill, type Skill } from "../skills.js";
 import type { AgentEvent, MessagePart, ModelToolCall } from "../types.js";
 import type { ToolGateway } from "../runtime/tool-gateway.js";
 
+/** 激活 Skill 的专用工具名，模型通过调用它按需启用技能。 */
 export const skillToolName = "assistant_activate_skill";
 
 type ToolExecutionContext = {
@@ -17,6 +18,10 @@ export type ToolExecutionResult = {
   parts: MessagePart[];
 };
 
+/**
+ * 处理激活 Skill 的调用：校验存在性、防重复激活、
+ * 加载指令正文并通过 instruction 字段注入下一轮模型输入。
+ */
 const activateSkill = async (
   call: ModelToolCall,
   context: ToolExecutionContext,
@@ -43,6 +48,10 @@ const activateSkill = async (
   };
 };
 
+/**
+ * 执行一批工具调用。普通 MCP 工具交给 gateway；
+ * Skill 激活调用串行执行，避免并发激活时读到不完整的 Skill 集合。
+ */
 export const executeToolCalls = async (
   calls: ModelToolCall[],
   context: ToolExecutionContext,

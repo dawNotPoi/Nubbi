@@ -1,3 +1,7 @@
+/**
+ * 统一的移动端颜色令牌。
+ * 深绿色为主色，灰色系用于次级文本与边框，红/黄用于错误与告警提示。
+ */
 export const colors = {
   background: "#F7F8FA",
   surface: "#FFFFFF",

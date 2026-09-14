@@ -5,6 +5,7 @@ export type ConversationSummary = {
   updatedAt: string;
 };
 
+/** 消息内的内容块：文本、Skill、工具审批/执行记录或错误，逐块渲染。 */
 export type MessagePart =
   | { type: "text"; text: string }
   | { type: "skill"; name: string; description: string }
@@ -24,6 +25,7 @@ export type MessagePart =
       arguments: Record<string, unknown>;
       result: string;
       success?: boolean;
+      // status 为“运行中/完成”，仅客户端用于展示进度。
       status?: "running" | "done";
     }
   | { type: "error"; message: string };
@@ -77,6 +79,7 @@ export type CodexModel = {
   description: string;
 };
 
+/** 设备码登录信息：用户需在浏览器打开 verificationUrl 并输入 userCode。 */
 export type DeviceLogin = {
   type: "chatgptDeviceCode";
   loginId: string;
@@ -93,6 +96,7 @@ export type ApprovalRequest = {
   expiresAt: string;
 };
 
+/** SSE 流中可能出现的所有事件类型，客户端据此增量渲染消息。 */
 export type StreamEvent = (
   | { type: "message-start"; conversationId: string }
   | { type: "skill-active"; name: string; description: string }

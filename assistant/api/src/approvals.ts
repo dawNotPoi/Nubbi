@@ -16,8 +16,13 @@ type PendingApproval = {
 };
 
 const pending = new Map<string, PendingApproval>();
+// 审批有效期：用户长时间不操作时自动按“拒绝”处理，避免 Run 无限等待。
 const approvalTimeoutMs = 5 * 60 * 1000;
 
+/**
+ * 发起一次工具审批并挂起等待用户决定。
+ * 返回 approvalId 供外部通过 HTTP 回调决定，超时或取消都归为拒绝。
+ */
 export const requestApproval = async (input: ApprovalInput): Promise<{
   approvalId: string;
   approved: boolean;
@@ -26,6 +31,7 @@ export const requestApproval = async (input: ApprovalInput): Promise<{
   const expiresAt = new Date(Date.now() + approvalTimeoutMs).toISOString();
   const approved = await new Promise<boolean>((resolve) => {
     let settled = false;
+    // settle 只允许执行一次：先到先得，防止超时与用户决定竞态。
     const settle = (decision: boolean) => {
       if (settled) return;
       settled = true;
@@ -49,6 +55,7 @@ export const requestApproval = async (input: ApprovalInput): Promise<{
   return { approvalId, approved };
 };
 
+/** 由 HTTP 审批接口调用，找到对应的挂起审批并落地用户决定。 */
 export const resolveApproval = (
   approvalId: string,
   approved: boolean,
@@ -59,6 +66,7 @@ export const resolveApproval = (
   return "resolved";
 };
 
+/** 结束某线程（Run）下所有挂起审批，用于取消生成或 Run 结束时清理。 */
 export const cancelThreadApprovals = (threadId: string): void => {
   [...pending.entries()]
     .filter(([, item]) => item.threadId === threadId)

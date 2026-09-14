@@ -1,9 +1,11 @@
 {
   "compilerOptions": {
+    // 供 tsconfig.json 工程引用使用，必须标记 composite。
     "composite": true,
     "skipLibCheck": true,
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    // 构建脚本直接以 .ts 后缀导入，需要显式允许该扩展名。
     "allowImportingTsExtensions": true,
     "noEmit": true
   },

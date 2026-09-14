@@ -19,6 +19,7 @@ const readError = async (response: Response): Promise<string> => {
   return value?.message || `请求失败 (${response.status})`;
 };
 
+/** 统一 JSON 请求封装：非 2xx 抛错，204 返回 undefined。 */
 const request = async <T>(
   path: string,
   init?: RequestInit,
@@ -55,6 +56,7 @@ export const resolveApproval = (id: string, approved: boolean): Promise<void> =>
     body: JSON.stringify({ approved }),
   });
 
+/** 带管理密钥的 MCP 配置请求。 */
 const mcpRequest = <T>(
   token: string,
   path: string,
@@ -67,6 +69,7 @@ const mcpRequest = <T>(
   },
 });
 
+/** 带管理密钥的模型配置请求。 */
 const modelRequest = <T>(
   token: string,
   path: string,
@@ -139,6 +142,7 @@ export const testMcpServer = (
   body: JSON.stringify(server),
 });
 
+/** 解析 SSE 事件块：空块或格式错误返回 null，正常则合并 data 行并补上 type。 */
 const parseEvent = (block: string): StreamEvent | null => {
   const lines = block.split("\n");
   const type = lines
@@ -158,6 +162,10 @@ const parseEvent = (block: string): StreamEvent | null => {
   }
 };
 
+/**
+ * 以 SSE 方式发送消息并持续回调事件。
+ * 逐块读取字节流，按空行切分事件，兼容可能的 \r\n 换行符。
+ */
 export const streamMessage = async ({
   conversationId,
   content,

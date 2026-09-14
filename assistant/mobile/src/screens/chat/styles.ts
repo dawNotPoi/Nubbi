@@ -1,6 +1,7 @@
 import { StyleSheet } from "react-native";
 import { colors } from "../../theme";
 
+// Markdown 渲染的自定义样式覆盖，让消息正文与整体设计语言一致。
 export const markdownStyles = {
   body: { color: colors.text, fontSize: 15, lineHeight: 23 },
   paragraph: { marginBottom: 8, marginTop: 0 },

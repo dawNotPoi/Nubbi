@@ -2,6 +2,7 @@ import { Plus, Trash2 } from "lucide-react";
 import type { KeyValuePair } from "./mcp-form-utils";
 import { Button } from "./ui/button";
 
+/** 可增删的键值对编辑器，用于配置请求头等字典字段。 */
 export const KeyValueEditor = ({
   label,
   pairs,

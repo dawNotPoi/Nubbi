@@ -25,14 +25,17 @@ export const ChatScreen = ({ baseUrl, onOpenSettings }: {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const scrollRef = useRef<ScrollView>(null);
+  // 记录已展示的审批弹窗，防止同一审批重复弹出。
   const shownApproval = useRef<string | null>(null);
   const chat = useMobileChat(baseUrl);
 
+  // 新消息到达后自动滚到底部；延迟 30ms 等待布局完成。
   useEffect(() => {
     const timer = setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 30);
     return () => clearTimeout(timer);
   }, [chat.messages]);
 
+  // 收到工具审批请求时弹出原生 Alert，选择结果回传给服务端。
   useEffect(() => {
     if (!chat.approval || shownApproval.current === chat.approval.approvalId) return;
     shownApproval.current = chat.approval.approvalId;

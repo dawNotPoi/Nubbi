@@ -15,6 +15,7 @@ const toolCallSchema = z.object({
   }),
 });
 
+// 只解析模型响应中我们关心的字段，其余透传给 assistantMessage。
 const responseSchema = z.object({
   choices: z.array(z.object({
     message: z.object({
@@ -24,6 +25,7 @@ const responseSchema = z.object({
   })).min(1),
 });
 
+/** 模型返回的工具参数是 JSON 字符串，解析失败时降级为空对象，避免整个请求失败。 */
 const parseArguments = (source: string): Record<string, unknown> => {
   try {
     const value: unknown = JSON.parse(source);
@@ -35,6 +37,10 @@ const parseArguments = (source: string): Record<string, unknown> => {
   }
 };
 
+/**
+ * 调用 OpenAI 兼容的 /chat/completions 接口。
+ * 返回拆分后的内容、结构化工具调用以及供多轮对话回传的 assistant 消息。
+ */
 export const requestModel = async (
   messages: ModelMessage[],
   tools: ModelTool[],
@@ -46,14 +52,17 @@ export const requestModel = async (
   }
   const headers = new Headers({ "Content-Type": "application/json" });
   if (config.apiKey) headers.set("Authorization", `Bearer ${config.apiKey}`);
+  // 去掉末尾斜杠，避免拼出双斜杠路径。
   const response = await fetch(`${config.baseUrl.replace(/\/+$/, "")}/chat/completions`, {
     method: "POST",
     headers,
     body: JSON.stringify({
       model: config.model,
       messages,
+      // 没有可用工具时不传 tools，避免部分 Provider 报错。
       tools: tools.length ? tools : undefined,
       tool_choice: tools.length ? "auto" : undefined,
+      // 固定较低温度，保证个人助手的回答更稳定、少随机。
       temperature: 0.3,
     }),
     signal,
@@ -75,6 +84,7 @@ export const requestModel = async (
   return {
     content: message.content ?? "",
     toolCalls,
+    // 原样保留模型返回的 assistant 消息，多轮对话时直接回传以保持上下文一致。
     assistantMessage: {
       role: "assistant" as const,
       content: message.content ?? null,

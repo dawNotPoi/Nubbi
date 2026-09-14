@@ -5,6 +5,7 @@ import { projectRoot } from "./env.js";
 
 const providerSchema = z.enum(["openai-compatible", "codex-subscription"]);
 
+// 落盘存储的模型配置：包含敏感 API Key，因此保存时按 0600 权限写文件。
 const storedModelConfigSchema = z.object({
   provider: providerSchema.default("openai-compatible"),
   authType: z.enum(["api-key", "chatgpt"]).default("api-key"),
@@ -14,6 +15,7 @@ const storedModelConfigSchema = z.object({
   systemPrompt: z.string().default(""),
 });
 
+// 客户端输入：API Key 可留空（表示保持原值），并支持显式清除。
 export const modelConfigInputSchema = storedModelConfigSchema
   .omit({ apiKey: true })
   .extend({
@@ -21,6 +23,7 @@ export const modelConfigInputSchema = storedModelConfigSchema
     clearApiKey: z.boolean().optional(),
   })
   .superRefine((value, context) => {
+    // Provider 与登录方式必须匹配，避免保存出不可用的组合。
     if (value.provider === "openai-compatible") {
       if (value.authType !== "api-key") {
         context.addIssue({ code: "custom", message: "OpenAI-compatible 必须使用 API Key" });
@@ -59,11 +62,13 @@ const emptyConfig = (): StoredModelConfig => ({
   systemPrompt: "",
 });
 
+/** 读取并校验模型配置；文件不存在时返回空配置，由调用方引导用户去设置。 */
 export const readModelConfig = async (): Promise<StoredModelConfig> => {
   const source = await readFile(configFile, "utf8").catch(() => "");
   return source ? storedModelConfigSchema.parse(JSON.parse(source)) : emptyConfig();
 };
 
+/** 对外暴露配置时隐藏 API Key 原文，仅告知是否已配置。 */
 export const publicModelConfig = (config: StoredModelConfig): PublicModelConfig => ({
   provider: config.provider,
   authType: config.authType,
@@ -77,6 +82,7 @@ export const saveModelConfig = async (input: ModelConfigInput): Promise<PublicMo
   const current = await readModelConfig();
   const nextBaseUrl = input.baseUrl.replace(/\/+$/, "");
   const sameEndpoint = nextBaseUrl === current.baseUrl.replace(/\/+$/, "");
+  // 只有显式清除、或输入了新 Key、或端点变了才会改写 API Key，否则保留旧值。
   const apiKey = input.clearApiKey
     ? ""
     : input.apiKey?.trim() || (sameEndpoint ? current.apiKey : "");
@@ -89,12 +95,17 @@ export const saveModelConfig = async (input: ModelConfigInput): Promise<PublicMo
     systemPrompt: input.systemPrompt,
   };
   await mkdir(path.dirname(configFile), { recursive: true });
+  // 0600：仅当前用户可读写，保护明文 API Key。
   await writeFile(configFile, `${JSON.stringify(next, null, 2)}\n`, { encoding: "utf8", mode: 0o600 });
   return publicModelConfig(next);
 };
 
 const modelListSchema = z.object({ data: z.array(z.object({ id: z.string().min(1) })) });
 
+/**
+ * 从 Provider 的 /models 接口拉取可用模型列表并去重排序。
+ * 未填 Key 时若端点与已保存配置一致，则复用已保存的 Key。
+ */
 export const listProviderModels = async (input: ModelConnectionInput): Promise<string[]> => {
   const current = await readModelConfig();
   const baseUrl = input.baseUrl.replace(/\/+$/, "");
@@ -102,6 +113,7 @@ export const listProviderModels = async (input: ModelConnectionInput): Promise<s
   const apiKey = input.apiKey?.trim() || (sameEndpoint ? current.apiKey : "");
   const headers = new Headers({ Accept: "application/json" });
   if (apiKey) headers.set("Authorization", `Bearer ${apiKey}`);
+  // 15 秒超时：模型列表接口通常较快，避免设置页长时间卡住。
   const response = await fetch(`${baseUrl}/models`, {
     headers,
     signal: AbortSignal.timeout(15_000),

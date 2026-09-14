@@ -15,6 +15,10 @@ import { Button } from "./ui/button";
 
 const TOKEN_KEY = "assistant-config-token";
 
+/**
+ * 设置抽屉：管理模型与 MCP 配置。
+ * 管理密钥只保存在当前会话的 sessionStorage 中，关闭会话即失效。
+ */
 export const McpSettingsDrawer = ({
   open,
   onClose,

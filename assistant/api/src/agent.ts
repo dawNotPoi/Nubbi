@@ -4,6 +4,7 @@ import type { Skill } from "./skills.js";
 import type { MessagePart, ModelMessage, ModelTool } from "./types.js";
 import type { ProviderExecutorInput } from "./runtime/provider-executor.js";
 
+/** 为 Skill 激活构造一个专用 function 工具，名称枚举当前可用 Skill。 */
 const skillTool = (skills: Skill[]): ModelTool => ({
   type: "function",
   function: {
@@ -25,6 +26,10 @@ const systemPrompt = (skills: Skill[], configuredPrompt: string): string => [
     : "当前没有可用 Skill。",
 ].join("\n\n");
 
+/**
+ * OpenAI 兼容 Provider 的 Agent 执行入口：
+ * 组装系统提示与工具，通过 LangGraph 编排“模型 ↔ 工具”循环，返回最终消息 parts。
+ */
 export const runAgent = async (input: ProviderExecutorInput): Promise<MessagePart[]> => {
   const modelTools = input.tools.map((tool) => tool.modelTool);
   if (input.skills.length) modelTools.push(skillTool(input.skills));

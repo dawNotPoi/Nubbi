@@ -2,6 +2,7 @@ import { SendHorizontal, Square } from "lucide-react";
 import { useState, type KeyboardEvent } from "react";
 import { Button } from "./ui/button";
 
+/** 底部输入区：支持 Enter 发送、Shift+Enter 换行，生成中切换为停止按钮。 */
 export const Composer = ({
   generating,
   onSend,

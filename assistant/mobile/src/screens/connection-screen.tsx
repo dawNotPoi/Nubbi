@@ -24,6 +24,7 @@ export const ConnectionScreen = ({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
+  // 校验并保存地址，成功后回调父组件进入聊天页。
   const connect = async (): Promise<void> => {
     setBusy(true);
     setError("");

@@ -5,6 +5,7 @@ export type ConversationSummary = {
   updatedAt: string;
 };
 
+/** 消息内的内容块：文本、Skill、工具审批/执行记录或错误，逐块渲染。 */
 export type MessagePart =
   | { type: "text"; text: string }
   | { type: "skill"; name: string; description: string }
@@ -24,6 +25,7 @@ export type MessagePart =
       arguments: Record<string, unknown>;
       result: string;
       success?: boolean;
+      // status 为“运行中/完成”，仅客户端用于展示进度。
       status?: "running" | "done";
     }
   | { type: "error"; message: string };

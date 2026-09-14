@@ -11,6 +11,7 @@ import { settingsStyles as styles } from "./styles";
 
 export const McpPanel = ({ baseUrl, token }: { baseUrl: string; token: string }) => {
   const [servers, setServers] = useState<McpServerConfig[]>([]);
+  // undefined 为列表页，null 为新增，对象为编辑。
   const [editing, setEditing] = useState<McpServerConfig | null | undefined>();
   const [busy, setBusy] = useState(true);
   const [message, setMessage] = useState("");
@@ -31,6 +32,7 @@ export const McpPanel = ({ baseUrl, token }: { baseUrl: string; token: string })
 
   useEffect(() => { void load(); }, [load]);
 
+  // 新增或编辑时保存；编辑态更新，否则新建。
   const save = async (server: McpServerConfig): Promise<void> => {
     setBusy(true);
     try {

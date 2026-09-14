@@ -6,6 +6,7 @@ import { colors } from "../../theme";
 import type { ConversationSummary } from "../../types";
 import { chatStyles as styles } from "./styles";
 
+/** 历史对话抽屉：列出会话，支持选中切换、新建与删除。 */
 export const HistoryModal = ({
   conversations,
   open,

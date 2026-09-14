@@ -3,6 +3,7 @@ import { Button, Checkbox, Field } from "../../components/controls";
 import type { CodexAccount, DeviceLogin, ModelConfig } from "../../types";
 import { settingsStyles as styles } from "./styles";
 
+/** 按当前 Provider 渲染对应的登录/密钥字段：API Key 或 ChatGPT 订阅。 */
 export const ModelProviderFields = ({
   config,
   setConfig,

@@ -1,5 +1,9 @@
 import type { Message, MessagePart, StreamEvent } from "../../types";
 
+/**
+ * 把单个 SSE 事件增量应用到临时助手消息上：
+ * 文本累积到最后一个 text 块，工具调用先占位再补结果，错误追加 error 块。
+ */
 export const applyEvent = (message: Message, event: StreamEvent): Message => {
   if (event.type === "skill-active") {
     return {

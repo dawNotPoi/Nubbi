@@ -4,6 +4,7 @@ import remarkGfm from "remark-gfm";
 import { cn } from "../lib/utils";
 import type { Message, MessagePart } from "../types";
 
+/** 工具执行卡片：可展开查看参数/结果，运行中显示占位文案。 */
 const ToolCard = ({ part }: {
   part: Extract<MessagePart, { type: "tool" }>;
 }) => (

@@ -1,5 +1,6 @@
 import type { McpServerConfig } from "../../types";
 
+// 表单草稿：请求头从对象展开为可编辑的键值对数组。
 export type HeaderDraft = { key: string; value: string };
 export type McpDraft = Omit<McpServerConfig, "headers"> & { headers: HeaderDraft[] };
 
@@ -11,10 +12,12 @@ const emptyMcp = (): McpDraft => ({
   headers: [],
 });
 
+/** 服务端配置 → 表单草稿（headers 展开为数组）。 */
 export const toMcpDraft = (server: McpServerConfig | null): McpDraft => server
   ? { ...server, headers: Object.entries(server.headers).map(([key, value]) => ({ key, value })) }
   : emptyMcp();
 
+/** 表单草稿 → 服务端配置，做基础校验并过滤空请求头。 */
 export const fromMcpDraft = (draft: McpDraft): McpServerConfig => {
   const id = draft.id.trim();
   const name = draft.name.trim();

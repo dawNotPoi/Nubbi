@@ -18,6 +18,7 @@ const ChatApp = () => {
   const bottomRef = useRef<HTMLDivElement>(null);
   const chat = useChat();
 
+  // 新消息到达后滚动到底部。
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: "end" });
   }, [chat.messages]);

@@ -19,6 +19,7 @@ import {
 } from "react-native";
 import { colors } from "../theme";
 
+/** 图标按钮：保留无障碍标签，扩大点击热区，适合工具栏场景。 */
 export const IconButton = ({
   icon,
   label,

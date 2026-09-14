@@ -16,14 +16,17 @@ export const SettingsScreen = ({ baseUrl, onClose, onChangeServer }: {
   onClose: () => void;
   onChangeServer: () => void;
 }) => {
+  // token 为 null 表示正在读取安全存储；空字符串表示未解锁；非空表示已解锁。
   const [token, setToken] = useState<string | null>(null);
   const [tokenInput, setTokenInput] = useState("");
   const [tab, setTab] = useState<"model" | "mcp">("model");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
+  // 打开时读取本地保存的管理密钥，有则直接进入设置。
   useEffect(() => { void readConfigToken().then(setToken); }, []);
 
+  // 用密钥请求一次配置接口完成解锁，成功则持久化到安全存储。
   const unlock = async (): Promise<void> => {
     const value = tokenInput.trim();
     if (!value) return;
@@ -41,6 +44,7 @@ export const SettingsScreen = ({ baseUrl, onClose, onChangeServer }: {
     }
   };
 
+  // 锁定设置：清除本地密钥并回到解锁页。
   const lock = async (): Promise<void> => {
     await saveConfigToken("");
     setToken("");

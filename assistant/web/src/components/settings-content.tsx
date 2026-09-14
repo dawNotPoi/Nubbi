@@ -3,6 +3,7 @@ import type { McpServerConfig } from "../types";
 import { ModelSettingsPanel } from "./model-settings-panel";
 import { Button } from "./ui/button";
 
+/** 设置内容区：按当前 section 渲染模型设置或 MCP 服务列表。 */
 export const SettingsContent = ({
   token,
   section,

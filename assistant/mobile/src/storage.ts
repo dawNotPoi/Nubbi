@@ -1,9 +1,11 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 
+// API 地址可放在普通存储；配置密钥必须用系统安全存储保存。
 const API_URL_KEY = "assistant-api-url";
 const CONFIG_TOKEN_KEY = "assistant-config-token";
 
+/** 校验并规范化 API 地址：去首尾空白、去末尾斜杠，且必须为 http(s) 协议。 */
 export const normalizeApiUrl = (value: string): string => {
   const normalized = value.trim().replace(/\/$/, "");
   if (!/^https?:\/\//i.test(normalized)) {

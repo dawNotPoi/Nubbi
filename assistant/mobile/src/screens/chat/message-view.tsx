@@ -5,6 +5,7 @@ import { colors } from "../../theme";
 import type { Message } from "../../types";
 import { chatStyles as styles, markdownStyles } from "./styles";
 
+/** 单条消息渲染：用户消息纯文本，助手消息按 parts 分块渲染（含 Markdown）。 */
 export const MessageView = ({ message }: { message: Message }) => {
   const user = message.role === "user";
   return (

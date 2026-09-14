@@ -2,6 +2,7 @@ import { ShieldCheck, X } from "lucide-react";
 import type { ApprovalRequest } from "../types";
 import { Button } from "./ui/button";
 
+/** 工具审批弹窗：展示服务器、工具与参数，让用户决定是否允许一次。 */
 export const ApprovalDialog = ({
   approval,
   onDecision,

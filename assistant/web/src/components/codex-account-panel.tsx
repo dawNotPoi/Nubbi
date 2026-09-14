@@ -9,6 +9,7 @@ import {
 import type { CodexAccount, DeviceLogin } from "../types";
 import { Button } from "./ui/button";
 
+/** ChatGPT 订阅账号面板：展示登录态、发起/退出设备码登录。 */
 export const CodexAccountPanel = ({
   token,
   onModels,
@@ -22,6 +23,7 @@ export const CodexAccountPanel = ({
   const [login, setLogin] = useState<DeviceLogin | null>(null);
   const [loading, setLoading] = useState(true);
 
+  /** 刷新账号与模型列表；已登录 ChatGPT 时返回 true。 */
   const refresh = useCallback(async (): Promise<boolean> => {
     const next = await getCodexAccount(token);
     setAccount(next);
@@ -32,12 +34,14 @@ export const CodexAccountPanel = ({
     return true;
   }, [onModels, token]);
 
+  // 进入面板时读取一次账号状态。
   useEffect(() => {
     void refresh().catch((error: unknown) => onMessage(
       error instanceof Error ? error.message : "Codex 不可用",
     )).finally(() => setLoading(false));
   }, [onMessage, refresh]);
 
+  // 登录流程启动后轮询登录结果，直到 Codex 返回已登录。
   useEffect(() => {
     if (!login) return;
     const timer = window.setInterval(() => {

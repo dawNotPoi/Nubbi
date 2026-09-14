@@ -7,6 +7,7 @@ export default {
   theme: {
     extend: {
       colors: {
+        // 颜色值引用 index.css 中的 CSS 变量，便于主题切换。
         border: "hsl(var(--border))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
@@ -25,5 +26,6 @@ export default {
       },
     },
   },
+  // typography 插件提供 prose 系列，用于 Markdown 消息排版。
   plugins: [typography],
 } satisfies Config;

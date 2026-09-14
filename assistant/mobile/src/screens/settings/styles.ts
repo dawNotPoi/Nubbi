@@ -1,6 +1,7 @@
 import { Platform, StyleSheet } from "react-native";
 import { colors } from "../../theme";
 
+// 设置页相关样式：解锁页、Tab、表单、MCP 服务列表等共用。
 export const settingsStyles = StyleSheet.create({
   safeArea: { backgroundColor: colors.background, flex: 1 },
   flex: { flex: 1 },

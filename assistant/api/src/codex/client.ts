@@ -19,9 +19,14 @@ type PendingRequest = {
 const codexHome = path.join(projectRoot, "data", "codex");
 export const codexWorkspace = path.join(codexHome, "workspace");
 
+/**
+ * 解析 Codex CLI 的可执行入口：
+ * 优先使用配置的路径，其次在 Windows 全局 npm 目录探测，最后回退到 PATH 中的 codex。
+ */
 const resolveCommand = (): { command: string; args: string[] } => {
   const configured = env.CODEX_CLI_PATH;
   if (configured) {
+    // 配置指向 .js 脚本时用当前 Node 进程运行。
     return configured.endsWith(".js")
       ? { command: process.execPath, args: [configured] }
       : { command: configured, args: [] };
@@ -41,6 +46,10 @@ const resolveCommand = (): { command: string; args: string[] } => {
   return { command: "codex", args: [] };
 };
 
+/**
+ * Codex App Server 的 JSON-RPC over stdio 客户端。
+ * 负责拉起子进程、按行收发协议消息、维护请求/通知分发。
+ */
 class CodexAppServerClient {
   private process: ChildProcessWithoutNullStreams | null = null;
   private startPromise: Promise<void> | null = null;
@@ -51,6 +60,7 @@ class CodexAppServerClient {
   private requestHandler: ServerRequestHandler | null = null;
 
   async start(): Promise<void> {
+    // 幂等启动：已有启动流程或进程就绪时直接返回。
     if (this.startPromise) return this.startPromise;
     if (this.process && this.initialized) return;
     this.startPromise = this.spawnAndInitialize()
@@ -69,6 +79,7 @@ class CodexAppServerClient {
   private async spawnAndInitialize(): Promise<void> {
     await mkdir(codexWorkspace, { recursive: true });
     const executable = resolveCommand();
+    // 以 app-server 模式启动，通过 stdio 做 JSON-RPC 通信。
     const child = spawn(executable.command, [...executable.args, "app-server", "--stdio"], {
       cwd: codexWorkspace,
       env: { ...process.env, CODEX_HOME: codexHome },
@@ -84,6 +95,7 @@ class CodexAppServerClient {
     });
     child.once("error", (error) => this.handleFailure(error));
     child.once("exit", (code) => this.handleExit(code));
+    // 先完成握手初始化，再挂载 Assistant skills 根目录。
     await this.sendRequest("initialize", {
       clientInfo: { name: "nubbi-assistant", title: "Nubbi Assistant", version: "0.1.0" },
       capabilities: { experimentalApi: true, requestAttestation: false },
@@ -103,6 +115,7 @@ class CodexAppServerClient {
   private sendRequest<T>(method: string, params?: unknown): Promise<T> {
     const id = this.nextId++;
     const result = new Promise<unknown>((resolve, reject) => {
+      // 30 秒超时：防止子进程无响应时调用方永久挂起。
       const timeout = setTimeout(() => {
         this.pending.delete(id);
         reject(new Error(`Codex 请求超时：${method}`));
@@ -113,6 +126,7 @@ class CodexAppServerClient {
     return result as Promise<T>;
   }
 
+  /** 发送无响应的通知消息。 */
   notify(method: string, params?: unknown): void {
     this.write({ method, params });
   }
@@ -134,9 +148,11 @@ class CodexAppServerClient {
 
   private write(message: RpcMessage): void {
     if (!this.process?.stdin.writable) throw new Error("Codex App Server 未运行");
+    // 每行一条 JSON 消息，与 app-server 的 stdio 协议一致。
     this.process.stdin.write(`${JSON.stringify(message)}\n`);
   }
 
+  /** 处理一行 stdout：分发到请求响应、服务端请求或通知监听器。 */
   private handleLine(line: string): void {
     let message: RpcMessage;
     try {

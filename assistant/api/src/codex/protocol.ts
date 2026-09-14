@@ -1,5 +1,6 @@
 export type JsonObject = Record<string, unknown>;
 
+/** Codex App Server 的通用 JSON-RPC 消息结构。 */
 export type RpcMessage = {
   id?: number | string;
   method?: string;
@@ -8,6 +9,7 @@ export type RpcMessage = {
   error?: { code?: number; message?: string; data?: unknown };
 };
 
+/** Codex 账号类型：API Key、ChatGPT 订阅或 Amazon Bedrock。 */
 export type CodexAccount =
   | { type: "apiKey" }
   | { type: "chatgpt"; email: string | null; planType: string }
@@ -18,6 +20,7 @@ export type AccountResponse = {
   requiresOpenaiAuth: boolean;
 };
 
+/** 设备码登录的响应，需要用户到 verificationUrl 输入 userCode 完成授权。 */
 export type DeviceLoginResponse = {
   type: "chatgptDeviceCode";
   loginId: string;
@@ -33,11 +36,13 @@ export type CodexModel = {
   hidden: boolean;
 };
 
+/** 模型列表分页响应，nextCursor 为空表示已到最后一页。 */
 export type ModelListResponse = {
   data: CodexModel[];
   nextCursor: string | null;
 };
 
+/** 传给 Codex 的动态工具定义。 */
 export type DynamicToolSpec = {
   type: "function";
   name: string;
@@ -45,6 +50,7 @@ export type DynamicToolSpec = {
   inputSchema: unknown;
 };
 
+/** Codex 发起动态工具调用时的参数。 */
 export type DynamicToolCallParams = {
   threadId: string;
   turnId: string;
@@ -74,9 +80,11 @@ export type ServerRequestHandler = (
   params: unknown,
 ) => Promise<unknown>;
 
+/** 类型守卫：判断值是否为普通对象（非数组、非 null）。 */
 export const isRecord = (value: unknown): value is JsonObject =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
+/** 从对象中安全读取字符串字段，类型不对时返回 null。 */
 export const readString = (value: unknown, key: string): string | null => {
   if (!isRecord(value)) return null;
   return typeof value[key] === "string" ? value[key] : null;

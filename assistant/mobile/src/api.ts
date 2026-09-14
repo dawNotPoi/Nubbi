@@ -17,6 +17,10 @@ const readError = async (response: Response): Promise<string> => {
   return value?.message || `请求失败 (${response.status})`;
 };
 
+/**
+ * 统一 JSON 请求封装：
+ * 非 2xx 抛错、204 返回 undefined、非 JSON 内容视为地址填错（如填了 Expo 端口）。
+ */
 const request = async <T>(baseUrl: string, path: string, init?: RequestInit): Promise<T> => {
   const response = await fetch(`${baseUrl}${path}`, {
     ...init,
@@ -31,9 +35,11 @@ const request = async <T>(baseUrl: string, path: string, init?: RequestInit): Pr
   return response.json() as Promise<T>;
 };
 
+/** 带配置管理密钥的请求封装，用于模型/MCP 设置类接口。 */
 const configRequest = <T>(baseUrl: string, token: string, path: string, init?: RequestInit): Promise<T> =>
   request<T>(baseUrl, path, { ...init, headers: { ...init?.headers, "x-config-token": token } });
 
+/** 连接前探活：10 秒超时，确保目标确实是 Assistant API。 */
 export const testApiConnection = async (baseUrl: string): Promise<void> => {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10_000);
@@ -119,6 +125,7 @@ export const testMcpServer = (
   body: JSON.stringify(server),
 });
 
+/** 解析 SSE 事件块：空块或格式错误返回 null，正常则合并 data 行并补上 type。 */
 const parseEvent = (block: string): StreamEvent | null => {
   const lines = block.split("\n");
   const type = lines.find((line) => line.startsWith("event:"))?.slice(6).trim();
@@ -132,6 +139,10 @@ const parseEvent = (block: string): StreamEvent | null => {
   }
 };
 
+/**
+ * 以 SSE 方式发送消息并持续回调事件。
+ * 逐块读取字节流，按空行切分事件，兼容可能的 \r\n 换行符。
+ */
 export const streamMessage = async (input: {
   baseUrl: string;
   conversationId: string;

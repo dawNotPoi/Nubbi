@@ -20,6 +20,7 @@ import {
   type TurnResponse,
 } from "./protocol.js";
 
+/** 创建新的 Codex 线程，只读沙箱、审批交给用户，工具只提供动态工具。 */
 const startThread = async (
   modelConfig: StoredModelConfig,
   tools: McpTool[],
@@ -27,6 +28,7 @@ const startThread = async (
   const response = await codexClient.request<ThreadResponse>("thread/start", {
     model: modelConfig.model || null,
     cwd: codexWorkspace,
+    // 关闭 Codex 自身的审批与写操作，能力边界统一由 ToolGateway 控制。
     approvalPolicy: "never",
     approvalsReviewer: "user",
     sandbox: "read-only",
@@ -39,6 +41,10 @@ const startThread = async (
   return response.thread.id;
 };
 
+/**
+ * 续接已有线程；续接失败（如本地 Codex 数据被清理）时回退为新线程。
+ * 返回是否新建，供调用方决定是否注入历史上下文。
+ */
 const resolveThread = async (
   currentId: string | undefined,
   modelConfig: StoredModelConfig,
@@ -62,6 +68,10 @@ const resolveThread = async (
   return { threadId: await startThread(modelConfig, tools), isNew: true };
 };
 
+/**
+ * 挂起等待当前 turn 完成：
+ * 监听 Codex 的流式文本增量与 turn/completed 通知，支持中途取消。
+ */
 const waitForTurn = (
   threadId: string,
   signal: AbortSignal,
@@ -94,11 +104,17 @@ const waitForTurn = (
       signal.removeEventListener("abort", cancel);
       reject(new Error("生成已停止"));
     };
+    // 客户端断连时也取消等待。
     signal.addEventListener("abort", cancel, { once: true });
   });
   return { promise, cancel };
 };
 
+/**
+ * Codex Provider 执行入口：
+ * 确保登录 → 续接/新建线程 → 注册动态工具上下文 → 启动 turn 并等待完成。
+ * 流式文本通过事件推送，最终把纯文本拼成消息 parts 返回。
+ */
 export const runCodex = async (input: ProviderExecutorInput): Promise<MessagePart[]> => {
   installDynamicToolHandler();
   const account = await readCodexAccount();

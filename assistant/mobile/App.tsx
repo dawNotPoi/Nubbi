@@ -9,6 +9,7 @@ import { readApiUrl } from "./src/storage";
 import { colors } from "./src/theme";
 
 export default function App() {
+  // 安全区域容器包裹整个应用，避免刘海屏/底部手势区域遮挡内容。
   return (
     <SafeAreaProvider>
       <AppContent />
@@ -17,10 +18,13 @@ export default function App() {
 }
 
 function AppContent() {
+  // baseUrl 为 null 表示还在读取本地存储，此时展示加载态。
   const [baseUrl, setBaseUrl] = useState<string | null>(null);
+  // 是否在编辑连接地址（首次启动或无地址时进入连接页）。
   const [editingConnection, setEditingConnection] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
+  // 启动时读取上次保存的 API 地址。
   useEffect(() => { void readApiUrl().then(setBaseUrl); }, []);
 
   if (baseUrl === null) {

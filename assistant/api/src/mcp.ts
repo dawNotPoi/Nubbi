@@ -25,23 +25,27 @@ export type McpConnectionTest = {
   tools: Array<{ name: string; description: string }>;
 };
 
+/** 将配置中的 ${ENV_NAME} 占位符展开为进程环境变量，避免把密钥写死在配置文件里。 */
 const expandEnv = (value: string): string =>
   value.replace(/\$\{([A-Z0-9_]+)\}/g, (_match, name: string) => {
     return process.env[name] ?? "";
   });
 
+/** 对请求头对象里的每个值做环境变量展开。 */
 const expandRecord = (
   record: Record<string, string>,
 ): Record<string, string> => Object.fromEntries(
   Object.entries(record).map(([key, value]) => [key, expandEnv(value)]),
 );
 
+/** 创建 Streamable HTTP 传输层，URL 与请求头均支持环境变量注入。 */
 const createTransport = (server: McpServerConfig): Transport => {
   return new StreamableHTTPClientTransport(new URL(expandEnv(server.url)), {
     requestInit: { headers: expandRecord(server.headers) },
   });
 };
 
+/** 建立一次 MCP 会话；失败时主动关闭客户端，避免残留连接。 */
 const connect = async (server: McpServerConfig, signal?: AbortSignal): Promise<Client> => {
   const client = new Client({
     name: "personal-ai-assistant",
@@ -56,11 +60,16 @@ const connect = async (server: McpServerConfig, signal?: AbortSignal): Promise<C
   }
 };
 
+/**
+ * 生成模型可识别的工具名：前缀 serverId 避免不同服务间工具重名，
+ * 并清理非法字符、限制长度（部分模型对工具名长度敏感）。
+ */
 const safeName = (serverId: string, toolName: string): string =>
   `mcp_${serverId}_${toolName}`
     .replace(/[^a-zA-Z0-9_-]/g, "_")
     .slice(0, 64);
 
+/** 连接单个 MCP 服务并枚举其工具，转换为模型可用的 function 定义。 */
 const discoverServerTools = async (server: McpServerConfig): Promise<McpTool[]> => {
   const client = await connect(server);
   try {
@@ -87,6 +96,10 @@ const discoverServerTools = async (server: McpServerConfig): Promise<McpTool[]> 
   }
 };
 
+/**
+ * 并发发现所有已启用 MCP 服务的工具。
+ * 单个服务发现失败只告警并跳过，不影响其他服务与整体对话能力。
+ */
 export const discoverMcpTools = async (): Promise<McpTool[]> => {
   const servers = (await listMcpServers()).filter((server) => server.enabled);
   const groups = await Promise.all(servers.map(async (server) => {

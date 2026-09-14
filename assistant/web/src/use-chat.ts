@@ -17,6 +17,7 @@ import type {
   StreamEvent,
 } from "./types";
 
+// 生成过程中的临时消息：发送完成前占位展示，结束后用服务端数据替换。
 const temporaryMessage = (role: Message["role"], parts: MessagePart[]): Message => ({
   id: `temporary-${role}-${Date.now()}`,
   role,
@@ -24,6 +25,7 @@ const temporaryMessage = (role: Message["role"], parts: MessagePart[]): Message 
   createdAt: new Date().toISOString(),
 });
 
+/** 把单个 SSE 事件增量折叠进助手消息的 parts 数组。 */
 const reduceEvent = (parts: MessagePart[], event: StreamEvent): MessagePart[] => {
   if (event.type === "text-delta") {
     const last = parts.at(-1);
@@ -68,17 +70,20 @@ const reduceEvent = (parts: MessagePart[], event: StreamEvent): MessagePart[] =>
 export const useChat = () => {
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [current, setCurrent] = useState<Conversation | null>(null);
+  // pending 保存正在生成的临时消息（用户 + 助手各一条），结束后清空。
   const [pending, setPending] = useState<Message[]>([]);
   const [approval, setApproval] = useState<ApprovalRequest | null>(null);
   const [generating, setGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // 保存当前请求的 AbortController，供“停止生成”与卸载时中断。
   const abortRef = useRef<AbortController | null>(null);
 
   const refreshList = useCallback(async () => {
     setConversations(await listConversations());
   }, []);
 
+  // 首次进入拉取会话列表；卸载时中止进行中的请求。
   useEffect(() => {
     void refreshList().catch((caught: unknown) =>
       setError(caught instanceof Error ? caught.message : "加载对话失败"),
@@ -106,6 +111,7 @@ export const useChat = () => {
     try {
       const conversation = current ?? await createConversation();
       if (!current) setCurrent(conversation);
+      // 先渲染临时消息，再建立 SSE 流持续更新。
       const user = temporaryMessage("user", [{ type: "text", text: content.trim() }]);
       const assistant = temporaryMessage("assistant", []);
       setPending([user, assistant]);
@@ -125,10 +131,12 @@ export const useChat = () => {
               : message));
         },
       });
+      // 流结束后拉取服务端保存的完整消息，替换临时消息。
       setCurrent(await getConversation(conversation.id));
       setPending([]);
       await refreshList();
     } catch (caught) {
+      // 用户主动中止（AbortError）不提示错误。
       if (!(caught instanceof DOMException && caught.name === "AbortError")) {
         setError(caught instanceof Error ? caught.message : "发送消息失败");
       }

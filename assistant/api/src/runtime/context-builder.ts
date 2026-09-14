@@ -1,7 +1,7 @@
 import type { Conversation, Message, MessagePart } from "../types.js";
 
-const contextBudget = 60_000;
-const toolResultLimit = 2_000;
+const contextBudget = 60_000;    // 注入模型的上下文预算（字符数）
+const toolResultLimit = 2_000;   // 工具结果截断长度
 const omissionText = "[较早的对话内容因上下文预算已省略]";
 
 export type AgentContextMessage = {
@@ -15,6 +15,7 @@ export type AgentContext = {
   truncated: boolean;
 };
 
+/** 把消息中的各类 parts 渲染成模型可读的纯文本。 */
 const partText = (part: MessagePart): string => {
   if (part.type === "text") return part.text;
   if (part.type === "skill") return `[已激活 Skill：${part.name}]`;
@@ -28,6 +29,7 @@ const partText = (part: MessagePart): string => {
   return `[运行错误：${part.message}]`;
 };
 
+/** 空消息（没有可渲染内容）返回 null，避免把无意义占位传给模型。 */
 const toContextMessage = (message: Message): AgentContextMessage | null => {
   const content = message.parts.map(partText).filter(Boolean).join("\n\n").trim();
   return content ? { id: message.id, role: message.role, content } : null;
@@ -35,6 +37,11 @@ const toContextMessage = (message: Message): AgentContextMessage | null => {
 
 const sizeOf = (message: AgentContextMessage): number => message.content.length + 32;
 
+/**
+ * 构建注入模型的对话上下文。
+ * 超过预算时：保留首条用户消息，从最新开始向前挑选放得下的消息，
+ * 中间省略处插入占位说明，避免模型误解历史缺失。
+ */
 export const buildAgentContext = (conversation: Conversation): AgentContext => {
   const source = conversation.messages.flatMap((message) => {
     const converted = toContextMessage(message);
@@ -65,6 +72,10 @@ export const buildAgentContext = (conversation: Conversation): AgentContext => {
   };
 };
 
+/**
+ * 拼接 Codex 续接时的引导文本：历史上下文 + 当前请求。
+ * 首次创建线程时使用，让 Codex 延续 Assistant 已保存的对话记忆。
+ */
 export const renderCodexBootstrap = (
   context: AgentContext,
   currentMessageId: string,
