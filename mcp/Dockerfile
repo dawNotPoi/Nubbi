@@ -10,6 +10,7 @@ RUN pnpm install --frozen-lockfile --filter nubbi-mcp-server...
 COPY mcp ./mcp
 RUN pnpm --filter nubbi-mcp-server build
 RUN pnpm --filter nubbi-mcp-server deploy --prod --legacy /deploy
+RUN test -f /deploy/dist/transport/http.js
 
 FROM node:22-alpine AS runtime
 WORKDIR /app
@@ -17,4 +18,4 @@ ENV NODE_ENV=production MCP_TRANSPORT=http MCP_HOST=0.0.0.0 MCP_PORT=3100
 COPY --from=build --chown=node:node /deploy ./
 USER node
 EXPOSE 3100
-CMD ["node", "dist/http.js"]
+CMD ["node", "dist/transport/http.js"]
