@@ -4,7 +4,7 @@ import {
   createNoteAtom,
   deleteSingleNoteAtom,
   updateNotePropertiesAtom,
-} from "@/store/atom/noteAtom";
+} from "@/store/atom/note/noteMutationAtom";
 import { routes } from "@/utils/routes";
 import { Modal, message } from "antd";
 import { useAtomValue } from "jotai";
@@ -56,7 +56,7 @@ export const useNoteLibraryActions = ({
       updatedAt: createdAt,
       ...note,
     });
-    await createNote({ note: draft, owner });
+    await createNote({ note: draft });
   };
 
   const confirmDelete = (notes: Note[]) => {
@@ -68,22 +68,19 @@ export const useNoteLibraryActions = ({
       cancelText: "取消",
       content:
         notes.length === 1
-          ? "该 note 及其子 note 会被递归删除，删除后不可恢复。"
-          : `选中的 ${notes.length} 个 note 及其子 note 会被递归删除，删除后不可恢复。`,
+          ? "该笔记及其子笔记将移至回收站，可在回收站中恢复或彻底删除。"
+          : `选中的 ${notes.length} 个笔记及其子笔记将移至回收站，可在回收站中恢复或彻底删除。`,
       okButtonProps: { danger: true },
       okText: "删除",
       title: notes.length === 1 ? "删除 note" : `删除 ${notes.length} 个 note`,
       onOk: async () => {
         try {
-          await Promise.all(
-            actionNotes.map((note) =>
-              deleteNote({
-                noteId: note._id,
-                owner,
-                parentId: note.parentId ?? null,
-              }),
-            ),
-          );
+          for (const note of actionNotes) {
+            await deleteNote({
+              noteId: note._id,
+              parentId: note.parentId,
+            });
+          }
           setSelectedIds((current) =>
             current.filter((id) => !notes.some((note) => note._id === id)),
           );
@@ -111,8 +108,7 @@ export const useNoteLibraryActions = ({
     try {
       await updateNoteProperties({
         noteId: note._id,
-        owner,
-        parentId: note.parentId ?? null,
+        parentId: note.parentId,
         properties: { title },
       });
     } catch (error) {
@@ -129,16 +125,13 @@ export const useNoteLibraryActions = ({
     }
 
     try {
-      await Promise.all(
-        moveCandidates.map((note) =>
-          updateNoteProperties({
-            noteId: note._id,
-            owner,
-            parentId: note.parentId ?? null,
-            properties: { parentId: target._id },
-          }),
-        ),
-      );
+      for (const note of moveCandidates) {
+        await updateNoteProperties({
+          noteId: note._id,
+          parentId: note.parentId,
+          properties: { parentId: target._id },
+        });
+      }
       setSelectedIds((current) =>
         current.filter((id) => !blockedMoveTargetIds.has(id)),
       );

@@ -3,7 +3,7 @@ import {
   isMarkdownFile,
   parseMarkdownImport,
 } from "@/features/note/model/markdownImport";
-import { createNoteAtom } from "@/store/atom/noteAtom";
+import { createNoteAtom } from "@/store/atom/note/noteMutationAtom";
 import { message } from "antd";
 import { useAtomValue } from "jotai";
 import { useState } from "react";
@@ -48,10 +48,11 @@ export const useMarkdownNoteImport = ({
             content: draft.content,
             meta: draft.meta,
             parentId: null,
+            tags: draft.tags,
             title: draft.title,
           });
 
-          await createNote({ note, owner });
+          await createNote({ note });
         }),
       );
 

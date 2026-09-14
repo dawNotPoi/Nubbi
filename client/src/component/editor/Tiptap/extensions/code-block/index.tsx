@@ -4,8 +4,11 @@ import CodeBlockLowlight, {
 import { ReactNodeViewRenderer } from "@tiptap/react";
 import { common, createLowlight } from "lowlight";
 import CodeBlockComponent from "./CodeBlockComponent";
+import { mermaidLanguage } from "./mermaid-language";
 
 const lowlight = createLowlight(common);
+
+lowlight.register("mermaid", mermaidLanguage);
 
 lowlight.registerAlias({
   html: "xml",
@@ -15,11 +18,11 @@ lowlight.registerAlias({
   sh: "bash",
   zsh: "bash",
   yml: "yaml",
+  mmd: "mermaid",
 });
 
 export interface CodeBlockOptions extends CodeBlockLowlightOptions {
   onCopy?: (content: string) => void;
-  showMermaidSourceWhenReadOnly?: boolean;
 }
 
 export const CODE_BLOCK_LANGUAGES = [
@@ -35,6 +38,7 @@ export const CODE_BLOCK_LANGUAGES = [
   { label: "Mermaid", value: "mermaid" },
 ] as const;
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const normalizeCodeBlockLanguage = (language?: string | null) => {
   if (!language || language === "auto") {
     return "plaintext";
@@ -61,14 +65,22 @@ export const CodeBlock = CodeBlockLowlight.extend<CodeBlockOptions>({
     return {
       ...CodeBlockLowlight.options,
       onCopy: () => {},
-      showMermaidSourceWhenReadOnly: false,
     };
   },
   renderMarkdown: (node) => {
     const language = normalizeCodeBlockLanguage(node.attrs?.language);
-    const content = node.content?.[0].text || "";
+    const content =
+      node.content
+        ?.map((child) => child.text ?? "")
+        .join("") ?? "";
     const infoString = language === "plaintext" ? "" : language;
-    return `\`\`\`${infoString}\n${content}\n\`\`\``;
+    const longestBacktickRun = Math.max(
+      2,
+      ...Array.from(content.matchAll(/`+/g), (match) => match[0].length),
+    );
+    const fence = "`".repeat(longestBacktickRun + 1);
+
+    return `${fence}${infoString}\n${content}\n${fence}`;
   },
   addNodeView() {
     return ReactNodeViewRenderer(CodeBlockComponent);

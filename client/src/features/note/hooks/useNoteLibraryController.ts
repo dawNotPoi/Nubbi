@@ -1,9 +1,10 @@
-import type { Note } from "@/api/note";
+import type { Note, NoteStatus } from "@/api/note";
 import { collectBlockedMoveTargetIds } from "@/features/note/model/hierarchy";
 import {
   getNoteAncestorIds,
   getNoteCascadeIds,
   getNoteLibraryRows,
+  getAvailableLibraryTags,
   getRecentTargetNotes,
   type NoteLibrarySortMode,
 } from "@/features/note/model/library";
@@ -11,7 +12,7 @@ import {
   allNotesAtom,
   libraryExpandedNodesAtom,
   recentNoteAtom,
-} from "@/store/atom/noteAtom";
+} from "@/store/atom/note/noteAtom";
 import { useSession } from "@/utils/auth";
 import { message } from "antd";
 import { useAtom, useAtomValue } from "jotai";
@@ -27,12 +28,17 @@ export const useNoteLibraryController = () => {
     isError,
     isLoading,
     refetch,
-  } = useAtomValue(allNotesAtom(owner));
+  } = useAtomValue(allNotesAtom);
   const { data: recentNotes = [] } = useAtomValue(recentNoteAtom);
   const [filterText, setFilterText] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [sortMode, setSortMode] =
     useState<NoteLibrarySortMode>("updated-desc");
+  const [statusFilter, setStatusFilter] = useState<"all" | NoteStatus>("all");
+  const [publishedFilter, setPublishedFilter] = useState<
+    "all" | "published" | "unpublished"
+  >("all");
+  const [tagsFilter, setTagsFilter] = useState<string[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [moveOpen, setMoveOpen] = useState(false);
   const [moveCandidates, setMoveCandidates] = useState<Note[]>([]);
@@ -47,9 +53,17 @@ export const useNoteLibraryController = () => {
         expandedIds: expandedLibraryNodeIds,
         filterText,
         notes: allNotes,
+        publishedFilter,
         sortMode,
+        statusFilter,
+        tagsFilter,
       }),
-    [allNotes, expandedLibraryNodeIds, filterText, sortMode],
+    [allNotes, expandedLibraryNodeIds, filterText, publishedFilter, sortMode, statusFilter, tagsFilter],
+  );
+
+  const availableTags = useMemo(
+    () => getAvailableLibraryTags(allNotes),
+    [allNotes],
   );
 
   const selectedNotes = useMemo(() => {
@@ -146,6 +160,7 @@ export const useNoteLibraryController = () => {
     ...actions,
     ...markdownImport,
     allVisibleSelected,
+    availableTags,
     blockedMoveTargetIds,
     clearSelection,
     contextHolder,
@@ -164,9 +179,15 @@ export const useNoteLibraryController = () => {
     selectedIds,
     selectedNotes,
     setFilterText,
+    setPublishedFilter,
     setSearchOpen,
     setSortMode,
+    setStatusFilter,
+    setTagsFilter,
     sortMode,
+    publishedFilter,
+    statusFilter,
+    tagsFilter,
     toggleAllVisible,
     toggleLibraryNodeExpanded,
     toggleSelected,

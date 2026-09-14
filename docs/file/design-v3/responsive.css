@@ -1,0 +1,46 @@
+@media (max-width: 900px) {
+  .library-page { padding: 32px 32px 56px; }
+  .table-head, .file-row { grid-template-columns: 40px minmax(240px, 1fr) 180px 150px 112px; }
+  .row-actions { padding-right: 4px; }
+}
+
+@media (max-width: 720px) {
+  .library-page { padding: 24px 16px 44px; }
+  .page-heading { align-items: flex-start; margin-bottom: 20px; }
+  .title-copy h1 { font-size: 32px; }
+  .heading-actions { justify-content: flex-end; }
+  .primary-button, .secondary-button { height: 34px; padding: 0 11px; }
+  .library-toolbar { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .breadcrumbs { min-height: 30px; }
+  .toolbar-actions { width: 100%; justify-content: flex-end; overflow-x: auto; scrollbar-width: none; }
+  .search-field { min-width: 150px; flex: 1; }
+  .file-table .table-head { display: none; }
+  .file-table.selecting .table-head { display: grid; height: 44px; grid-template-columns: 36px minmax(0, 1fr); }
+  .file-table.selecting .table-head .head-label { display: none; }
+  .file-table.selecting .batch-bar { display: flex; grid-column: 2; overflow-x: auto; }
+  .file-row { min-height: 64px; grid-template-columns: 36px minmax(0, 1fr) 36px; }
+  .file-row.search-result { min-height: 68px; }
+  .modified-cell, .meta-cell { display: none; }
+  .mobile-meta { display: block; }
+  .row-check, .row-actions { opacity: 1; }
+  .row-actions { padding: 0; }
+  .open-button { display: none; }
+  .row-menu { right: 0; }
+  .depth-1 .name-cell { padding-left: 11px; }
+  .depth-2 .name-cell { padding-left: 22px; }
+  .preview-body { min-height: 360px; }
+  .document-sheet { min-height: 240px; padding: 42px 28px; }
+}
+
+@media (max-width: 470px) {
+  .page-heading { flex-direction: column; }
+  .heading-actions { width: 100%; justify-content: flex-start; }
+  .filter-button { padding: 0 6px; }
+  .transfer-button { margin-left: auto; }
+  dialog footer { align-items: flex-start; flex-direction: column; }
+  dialog footer > div { width: 100%; justify-content: flex-end; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}

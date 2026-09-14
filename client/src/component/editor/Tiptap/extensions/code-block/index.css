@@ -1,5 +1,6 @@
 .dn-editor .blockCodeWrapper {
   background: var(--editor-code-block-bg);
+  margin: var(--editor-block-gap-y) 0;
 }
 
 .dn-editor .blockCodeWrapper .codeToolbar {
@@ -40,15 +41,39 @@
   padding: 0 1.1rem 0.9rem;
 }
 
+.dn-editor .blockCodeWrapper .blockCodeSummary {
+  overflow: hidden;
+  cursor: pointer;
+  text-overflow: ellipsis;
+  white-space: pre;
+}
+
+.dn-editor .blockCodeWrapper .blockCodeSummary:focus-visible {
+  border-radius: 4px;
+  outline: 2px solid var(--editor-accent);
+  outline-offset: -2px;
+}
+
 .dn-editor .mermaidPreview {
+  min-width: 0;
   overflow-x: auto;
 }
 
 .dn-editor .mermaidPreview svg {
   display: block;
+  width: auto;
   max-width: 100%;
   height: auto;
   margin: 0 auto;
+  font-family:
+    "Inter", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+    "Noto Sans SC", sans-serif;
+}
+
+.dn-editor .dn-editor__content .mermaidPreview p {
+  margin: 0;
+  padding: 0;
+  line-height: 1.5;
 }
 
 .dn-editor pre {

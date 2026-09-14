@@ -1,28 +1,33 @@
-import type { NoteWithContent, updateNoteProperties } from "@/api/note";
+import type { NoteWithContent, UpdateNotePropertiesInput } from "@/api/note";
 
-export type NotePropertiesInput = Parameters<typeof updateNoteProperties>[1];
+export type NotePropertiesInput = UpdateNotePropertiesInput;
 
 export type CreateNoteVariables = {
   note: NoteWithContent;
-  owner?: string;
 };
 
 export type DeleteNoteVariables = {
   noteId: string;
-  parentId?: string | null;
-  owner?: string;
+  parentId: string | null | undefined;
 };
 
 export type UpdateNotePropertiesVariables = {
   noteId: string;
+  parentId: string | null | undefined;
   properties: NotePropertiesInput;
-  parentId?: string | null;
-  owner?: string;
+};
+
+export type UpdateNoteContentVariables = {
+  baseContentRevision?: number;
+  clientMutationId?: string;
+  content: string;
+  noteId: string;
 };
 
 export type PatchNoteCacheVariables = {
   noteId: string;
+  parentId: string | null | undefined;
   properties: Partial<NoteWithContent>;
 };
 
-export type NoteSaveStatus = "idle" | "saving" | "saved";
+export type NoteSaveStatus = "idle" | "saving" | "saved" | "error" | "conflict";

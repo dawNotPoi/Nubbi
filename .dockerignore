@@ -1,0 +1,17 @@
+.git
+.agent
+.github
+.husky
+.pnpm-store
+node_modules
+client/node_modules
+server/node_modules
+mcp/node_modules
+client/dist
+mcp/dist
+mcp/.env
+server/storage
+npm-debug.log
+package-lock.json
+turn/.env
+turn/certs

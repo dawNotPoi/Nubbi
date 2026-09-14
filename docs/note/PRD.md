@@ -274,9 +274,11 @@ z.object({
     └─ 有 → 不变
 ```
 
-### 查询端点：不变
+### 查询端点
 
-所有查询端点保持不变，只是返回的字段集合更新（新增 status/published/tags/author/hasChildren，移除 children/watched/like）。
+常规查询端点保持原有调用方式；侧边栏首次通过 `GET /note/roots` 加载根节点，展开节点时通过 `GET /note/children` 按父节点加载直属子节点。`GET /note/all` 仅供笔记库和按需打开的目标选择器使用，不参与侧边栏常驻数据流。
+
+`GET /note/trash` 统一改用 `limit/offset`，返回 `{ items, total, count, limit, offset, hasMore, nextOffset }`。其余查询返回的字段集合更新（新增 status/published/tags/author/hasChildren，移除 children/watched/like）。
 
 ---
 
@@ -293,12 +295,14 @@ z.object({
 | `server/app/controller/note/create.ts` | 新增字段支持；创建子笔记时更新父节点的 hasChildren；移除旧 `stripSummaryFromMeta` 逻辑 |
 | `server/app/controller/note/update.ts` | `updateNoteMeta` 新增字段支持；新增 `moveNote` 含 hasChildren 双向维护；移除 `addWatchs`/`addLikes` |
 | `server/app/controller/note/delete.ts` | 删除后更新父节点 hasChildren |
-| `server/app/controller/note/query.ts` | `findNotesByStatus` 重构为 `findNotesByFilter({status?, tags?, published?})`；`getTagStats` 改为读顶层 tags；`getNotes` 不再依赖 children 字段；新增 `getNoteStats` 适配新 status 枚举 |
+| `server/app/controller/note/list-query.ts` | 详情、列表、最近、根节点和回收站查询 |
+| `server/app/controller/note/hierarchy-query.ts` | 祖先、直属子节点和移动目标校验 |
+| `server/app/controller/note/search-query.ts` | 标题搜索和路径标签生成 |
 
 ### Route
 | 文件 | 变更 |
 |------|------|
-| `server/app/routes/note.ts` | 全部 Zod 验证更新；新增 `/publish` 路由；移除旧 tags/status 混乱引用 |
+| `server/app/routes/note/` | 类型化路由声明、权限动作和请求 Zod Schema |
 
 ### Middleware / 其他
 | 文件 | 变更 |
@@ -345,16 +349,18 @@ z.object({
 ### 侧边栏
 | 文件 | 变更 |
 |------|------|
-| `client/src/component/SideBar/NoteMenu/NoteTree.tsx` | 使用 `hasChildren` 判断展开箭头；不再读取 `children[]` |
-| `client/src/component/SideBar/NoteMenu/index.tsx` | 适配新接口 |
+| `client/src/component/SideBar/NoteMenu/NoteTree.tsx` | 展开时按 `parentId` 查询直属子节点并递归渲染；删除当前笔记或其祖先成功后返回主页 |
+| `client/src/component/SideBar/NoteMenu/index.tsx` | 只查询根节点并处理树根的加载、错误和空状态 |
 
 ### 状态管理
 | 文件 | 变更 |
 |------|------|
-| `client/src/store/atom/noteAtom.ts` | 适配新 Note 类型；`patchNoteAcrossCaches` 适配新字段 |
-| `client/src/features/note/model/cache.ts` | 适配新字段名 |
-| `client/src/features/note/model/keys.ts` | 不变（key 结构不变） |
-| `client/src/features/note/model/hierarchy.ts` | 适配 hasChildren |
+| `client/src/store/atom/noteAtom.ts` | Jotai 保留展开节点等 UI 状态；`allNotesAtom` 仅服务笔记库和按需目标选择器 |
+| `client/src/store/atom/noteMutationAtom.ts` | 创建、移动、删除只乐观更新来源和目标树列表，成功后刷新活跃树分支 |
+| `client/src/features/note/model/cache.ts` | 详情缓存与指定父节点的树列表按职责更新；最近、全部列表和祖先路径通过失效刷新 |
+| `client/src/features/note/model/keys.ts` | 根节点和直属子节点使用统一 tree Query Key 前缀；Note Query Key 不包含用户 ID |
+| `client/src/features/note/model/hierarchy.ts` | 仅处理标题、排序和已加载节点的移动目标校验，不保存完整树副本 |
+| `client/src/features/note/hooks/useDeleteNote.ts` | 统一侧边栏菜单与拖入回收站的删除后导航 |
 
 ---
 
@@ -503,8 +509,8 @@ await Note.updateMany({}, { $set: { date: null } });
 4. `server/app/controller/note/create.ts` — 含 hasChildren 维护
 5. `server/app/controller/note/update.ts` — 移动 + 属性更新
 6. `server/app/controller/note/delete.ts` — 含 hasChildren 清理
-7. `server/app/controller/note/query.ts` — 查询适配
-8. `server/app/routes/note.ts` — Zod 更新
+7. `server/app/controller/note/*-query.ts` — 查询适配
+8. `server/app/routes/note/` — Zod 更新
 
 ### 第 3 步：客户端 API 层
 9. `client/src/api/note.ts` — 类型 + 函数更新
@@ -540,11 +546,12 @@ await Note.updateMany({}, { $set: { date: null } });
 - [ ] 移动笔记到新父节点，旧父节点和新父节点的 hasChildren 正确更新
 - [ ] 删除最后一个子笔记，父节点 hasChildren 变为 false
 - [ ] 删除有子笔记的节点，递归删除全部后代
+- [ ] 当前笔记或其祖先删除成功后返回主页，删除失败时保留当前页面
 - [ ] 编辑器保存后，content 字段存储的是 Markdown 格式文本
 - [ ] 编辑器加载 Markdown 内容，正确渲染为富文本
 - [ ] NoteMeta 面板显示所有有值的标准字段 + 自定义字段
 - [ ] 自定义字段可添加、编辑、删除
-- [ ] 侧边栏树形组件展开/折叠正常，依赖 hasChildren
+- [ ] 侧边栏首次只请求根节点，展开节点时按需请求直属子节点，重复展开优先复用 Query Cache
 - [ ] 笔记库可按 status、published、tags 过滤
 - [ ] 旧笔记迁移后 status=done, published=false，内容不受影响
 - [ ] API 返回的 Note 对象不包含 children/watched/like 字段
@@ -556,3 +563,34 @@ await Note.updateMany({}, { $set: { date: null } });
 - 被 **knowledge-base Phase 2**（MCP Server 依赖规范化 Note 接口）
 - 被 **knowledge-base Phase 3**（embedding 依赖 Markdown 内容 + status 过滤）
 - 被 **博客系统**（published + slug + excerpt）
+
+## 移动端行为
+
+- 笔记库在 `768px` 以下由多列表格切换为单列记录；点击记录打开笔记，选择由显式复选框完成。
+- 筛选、排序和批量操作折叠为适合触控的紧凑工具栏，所有关键操作均不依赖 hover。
+- 笔记详情取消固定最小宽度，标题、封面、标签和正文按单列排版；Markdown 分屏模式在移动端改为源码/预览单面板切换。
+- 移动端隐藏悬浮目录，编辑器浮层和工具条必须限制在可视区域内。
+
+---
+
+## MCP 与回收站补充
+
+### MCP 写入边界
+
+- MCP Agent Token 可读取当前用户全部未删除及回收站笔记。
+- MCP 创建的笔记强制 `source=agent`、`status=inbox`、`published=false`。
+- MCP 只可修改、移动、归档、软删除和恢复 `source=agent` 的笔记；普通用户笔记只读。
+- MCP 不可修改 `source`、发布笔记或永久删除笔记。
+- Agent 子树含普通用户后代时，移动、删除和恢复整棵子树均拒绝，避免越权级联。
+- MCP 正文写入使用 `contentRevision`；属性和结构写入使用 `updatedAt` 做冲突检测。
+- 当前 Note 页面仅由管理员操作，服务端不为树结构变更增加 Mongo 租约锁，也不返回锁竞争 409；调用方按正常交互顺序发起结构写操作。
+- 人工回收站通过 `GET /note/trash` 的统一 `limit/offset` 契约分页读取；响应为 `{ items, total, count, limit, offset, hasMore, nextOffset }`。客户端依赖 `hasMore/nextOffset` 合并完整结果后再判断父子层级，避免截断导致错误启用子节点恢复。
+
+### 回收站页面
+
+- 路由 `/note-trash`，从侧边栏 Note 区域进入。
+- 树形展示被删除的笔记，支持标题搜索与来源筛选。
+- 支持单项/批量恢复；父节点仍在回收站时不能单独恢复子节点。
+- 支持人类永久删除，必须二次确认；MCP 不暴露 purge 能力。
+- 永久删除笔记子树前创建持久化 purge 任务，再依次删除 Note 与 Summary；
+  任一步骤失败都可用同一根笔记 ID 续做，完成前禁止恢复任务内节点。

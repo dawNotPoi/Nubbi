@@ -1,22 +1,47 @@
 {
   "name": "nubbi",
   "version": "1.0.0",
+  "private": true,
   "description": "",
   "main": "index.js",
   "scripts": {
-    "client": "pnpm --dir client dev",
-    "server": "pnpm --dir server dev",
+    "turn:init": "node scripts/turn/configure.mjs",
+    "turn:up": "docker compose up -d --build --no-deps --wait turn",
+    "turn:down": "docker compose stop turn",
+    "turn:logs": "docker compose logs -f turn",
+    "turn:check": "docker compose run --build --rm --no-deps turn check",
+    "dev": "pnpm --parallel --filter nubbi-client --filter nubbi-server dev",
+    "client": "pnpm dev:client",
+    "server": "pnpm dev:server",
+    "dev:client": "pnpm --filter nubbi-client dev",
+    "dev:server": "pnpm --filter nubbi-server dev",
+    "dev:mcp:stdio": "pnpm --filter nubbi-mcp-server dev:stdio",
+    "dev:mcp:http": "pnpm --filter nubbi-mcp-server dev:http",
+    "build:client": "pnpm --filter nubbi-client build",
+    "build:mcp": "pnpm --filter nubbi-mcp-server build",
+    "lint:client": "pnpm --filter nubbi-client lint",
+    "test:server": "pnpm --filter nubbi-server test",
+    "typecheck:server": "pnpm --filter nubbi-server typecheck",
+    "test:mcp": "pnpm --filter nubbi-mcp-server test",
+    "prepare": "husky",
+    "commit": "git-cz",
     "preflight": "node scripts/preflight.mjs",
-    "preflight:no-docker": "node scripts/preflight.mjs --no-docker",
-    "agent": "node scripts/agent-review.mjs",
-    "agent:review": "node scripts/agent-review.mjs",
-    "agent:review:today": "node scripts/agent-review.mjs --today"
+    "preflight:no-docker": "node scripts/preflight.mjs --no-docker"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.12.4",
-  "dependencies": {
-    "winston": "^3.19.0"
+  "devDependencies": {
+    "@commitlint/cli": "^21.1.0",
+    "@commitlint/config-angular": "^21.1.0",
+    "@commitlint/prompt": "^21.1.0",
+    "commitizen": "^4.3.2",
+    "husky": "^9.1.7"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/@commitlint/prompt"
+    }
   }
 }

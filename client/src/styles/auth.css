@@ -1,0 +1,25 @@
+/* Auth — only gradients that Tailwind can't express */
+
+/* Primary button gradient */
+.auth-card .ant-btn-primary {
+  height: 48px;
+  border-radius: 10px;
+  border: none;
+  font-size: 15px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #4f8cff, #5c6cf7);
+  box-shadow: 0 4px 14px rgba(79,140,255,0.22);
+}
+.auth-card .ant-btn-primary:hover {
+  box-shadow: 0 6px 20px rgba(79,140,255,0.32) !important;
+  background: linear-gradient(135deg, #4f8cff, #5c6cf7) !important;
+}
+.auth-card .ant-btn-primary:disabled {
+  opacity: 0.5;
+  background: linear-gradient(135deg, #4f8cff, #5c6cf7);
+}
+
+/* Footer brand dot gradient */
+.auth-footer-dot {
+  background: linear-gradient(135deg, #4f8cff, #e26cfd);
+}

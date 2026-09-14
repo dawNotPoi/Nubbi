@@ -64,7 +64,18 @@ export function NoteLibraryTable({
 }: NoteLibraryTableProps) {
   return (
     <section>
-      <div className="grid h-11 grid-cols-[40px_minmax(280px,1fr)_minmax(180px,28vw)_132px] items-center border-b border-[#ededeb] text-[14px] text-[#787774]">
+      {selectedNotes.length > 0 ? (
+        <div className="mb-2 md:hidden">
+          <NoteLibraryBatchActionBar
+            moving={moving}
+            selectedCount={selectedNotes.length}
+            onClear={onClearSelection}
+            onDelete={() => onDelete(selectedNotes)}
+            onMove={() => onMove(selectedNotes)}
+          />
+        </div>
+      ) : null}
+      <div className="hidden h-11 grid-cols-[40px_minmax(260px,1fr)_minmax(220px,26vw)_minmax(160px,18vw)_132px] items-center border-b border-border-row text-[14px] text-text-muted md:grid">
         <div className="flex items-center justify-center">
           <Checkbox
             checked={allVisibleSelected}
@@ -74,7 +85,7 @@ export function NoteLibraryTable({
           />
         </div>
         {selectedNotes.length > 0 ? (
-          <div className="col-span-3 flex min-w-0 items-center">
+          <div className="col-span-4 flex min-w-0 items-center">
             <NoteLibraryBatchActionBar
               moving={moving}
               selectedCount={selectedNotes.length}
@@ -93,6 +104,7 @@ export function NoteLibraryTable({
               <Clock className="size-4 shrink-0" strokeWidth={1.9} />
               <span className="truncate">Last edited time</span>
             </div>
+            <div className="truncate">Status / Tags</div>
             <div />
           </>
         )}

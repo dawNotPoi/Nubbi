@@ -32,6 +32,7 @@ type NoteBreadcrumbProps = {
   onSelect?: (item: NoteBreadcrumbItem) => void;
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const getNoteBreadcrumbItems = (
   ancestors: NoteBreadcrumbItem[],
   current: NoteBreadcrumbCurrent,

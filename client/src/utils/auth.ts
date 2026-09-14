@@ -1,4 +1,5 @@
 import { createAuthClient } from "better-auth/react";
+import { apiKeyClient } from "better-auth/client/plugins";
 import { useSyncExternalStore } from "react";
 import { getApiBaseUrl, getAuthBaseUrl } from "./env";
 import { isSafeInternalPath, routes } from "./routes";
@@ -73,19 +74,6 @@ export const clearAccessToken = () => {
   setAccessToken(null);
 };
 
-const getAuthorizedJsonHeaders = async () => {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-  const token = await ensureJwt();
-
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
-  return headers;
-};
-
 const extractBearerToken = (headers?: Headers) => {
   const token = headers?.get("set-auth-token");
   if (!token) return null;
@@ -109,8 +97,6 @@ const setJwtToken = (token: string | null) => {
   const jwtExpiresAt = token ? parseJwtExpiry(token) : null;
   setRuntimeState({ jwtToken: token, jwtExpiresAt });
 };
-
-export const getJwtToken = () => runtimeState.jwtToken;
 
 const isJwtFresh = (): boolean => {
   const { jwtToken, jwtExpiresAt } = runtimeState;
@@ -188,6 +174,7 @@ const toAuthResult = <T extends { error?: unknown }>(
 
 export const authClient = createAuthClient({
   baseURL: authBaseUrl,
+  plugins: [apiKeyClient()],
   fetchOptions: {
     credentials: "include",
     auth: {
@@ -207,7 +194,7 @@ export const authClient = createAuthClient({
   },
 });
 
-export const { signIn, signUp, useSession, getSession } = authClient;
+export const { signIn, useSession } = authClient;
 
 export const restoreAuthSession = async (): Promise<boolean> => {
   if (restorePromise) {
@@ -260,6 +247,8 @@ export const ensureJwt = async (): Promise<string | null> => {
   return runtimeState.jwtToken ?? runtimeState.accessToken;
 };
 
+// 有意用整页跳转而非 SPA 导航：登出需要清空所有内存态（runtimeState、各类缓存），
+// 页面刷新也顺带复位 redirectingToLogin 模块标志，该标志只防同一页面生命周期内重复跳转
 export const redirectToLogin = () => {
   if (redirectingToLogin) return;
   redirectingToLogin = true;
@@ -281,6 +270,52 @@ export const handleUnauthorized = async () => {
   } finally {
     redirectToLogin();
   }
+};
+
+const resolveApiUrl = (url: string) => {
+  const pathUrl = url.startsWith("/") ? url : `/${url}`;
+  return `${baseUrl}${pathUrl}`;
+};
+
+// 约束：401 时会刷新会话并原样重试一次，因此 init.body 必须可重复发送
+// （string/FormData/Blob 均可，不支持 ReadableStream）；且 401 需由服务端鉴权
+// 中间件在业务逻辑执行前产生，非幂等请求的重试才安全。
+export const authorizedFetch = async (
+  url: string,
+  init: RequestInit = {},
+): Promise<Response> => {
+  const doFetch = async (): Promise<Response> => {
+    const headers = new Headers(init.headers);
+    const token = await ensureJwt();
+
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+
+    return fetch(resolveApiUrl(url), {
+      ...init,
+      credentials: init.credentials ?? "omit",
+      headers,
+    });
+  };
+
+  let response = await doFetch();
+
+  if (response.status === 401) {
+    // 本地"看似新鲜"的 JWT 被服务端拒绝（密钥轮换、会话吊销、时钟偏差）时，
+    // 强制走一次 getSession 刷新 token 再重试；restoreAuthSession 对并发去重。
+    const restored = await restoreAuthSession();
+    if (restored) {
+      response = await doFetch();
+    }
+  }
+
+  if (response.status === 401) {
+    await handleUnauthorized();
+    throw new Error("认证失败，请重新登录");
+  }
+
+  return response;
 };
 
 export const getAuthCallbackErrorMessage = (search: string) => {
@@ -366,30 +401,6 @@ export const signInWithEmail = async (
       success: false,
       error: {
         message: getErrorMessage(error, "邮箱登录失败，请检查邮箱和密码。"),
-      },
-    };
-  }
-};
-
-export const signUpWithEmail = async (
-  email: string,
-  password: string,
-  name: string,
-): Promise<AuthActionResult> => {
-  try {
-    const result = await signUp.email({
-      email,
-      password,
-      name,
-      callbackURL: window.location.origin,
-    });
-    return toAuthResult(result, "邮箱注册失败，请稍后重试。");
-  } catch (error) {
-    console.error("Register failed:", error);
-    return {
-      success: false,
-      error: {
-        message: getErrorMessage(error, "邮箱注册失败，请检查网络或邮箱配置。"),
       },
     };
   }
@@ -625,26 +636,6 @@ export const requestPasswordReset = async (
   }
 };
 
-export const resetPasswordWithToken = async (
-  token: string,
-  newPassword: string,
-): Promise<AuthActionResult> => {
-  try {
-    const result = await authClient.resetPassword({
-      newPassword,
-      token,
-    });
-    return toAuthResult(result, "重置密码失败，请重新获取重置链接。");
-  } catch (error) {
-    return {
-      success: false,
-      error: {
-        message: getErrorMessage(error, "重置密码失败，请重新获取重置链接。"),
-      },
-    };
-  }
-};
-
 export const resetPasswordWithCode = async (
   email: string,
   code: string,
@@ -692,7 +683,12 @@ export const resetPasswordWithCode = async (
 
 export const resendVerificationCode = async (
   email: string,
-): Promise<AuthActionResult> => {
+): Promise<
+  AuthActionResult<{
+    cooldownSeconds?: number;
+    remainingSeconds?: number;
+  }>
+> => {
   try {
     const response = await fetch(`${baseUrl}/auth/email/resend-verification-code`, {
       method: "POST",
@@ -705,7 +701,14 @@ export const resendVerificationCode = async (
     });
 
     const payload = (await response.json().catch(() => null)) as
-      | { code?: number; message?: string }
+      | {
+          code?: number;
+          message?: string;
+          data?: {
+            cooldownSeconds?: number;
+            remainingSeconds?: number;
+          };
+        }
       | null;
 
     if (!response.ok || payload?.code === 0) {
@@ -714,12 +717,13 @@ export const resendVerificationCode = async (
         error: {
           message: payload?.message || "验证码发送失败，请稍后重试。",
         },
+        data: payload?.data,
       };
     }
 
     return {
       success: true,
-      data: payload ?? undefined,
+      data: payload?.data,
     };
   } catch (error) {
     return {
@@ -783,9 +787,11 @@ export const sendAccountDeletionCode = async (): Promise<
   }>
 > => {
   try {
-    const response = await fetch(`${baseUrl}/auth/account/delete/send-code`, {
+    const response = await authorizedFetch("/auth/account/delete/send-code", {
       method: "POST",
-      headers: await getAuthorizedJsonHeaders(),
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({}),
     });
 
@@ -830,9 +836,11 @@ export const deleteAccountWithCode = async (
   code: string,
 ): Promise<AuthActionResult> => {
   try {
-    const response = await fetch(`${baseUrl}/auth/account/delete/confirm`, {
+    const response = await authorizedFetch("/auth/account/delete/confirm", {
       method: "POST",
-      headers: await getAuthorizedJsonHeaders(),
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
         code,
         confirmed: true,

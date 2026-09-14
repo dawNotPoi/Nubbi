@@ -2,19 +2,31 @@
 
 ## 颜色 Token（禁止 hardcode hex/rgb）
 
-| 用途 | Tailwind class |
-|------|---------------|
-| 主文本 | `text-foreground` |
-| 次要文本 | `text-muted` |
-| 辅助文本 | `text-subtle` |
-| 主色 | `text-primary` / `bg-primary` |
-| 主色浅 | `bg-primary-soft` |
-| 危险 / 警告 / 成功 | `text-danger` / `text-warning` / `text-success` |
-| 页面背景 | `bg-background` |
-| 卡片/内容区 | `bg-surface` / `bg-panel` |
-| 侧边栏 | `bg-sidebar` |
-| 边框 | `border-border` |
-| 分割线 | `border-divider` |
+| 用途 | Tailwind class | 对应 hex |
+|------|---------------|---------|
+| 主文本 | `text-text-primary` | #37352f |
+| 次要文本 | `text-text-muted` | #787774 |
+| 辅助文本/图标 | `text-text-subtle` | #9b9a97 |
+| placeholder | `text-text-placeholder` | #b4b4b1 |
+| 行悬停背景 | `bg-bg-hover` | #f7f7f5 |
+| 选中背景/标签底 | `bg-bg-selected` | #f1f1ef |
+| 图标按钮悬停 | `bg-bg-icon-hover` | #e9e9e7 |
+| 面板/操作栏 | `bg-bg-panel` | #fbfbfa |
+| 行分隔线 | `border-border-row` | #efefed |
+| 按钮/输入框边框 | `border-border-button` | #d9d7d2 |
+| 按钮悬停边框 | `border-border-button-hover` | #bdbab4 |
+| 工具栏边框 | `border-border-toolbar` | #e3e2df |
+| 焦点环 | `ring-focus-ring` | #d3d1cb |
+| 骨架屏 | `bg-skeleton` | #e6e4e1 |
+| 激活态边框 | `border-accent-border` | #2383e2 |
+| 激活态背景 | `bg-accent-bg` | #eef6ff |
+| 激活态文字 | `text-accent-text` | #1f5f99 |
+| 侧边栏 | `bg-sidebar` | #f9f8f7 |
+| 状态 inbox | `bg-amber-50 text-amber-700` | — |
+| 状态 active | `bg-blue-50 text-blue-700` | — |
+| 状态 done | `bg-emerald-50 text-emerald-700` | — |
+| 状态 archived | `bg-neutral-100 text-neutral-600` | — |
+| 已发布 | `bg-purple-50 text-purple-700` | — |
 
 ## 布局
 

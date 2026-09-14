@@ -4,6 +4,7 @@ set -Eeuo pipefail
 BRANCH="${1:-${DEPLOY_BRANCH:-master}}"
 APP_DIR="${APP_DIR:-$(pwd)}"
 HEALTHCHECK_URL="${HEALTHCHECK_URL:-}"
+DEPLOY_SERVICES="${DEPLOY_SERVICES:-client server mcp}"
 
 log() {
   printf '[docker-deploy] %s\n' "$*"
@@ -16,122 +17,13 @@ require_command() {
   fi
 }
 
-get_env_value() {
-  awk -F= -v key="$1" '
-    $1 == key {
-      value = substr($0, index($0, "=") + 1)
-      gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
-      gsub(/^"|"$/, "", value)
-      print value
-      exit
-    }
-  ' .env 2>/dev/null || true
-}
-
-set_env_value() {
-  local key="$1"
-  local value="$2"
-  local tmp
-
-  tmp="$(mktemp)"
-
-  if awk -F= -v key="$key" '$1 == key { found = 1 } END { exit(found ? 0 : 1) }' .env; then
-    awk -F= -v key="$key" -v value="$value" '
-      $1 == key && !done {
-        print key "=" value
-        done = 1
-        next
-      }
-      $1 == key {
-        next
-      }
-      {
-        print
-      }
-    ' .env >"$tmp"
-  else
-    cat .env >"$tmp"
-    printf '%s=%s\n' "$key" "$value" >>"$tmp"
-  fi
-
-  mv "$tmp" .env
-}
-
-get_mapped_port() {
-  local service="$1"
-  local container_port="$2"
-  local mapped_port
-  mapped_port="$(docker compose port "$service" "$container_port" 2>/dev/null | tail -n 1 || true)"
-
-  if [ -n "$mapped_port" ]; then
-    printf '%s\n' "${mapped_port##*:}"
-  fi
-
-  return 0
-}
-
-preserve_port() {
-  local env_key="$1"
-  local service="$2"
-  local container_port="$3"
-  local default_port="$4"
-  local configured_port
-  configured_port="${!env_key:-$(get_env_value "$env_key" || true)}"
-
-  if [ -n "$configured_port" ]; then
-    log "using configured $env_key: $configured_port"
-    return
-  fi
-
-  local mapped_port
-  mapped_port="$(get_mapped_port "$service" "$container_port")"
-
-  if [ -z "$mapped_port" ]; then
-    log "$env_key is not set; using docker-compose default port $default_port"
-    return
-  fi
-
-  log "preserving existing $env_key mapping: $mapped_port"
-  set_env_value "$env_key" "$mapped_port"
-}
-
-preserve_ports() {
-  preserve_port WEB_PORT client 80 80
-  preserve_port SERVER_PORT server 4000 4000
-  preserve_port SOCKET_PORT server 4040 4040
-}
-
-resolve_healthcheck_url() {
-  if [ -n "$HEALTHCHECK_URL" ]; then
-    printf '%s\n' "$HEALTHCHECK_URL"
-    return
-  fi
-
-  local mapped_port
-  mapped_port="$(get_mapped_port client 80)"
-
-  if [ -n "$mapped_port" ]; then
-    printf 'http://127.0.0.1:%s/\n' "$mapped_port"
-    return
-  fi
-
-  local env_port
-  env_port="${WEB_PORT:-$(get_env_value WEB_PORT || true)}"
-  printf 'http://127.0.0.1:%s/\n' "${env_port:-80}"
-}
-
-print_diagnostics() {
-  log "containers"
-  docker compose ps || true
-  log "client logs"
-  docker compose logs --tail 80 client || true
-  log "server logs"
-  docker compose logs --tail 80 server || true
-}
+# 部署辅助函数只定义操作，不在加载时执行部署。
+source "$(dirname "${BASH_SOURCE[0]}")/deploy-docker-support.sh"
 
 cd "$APP_DIR"
 
 require_command docker
+export COMPOSE_PARALLEL_LIMIT="${COMPOSE_PARALLEL_LIMIT:-1}"
 
 log "deploying branch: $BRANCH"
 if [ "${SKIP_GIT_UPDATE:-0}" = "1" ]; then
@@ -153,16 +45,51 @@ if [ ! -f ".env" ]; then
   exit 1
 fi
 
-if [ ! -f "client/dist/index.html" ]; then
+if has_service client && [ ! -f "client/dist/index.html" ]; then
   printf '[docker-deploy] missing client/dist/index.html\n' >&2
-  printf '[docker-deploy] build the client before deploying: pnpm --dir client build\n' >&2
+  printf '[docker-deploy] build the client before deploying\n' >&2
   exit 1
 fi
 
 preserve_ports
 
-log "building and starting client and server containers"
-docker compose up -d --build --remove-orphans client server
+if [ -f turn/.env ]; then
+  export COMPOSE_PROFILES="${COMPOSE_PROFILES:+$COMPOSE_PROFILES,}meeting"
+fi
+
+# 配置文件留在服务器，后端发布时一同启动 TURN；未配置的环境保持原部署范围。
+if has_service server && [ -f turn/.env ] && ! has_service turn; then
+  DEPLOY_SERVICES="$DEPLOY_SERVICES turn"
+fi
+if has_service turn; then
+  [ -f turn/.env ] || { log "missing turn/.env; initialize TURN first"; exit 1; }
+  log "validating TURN configuration before replacing application containers"
+  docker compose build turn
+  docker compose run --rm --no-deps turn check
+  docker compose up -d --no-deps --wait turn
+fi
+
+log "selected services: $DEPLOY_SERVICES"
+
+if has_service server || has_service mcp; then
+  log "building runtime images sequentially"
+  if has_service server; then
+    docker compose build server
+  fi
+  if has_service mcp; then
+    docker compose build mcp
+  fi
+fi
+
+log "starting all containers"
+# 镜像先构建完成，再切换容器；2C2G 服务器上避免并行构建造成内存尖峰。
+# TURN 已单独更新并检查；不要在后端重启时再次中断正在中继的通话。
+runtime_services="${DEPLOY_SERVICES//turn/}"
+if [ -n "${runtime_services// /}" ]; then
+  docker compose stop $runtime_services || true
+  docker compose rm -f $runtime_services || true
+fi
+docker compose up -d --no-build --remove-orphans $DEPLOY_SERVICES
 
 if command -v curl >/dev/null 2>&1; then
   HEALTHCHECK_URL="$(resolve_healthcheck_url)"

@@ -7,11 +7,14 @@ export type DeviceStatus = {
   deviceId: string;
 };
 
-export type TrackReplaceHandler = (
-  stream: MediaStream,
-  oldTrack: MediaStreamTrack,
-  newTrack: MediaStreamTrack,
-) => void;
+/** 已经过身份验证的会议入口参数，不包含设备权限。 */
+export type MeetingRoomProps = {
+  meetingTitle?: string;
+  meetingHostId?: string;
+  meetingStartTime?: string | number | Date;
+  meetingAccessToken: string;
+  onAccessRejected: () => void;
+};
 
 export type MediaDevices = {
   audio: MediaDeviceInfo[];
@@ -24,9 +27,10 @@ export type VideoRoomUser = {
   roomId: string;
   name: string;
   image: string;
-  email: string;
   isVideoEnabled: boolean;
   isAudioEnabled: boolean;
+  /** 缺失表示未共享，兼容旧成员快照。 */
+  isScreenSharing?: boolean;
 };
 
 export type StageParticipant = {
@@ -36,7 +40,14 @@ export type StageParticipant = {
   stream: MediaStream | null;
   isVideoEnabled: boolean;
   isAudioEnabled: boolean;
+  isScreenSharing?: boolean;
   isLocal?: boolean;
+};
+
+/** 写入是否成功不能由网络连接状态推测；未确认结果必须由用户核对。 */
+export type CommentSendOutcome = {
+  status: "sent" | "failed" | "uncertain";
+  message: string;
 };
 
 export type MeetingComment = {
@@ -47,7 +58,6 @@ export type MeetingComment = {
   userId: string;
   name: string;
   avatar: string;
-  email: string;
   createdAt: string;
   updatedAt: string;
 };

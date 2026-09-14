@@ -1,64 +1,123 @@
 import mongoose from "@/lib/db";
+import type { HydratedDocument, InferSchemaType, Model } from "mongoose";
 
-const noteSchema = new mongoose.Schema(
+const { Schema } = mongoose;
+
+const metaEntrySchema = new Schema(
   {
-    //对应账户
+    key: {
+      type: String,
+      required: true,
+    },
+    value: {
+      type: Schema.Types.Mixed,
+    },
+    type: {
+      type: String,
+      default: "text",
+    },
+  },
+  {
+    _id: false,
+  },
+);
+
+const noteSchema = new Schema(
+  {
     userId: {
       type: String,
-      // required: true,
       index: true,
     },
-    // 名称
     title: {
       type: String,
       default: "New Note",
     },
-    //   内容
     content: {
       type: String,
       default: "",
     },
-    watched: {
+    contentRevision: {
       type: Number,
       default: 0,
     },
-    like: {
-      type: Number,
-      default: 0,
-    },
-    password: {
+    author: {
       type: String,
       default: null,
+    },
+    parentId: {
+      type: Schema.Types.ObjectId,
+      ref: "Note",
+      default: null,
+      index: true,
+    },
+    hasChildren: {
+      type: Boolean,
+      default: false,
+    },
+    source: {
+      type: String,
+      enum: ["user", "agent"],
+      default: "user",
+    },
+    status: {
+      type: String,
+      enum: ["inbox", "active", "archived"],
+      default: "inbox",
+    },
+    published: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    tags: {
+      type: [String],
+      default: [],
+      index: true,
     },
     cover: {
       type: String,
       default: "",
     },
-    children: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Note",
-        default: null,
-      },
-    ],
-    parentId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Note",
+    password: {
+      type: String,
       default: null,
     },
     date: {
       type: Date,
-      default: Date.now(),
+      default: Date.now,
     },
-    // 新增：自定义属性
+    deletedAt: {
+      type: Date,
+      default: null,
+      index: true,
+    },
+    expiresAt: {
+      type: Date,
+      default: null,
+    },
     meta: {
-      type: mongoose.Schema.Types.Mixed,
-      default: {},
+      type: [metaEntrySchema],
+      default: [],
     },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
-export default mongoose.model("Note", noteSchema);
+noteSchema.index({ userId: 1, parentId: 1 });
+noteSchema.index({ userId: 1, status: 1 });
+noteSchema.index({ userId: 1, updatedAt: -1 });
+noteSchema.index({ userId: 1, tags: 1 });
+noteSchema.index({ published: 1, updatedAt: -1 });
+noteSchema.index({ userId: 1, deletedAt: -1, _id: -1 });
+
+export type NoteEntity = InferSchemaType<typeof noteSchema>;
+export type NoteDocument = HydratedDocument<NoteEntity>;
+
+const NoteModel: Model<NoteEntity> = mongoose.model<NoteEntity>(
+  "Note",
+  noteSchema,
+);
+
+export default NoteModel;

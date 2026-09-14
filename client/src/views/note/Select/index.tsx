@@ -22,12 +22,18 @@ const PRESET_TAG_STYLES = [
   "bg-lime-100 text-lime-700",
 ];
 
-const CREATED_TAG_STYLE = "bg-sky-100 text-sky-700";
+const getTagStyle = (value: string) => {
+  let hash = 0;
+  for (const char of value) {
+    hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  }
+  return PRESET_TAG_STYLES[hash % PRESET_TAG_STYLES.length];
+};
 
-const createOption = (value: string, index: number): SelectOption => ({
+const createOption = (value: string): SelectOption => ({
   value,
   label: value,
-  className: PRESET_TAG_STYLES[index % PRESET_TAG_STYLES.length],
+  className: getTagStyle(value),
 });
 
 const normalizeValues = (
@@ -49,7 +55,7 @@ const mergeDisplayOptions = (
       map.set(item, {
         value: item,
         label: item,
-        className: CREATED_TAG_STYLE,
+        className: getTagStyle(item),
       });
     }
   });
@@ -68,7 +74,7 @@ function OptionTag({
   return (
     <span
       className={clsx(
-        "inline-flex max-w-full items-center gap-1 rounded-md px-2 py-1 text-[12px] font-medium",
+        "inline-flex max-w-full items-center gap-1 rounded-md px-2 py-1 text-base font-medium",
         option.className,
       )}
     >
@@ -97,6 +103,8 @@ export function Select({
   options = [],
   placeholder = "Empty",
   creatable = false,
+  onDeleteOption,
+  variant = "field",
 }: {
   className?: string;
   value?: string | string[];
@@ -105,11 +113,14 @@ export function Select({
   options?: string[];
   placeholder?: string;
   creatable?: boolean;
+  onDeleteOption?: (value: string) => void;
+  variant?: "field" | "inline";
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const optionsListRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) {
@@ -130,7 +141,7 @@ export function Select({
   );
 
   const defaultOptions = useMemo(
-    () => options.map((item, index) => createOption(item, index)),
+    () => options.map((item) => createOption(item)),
     [options],
   );
 
@@ -191,6 +202,14 @@ export function Select({
     );
   }, [createValue, creatable, filteredOptions.length, keyboardItemsCount, open]);
 
+  useEffect(() => {
+    if (!open) return;
+    const highlightedElement = optionsListRef.current?.querySelector(
+      "[data-highlighted='true']",
+    );
+    highlightedElement?.scrollIntoView({ block: "nearest" });
+  }, [highlightedIndex, open]);
+
   const handleCreate = () => {
     if (!createValue) return;
     if (mode === "multiple") {
@@ -205,8 +224,9 @@ export function Select({
     setOpen(false);
   };
 
+  const isInline = variant === "inline";
   const triggerContent = open ? (
-    <div className="flex min-h-9 items-center gap-2">
+    <div className={clsx("flex items-center gap-2", isInline ? "min-h-7" : "min-h-9")}>
       <div className="flex flex-1 flex-wrap items-center gap-1.5">
         {selectedValues.map((item) => {
           const option = displayOptions.find(
@@ -214,7 +234,7 @@ export function Select({
           ) ?? {
             value: item,
             label: item,
-            className: CREATED_TAG_STYLE,
+            className: getTagStyle(item),
           };
           return (
             <OptionTag
@@ -276,12 +296,15 @@ export function Select({
             }
           }}
           placeholder={selectedValues.length ? undefined : placeholder}
-          className="min-w-[24px] flex-1 border-none bg-transparent py-1 text-sm text-stone-700 outline-none"
+          className={clsx(
+            "min-w-[24px] flex-1 border-none bg-transparent text-sm text-stone-700 outline-none",
+            isInline ? "py-0.5" : "py-1",
+          )}
         />
       </div>
     </div>
   ) : (
-    <div className="flex min-h-9 items-center gap-2">
+    <div className={clsx("flex items-center gap-2", isInline ? "min-h-7" : "min-h-9")}>
       <div className="flex flex-1 flex-wrap items-center gap-1.5">
         {selectedValues.length ? (
           selectedValues.map((item) => {
@@ -290,7 +313,7 @@ export function Select({
             ) ?? {
               value: item,
               label: item,
-              className: CREATED_TAG_STYLE,
+              className: getTagStyle(item),
             };
             return (
               <OptionTag
@@ -306,7 +329,7 @@ export function Select({
             );
           })
         ) : (
-          <span className="text-sm text-stone-400">{placeholder}</span>
+          <span className={clsx("text-sm", isInline ? "text-current" : "text-stone-400")}>{placeholder}</span>
         )}
       </div>
     </div>
@@ -317,16 +340,23 @@ export function Select({
       open={open}
       onClickOutside={() => setOpen(false)}
       offset={8}
-      matchTriggerWidth
       className="border-none bg-transparent shadow-none"
+      style={{
+        width: "min(320px, calc(100vw - 24px))",
+        minWidth: 220,
+        maxHeight: "var(--popover-available-height)",
+      }}
       trigger={
         <div
           onClick={() => setOpen(true)}
           className={clsx(
-            "w-full rounded-lg border border-transparent px-2 py-1.5 transition",
+            "rounded-lg border border-transparent transition",
+            isInline ? "inline-flex max-w-full" : "w-full px-2 py-1.5",
             open
               ? "border-stone-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
-              : "hover:bg-stone-50",
+              : isInline
+                ? ""
+                : "hover:bg-stone-50",
             className,
           )}
         >
@@ -334,26 +364,57 @@ export function Select({
         </div>
       }
     >
-      <div className="w-full rounded-xl border border-stone-200 bg-white p-2 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
-        <div className="space-y-1">
+      <div className="flex max-h-[var(--popover-available-height)] w-full flex-col rounded-xl border border-stone-200 bg-white p-2 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+        {mode === "multiple" && selectedValues.length > 0 ? (
+          <div className="mb-2 flex shrink-0 justify-end">
+            <button
+              type="button"
+              onClick={() => {
+                emitChange([]);
+                setOpen(false);
+              }}
+              className="rounded px-2 py-1 text-sm text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700"
+            >
+              移除
+            </button>
+          </div>
+        ) : null}
+        <div
+          ref={optionsListRef}
+          className="min-h-0 flex-1 space-y-1 overflow-y-auto pr-1"
+        >
           {filteredOptions.length ? (
             filteredOptions.map((option, index) => {
               return (
                 <button
                   key={option.value}
                   type="button"
+                  data-highlighted={highlightedIndex === index}
                   onClick={() => toggleValue(option.value)}
                   onMouseEnter={() => {
                     setHighlightedIndex(index);
                   }}
                   className={clsx(
-                    "flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm text-stone-700 transition",
+                    "group flex w-full items-center justify-between gap-2 rounded-lg px-2 py-2 text-left text-sm text-stone-700 transition",
                     highlightedIndex === index
                       ? "bg-stone-100"
                       : "hover:bg-stone-50",
                   )}
                 >
                   <OptionTag option={option} />
+                  {onDeleteOption ? (
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onDeleteOption(option.value);
+                      }}
+                      className="flex size-5 shrink-0 items-center justify-center rounded-sm text-stone-400 opacity-0 hover:bg-black/5 hover:text-stone-600 group-hover:opacity-100"
+                    >
+                      <X className="size-3.5" />
+                    </span>
+                  ) : null}
                 </button>
               );
             })
@@ -365,10 +426,11 @@ export function Select({
         </div>
 
         {creatable && createValue ? (
-          <div className="mt-3 border-t border-stone-100 pt-3">
-            <button
-              type="button"
-              onClick={handleCreate}
+          <div className="mt-3 shrink-0 border-t border-stone-100 pt-3">
+              <button
+                type="button"
+                data-highlighted={highlightedIndex === filteredOptions.length}
+                onClick={handleCreate}
               onMouseEnter={() => {
                 setHighlightedIndex(filteredOptions.length);
               }}

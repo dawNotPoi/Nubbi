@@ -1,124 +1,128 @@
 import Popover from "@/component/UI/Popover";
 import { LoadingOutlined } from "@ant-design/icons";
-import { NodeViewProps, NodeViewWrapper } from "@tiptap/react";
-import { Button, Input } from "antd";
-import clsx from "clsx";
+import { NodeViewWrapper } from "@tiptap/react";
+import type { NodeViewProps } from "@tiptap/react";
+import { message } from "antd";
 import { PictureInPicture } from "lucide-react";
-import React, { useEffect, useRef, useState } from "react";
-import { DImageOptions } from ".";
+import type { KeyboardEvent } from "react";
+import { useId, useState } from "react";
+import ImagePopoverContent from "./components/ImagePopoverContent";
+import type { DImageOptions, ImageNodeAttrs } from "./types";
+import {
+  cancelImageUpload,
+  getImageFileValidationError,
+  getImageUploadPreviewUrl,
+  isValidImageUrl,
+  startImageUpload,
+} from "./upload";
 import "./index.css";
-const ImageNodeView: React.FC<NodeViewProps> = ({
+
+const ImageNodeView = ({
   node,
+  editor,
   updateAttributes,
+  deleteNode,
   extension,
-}) => {
-  const { status, file, src } = node.attrs;
-
+}: NodeViewProps) => {
+  const {
+    alt,
+    errorMessage,
+    src,
+    status = "done",
+    uploadId,
+  } = node.attrs as ImageNodeAttrs;
   const [open, setOpen] = useState(false);
+  const fileInputId = useId();
+  const { maxFileSize, uploadHandler } = extension.options as DImageOptions;
+  const previewUrl = getImageUploadPreviewUrl(uploadId);
 
-  const isUploading = useRef(false);
+  const uploadFile = (file: File | undefined) => {
+    if (!file) return;
 
-  const { uploadHandler } = extension.options as DImageOptions;
-
-  //在loding状态时会自动上传文件
-  useEffect(() => {
     if (!uploadHandler) {
-      console.error("未配置上传方法");
+      message.error("未配置图片上传方法");
       return;
     }
-    if (status === "uploading" && !isUploading.current) {
-      isUploading.current = true;
-      const upload = async () => {
-        const url = await uploadHandler(file);
-        if (!url) throw new Error("上传失败 请重试");
-        updateAttributes({ src: url, status: "done" });
-      };
-      upload();
+
+    const validationError = getImageFileValidationError(file, maxFileSize);
+    if (validationError) {
+      message.warning(validationError);
+      return;
     }
-  }, [status, file]);
 
-  const PopoverContent = () => {
-    const [link, setLink] = useState("");
-    const tabs = [
-      { label: "上传图片", value: "upload" },
-      { label: "嵌入链接", value: "embed" },
-    ];
-    const [selectedTab, setSelectedTab] = useState("upload");
+    cancelImageUpload(uploadId, editor);
 
-    return (
-      <div className="w-[500px]  py-1 bg-white border rounded-md">
-        <header className="px-2 pt-1  flex gap-1 border-b">
-          {tabs.map((tab) => {
-            return (
-              <button
-                onClick={() => {
-                  setSelectedTab(tab.value);
-                }}
-                key={tab.value}
-                className={clsx(
-                  " hover:bg-[rgba(249,248,247)]  p-1 py-2",
-                  tab.value === selectedTab && "border-b border-black"
-                )}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
-        </header>
-        <main className="p-4 space-y-4 w-full">
-          {selectedTab === "upload" && (
-            <>
-              <label htmlFor="file-upload">
-                <div className="border cursor-pointer rounded-md py-1 hover:bg-[rgba(249,248,247)] w-full  flex justify-center ">
-                  <span>图片上传</span>
-                </div>
-                <input
-                  name="file-upload"
-                  id="file-upload"
-                  type="file"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      updateAttributes({ file, status: "uploading" });
-                    }
-                  }}
-                />
-              </label>
-              <footer className="text-center  text-gray-500 text-[12px]">
-                最大只能上传5MB大小的图片
-              </footer>
-            </>
-          )}
-          {selectedTab === "embed" && (
-            <>
-              <Input
-                placeholder="请输入嵌入的图片链接"
-                onChange={(e) => setLink(e.target.value)}
-              ></Input>
-              <div className="flex justify-center">
-                <Button
-                  onClick={() => {
-                    updateAttributes({
-                      src: link,
-                      status: "done",
-                    });
-                  }}
-                  type="primary"
-                  className="w-[300px] mx-auto"
-                >
-                  嵌入图片
-                </Button>
-              </div>
-            </>
-          )}
-        </main>
-      </div>
-    );
+    const started = startImageUpload({
+      editor,
+      file,
+      maxFileSize,
+      uploadHandler,
+      updateAttributes,
+    });
+
+    if (started) {
+      setOpen(false);
+    }
   };
 
-  // 状态 1：Waiting - 显示上传控制台
-  if (status === "placeholder") {
+  const embedImageUrl = (value: string) => {
+    const nextSrc = value.trim();
+    if (!isValidImageUrl(nextSrc)) {
+      message.warning("请输入有效的图片链接");
+      return;
+    }
+
+    updateAttributes({
+      errorMessage: null,
+      src: nextSrc,
+      status: "done",
+      uploadId: null,
+    });
+    setOpen(false);
+  };
+
+  const deleteImage = () => {
+    cancelImageUpload(uploadId, editor);
+    deleteNode();
+  };
+
+  const copyImageUrl = async () => {
+    if (!src) return;
+
+    try {
+      await navigator.clipboard.writeText(src);
+      message.success("图片链接已复制");
+    } catch {
+      message.error("复制失败");
+    }
+  };
+
+  const handlePlaceholderKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    setOpen(true);
+  };
+
+  const popoverContent = (
+    <ImagePopoverContent
+      alt={alt}
+      fileInputId={fileInputId}
+      maxFileSize={maxFileSize}
+      onCopyUrl={() => void copyImageUrl()}
+      onDelete={deleteImage}
+      onEmbedUrl={embedImageUrl}
+      onSaveDetails={(attrs) => {
+        updateAttributes(attrs);
+        setOpen(false);
+      }}
+      onUploadFile={uploadFile}
+      src={src}
+      status={status}
+      title={node.attrs.title}
+    />
+  );
+
+  if (status === "placeholder" || status === "error") {
     return (
       <NodeViewWrapper className="image-node-view img-mark">
         <Popover
@@ -131,34 +135,62 @@ const ImageNodeView: React.FC<NodeViewProps> = ({
               onClick={() => {
                 setOpen(true);
               }}
+              onKeyDown={handlePlaceholderKeyDown}
+              role="button"
+              tabIndex={0}
               className="upload-placeholder rounded-md cursor-pointer flex bg-[rgba(249,248,247)] text-gray-400 text-[14px] items-center p-4"
               contentEditable={false}
             >
               <PictureInPicture size={20} />
-              <span className="ml-2 ">上传图片</span>
+              <span className="ml-2 ">
+                {status === "error" ? errorMessage || "图片上传失败" : "上传图片"}
+              </span>
             </div>
           }
         >
-          <PopoverContent />
+          {popoverContent}
         </Popover>
       </NodeViewWrapper>
     );
   }
 
-  // 状态 2：不为placeholder
-  return (
-    <NodeViewWrapper className="image-node-view flex justify-center  relative">
+  const imageNode = (
+    <div className="image-node-view flex justify-center  relative">
       <img
         className="max-w-full img-mark h-auto rounded-sm block"
-        src={status === "done" ? src : URL.createObjectURL(file) || ""}
-        alt={file?.name}
+        src={status === "done" ? src ?? "" : previewUrl}
+        alt={alt ?? ""}
+        title={node.attrs.title ?? undefined}
       />
-      {/* 上传中添加loding */}
       {status === "uploading" && (
-        <div className="absolute  bg-black/30 right-0 bottom-0 size-8 flex item-center justify-center">
+        <div className="absolute  bg-black/30 right-0 bottom-0 size-8 flex items-center justify-center">
           <LoadingOutlined />
         </div>
       )}
+    </div>
+  );
+
+  if (status === "done") {
+    return (
+      <NodeViewWrapper className="image-node-view" contentEditable={false}>
+        <Popover
+          open={open}
+          onClickOutside={() => setOpen(false)}
+          trigger={
+            <div onClick={() => setOpen(true)} contentEditable={false}>
+              {imageNode}
+            </div>
+          }
+        >
+          {popoverContent}
+        </Popover>
+      </NodeViewWrapper>
+    );
+  }
+
+  return (
+    <NodeViewWrapper className="image-node-view" contentEditable={false}>
+      {imageNode}
     </NodeViewWrapper>
   );
 };

@@ -1,8 +1,11 @@
 const MARKDOWN_FILE_PATTERN = /\.(md|markdown)$/i;
 
+import type { MetaEntry } from "@/api/note";
+
 export type MarkdownImportDraft = {
   content: string;
-  meta: Record<string, unknown>;
+  meta: MetaEntry[];
+  tags: string[];
   title: string;
 };
 
@@ -87,14 +90,14 @@ export const parseMarkdownImport = (
 
   return {
     content: removeLeadingTitleHeading(markdown, title),
-    meta: {
+    meta: Object.entries({
       ...meta,
-      date: Date.now(),
       importedFrom: fileName,
-      status: meta.status || "Draft",
-      tags: parseTags(meta.tags),
       type: meta.type || "markdown",
-    },
+    })
+      .filter(([key]) => key !== "title" && key !== "status" && key !== "tags")
+      .map(([key, value]) => ({ key, value, type: "text" })),
+    tags: parseTags(meta.tags),
     title,
   };
 };

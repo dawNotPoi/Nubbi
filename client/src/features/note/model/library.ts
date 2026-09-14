@@ -1,4 +1,4 @@
-import type { Note } from "@/api/note";
+import type { Note, NoteStatus } from "@/api/note";
 import dayjs from "dayjs";
 import "dayjs/locale/zh-cn";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -28,7 +28,10 @@ type NoteLibraryRowsOptions = {
   expandedIds: string[];
   filterText: string;
   notes: Note[];
+  publishedFilter: "all" | "published" | "unpublished";
   sortMode: NoteLibrarySortMode;
+  statusFilter: "all" | NoteStatus;
+  tagsFilter: string[];
 };
 
 type NoteLibraryIndex = {
@@ -235,10 +238,20 @@ export const getNoteLibraryRows = ({
   expandedIds,
   filterText,
   notes,
+  publishedFilter,
   sortMode,
+  statusFilter,
+  tagsFilter,
 }: NoteLibraryRowsOptions) => {
   const keyword = filterText.trim().toLowerCase();
-  const index = buildNoteLibraryIndex(notes, sortMode);
+  const filteredNotes = notes.filter((note) => {
+    if (statusFilter !== "all" && note.status !== statusFilter) return false;
+    if (publishedFilter === "published" && !note.published) return false;
+    if (publishedFilter === "unpublished" && note.published) return false;
+    if (tagsFilter.length > 0 && !tagsFilter.some((tag) => note.tags.includes(tag))) return false;
+    return true;
+  });
+  const index = buildNoteLibraryIndex(filteredNotes, sortMode);
   const viewMode: NoteLibraryViewMode = keyword ? "search" : "tree";
 
   return {
@@ -247,6 +260,18 @@ export const getNoteLibraryRows = ({
       : getTreeRows(index, expandedIds),
     viewMode,
   };
+};
+
+export const getAvailableLibraryTags = (notes: Note[]) => {
+  const counts = new Map<string, number>();
+  notes.forEach((note) => {
+    note.tags.forEach((tag) => {
+      counts.set(tag, (counts.get(tag) ?? 0) + 1);
+    });
+  });
+  return Array.from(counts.entries())
+    .map(([tag, count]) => ({ tag, count }))
+    .sort((a, b) => a.tag.localeCompare(b.tag));
 };
 
 export const getRecentTargetNotes = (recentNotes: Note[], allNotes: Note[]) => {

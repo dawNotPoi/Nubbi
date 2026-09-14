@@ -4,7 +4,7 @@
 
 笔记摘要服务，通过 noteId 与笔记一对一关联。
 
-**服务端**: `server/app/routes/summary.ts` + `server/app/controller/summary.ts` + `server/app/models/summary.ts`
+**服务端**: `server/app/routes/summary/` + `server/app/controller/summary.ts` + `server/app/models/summary.ts`
 
 ---
 
@@ -28,13 +28,16 @@ Summary {
 | POST | `/summary/create` | 创建摘要。body: `{ noteId, content }` |
 | POST | `/summary/find` | 查询摘要。body: `{ noteId }` |
 
+两个端点都要求认证。服务端必须使用当前认证用户校验 `noteId` 的笔记归属，
+禁止客户端通过空条件查询或写入其他用户的摘要。
+
 ---
 
 ## 控制器
 
 | 函数 | 文件 | 说明 |
 |------|------|------|
-| `createSummary` | `server/app/controller/summary.ts` | 创建或更新（noteId 唯一） |
+| `createSummary` | `server/app/controller/summary.ts` | 按 noteId 原子创建或更新 |
 | `findSummary` | `server/app/controller/summary.ts` | 按 noteId 查询 |
 
 ---
@@ -42,6 +45,8 @@ Summary {
 ## 设计说明
 
 摘要和笔记是一对一关系，noteId 为 unique 索引。当前实现为手动创建/查询摘要，后续可接入 AI 自动生成。
+
+笔记永久删除或账号注销时同步删除关联摘要，避免留下孤儿数据。
 
 ---
 

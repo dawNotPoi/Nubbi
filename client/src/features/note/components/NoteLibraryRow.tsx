@@ -17,6 +17,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 type NoteLibraryRowProps = {
   row: NoteLibraryRowModel;
@@ -44,6 +45,7 @@ export function NoteLibraryRow({
   viewMode,
 }: NoteLibraryRowProps) {
   const { note } = row;
+  const isMobile = useIsMobile();
   const noteTitle = normalizeNoteTitle(note.title);
   const [editing, setEditing] = useState(false);
   const [draftTitle, setDraftTitle] = useState(noteTitle);
@@ -102,12 +104,18 @@ export function NoteLibraryRow({
   return (
     <li
       className={clsx(
-        "group/note-row grid cursor-pointer grid-cols-[40px_minmax(280px,1fr)_minmax(180px,28vw)_132px] items-center border-b border-[#efefed] text-[14px] transition-colors",
-        "hover:bg-[#f7f7f5] focus-within:bg-[#f7f7f5]",
-        viewMode === "search" ? "min-h-[54px] py-1" : "h-11",
-        selected && "bg-[#f1f1ef]",
+        "group/note-row grid min-h-16 cursor-pointer grid-cols-[36px_minmax(0,1fr)_36px] items-center border-b border-border-row text-[14px] transition-colors md:grid-cols-[40px_minmax(260px,1fr)_minmax(220px,26vw)_minmax(160px,18vw)_132px]",
+        "hover:bg-bg-hover focus-within:bg-bg-hover",
+        viewMode === "search" ? "py-1" : "md:h-11 md:min-h-0",
+        selected && "bg-bg-selected",
       )}
-      onClick={() => onToggle(!selected, note._id)}
+      onClick={() => {
+        if (isMobile) {
+          onOpen(note);
+          return;
+        }
+        onToggle(!selected, note._id);
+      }}
     >
       <div
         className="flex h-full items-center justify-center"
@@ -116,14 +124,14 @@ export function NoteLibraryRow({
         <Checkbox
           checked={selected}
           className={clsx(
-            "opacity-0 transition-opacity",
-            "group-hover/note-row:opacity-100 group-focus-within/note-row:opacity-100",
+            "opacity-100 transition-opacity md:opacity-0",
+            "md:group-hover/note-row:opacity-100 md:group-focus-within/note-row:opacity-100",
             selected && "opacity-100",
           )}
           onChange={(event) => onToggle(event.target.checked, note._id)}
         />
       </div>
-      <div className="flex min-w-0 items-center pr-4 text-[#37352f]">
+      <div className="flex min-w-0 items-center pr-4 text-text-primary">
         <div
           className="flex min-w-0 flex-1 items-center gap-2"
           style={{ paddingLeft: viewMode === "tree" ? row.depth * 22 : 0 }}
@@ -131,7 +139,7 @@ export function NoteLibraryRow({
           {viewMode === "tree" ? (
             <button
               className={clsx(
-                "flex size-5 shrink-0 items-center justify-center rounded text-[#9b9a97] transition-colors hover:bg-[#e9e9e7] hover:text-[#37352f]",
+                "flex size-5 shrink-0 items-center justify-center rounded text-text-subtle transition-colors hover:bg-bg-icon-hover hover:text-text-primary",
                 !canExpand && "invisible",
               )}
               onClick={(event) => {
@@ -150,12 +158,12 @@ export function NoteLibraryRow({
               />
             </button>
           ) : null}
-          <FileText className="size-5 shrink-0 text-[#9b9a97]" />
+          <FileText className="size-5 shrink-0 text-text-subtle" />
           <div className="flex min-w-0 flex-1 flex-col justify-center">
             {editing ? (
               <input
                 ref={inputRef}
-                className="h-8 min-w-0 rounded-md border border-[#d9d7d2] bg-white px-2 font-medium outline-none shadow-[0_0_0_2px_rgba(35,131,226,0.12)]"
+                className="h-8 min-w-0 rounded-md border border-border-button bg-white px-2 font-medium outline-none shadow-focus-input"
                 onBlur={() => {
                   if (skipBlurCommitRef.current) {
                     skipBlurCommitRef.current = false;
@@ -179,8 +187,15 @@ export function NoteLibraryRow({
               />
             ) : (
               <button
-                className="min-w-0 truncate rounded px-1 py-1 text-left font-medium outline-none hover:bg-[#ededeb] focus-visible:ring-2 focus-visible:ring-[#d3d1cb]"
-                onClick={startRename}
+                className="min-w-0 truncate rounded px-1 py-1 text-left font-medium outline-none hover:bg-bg-hover focus-visible:ring-2 focus-visible:ring-focus-ring"
+                onClick={(event) => {
+                  if (isMobile) {
+                    event.stopPropagation();
+                    onOpen(note);
+                    return;
+                  }
+                  startRename(event);
+                }}
                 title="重命名"
                 type="button"
               >
@@ -188,20 +203,56 @@ export function NoteLibraryRow({
               </button>
             )}
             {viewMode === "search" && row.pathLabel ? (
-              <span className="truncate px-1 text-xs text-[#9b9a97]">
+              <span className="truncate px-1 text-xs text-text-subtle">
                 {row.pathLabel}
               </span>
             ) : null}
+            <div className="mt-1 flex min-w-0 items-center gap-1.5 overflow-hidden text-xs text-text-muted md:hidden">
+              <span className="shrink-0">{formatNoteEditedTime(note)}</span>
+              <span aria-hidden="true">·</span>
+              <span className="shrink-0">{note.status}</span>
+              {note.tags[0] ? (
+                <span className="truncate rounded bg-bg-selected px-1.5 py-0.5">
+                  {note.tags[0]}
+                </span>
+              ) : null}
+            </div>
           </div>
         </div>
       </div>
-      <span className="truncate text-[#4b5563]">
+      <span className="hidden truncate text-text-muted md:block">
         {formatNoteEditedTime(note)}
       </span>
-      <div className="flex items-center justify-end gap-1 pr-2 opacity-0 transition-opacity group-hover/note-row:opacity-100 group-focus-within/note-row:opacity-100">
+      <div className="hidden min-w-0 flex-wrap items-center gap-1 pr-2 md:flex">
+        <span
+          className={clsx(
+            "rounded px-1.5 py-0.5 text-xs font-medium",
+            note.status === "inbox" && "bg-amber-50 text-amber-700",
+            note.status === "active" && "bg-blue-50 text-blue-700",
+            note.status === "archived" && "bg-neutral-100 text-neutral-600",
+          )}
+        >
+          {note.status}
+        </span>
+        {note.published ? (
+          <span className="rounded bg-purple-50 px-1.5 py-0.5 text-xs font-medium text-purple-700">
+            published
+          </span>
+        ) : null}
+        {note.tags.slice(0, 2).map((tag) => (
+          <span
+            className="max-w-[86px] truncate rounded bg-bg-selected px-1.5 py-0.5 text-xs text-text-muted"
+            key={tag}
+            title={tag}
+          >
+            {tag}
+          </span>
+        ))}
+      </div>
+      <div className="flex items-center justify-end gap-1 pr-1 opacity-100 transition-opacity md:pr-2 md:opacity-0 md:group-hover/note-row:opacity-100 md:group-focus-within/note-row:opacity-100">
         {viewMode === "search" ? (
           <button
-            className="flex size-7 items-center justify-center rounded text-[#9b9a97] hover:bg-[#e9e9e7] hover:text-[#37352f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d3d1cb]"
+            className="flex size-7 items-center justify-center rounded text-text-subtle hover:bg-bg-icon-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             onClick={(event) => {
               event.stopPropagation();
               onRevealInTree(note._id);
@@ -213,7 +264,7 @@ export function NoteLibraryRow({
           </button>
         ) : null}
         <button
-          className="h-7 rounded-md border border-[#d9d7d2] bg-white px-3 text-sm font-medium text-[#37352f] shadow-sm transition-colors hover:border-[#bdbab4] hover:bg-[#f7f7f5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d3d1cb]"
+          className="hidden h-7 rounded-md border border-border-button bg-white px-3 text-sm font-medium text-text-primary shadow-sm transition-colors hover:border-border-button-hover hover:bg-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring md:inline-flex md:items-center"
           onClick={(event) => {
             event.stopPropagation();
             onOpen(note);
@@ -224,7 +275,7 @@ export function NoteLibraryRow({
         </button>
         <Dropdown menu={{ items: menuItems }} placement="bottomRight" trigger={["click"]}>
           <button
-            className="flex size-7 items-center justify-center rounded text-[#9b9a97] hover:bg-[#e9e9e7] hover:text-[#37352f]"
+            className="flex size-7 items-center justify-center rounded text-text-subtle hover:bg-bg-icon-hover hover:text-text-primary"
             onClick={(event) => event.stopPropagation()}
             title="更多"
             type="button"

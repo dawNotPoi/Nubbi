@@ -1,0 +1,18 @@
+packages:
+  - client
+  - server
+  - mcp
+  - website
+
+overrides:
+  mongodb: 6.21.0
+
+packageExtensions:
+  lucide-react:
+    peerDependencies:
+      "@types/react": "*"
+
+onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - '@swc/core'
+  - esbuild

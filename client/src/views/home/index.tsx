@@ -6,14 +6,9 @@ export default function Home() {
   return (
     <div>
       <Header />
-      <main className="max-w-[1000px] mx-auto px-4">
-        <header>
-          <h2 className="font-bold h-[100px] flex items-center justify-center">
-            {/* Good morning */}
-          </h2>
-        </header>
-        <RecentNoteList className="mt-10" />
-        <RecentMeeting className="mt-10" />
+      <main className="mx-auto max-w-[1000px] space-y-10 px-4 py-6 sm:px-6 md:py-12">
+        <RecentNoteList />
+        <RecentMeeting />
       </main>
     </div>
   );

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>文件管理 · Detail Pane</title>
+  <style>
+    :root{--canvas:#f4f5f3;--paper:#fff;--ink:#232825;--muted:#7b837e;--line:#e2e6e2;--soft:#f7f9f7;--green:#39745a;--green-soft:#edf5f0;--danger:#c44343}
+    *{box-sizing:border-box}html,body{min-width:320px;min-height:100%;margin:0}body{background:var(--canvas);color:var(--ink);font-family:Inter,Arial,"PingFang SC",sans-serif}button,input{font:inherit}button{cursor:pointer}
+    .manager{width:min(1200px,calc(100% - 40px));min-height:680px;margin:24px auto;overflow:hidden;border:1px solid var(--line);border-radius:10px;background:var(--paper)}
+    header{display:flex;min-height:62px;align-items:center;justify-content:space-between;gap:20px;padding:0 20px;border-bottom:1px solid var(--line)}.heading{display:flex;align-items:baseline;gap:8px}.heading h1{margin:0;font-size:18px}.heading span{color:var(--muted);font-size:11px}.actions{display:flex;gap:7px}.button{height:34px;padding:0 12px;border:1px solid var(--line);border-radius:6px;background:var(--paper);font-size:12px}.button:hover{background:var(--soft)}.button.primary{border-color:var(--green);background:var(--green);color:var(--paper)}
+    .toolbar{display:flex;min-height:48px;align-items:center;justify-content:space-between;gap:16px;padding:7px 20px;border-bottom:1px solid var(--line);background:var(--soft)}.path{color:var(--muted);font-size:12px}.path strong{color:var(--ink)}.search{width:240px;height:32px;padding:0 10px;border:1px solid var(--line);border-radius:6px;background:var(--paper);outline:0}.search:focus{border-color:var(--green)}
+    .split{display:grid;grid-template-columns:minmax(0,1fr) 320px;min-height:568px}.browser{min-width:0;border-right:1px solid var(--line)}.table-head,.row{display:grid;grid-template-columns:40px minmax(220px,1fr) 120px 150px 40px;align-items:center}.table-head{height:40px;border-bottom:1px solid var(--line);color:var(--muted);font-size:11px}.row{min-height:58px;border-bottom:1px solid var(--line);font-size:12px}.row:hover{background:var(--soft)}.row.selected{background:var(--green-soft)}.check{display:grid;place-items:center}.check input{width:14px;height:14px;accent-color:var(--green)}.name{min-width:0;overflow:hidden;font-size:13px;font-weight:600;text-overflow:ellipsis;white-space:nowrap}.type,.date{color:var(--muted)}.more{width:28px;height:28px;border:0;border-radius:4px;background:transparent;color:var(--muted)}.more:hover{background:var(--paper)}
+    .detail{padding:24px;background:var(--soft)}.detail-label{margin:0 0 8px;color:var(--muted);font-size:10px;letter-spacing:.1em}.detail h2{margin:0;font-size:17px;line-height:1.45;word-break:break-all}.preview{display:grid;height:190px;margin:22px 0;place-items:center;border:1px dashed var(--line);border-radius:8px;background:var(--paper);color:var(--muted);font-size:12px}.properties{display:grid;gap:12px;margin:0}.properties div{display:grid;grid-template-columns:72px 1fr;gap:8px;font-size:12px}.properties dt{color:var(--muted)}.properties dd{margin:0}.detail-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:24px}.detail-actions button{height:34px;border:1px solid var(--line);border-radius:5px;background:var(--paper);font-size:12px}.detail-actions .danger{color:var(--danger)}
+    @media(max-width:840px){.manager{width:calc(100% - 24px);margin:12px auto}.split{grid-template-columns:1fr}.browser{border-right:0}.detail{border-top:1px solid var(--line)}.table-head,.row{grid-template-columns:36px minmax(0,1fr) 110px 36px}.date{display:none}}
+    @media(max-width:560px){header{align-items:flex-start;flex-direction:column;padding:14px 16px}.actions{width:100%}.button{flex:1}.toolbar{align-items:flex-start;flex-direction:column;padding:10px 16px}.search{width:100%}.type{display:none}.table-head,.row{grid-template-columns:34px minmax(0,1fr) 34px}.detail{padding:20px}}
+  </style>
+</head>
+<body>
+  <main class="manager">
+    <header><div class="heading"><h1>文件</h1><span>6 项</span></div><div class="actions"><button class="button">新建文件夹</button><button class="button primary">上传文件</button></div></header>
+    <div class="toolbar"><div class="path"><strong>全部文件</strong> / 产品资料</div><input class="search" type="search" placeholder="搜索当前目录" aria-label="搜索文件" /></div>
+    <div class="split">
+      <section class="browser" aria-label="文件列表">
+        <div class="table-head"><span></span><span>名称</span><span>类型 / 大小</span><span class="date">最近修改</span><span></span></div>
+        <div class="row"><label class="check"><input type="checkbox" aria-label="选择产品资料" /></label><span class="name">产品资料</span><span class="type">文件夹 · 12 项</span><span class="date">今天 09:42</span><button class="more">•••</button></div>
+        <div class="row"><label class="check"><input type="checkbox" aria-label="选择设计素材" /></label><span class="name">设计素材</span><span class="type">文件夹 · 8 项</span><span class="date">昨天 18:28</span><button class="more">•••</button></div>
+        <div class="row"><label class="check"><input type="checkbox" aria-label="选择会议归档" /></label><span class="name">会议归档</span><span class="type">文件夹 · 24 项</span><span class="date">07/13 17:20</span><button class="more">•••</button></div>
+        <div class="row selected"><label class="check"><input type="checkbox" checked aria-label="选择产品手册" /></label><span class="name">Nubbi 产品手册.pdf</span><span class="type">PDF · 2.4 MB</span><span class="date">今天 09:18</span><button class="more">•••</button></div>
+        <div class="row"><label class="check"><input type="checkbox" aria-label="选择发布说明" /></label><span class="name">发布说明.md</span><span class="type">MD · 53 KB</span><span class="date">今天 10:32</span><button class="more">•••</button></div>
+        <div class="row"><label class="check"><input type="checkbox" aria-label="选择演示封面" /></label><span class="name">演示封面.png</span><span class="type">PNG · 3.6 MB</span><span class="date">昨天 16:20</span><button class="more">•••</button></div>
+      </section>
+      <aside class="detail"><p class="detail-label">当前选择</p><h2>Nubbi 产品手册.pdf</h2><div class="preview">文件预览区域</div><dl class="properties"><div><dt>文件类型</dt><dd>PDF 文档</dd></div><div><dt>文件大小</dt><dd>2.4 MB</dd></div><div><dt>修改时间</dt><dd>今天 09:18</dd></div><div><dt>所在位置</dt><dd>全部文件 / 产品资料</dd></div></dl><div class="detail-actions"><button>预览</button><button>下载</button><button>移动</button><button class="danger">删除</button></div></aside>
+    </div>
+  </main>
+</body>
+</html>

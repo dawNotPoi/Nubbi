@@ -7,6 +7,7 @@ import {
   PluginKey,
   TextSelection,
 } from "@tiptap/pm/state";
+import { Decoration, DecorationSet } from "@tiptap/pm/view";
 
 type SmartSelectMode = "idle" | "block-selected" | "all-selected";
 
@@ -15,14 +16,16 @@ interface SmartSelectState {
   from: number | null;
   to: number | null;
   kind: "text" | "node" | null;
+  nodeType: string | null;
 }
 
-interface BlockSelectionTarget {
+interface TextSelectionTarget {
   selection: TextSelection | NodeSelection;
   mode: Extract<SmartSelectMode, "block-selected">;
   from: number;
   to: number;
   kind: "text" | "node";
+  nodeType: string;
 }
 
 const SMART_SELECT_ALL_KEY = new PluginKey<SmartSelectState>("smartSelectAll");
@@ -32,17 +35,99 @@ const IDLE_STATE: SmartSelectState = {
   from: null,
   to: null,
   kind: null,
+  nodeType: null,
 };
 
-const BLOCK_PRIORITY_NAMES = new Set(["listItem", "codeBlock", "blockquote"]);
+const CONTENT_SELECTION_NODE_NAMES = new Set([
+  "listItem",
+  "codeBlock",
+  "blockquote",
+]);
+const ALL_SELECTION_BLOCK_NODE_NAMES = new Set([
+  "paragraph",
+  "heading",
+  "bulletList",
+  "orderedList",
+  "listItem",
+  "blockquote",
+  "codeBlock",
+  "image",
+  "table",
+  "horizontalRule",
+]);
+
+const createAllSelectedState = (docSize: number): SmartSelectState => ({
+  mode: "all-selected",
+  from: 0,
+  to: docSize,
+  kind: "text",
+  nodeType: "doc",
+});
 
 const isSameSelection = (state: SmartSelectState, from: number, to: number) => {
   return state.mode === "block-selected" && state.from === from && state.to === to;
 };
 
-const resolveBlockTarget = (
+const createBlockSelectionState = (
+  target: TextSelectionTarget,
+): SmartSelectState => ({
+  mode: target.mode,
+  from: target.from,
+  to: target.to,
+  kind: target.kind,
+  nodeType: target.nodeType,
+});
+
+const toNodeTypeClass = (nodeType: string) =>
+  nodeType.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+
+const createAllSelectionDecorations = (editorState: EditorState) => {
+  const pluginState = SMART_SELECT_ALL_KEY.getState(editorState) ?? IDLE_STATE;
+
+  if (pluginState.mode !== "all-selected") {
+    return DecorationSet.empty;
+  }
+
+  const decorations: Decoration[] = [];
+
+  editorState.doc.descendants((node, pos) => {
+    if (!ALL_SELECTION_BLOCK_NODE_NAMES.has(node.type.name)) {
+      return true;
+    }
+
+    decorations.push(
+      Decoration.node(pos, pos + node.nodeSize, {
+        class: `dn-editor__block-selection dn-editor__block-selection--${toNodeTypeClass(node.type.name)}`,
+      }),
+    );
+
+    return false;
+  });
+
+  return DecorationSet.create(editorState.doc, decorations);
+};
+
+const isManualCrossBlockSelection = (
   editorState: EditorState,
-): BlockSelectionTarget | null => {
+  pluginState: SmartSelectState,
+  target: TextSelectionTarget | null,
+) => {
+  const { selection } = editorState;
+
+  if (selection.empty || selection instanceof NodeSelection) {
+    return false;
+  }
+
+  if (target && isSameSelection(pluginState, target.from, target.to)) {
+    return false;
+  }
+
+  return !selection.$from.sameParent(selection.$to);
+};
+
+const resolveTextSelectTarget = (
+  editorState: EditorState,
+): TextSelectionTarget | null => {
   const { selection, doc } = editorState;
 
   if (selection instanceof NodeSelection && selection.node.isAtom) {
@@ -52,12 +137,14 @@ const resolveBlockTarget = (
       from: selection.from,
       to: selection.to,
       kind: "node",
+      nodeType: selection.node.type.name,
     };
   }
 
   const $from = selection.$from;
-  let preferredTextRange: { from: number; to: number } | null = null;
-  let preferredNodePos: number | null = null;
+  let preferredTextRange: { from: number; to: number; nodeType: string } | null =
+    null;
+  let preferredNodeTarget: { pos: number; nodeType: string } | null = null;
 
   for (let depth = $from.depth; depth > 0; depth -= 1) {
     const node = $from.node(depth);
@@ -65,7 +152,7 @@ const resolveBlockTarget = (
     const start = $from.start(depth);
     const end = $from.end(depth);
 
-    if (BLOCK_PRIORITY_NAMES.has(node.type.name)) {
+    if (CONTENT_SELECTION_NODE_NAMES.has(node.type.name)) {
       if (node.isTextblock || node.isBlock) {
         return {
           selection: TextSelection.create(doc, start, end),
@@ -73,12 +160,19 @@ const resolveBlockTarget = (
           from: start,
           to: end,
           kind: "text",
+          nodeType: node.type.name,
         };
       }
     }
 
-    if (preferredNodePos === null && (node.isAtom || node.type.name === "image")) {
-      preferredNodePos = before;
+    if (
+      preferredNodeTarget === null &&
+      (node.isAtom || node.type.name === "image")
+    ) {
+      preferredNodeTarget = {
+        pos: before,
+        nodeType: node.type.name,
+      };
     }
 
     if (
@@ -89,18 +183,20 @@ const resolveBlockTarget = (
       preferredTextRange = {
         from: start,
         to: end,
+        nodeType: node.type.name,
       };
     }
   }
 
-  if (preferredNodePos !== null) {
-    const nodeSelection = NodeSelection.create(doc, preferredNodePos);
+  if (preferredNodeTarget !== null) {
+    const nodeSelection = NodeSelection.create(doc, preferredNodeTarget.pos);
     return {
       selection: nodeSelection,
       mode: "block-selected",
       from: nodeSelection.from,
       to: nodeSelection.to,
       kind: "node",
+      nodeType: preferredNodeTarget.nodeType,
     };
   }
 
@@ -115,6 +211,7 @@ const resolveBlockTarget = (
       from: preferredTextRange.from,
       to: preferredTextRange.to,
       kind: "text",
+      nodeType: preferredTextRange.nodeType,
     };
   }
 
@@ -131,51 +228,52 @@ export const SmartSelectAllExtension = Extension.create({
         const pluginState = SMART_SELECT_ALL_KEY.getState(state) ?? IDLE_STATE;
 
         if (state.selection instanceof AllSelection) {
-          const tr = state.tr.setMeta(SMART_SELECT_ALL_KEY, {
-            mode: "all-selected",
-            from: 0,
-            to: state.doc.content.size,
-            kind: "text",
-          } satisfies SmartSelectState);
+          const tr = state.tr.setMeta(
+            SMART_SELECT_ALL_KEY,
+            createAllSelectedState(state.doc.content.size),
+          );
           view.dispatch(tr);
           return true;
         }
 
-        const target = resolveBlockTarget(state);
+        const target = resolveTextSelectTarget(state);
+
+        if (isManualCrossBlockSelection(state, pluginState, target)) {
+          const tr = state.tr
+            .setSelection(new AllSelection(state.doc))
+            .setMeta(
+              SMART_SELECT_ALL_KEY,
+              createAllSelectedState(state.doc.content.size),
+            );
+          view.dispatch(tr);
+          return true;
+        }
+
         if (!target) {
           const tr = state.tr
             .setSelection(new AllSelection(state.doc))
-            .setMeta(SMART_SELECT_ALL_KEY, {
-              mode: "all-selected",
-              from: 0,
-              to: state.doc.content.size,
-              kind: "text",
-            } satisfies SmartSelectState);
-          view.dispatch(tr.scrollIntoView());
+            .setMeta(
+              SMART_SELECT_ALL_KEY,
+              createAllSelectedState(state.doc.content.size),
+            );
+          view.dispatch(tr);
           return true;
         }
 
         if (isSameSelection(pluginState, target.from, target.to)) {
           const tr = state.tr
             .setSelection(new AllSelection(state.doc))
-            .setMeta(SMART_SELECT_ALL_KEY, {
-              mode: "all-selected",
-              from: 0,
-              to: state.doc.content.size,
-              kind: "text",
-            } satisfies SmartSelectState);
-          view.dispatch(tr.scrollIntoView());
+            .setMeta(
+              SMART_SELECT_ALL_KEY,
+              createAllSelectedState(state.doc.content.size),
+            );
+          view.dispatch(tr);
           return true;
         }
 
         const tr = state.tr
           .setSelection(target.selection)
-          .setMeta(SMART_SELECT_ALL_KEY, {
-            mode: target.mode,
-            from: target.from,
-            to: target.to,
-            kind: target.kind,
-          } satisfies SmartSelectState);
+          .setMeta(SMART_SELECT_ALL_KEY, createBlockSelectionState(target));
         view.dispatch(tr.scrollIntoView());
         return true;
       },
@@ -223,30 +321,7 @@ export const SmartSelectAllExtension = Extension.create({
           },
         },
         props: {
-          handleDOMEvents: {
-            blur: (view) => {
-              const currentState =
-                SMART_SELECT_ALL_KEY.getState(view.state) ?? IDLE_STATE;
-              if (currentState.mode === "idle") {
-                return false;
-              }
-              view.dispatch(
-                view.state.tr.setMeta(SMART_SELECT_ALL_KEY, IDLE_STATE),
-              );
-              return false;
-            },
-            focus: (view) => {
-              const currentState =
-                SMART_SELECT_ALL_KEY.getState(view.state) ?? IDLE_STATE;
-              if (currentState.mode === "idle") {
-                return false;
-              }
-              view.dispatch(
-                view.state.tr.setMeta(SMART_SELECT_ALL_KEY, IDLE_STATE),
-              );
-              return false;
-            },
-          },
+          decorations: createAllSelectionDecorations,
         },
       }),
     ];

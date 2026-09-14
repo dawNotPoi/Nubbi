@@ -1,41 +1,63 @@
-import Image, { ImageOptions } from "@tiptap/extension-image";
-import { Plugin, PluginKey } from "@tiptap/pm/state";
-import { Command, ReactNodeViewRenderer } from "@tiptap/react";
+import Image from "@tiptap/extension-image";
+import { Plugin, PluginKey, TextSelection } from "@tiptap/pm/state";
+import { ReactNodeViewRenderer } from "@tiptap/react";
+import type { Command } from "@tiptap/react";
+import { message } from "antd";
 import ImageComponent from "./ImageComponent";
-export interface DImageOptions extends ImageOptions {
-  uploadHandler?: (file: File) => Promise<string>;
-}
+import type { DImageOptions, ImageNodeAttrs } from "./types";
+import {
+  cleanupDetachedUploadTasks,
+  cleanupEditorUploadTasks,
+  getImageFileValidationError,
+  getImageFiles,
+  isValidImageUrl,
+  startImageUpload,
+} from "./upload";
 
-//全局command定义
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
     DImage: {
       insertImagePlaceholder: () => ReturnType;
+      setImageFromUrl: (
+        src: string,
+        attrs?: Partial<ImageNodeAttrs>,
+      ) => ReturnType;
+      uploadImage: (file: File) => ReturnType;
     };
   }
 }
+
 const DImage = Image.extend<DImageOptions>({
   name: "image",
-  //添加外部配置
+
   addOptions() {
     return {
       ...Image.options,
+      maxFileSize: 5 * 1024 * 1024,
       uploadHandler: async () => "",
     };
   },
-  // 1. 添加自定义属性
+
   addAttributes() {
     return {
       ...this.parent?.(),
-      // 上传状态: 'uploading' | 'done' | 'placeholder'
       status: {
         default: "done",
+        parseHTML: () => "done",
+        renderHTML: () => ({}),
       },
-      // 上传的文件对象
-      file: {},
+      uploadId: {
+        default: null,
+        parseHTML: () => null,
+        renderHTML: () => ({}),
+      },
+      errorMessage: {
+        default: null,
+        parseHTML: () => null,
+        renderHTML: () => ({}),
+      },
       src: {
         default: null,
-        // 显式确保从 HTML/Markdown 中解析 src
         parseHTML: (element) => element.getAttribute("src"),
         renderHTML: (attrs) => {
           if (!attrs.src) return {};
@@ -44,6 +66,7 @@ const DImage = Image.extend<DImageOptions>({
       },
     };
   },
+
   renderHTML({ node, HTMLAttributes }) {
     const { status, src } = node.attrs;
 
@@ -51,19 +74,30 @@ const DImage = Image.extend<DImageOptions>({
       return ["span", { "data-type": "image-placeholder" }, ""];
     }
 
-    // 这里的返回结构决定了 Markdown 的生成
-    // 使用标准的 ['img', HTMLAttributes] 才能让插件识别出这是一个 Markdown Image
     return ["div", ["img", HTMLAttributes]];
   },
 
-  //图片组件
+  renderMarkdown: (node) => {
+    const { alt = "", src, status, title = "" } = node.attrs ?? {};
+
+    if (status !== "done" || !src) {
+      return "";
+    }
+
+    const escapedAlt = String(alt).replace(/[[\]\\]/g, "\\$&");
+    const escapedTitle = String(title).replace(/([\\"])/g, "\\$1");
+
+    return escapedTitle
+      ? `![${escapedAlt}](${src} "${escapedTitle}")`
+      : `![${escapedAlt}](${src})`;
+  },
+
   addNodeView() {
     return ReactNodeViewRenderer(ImageComponent);
   },
 
   addCommands() {
     return {
-      // 创建占位图节点的命令
       insertImagePlaceholder:
         (): Command =>
         ({ commands }) => {
@@ -74,38 +108,119 @@ const DImage = Image.extend<DImageOptions>({
             },
           });
         },
+      setImageFromUrl:
+        (src, attrs = {}): Command =>
+        ({ commands }) => {
+          const nextSrc = src.trim();
+          if (!isValidImageUrl(nextSrc)) return false;
+
+          return commands.insertContent({
+            type: this.name,
+            attrs: {
+              ...attrs,
+              errorMessage: null,
+              src: nextSrc,
+              status: "done",
+              uploadId: null,
+            },
+          });
+        },
+      uploadImage:
+        (file): Command =>
+        () =>
+          startImageUpload({
+            editor: this.editor,
+            file,
+            maxFileSize: this.options.maxFileSize,
+            uploadHandler: this.options.uploadHandler,
+          }),
     };
   },
 
-  //处理粘贴事件
   addProseMirrorPlugins() {
-    const { uploadHandler } = this.options;
     return [
       new Plugin({
         key: new PluginKey("imageUploadHandler"),
         props: {
           handlePaste: (_view, event) => {
             const items = Array.from(event.clipboardData?.items || []);
-            const imageItem = items.find((item) =>
-              item.type.startsWith("image")
-            );
-            if (imageItem && uploadHandler) {
-              const file = imageItem.getAsFile();
-              if (!file) return false;
+            const imageFiles = items
+              .filter((item) => item.type.startsWith("image/"))
+              .map((item) => item.getAsFile())
+              .filter((file): file is File => Boolean(file));
 
-              this.editor.commands.insertContent({
-                type: this.name,
-                attrs: {
-                  file: file,
-                  status: "uploading",
-                },
-              });
-              // 粘贴后启动上传指令
-              return true; // 拦截默认粘贴行为
+            if (imageFiles.length === 0) return false;
+
+            imageFiles.forEach((file) => {
+              const error = getImageFileValidationError(
+                file,
+                this.options.maxFileSize,
+              );
+
+              if (error) {
+                message.warning(error);
+                return;
+              }
+
+              this.editor.commands.uploadImage(file);
+            });
+
+            return true;
+          },
+          handleDrop: (view, event) => {
+            const imageFiles = getImageFiles(event.dataTransfer?.files || []);
+            if (imageFiles.length === 0) return false;
+
+            event.preventDefault();
+
+            const validFiles = imageFiles.filter((file) => {
+              const error = getImageFileValidationError(
+                file,
+                this.options.maxFileSize,
+              );
+
+              if (error) {
+                message.warning(error);
+                return false;
+              }
+
+              return true;
+            });
+
+            if (validFiles.length === 0) return true;
+
+            const dropPosition = view.posAtCoords({
+              left: event.clientX,
+              top: event.clientY,
+            })?.pos;
+
+            if (typeof dropPosition === "number") {
+              view.dispatch(
+                view.state.tr.setSelection(
+                  TextSelection.create(view.state.doc, dropPosition),
+                ),
+              );
             }
-            return false;
+
+            validFiles.forEach((file) => {
+              this.editor.commands.uploadImage(file);
+            });
+
+            return true;
           },
         },
+        appendTransaction: (transactions) => {
+          if (transactions.some((transaction) => transaction.docChanged)) {
+            cleanupDetachedUploadTasks(this.editor);
+          }
+
+          return null;
+        },
+        view: () => ({
+          destroy: () => {
+            cleanupEditorUploadTasks(this.editor);
+          },
+        }),
       }),
     ];
   },

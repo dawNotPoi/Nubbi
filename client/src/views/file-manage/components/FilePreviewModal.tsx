@@ -2,10 +2,17 @@
   fetchFilePreviewBlob,
   fetchFilePreviewStreamUrl,
 } from "@/api/file";
-import type { FileTableRow } from "@/views/file-manage/components/FileListTable/fileIcons";
+import type { FileListItem as FileTableRow } from "@/api/file";
 import { Button, Modal, Spin, Tabs } from "antd";
 import JSZip from "jszip";
-import { FileText, FileWarning, Presentation, Table2 } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+  FileWarning,
+  Presentation,
+  Table2,
+} from "lucide-react";
 import mammoth from "mammoth";
 import { useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
@@ -31,7 +38,7 @@ type PreviewState =
 const OFFICE_PREVIEW_SIZE_LIMIT = 20 * 1024 * 1024;
 
 const modalBodyStyle = {
-  minHeight: 520,
+  minHeight: "min(520px, 60dvh)",
   maxHeight: "70vh",
   overflow: "auto" as const,
   paddingTop: 8,
@@ -161,13 +168,22 @@ const FilePreviewModal = ({
   record,
   onClose,
   onDownload,
+  onNext,
+  onPrev,
+  position,
 }: {
   open: boolean;
   record: FileTableRow | null;
   onClose: () => void;
   onDownload?: (record: FileTableRow) => void;
+  onNext?: () => void;
+  onPrev?: () => void;
+  position?: { index: number; total: number };
 }) => {
   const [previewState, setPreviewState] = useState<PreviewState>({ mode: "idle" });
+  const hasPrev = Boolean(onPrev) && (position ? position.index > 0 : true);
+  const hasNext =
+    Boolean(onNext) && (position ? position.index < position.total - 1 : true);
 
   const previewCategory = useMemo<PreviewCategory | null>(
     () => (record ? getPreviewCategory(record) : null),
@@ -378,19 +394,37 @@ const FilePreviewModal = ({
     };
   }, [open, record]);
 
+  // 弹窗内用左右方向键切换同目录文件；播放器或输入控件聚焦时不触发
+  useEffect(() => {
+    if (!open) return;
+    const handler = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (
+        target?.closest("input, textarea, select, [contenteditable='true']") ||
+        target instanceof HTMLMediaElement
+      ) {
+        return;
+      }
+      if (event.key === "ArrowLeft" && hasPrev) onPrev?.();
+      if (event.key === "ArrowRight" && hasNext) onNext?.();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [open, hasPrev, hasNext, onPrev, onNext]);
+
   const renderPreview = () => {
     switch (previewState.mode) {
       case "idle":
         return null;
       case "loading":
         return (
-          <div className="flex h-[520px] items-center justify-center">
+          <div className="flex h-[min(520px,60dvh)] items-center justify-center">
             <Spin size="large" />
           </div>
         );
       case "image":
         return (
-          <div className="flex min-h-[520px] items-center justify-center rounded-2xl bg-[#f7f7f8] p-4">
+          <div className="flex min-h-[min(520px,60dvh)] items-center justify-center rounded-2xl bg-[#f7f7f8] p-4">
             <img
               src={previewState.objectUrl}
               alt={record?.name || "preview"}
@@ -409,7 +443,7 @@ const FilePreviewModal = ({
         );
       case "video":
         return (
-          <div className="flex min-h-[520px] items-center justify-center rounded-2xl bg-black p-4">
+          <div className="flex min-h-[min(520px,60dvh)] items-center justify-center rounded-2xl bg-black p-4">
             <video
               key={previewState.src}
               src={previewState.src}
@@ -561,14 +595,41 @@ const FilePreviewModal = ({
         ) : null
       }
       title={
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 items-center gap-2">
           {previewTitleIcon()}
           <span className="truncate">{record?.name || "文件预览"}</span>
+          {position && position.total > 1 ? (
+            <span className="shrink-0 text-xs font-normal tabular-nums text-text-subtle">
+              {position.index + 1} / {position.total}
+            </span>
+          ) : null}
         </div>
       }
       styles={{ body: modalBodyStyle }}
     >
-      {renderPreview()}
+      <div className="relative">
+        {hasPrev ? (
+          <button
+            aria-label="上一个文件"
+            className="absolute left-1 top-1/2 z-10 grid size-9 -translate-y-1/2 place-items-center rounded-full border border-border-button bg-bg-page text-text-primary shadow-md hover:bg-bg-hover"
+            onClick={onPrev}
+            type="button"
+          >
+            <ChevronLeft className="size-4" />
+          </button>
+        ) : null}
+        {renderPreview()}
+        {hasNext ? (
+          <button
+            aria-label="下一个文件"
+            className="absolute right-1 top-1/2 z-10 grid size-9 -translate-y-1/2 place-items-center rounded-full border border-border-button bg-bg-page text-text-primary shadow-md hover:bg-bg-hover"
+            onClick={onNext}
+            type="button"
+          >
+            <ChevronRight className="size-4" />
+          </button>
+        ) : null}
+      </div>
     </Modal>
   );
 };

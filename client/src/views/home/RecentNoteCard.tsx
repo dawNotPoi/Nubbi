@@ -25,7 +25,7 @@ export function RecentNoteCard({
 
   return (
     <li
-      className="flex min-h-[164px] min-w-[168px] max-w-[168px] cursor-pointer flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-colors hover:border-sky-400"
+      className="flex min-h-[164px] w-[76vw] min-w-[76vw] snap-start cursor-pointer flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-colors hover:border-sky-400 sm:w-[168px] sm:min-w-[168px] sm:max-w-[168px]"
       onClick={() => {
         navigate("/note/" + note._id);
       }}
@@ -66,7 +66,7 @@ export function RecentNoteCard({
 
 export function RecentNoteCardSkeleton() {
   return (
-    <li className="flex min-h-[164px] min-w-[168px] max-w-[168px] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <li className="flex min-h-[164px] w-[76vw] min-w-[76vw] snap-start flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm sm:w-[168px] sm:min-w-[168px] sm:max-w-[168px]">
       <header className="relative mb-4">
         <div className="h-11 animate-pulse bg-slate-100" />
         <div className="absolute bottom-0 size-7 translate-x-5 translate-y-3 rounded-md bg-slate-200" />

@@ -1,7 +1,7 @@
 @import "tippy.js/themes/light.css";
 
 .dn-editor {
-  @apply relative size-full overflow-visible rounded-2xl transition-shadow duration-200;
+  @apply relative size-full rounded-2xl transition-shadow duration-200;
   --editor-bg: #ffffff;
   --editor-surface: #fbfbfa;
   --editor-surface-hover: #f3f3f1;
@@ -26,6 +26,8 @@
   --editor-accent-strong: #3b82f6;
   --editor-accent-soft: rgba(96, 165, 250, 0.12);
   --editor-accent-glow: rgba(96, 165, 250, 0.24);
+  --editor-block-padding-x: 4px;
+  --editor-block-gap-y: 2px;
   background: var(--editor-bg);
 }
 
@@ -33,18 +35,30 @@
   @apply size-full min-h-[320px] px-2 py-6 pb-[100px] text-[16px] outline-none;
   color: var(--editor-text);
   font-family:
-    "Inter",
-    "PingFang SC",
-    "Hiragino Sans GB",
-    "Microsoft YaHei",
-    "Noto Sans SC",
-    sans-serif;
+    "Inter", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+    "Noto Sans SC", sans-serif;
   line-height: 1.75;
   caret-color: var(--editor-text);
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+@media (max-width: 767px) {
+  .dn-editor {
+    border-radius: 0.75rem;
+  }
+
+  .dn-editor .dn-editor__content {
+    min-height: 280px;
+    padding: 1rem 0 5rem;
+    font-size: 16px;
+  }
+
+  .dn-editor .dn-editor__drag-handle {
+    display: none !important;
+  }
 }
 
 .dn-editor.dn-editor--preview {
@@ -57,7 +71,8 @@
 }
 
 .dn-editor.dn-editor--preview .dn-editor__content p {
-  margin: 0.45rem 0;
+  padding: 0.3rem 0;
+  margin: 1px 0;
 }
 
 .dn-editor.dn-editor--preview .dn-editor__content h1,
@@ -66,8 +81,9 @@
 .dn-editor.dn-editor--preview .dn-editor__content h4,
 .dn-editor.dn-editor--preview .dn-editor__content h5,
 .dn-editor.dn-editor--preview .dn-editor__content h6 {
-  margin-top: 0.95rem;
-  margin-bottom: 0.4rem;
+  padding-top: 0.95rem;
+  padding-bottom: 0.4rem;
+  margin: 1px 0;
   letter-spacing: 0;
 }
 
@@ -84,10 +100,12 @@
 }
 
 .dn-editor.dn-editor--preview .dn-editor__content pre {
-  margin: 0.8rem 0;
+  padding: 0.4rem 0;
+  margin: 1px 0;
 }
 
 .dn-editor .dn-editor__content > :first-child {
+  padding-top: 0;
   margin-top: 0;
 }
 
@@ -96,14 +114,20 @@
   background: var(--editor-selection);
 }
 
+.dn-editor .dn-editor__block-selection::selection,
+.dn-editor .dn-editor__block-selection *::selection {
+  background: transparent;
+}
+
 .dn-editor .dn-editor__content p {
-  margin: 0.9rem 0;
+  padding: 0.45rem var(--editor-block-padding-x);
+  margin: var(--editor-block-gap-y) 0;
 }
 
 .dn-editor .dn-editor__content ul,
 .dn-editor .dn-editor__content ol {
-  margin: 1rem 0 1rem 1.15rem;
-  padding-left: 1rem;
+  padding: 0.5rem var(--editor-block-padding-x) 0.5rem 2rem;
+  margin: var(--editor-block-gap-y) 0;
 }
 
 .dn-editor .dn-editor__content ul {
@@ -115,12 +139,13 @@
 }
 
 .dn-editor .dn-editor__content li {
-  margin: 0.2rem 0;
-  padding-left: 0.2rem;
+  padding: 0.2rem var(--editor-block-padding-x) 0.2rem 0.2rem;
+  margin: var(--editor-block-gap-y) 0;
 }
 
 .dn-editor .dn-editor__content li p {
-  margin: 0.15rem 0;
+  padding: 0.075rem var(--editor-block-padding-x);
+  margin: var(--editor-block-gap-y) 0;
 }
 
 .dn-editor .dn-editor__content h1,
@@ -129,13 +154,55 @@
 .dn-editor .dn-editor__content h4,
 .dn-editor .dn-editor__content h5,
 .dn-editor .dn-editor__content h6 {
-  margin-top: 1.7rem;
-  margin-bottom: 0.55rem;
+  padding-top: 1.15rem;
+  padding-bottom: 0.55rem;
+  padding-left: var(--editor-block-padding-x);
+  padding-right: var(--editor-block-padding-x);
+  margin: var(--editor-block-gap-y) 0;
   font-weight: 700;
   line-height: 1.25;
   letter-spacing: -0.01em;
   color: var(--editor-heading);
   text-wrap: pretty;
+}
+
+.dn-editor .tiptap-mathematics-render {
+  color: inherit;
+}
+
+.dn-editor .tiptap-mathematics-render[data-type="inline-math"] {
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+.dn-editor .tiptap-mathematics-render[data-type="block-math"] {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  padding: 0.75rem 0;
+  text-align: center;
+}
+
+.dn-editor .tiptap-mathematics-render[data-type="block-math"] .block-math-inner {
+  width: max-content;
+  min-width: 100%;
+}
+
+.dn-editor .tiptap-mathematics-render .katex-display {
+  margin: 0;
+}
+
+.dn-editor .tiptap-mathematics-render--editable:hover {
+  background: rgb(245, 245, 245);
+}
+
+.dn-editor .block-math-error,
+.dn-editor .inline-math-error {
+  color: rgb(185, 28, 28);
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
 }
 
 .dn-editor .dn-editor__content h1 {
@@ -170,8 +237,9 @@
   background: linear-gradient(180deg, #f7f3ee 0%, #f4efea 100%);
   padding: 0.16em 0.42em;
   font-size: 0.875em;
-  font-family: "JetBrains Mono", "SFMono-Regular", "Cascadia Code", Menlo,
-    Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-family:
+    "JetBrains Mono", "SFMono-Regular", "Cascadia Code", Menlo, Monaco,
+    Consolas, "Liberation Mono", "Courier New", monospace;
   font-weight: 500;
   letter-spacing: -0.01em;
   color: #c2551a;
@@ -182,7 +250,8 @@
 }
 
 .dn-editor .dn-editor__content pre {
-  margin: 1.2rem 0;
+  padding: 0.6rem var(--editor-block-padding-x);
+  margin: var(--editor-block-gap-y) 0;
 }
 
 .dn-editor .dn-editor__content pre code {
@@ -193,22 +262,58 @@
 }
 
 .dn-editor .dn-editor__content blockquote {
-  margin: 1.35rem 0;
+  padding: 0.45rem var(--editor-block-padding-x) 0.45rem 1rem;
+  margin: var(--editor-block-gap-y) 0;
   border-left: 3px solid var(--editor-blockquote-border);
-  padding-left: 1rem;
   color: var(--editor-text-muted);
 }
 
+.dn-editor .dn-editor__block-selection {
+  position: relative;
+  border-radius: 0.35rem;
+}
+
+.dn-editor .dn-editor__block-selection::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  background: var(--editor-selection);
+  box-shadow: inset 0 0 0 1px var(--editor-selection);
+  pointer-events: none;
+}
+
+.dn-editor .dn-editor__block-selection--bullet-list,
+.dn-editor .dn-editor__block-selection--ordered-list {
+  border-radius: 0.35rem;
+}
+
+.dn-editor .dn-editor__block-selection--list-item {
+  border-radius: 0.3rem;
+}
+
+.dn-editor .dn-editor__block-selection--blockquote {
+  border-left-color: var(--editor-accent-strong);
+}
+
+.dn-editor .dn-editor__block-selection--code-block,
+.dn-editor .dn-editor__block-selection--image,
+.dn-editor .dn-editor__block-selection--table {
+  border-radius: 0.35rem;
+}
+
 .dn-editor .dn-editor__content hr {
-  margin: 1.85rem 0;
+  padding: 0.9rem var(--editor-block-padding-x);
+  margin: var(--editor-block-gap-y) 0;
   border: none;
   border-top: 1px solid var(--editor-divider);
 }
 
 .dn-editor .dn-editor__content .tableWrapper {
-  margin: 1.2rem 0;
+  padding: 0.6rem var(--editor-block-padding-x);
+  margin: var(--editor-block-gap-y) 0;
   overflow-x: auto;
-  padding-bottom: 0.2rem;
 }
 
 .dn-editor .dn-editor__content table {
@@ -240,7 +345,8 @@
 
 .dn-editor .dn-editor__content th p,
 .dn-editor .dn-editor__content td p {
-  margin: 0.15rem 0;
+  padding: 0.075rem 0;
+  margin: 1px 0;
 }
 
 .dn-editor .dn-editor__content .selectedCell::after {
@@ -338,26 +444,25 @@
   box-shadow: 0 18px 44px rgba(15, 23, 42, 0.1);
 }
 
-.tippy-box[data-theme~="slash-command"] {
-  border: 1px solid rgba(55, 53, 47, 0.12);
-  border-radius: 1rem;
-  background: #fffdf9;
-  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.1);
-}
-
 .tippy-box[data-theme~="light"] .tippy-content {
   padding: 0.4rem;
 }
 
-.tippy-box[data-theme~="slash-command"] .tippy-content {
-  border-radius: inherit;
+.dn-editor__slash-command-popover {
+  position: fixed;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(55, 53, 47, 0.12);
+  border-radius: 1rem;
   background: #fffdf9;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.1);
   padding: 0.25rem;
 }
 
 .dn-editor__slash-command-menu {
   width: min(340px, calc(100vw - 32px));
-  max-height: min(408px, calc(100vh - 96px));
+  min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: none;

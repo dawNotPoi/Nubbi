@@ -48,17 +48,17 @@ if [ ! -f "server/.env" ]; then
 fi
 
 log "installing and building client"
-pnpm --dir client install --frozen-lockfile
-pnpm --dir client build
+pnpm install --frozen-lockfile
+pnpm --filter nubbi-client build
 
 log "installing server dependencies"
-pnpm --dir server install --frozen-lockfile --prod
+pnpm install --frozen-lockfile --prod --filter nubbi-server... --ignore-scripts
 
 log "starting or restarting pm2 service: $PM2_SERVICE_NAME"
 if pm2 describe "$PM2_SERVICE_NAME" >/dev/null 2>&1; then
   pm2 restart "$PM2_SERVICE_NAME" --update-env
 else
-  pm2 start pnpm --name "$PM2_SERVICE_NAME" --cwd "$APP_DIR/server" -- start
+  pm2 start pnpm --name "$PM2_SERVICE_NAME" --cwd "$APP_DIR" -- --filter nubbi-server start
 fi
 pm2 save >/dev/null || true
 

@@ -1,16 +1,14 @@
-import "dotenv/config";
+import env from "@/lib/env";
 import winston from "winston";
 
-const level =
-  process.env.LOG_LEVEL ||
-  (process.env.NODE_ENV === "production" ? "info" : "debug");
+const level = env.LOG_LEVEL || (env.NODE_ENV === "production" ? "info" : "debug");
 
 const logger = winston.createLogger({
   level,
   format: winston.format.combine(
     winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
     winston.format.errors({ stack: true }),
-    process.env.NODE_ENV === "production"
+    env.NODE_ENV === "production"
       ? winston.format.json()
       : winston.format.combine(
           winston.format.colorize(),

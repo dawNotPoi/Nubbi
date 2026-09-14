@@ -1,0 +1,166 @@
+import type { MeetingType } from "@/api/meeting";
+import { Button, Popconfirm, Skeleton, Tag } from "antd";
+import clsx from "clsx";
+import dayjs from "dayjs";
+import { Clock3, MessageSquareText, Trash2 } from "lucide-react";
+import type { ReactElement } from "react";
+import type { MeetingActions } from "./types";
+import { MeetingInvitationButton } from "@/features/meeting/meeting-invitation";
+
+/** 会议审批状态 → 标签样式映射 */
+const statusMap = {
+  unreviewd: {
+    label: "待审批",
+    className: "border-amber-200 bg-amber-50 text-amber-700",
+  },
+  approved: {
+    label: "已通过",
+    className: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  },
+  rejected: {
+    label: "已拒绝",
+    className: "border-rose-200 bg-rose-50 text-rose-700",
+  },
+} as const;
+
+type MeetingCardProps = MeetingActions & {
+  meeting: MeetingType;
+  currentUserId?: string;
+};
+
+/**
+ * 格式化会议时间范围为可读字符串。
+ * @param meeting 会议对象。
+ * @returns "MM-DD HH:mm - MM-DD HH:mm" 格式的时间范围。
+ */
+const getMeetingTimeRange = (meeting: MeetingType): string => {
+  const start = dayjs(meeting.startTime || meeting.createdAt);
+  const end = start.add(meeting.duration, "minute");
+  return `${start.format("MM-DD HH:mm")} - ${end.format("MM-DD HH:mm")}`;
+};
+
+/**
+ * 会议状态标签组件。
+ * 已结束显示蓝色标签；其他按 status 映射为待审批/已通过/已拒绝。
+ * @param meeting 会议对象。
+ */
+const MeetingStatusTag = ({
+  meeting,
+}: {
+  meeting: MeetingType;
+}): ReactElement => {
+  if (meeting.endedAt) {
+    return (
+      <Tag className="rounded-full border-blue-200 bg-blue-50 px-3 py-1 text-blue-700">
+        已结束
+      </Tag>
+    );
+  }
+
+  const key = meeting.status || "approved";
+  const config = statusMap[key];
+  return (
+    <Tag className={clsx("rounded-full border px-3 py-1", config.className)}>
+      {config.label}
+    </Tag>
+  );
+};
+
+/** 会议卡片骨架屏，加载中占位 */
+export const MeetingCardSkeleton = (): ReactElement => (
+  <div className="rounded-lg border border-border-row bg-white p-5 shadow-soft">
+    <Skeleton active paragraph={{ rows: 3 }} title={{ width: "48%" }} />
+  </div>
+);
+
+/**
+ * 会议列表卡片。
+ * 展示标题、状态、时间范围；根据当前用户身份显示审批、加入、评论、删除等操作。
+ * @param meeting 会议数据。
+ * @param currentUserId 当前登录用户 ID，用于判断是否为会议主持人。
+ * @param onVet 审批回调。
+ * @param onJoin 加入会议回调。
+ * @param onViewComments 查看评论回调。
+ * @param onDelete 删除回调。
+ */
+export const MeetingCard = ({
+  meeting,
+  currentUserId,
+  onVet,
+  onJoin,
+  onViewComments,
+  onDelete,
+}: MeetingCardProps): ReactElement => {
+  const isHost = Boolean(currentUserId && meeting.hostId === currentUserId);
+
+  return (
+    <div className="rounded-lg border border-border-row bg-white p-4 shadow-soft transition-colors hover:bg-bg-hover sm:p-5">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <h3 className="text-base font-semibold text-text-primary">
+              {meeting.title || "未命名会议"}
+            </h3>
+            <MeetingStatusTag meeting={meeting} />
+          </div>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-text-muted">
+            <span className="inline-flex items-center gap-1">
+              <Clock3 size={14} />
+              {getMeetingTimeRange(meeting)}
+            </span>
+            {meeting.endedAt ? (
+              <span className="inline-flex items-center gap-1 text-blue-600">
+                <MessageSquareText size={14} />
+                已于 {dayjs(meeting.endedAt).format("MM-DD HH:mm")} 结束
+              </span>
+            ) : null}
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {isHost && meeting.status === "unreviewd" ? (
+            <>
+              <Button
+                type="primary"
+                onClick={() => void onVet(meeting._id, "approved")}
+              >
+                同意
+              </Button>
+              <Button onClick={() => void onVet(meeting._id, "rejected")}>
+                拒绝
+              </Button>
+            </>
+          ) : null}
+
+          {!meeting.endedAt ? (
+            <MeetingInvitationButton id={meeting._id} title={meeting.title} startTime={meeting.startTime} />
+          ) : null}
+          {!meeting.endedAt ? (
+            <Button type="primary" onClick={() => onJoin(meeting._id)}>
+              加入会议
+            </Button>
+          ) : null}
+
+          {isHost && meeting.endedAt ? (
+            <Button onClick={() => void onViewComments(meeting)}>
+              查看评论
+            </Button>
+          ) : null}
+
+          {isHost ? (
+            <Popconfirm
+              title="删除会议"
+              description="删除后会议和评论记录都会被移除，确认继续吗？"
+              okText="确认"
+              cancelText="取消"
+              onConfirm={() => void onDelete(meeting._id)}
+            >
+              <Button danger icon={<Trash2 size={14} />}>
+                删除
+              </Button>
+            </Popconfirm>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+};

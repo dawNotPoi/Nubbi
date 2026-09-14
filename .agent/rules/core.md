@@ -1,21 +1,58 @@
 # 核心规则
 
+> 通用规则，所有文件生效。
+
+## 生效路径
+
+| 路径 | 原因 |
+|------|------|
+| `**/*` | 通用约束，所有代码/文档/配置均适用 |
+
 ## 编写代码前
+
 - 先读 `docs/<module>/PRD.md` — 了解已有组件和 API，禁止重复造轮子
-- 先读 `.agent/skills/code.md` 和 `.agent/skills/style.md`
+- 先读 `.agent/skills/code.md`（服务端/客户端约定）和 `.agent/skills/style.md`（UI 约定）
 
 ## 编写代码时
-- 单文件 ≤ 200 行；超出则拆分
+
+- 手写源码单文件 ≤ 1500 行（含注释与空行）；超出时按完整职责拆分，生成文件不适用。上限不是目标，职责混杂时应提前拆分
+- 不为压低行数合并多条语句、压缩类型或省略职责注释；紧密相关的实现优先放在同一文件，不机械拆成转发层
 - 无 `any`；所有公开函数/组件必须有明确类型
-- 不加无意义注释；只在逻辑非显而易见时注释原因
+- 命名：模块级**纯值常量**用 `UPPER_SNAKE_CASE`（数字、字符串、正则、常量 Set）；Schema、可变状态（Map/缓存）、实例、路径拼接和箭头函数保持 `camelCase`
+  ```ts
+  const MAX_MODEL_TURNS = 8;              // 纯值常量
+  const messageSchema = z.object({});     // Schema 对象
+  const clientCache = new Map();          // 可变状态
+  ```
+- 函数必须写 JSDoc/TSDoc，公开/导出函数需用 `@param` 注明每个入参、用 `@returns` 注明出参：
+  ```ts
+  /**
+   * 把长文本切成小段逐个推送，前端能更流畅地渲染流式输出。
+   * @param text 待推送的完整文本。
+   * @param emit 事件回调，用于逐段发送 text-delta 事件。
+   * @returns 无返回值。
+   */
+  ```
+- 导出类型/接口/常量/atom 同样加 JSDoc，说明用途和约束；内部函数逻辑非显而易见时（状态变更、边界处理、副作用）也必须补全入参与出参
+- 不加无意义注释；只在逻辑非显而易见时注释原因，注释应说明业务意图而非重复代码
 - 配置/密钥不硬编码，用 `env`
 - 禁止跨层调用：Route → Controller → Model，不跳层
 - 禁止在组件中直接读写 Cookie / LocalStorage
 
+## 变更记录
+
+- 只有用户要求更新 changes 或 commit 时才更新 `docs/changes/YYYY-MM-DD.md`
+- 记录内容按 `docs/changes/_TEMPLATE.md` 格式追加，说明变更文件、原因和 review 结果
+- changes 文件自身的变更不需要再记录到 changes
+- 用户要求 commit 时，先更新 changes，再对当天 changes 文件执行 `git add` 暂存
+- changes 必须和本次代码、文档、配置或脚本变更放进同一个 commit
+
 ## 提交规范
 
-### Commit 格式
-- 格式：`<type>(<scope>): <subject>`
+### Commit 格式（Hook 自动校验）
+
+格式：`<type>(<scope>): <subject>`
+
 - **type 用英文**：`feat` / `fix` / `refactor` / `docs` / `style` / `test` / `chore`
 - **scope 用英文**：`server` / `client` / `shared` / `config` / `agent`
 - **subject 用中文**，简明描述做了什么，≤ 50 字
@@ -30,10 +67,31 @@ chore(config): 升级 vite 至 5.4
 ```
 
 ### Commit 前必做
-- 先更新 `docs/changes/YYYY-MM-DD.md`（按 `docs/changes/_TEMPLATE.md` 格式）
-- changes 文件自身的 commit 不需要记录
+
+1. 更新 `docs/changes/YYYY-MM-DD.md`，确认已覆盖本次变更
+2. 执行 `git status` 展示暂存区和工作区统计，列出所有改动文件
+3. 询问用户是否将相关改动加入暂存区（`git add`）
+4. 暂存完成后，让用户确认是否提交（展示完整 commit message 供用户最终确认）
+
+### 合并到 deploy 前必做
+
+1. 本地构建验证：`cd client && npx vite build`，确认无编译错误
+2. 本地类型检查：`cd server && npx tsc --noEmit`，确认无类型错误
+3. 合并采用策略：`git checkout deploy && git merge dev/out -X theirs`，接受 dev/out 的改动
+4. 解决 modify/delete 冲突：dev/out 删除的文件直接 `git rm`
+5. 检查合并差异：`git diff dev/out..deploy --stat`，确认 deploy 特有文件未被误删
+6. 本地再次 build + typecheck 确认合并代码无问题
+7. 推送 `git push origin deploy`
+
+## 上下文效率
+
+- **并行优先**：修改不同文件时，在同一条消息中并行发出 Edit，不逐个串行
+- **不重复读取**：同轮对话中已通过工具结果获取到的文件内容，不再 Read
+- **合并 Shell**：多个连续的 git / shell 操作合并为一次调用（如 `git add ... ; git commit ...`）
+- **小改动轻量**：纯标记性修改（文案、格式调整）跳过不必要的验证步骤，不反复确认
 
 ## 禁止
+
 - 引入重量级框架替代品（Redux、Prisma、tRPC 等）；工具包可合理使用
 - 删除代码前确认无调用方；不确定时先问
 - commit 由用户决定，除非用户明确说"commit"，否则不主动提交

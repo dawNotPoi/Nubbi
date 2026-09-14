@@ -47,10 +47,10 @@ export function MarkdownImportButton({
       <button
         className={clsx(
           "inline-flex h-9 items-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d3d1cb]",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
           dragging
-            ? "border-[#2383e2] bg-[#eef6ff] text-[#1f5f99]"
-            : "border-[#d9d7d2] bg-white text-[#37352f] hover:border-[#bdbab4] hover:bg-[#f7f7f5]",
+            ? "border-accent-border bg-accent-bg text-accent-text"
+            : "border-border-button bg-white text-text-primary hover:border-border-button-hover hover:bg-bg-hover",
           unavailable && "cursor-not-allowed opacity-60",
         )}
         disabled={unavailable}

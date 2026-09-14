@@ -1,57 +1,40 @@
 import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
-import { bearer, jwt } from "better-auth/plugins";
-import { AsyncLocalStorage } from "async_hooks";
+import { apiKey, bearer, jwt } from "better-auth/plugins";
 import logger from "@/common/logger";
 import { db } from "./db";
 import { createEmailVerificationCode } from "./emailVerification";
 import { sendPasswordResetEmail, sendVerificationEmail } from "./email";
 import { createPasswordResetCode } from "./passwordReset";
 import env from "./env";
+import { guardExternalApiKeyServerFields } from "./apiKeyRequestGuard";
+import {
+  authDatabaseHooks,
+  isVerifiedRegisterEmail,
+  runWithVerifiedRegisterEmail,
+} from "./auth-database-hooks";
+import {
+  sanitizeAuthLogMessage,
+  serializeAuthLogArg,
+} from "./auth-logging";
+import { resolveAuthTrustedOrigins } from "./trusted-origins";
 
 const authDb = await db;
-
 if (!authDb) {
   throw new Error("Database connection is not ready");
 }
-
-const serializeAuthLogArg = (value: unknown) => {
-  if (value instanceof Error) {
-    return {
-      name: value.name,
-      message: value.message,
-      stack: value.stack,
-      cause: value.cause,
-    };
-  }
-
-  if (typeof value === "object" && value !== null) {
-    return value;
-  }
-
-  return String(value);
-};
-
-const verifiedRegisterStorage = new AsyncLocalStorage<{ email: string }>();
-
-const normalizeEmail = (email: string) => email.trim().toLowerCase();
-
-const isVerifiedRegisterEmail = (email: string) => {
-  const verifiedRegister = verifiedRegisterStorage.getStore();
-  return verifiedRegister?.email === normalizeEmail(email);
-};
 
 export const auth = betterAuth({
   database: mongodbAdapter(authDb),
   secret: env.BETTER_AUTH_SECRET,
   baseURL: env.BETTER_AUTH_URL,
   basePath: "/api/auth",
-  trustedOrigins: [env.CLIENT_URL, env.BETTER_AUTH_URL],
+  trustedOrigins: resolveAuthTrustedOrigins,
   logger: {
-    level: "debug",
+    level: env.NODE_ENV === "production" ? "warn" : "debug",
     log(level, message, ...args) {
       const authArgs = args.map(serializeAuthLogArg);
-      const msg = `[better-auth] ${message}`;
+      const msg = `[better-auth] ${sanitizeAuthLogMessage(message)}`;
 
       if (level === "error") {
         logger.error(msg, ...authArgs);
@@ -65,9 +48,15 @@ export const auth = betterAuth({
   onAPIError: {
     errorURL: `${env.CLIENT_URL}/login`,
   },
+  hooks: {
+    before: guardExternalApiKeyServerFields,
+  },
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
+    revokeSessionsOnPasswordReset: true,
+    // better-auth 默认即 8，显式声明以与路由层校验（注册/重置"至少 8 位"）保持同步
+    minPasswordLength: 8,
     passwordResetTokenExpiresIn: 60 * 60,
     sendResetPassword: async ({ user, token }) => {
       const resetCode = await createPasswordResetCode(
@@ -100,26 +89,11 @@ export const auth = betterAuth({
       }
     },
   },
-  databaseHooks: {
-    user: {
-      create: {
-        before: async (user) => {
-          if (!isVerifiedRegisterEmail(user.email)) {
-            return;
-          }
-
-          return {
-            data: {
-              emailVerified: true,
-            },
-          };
-        },
-      },
-    },
-  },
+  databaseHooks: authDatabaseHooks,
   account: {
     accountLinking: {
       enabled: true,
+      trustedProviders: ["google", "github", "email-password"],
     },
   },
   socialProviders: {
@@ -132,12 +106,6 @@ export const auth = betterAuth({
       clientSecret: env.AUTH_GOOGLE_SECRET,
     },
   },
-  accountLinking: {
-    enabled: true,
-    trustedProviders: ["google", "github", "email-password"],
-    requireEmailVerification: true,
-    allowMultipleProviders: true,
-  },
   session: {
     expiresIn: 60 * 60 * 24 * 30,
     updateAge: 60 * 60 * 24 * 7,
@@ -147,6 +115,24 @@ export const auth = betterAuth({
     jwt({
       jwt: {
         expirationTime: "15m",
+      },
+    }),
+    apiKey({
+      defaultPrefix: "nb_",
+      enableMetadata: true,
+      maximumNameLength: 100,
+      // 必须关闭：默认行为会让带 x-api-key 的请求在所有 better-auth 端点伪造 session
+      //（包括用 key 创建新 key、getSession 等），token 校验统一走 requireAuthWithApiKey
+      disableSessionForAPIKeys: true,
+      keyExpiration: {
+        // 不传 expiresIn 时永不过期（"长期 token"语义）
+        defaultExpiresIn: null,
+      },
+      rateLimit: {
+        enabled: true,
+        // 插件默认 10 次/天，对博客/MCP 场景远远不够，放宽为 300 次/分钟
+        timeWindow: 60 * 1000,
+        maxRequests: 300,
       },
     }),
   ],
@@ -162,9 +148,9 @@ export const signUpVerifiedEmailWithPassword = async ({
   password: string;
   name: string;
   headers?: HeadersInit;
-}) =>
-  verifiedRegisterStorage.run(
-    { email: normalizeEmail(email) },
+}): Promise<Awaited<ReturnType<typeof auth.api.signUpEmail>>> =>
+  runWithVerifiedRegisterEmail(
+    email,
     async () =>
       auth.api.signUpEmail({
         body: {
@@ -176,15 +162,3 @@ export const signUpVerifiedEmailWithPassword = async ({
         headers,
       }),
   );
-
-export async function getUser(
-  req: any,
-): Promise<{ id: string; email?: string; name?: string }> {
-  if (req.user) return req.user;
-  const session = await auth.api.getSession({ headers: req.headers as any });
-  if (!session?.user) {
-    throw Object.assign(new Error("Unauthorized"), { status: 401 });
-  }
-  req.user = session.user;
-  return req.user;
-}

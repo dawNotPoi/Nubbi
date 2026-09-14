@@ -23,6 +23,10 @@ type StackCtx = {
 
 const ModalStackCtx = createContext<StackCtx | null>(null);
 
+/**
+ * 弹窗栈 Provider。
+ * 管理所有 Modal 的层级堆叠，确保顶层弹窗正确拦截事件和键盘交互。
+ */
 export const ModalProvider = ({ children }: { children: React.ReactNode }) => {
   const [stack, setStack] = useState<StackItem[]>([]);
   const register = useCallback((id: string) => {
@@ -93,6 +97,24 @@ type ModalProps = {
   zIndexBase?: number; // 栈基准 z-index，默认 1000
 };
 
+/**
+ * 通用弹窗组件。
+ * 支持受控/非受控模式、遮罩点击关闭、ESC 关闭、多弹窗堆叠管理。
+ * @param open 受控模式下的可见状态。
+ * @param defaultOpen 非受控模式下的默认可见状态。
+ * @param onOpenChange 可见状态变化回调。
+ * @param trigger 触发弹窗的元素，会被 cloneElement 注入 onClick。
+ * @param title 弹窗标题。
+ * @param showClose 是否显示关闭按钮。
+ * @param maskClosable 点击遮罩是否关闭。
+ * @param className 内容容器样式。
+ * @param overlayClassName 遮罩样式。
+ * @param onOk 确认回调。
+ * @param onCancel 取消/关闭回调。
+ * @param okText 确认按钮文案。
+ * @param cancelText 取消按钮文案。
+ * @param zIndexBase 弹窗基准 z-index，默认 1000。
+ */
 export const Modal = ({
   trigger,
   overlayClassName,
@@ -149,16 +171,22 @@ export const Modal = ({
       document.removeEventListener("keydown", onKey);
       prev?.focus?.();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
   //弹窗开启时,关闭body滚动
   useBodyLock(open);
   const triggerEl = trigger
-    ? cloneElement(trigger, {
-        onClick: (e: any) => {
-          trigger.props.onClick?.(e);
-          setOpen(true);
+    ? cloneElement(
+        trigger as React.ReactElement<Record<string, unknown>>,
+        {
+          onClick: (event: React.MouseEvent) => {
+            (
+              trigger.props as { onClick?: (e: React.MouseEvent) => void }
+            ).onClick?.(event);
+            setOpen(true);
+          },
         },
-      })
+      )
     : null;
 
   //not mounted or closed
@@ -188,7 +216,7 @@ export const Modal = ({
                   tabIndex={-1}
                   ref={contentRef}
                   className={clsx(
-                    "relative mx-auto mt-[10vh] w-[min(90vw,320px)] rounded-md bg-white shadow-lg outline-none",
+                    "absolute bottom-0 left-0 right-0 max-h-[90dvh] w-full overflow-y-auto rounded-t-2xl bg-white pb-[env(safe-area-inset-bottom)] shadow-lg outline-none md:relative md:mx-auto md:mt-[10vh] md:w-[min(90vw,320px)] md:rounded-md md:pb-0",
                     className
                   )}
                   style={{ zIndex: z + 1 }}
@@ -198,7 +226,7 @@ export const Modal = ({
                     {showClose && (
                       <button
                         aria-label="Close"
-                        className="rounded p-1 text-gray-500 hover:bg-gray-100 "
+                        className="grid size-10 place-items-center rounded text-gray-500 hover:bg-gray-100 md:size-8"
                         onClick={() => {
                           if (isTop) {
                             setOpen(false);
