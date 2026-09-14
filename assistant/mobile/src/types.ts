@@ -107,6 +107,7 @@ export type StreamEvent = (
   | ApprovalRequest
   | { type: "approval-resolved"; approvalId: string; approved: boolean }
   | { type: "text-delta"; text: string }
+  | { type: "reasoning-delta"; text: string }
   | { type: "run-started"; provider: "openai-compatible" | "codex-subscription" }
   | { type: "assistant-message"; messageId: string }
   | { type: "run-completed"; messageId: string }

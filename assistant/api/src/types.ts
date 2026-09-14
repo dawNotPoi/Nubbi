@@ -57,6 +57,8 @@ export type ModelMessage =
   | {
       role: "assistant";
       content: string | null;
+      // 推理模型（如 DeepSeek V4）的思维链内容，带 tools 时后续轮次必须原样回传。
+      reasoning_content?: string | null;
       tool_calls?: Array<{
         id: string;
         type: "function";

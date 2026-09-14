@@ -146,8 +146,12 @@ export const listProviderModels = async (input: ModelConnectionInput): Promise<s
   // 未显式传自定义请求头时，端点不变则复用已保存的请求头。
   const customHeaders = input.headers ?? (sameEndpoint ? current.headers : {});
   Object.entries(customHeaders).forEach(([name, value]) => headers.set(name, value));
-  // 15 秒超时：模型列表接口通常较快，避免设置页长时间卡住。
-  const response = await fetch(`${baseUrl}/models`, {
+  // 用 URL 规范拼接 /models，兼容 baseUrl 带或不带末尾斜杠。
+  const endpoint = new URL(
+    "models",
+    baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`,
+  );
+  const response = await fetch(endpoint, {
     headers,
     signal: AbortSignal.timeout(15_000),
   });

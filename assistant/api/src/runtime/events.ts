@@ -35,7 +35,8 @@ export type AgentEvent =
       expiresAt: string;
     }
   | { type: "approval-resolved"; approvalId: string; approved: boolean }
-  | { type: "text-delta"; text: string };
+  | { type: "text-delta"; text: string }
+  | { type: "reasoning-delta"; text: string };
 
 /** Run 生命周期事件，与 AgentEvent 一起构成完整的 RuntimeEvent。 */
 export type RuntimeEventPayload = AgentEvent
