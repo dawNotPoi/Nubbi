@@ -3,7 +3,7 @@ import { createPostAtom, rootPostsAtom } from "@/store/atom/postAtom";
 import { useSession } from "@/utils/auth";
 import { useAtomValue } from "jotai";
 import { useState } from "react";
-import { RiAddFill } from "react-icons/ri";
+import { Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { IconButton } from "../components";
 import NoteItem from "./NoteItem";
@@ -38,7 +38,7 @@ export default function NoteMenu() {
               createPostHandler();
             }}
           >
-            <RiAddFill />
+            <Plus />
           </IconButton>
         </div>
       </div>

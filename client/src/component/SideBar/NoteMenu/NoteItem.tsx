@@ -5,10 +5,9 @@ import {
   expandedNodesAtom,
   postChildrenAtom,
 } from "@/store/atom/postAtom";
-import { FileTextOutlined, RightOutlined } from "@ant-design/icons";
 import clsx from "clsx";
+import { FileText, ChevronRight, Trash2 } from "lucide-react";
 import { useAtom, useAtomValue } from "jotai";
-import { RiDeleteBinLine } from "react-icons/ri";
 import { useParams } from "react-router-dom";
 import { WrittingModal } from "./WritingModal";
 
@@ -78,8 +77,8 @@ function NoteItem({
             setOpen((v) => !v);
           }}
         >
-          <FileTextOutlined className="group-hover:hidden" />
-          <RightOutlined
+          <FileText className="group-hover:hidden" />
+          <ChevronRight
             className={clsx(
               "hidden transition-all group-hover:block",
               open && "rotate-90",
@@ -95,7 +94,7 @@ function NoteItem({
           className="hidden size-6 group-hover:block"
           onClick={() => deletePostHandler(post._id)}
         >
-          <RiDeleteBinLine className="size-full" />
+          <Trash2 className="size-full" />
         </IconButton>
         <IconButton className="hidden size-6 group-hover:block">
           <WrittingModal parent={post} onTrigger={() => setOpen(true)} />

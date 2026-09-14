@@ -2,7 +2,6 @@ import { NodeViewContent, NodeViewProps, NodeViewWrapper } from "@tiptap/react";
 import { Select } from "antd";
 import { Copy } from "lucide-react";
 import React, { useCallback, useEffect } from "react";
-import mermaid from "mermaid";
 
 import {
   CODE_BLOCK_LANGUAGES,
@@ -13,16 +12,19 @@ import "./index.css";
 
 let mermaidInitialized = false;
 
-const ensureMermaid = () => {
-  if (mermaidInitialized) return;
+const loadMermaid = async () => {
+  const { default: mermaid } = await import("mermaid");
 
-  mermaid.initialize({
-    startOnLoad: false,
-    securityLevel: "loose",
-    theme: "default",
-  });
+  if (!mermaidInitialized) {
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: "loose",
+      theme: "default",
+    });
+    mermaidInitialized = true;
+  }
 
-  mermaidInitialized = true;
+  return mermaid;
 };
 
 const MermaidPreview = ({ source }: { source: string }) => {
@@ -38,7 +40,7 @@ const MermaidPreview = ({ source }: { source: string }) => {
       }
 
       try {
-        ensureMermaid();
+        const mermaid = await loadMermaid();
         const parseResult = await mermaid.parse(source, {
           suppressErrors: true,
         });

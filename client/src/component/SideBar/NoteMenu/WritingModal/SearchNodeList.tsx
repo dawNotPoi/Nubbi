@@ -4,8 +4,7 @@ import clsx from "clsx";
 import { useAtom } from "jotai";
 import { atomWithMutation } from "jotai-tanstack-query";
 import { useEffect, useMemo, useState } from "react";
-import { FaSearch } from "react-icons/fa";
-import { RiLoader4Line } from "react-icons/ri";
+import { LoaderCircle, Search } from "lucide-react";
 import ItemBase from "./ItemBase";
 
 const filterAtom = atomWithMutation(() => ({
@@ -69,7 +68,7 @@ export const SearchNoteList = ({
     <div className={panelClassName}>
       <header className="border-b border-neutral-100 p-2">
         <div className={searchBoxClassName}>
-          <FaSearch className="shrink-0 text-[12px]" />
+          <Search className="shrink-0 text-[12px]" />
           <input
             className="flex-1 bg-transparent outline-none placeholder:text-neutral-400"
             type="text"
@@ -80,7 +79,7 @@ export const SearchNoteList = ({
             }}
           />
           {isSearching && (
-            <RiLoader4Line className="shrink-0 animate-spin text-sm text-neutral-400" />
+            <LoaderCircle className="shrink-0 animate-spin text-sm text-neutral-400" />
           )}
         </div>
       </header>

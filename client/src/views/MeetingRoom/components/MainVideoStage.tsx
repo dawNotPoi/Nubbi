@@ -6,8 +6,7 @@ import {
   useState,
   type MutableRefObject,
 } from "react";
-import { BiMicrophoneOff } from "react-icons/bi";
-import { TbMicrophoneFilled } from "react-icons/tb";
+import { Mic, MicOff } from "lucide-react";
 import type { StageParticipant } from "../types";
 
 type MainVideoStageProps = {
@@ -104,11 +103,9 @@ function ParticipantLabel({
   return (
     <div className="flex items-center gap-2 rounded-full  px-3 py-1.5  backdrop-blur-sm">
       {audioEnabled ? (
-        <TbMicrophoneFilled
-          className={speaking ? "text-sky-500" : "text-black"}
-        />
+        <Mic className={speaking ? "text-sky-500" : "text-black"} />
       ) : (
-        <BiMicrophoneOff />
+        <MicOff />
       )}
       <span className="text-sm font-medium">{name}</span>
     </div>

@@ -2,10 +2,10 @@ import CodeBlockLowlight, {
   CodeBlockLowlightOptions,
 } from "@tiptap/extension-code-block-lowlight";
 import { ReactNodeViewRenderer } from "@tiptap/react";
-import { all, createLowlight } from "lowlight";
+import { common, createLowlight } from "lowlight";
 import CodeBlockComponent from "./CodeBlockComponent";
 
-const lowlight = createLowlight(all);
+const lowlight = createLowlight(common);
 
 lowlight.registerAlias({
   html: "xml",

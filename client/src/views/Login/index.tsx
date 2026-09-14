@@ -9,7 +9,7 @@ import {
 } from "@/utils/auth";
 import { Alert, Button, Divider, Form, Input, message } from "antd";
 import { useEffect, useMemo, useState } from "react";
-import { FaGithub, FaGoogle } from "react-icons/fa";
+import { Github, Globe } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 interface LoginFormData {
@@ -364,7 +364,7 @@ export const LoginPage = () => {
                 type="default"
                 size="large"
                 block
-                icon={<FaGithub />}
+                icon={<Github size={16} />}
                 onClick={handleGitHubLogin}
                 loading={loading}
               >
@@ -375,7 +375,7 @@ export const LoginPage = () => {
                 type="default"
                 size="large"
                 block
-                icon={<FaGoogle />}
+                icon={<Globe size={16} />}
                 onClick={handleGoogleLogin}
                 loading={loading}
               >

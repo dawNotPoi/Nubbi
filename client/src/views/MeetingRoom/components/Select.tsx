@@ -1,6 +1,6 @@
 ﻿import clsx from "clsx";
 import { useEffect, useRef, useState } from "react";
-import { AiOutlineUp } from "react-icons/ai";
+import { ChevronUp } from "lucide-react";
 
 type SelectProps = {
   children: React.ReactNode;
@@ -42,7 +42,7 @@ export default function Select({ children }: SelectProps) {
             : "bg-white hover:bg-slate-100 hover:text-slate-700",
         )}
       >
-        <AiOutlineUp
+        <ChevronUp
           className={clsx("text-xs transition-transform", open && "rotate-180")}
         />
       </div>

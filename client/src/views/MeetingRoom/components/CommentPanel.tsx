@@ -1,10 +1,10 @@
 import Image from "@/component/UI/Image";
-import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  LuMessageSquareText,
-  LuSendHorizontal,
-  LuSparkles,
-} from "react-icons/lu";
+  MessageSquareText,
+  SendHorizontal,
+  Sparkles,
+} from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { MeetingComment, VideoRoomUser } from "../types";
 
 type CommentPanelProps = {
@@ -174,7 +174,7 @@ export default function CommentPanel({
       <header className="flex items-center justify-between border-b border-[#ecebe8] px-5 py-4">
         <div className="flex items-center gap-3">
           <div className="flex size-9 items-center justify-center rounded-xl bg-white text-[#6b6b6a] shadow-sm">
-            <LuMessageSquareText className="text-lg" />
+            <MessageSquareText className="text-lg" />
           </div>
           <div>
             <div className="text-sm font-semibold text-[#2f3437]">评论</div>
@@ -190,7 +190,7 @@ export default function CommentPanel({
 
       <div className="flex-1 overflow-y-auto px-5 py-5">
         <div className="mb-5 flex items-center gap-2 rounded-2xl border border-[#ecebe8] bg-white/90 px-4 py-3 text-sm text-[#5f5e5b] shadow-sm">
-          <LuSparkles className="shrink-0 text-[#7c7c78]" />
+          <Sparkles className="shrink-0 text-[#7c7c78]" />
           <span>建议把结论、待办和问题都留在这里，方便会后回看。</span>
         </div>
 
@@ -349,7 +349,7 @@ export default function CommentPanel({
               onClick={() => void handleSend()}
               className="inline-flex items-center gap-2 rounded-xl bg-[#2f3437] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#1f2326] disabled:cursor-not-allowed disabled:bg-[#9b9a97]"
             >
-              <LuSendHorizontal className="text-sm" />
+              <SendHorizontal className="text-sm" />
               {sending ? "发送中" : "发送"}
             </button>
           </div>

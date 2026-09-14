@@ -1,7 +1,6 @@
 import Image from "@/component/UI/Image";
+import { Mic, MicOff } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { BiMicrophoneOff } from "react-icons/bi";
-import { TbMicrophoneFilled } from "react-icons/tb";
 
 type ParticipantTileProps = {
   id: string;
@@ -144,13 +143,13 @@ export default function ParticipantTile({
       {content}
       <footer className="absolute bottom-2 left-2 flex items-center gap-1 rounded-full bg-black/45 px-2.5 py-1 text-white backdrop-blur-sm">
         {isAudioEnabled ? (
-          <TbMicrophoneFilled
+          <Mic
             className={
               isSpeaking ? "text-xs text-emerald-300" : "text-xs text-white/35"
             }
           />
         ) : (
-          <BiMicrophoneOff className="text-xs text-white/55" />
+          <MicOff className="text-xs text-white/55" />
         )}
         <span className="text-xs">{name}</span>
       </footer>

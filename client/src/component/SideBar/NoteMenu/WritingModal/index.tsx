@@ -9,12 +9,14 @@ import {
   updatePostPropertiesAtom,
 } from "@/store/atom/postAtom";
 import { debounceWrapper } from "@/utils/common";
-import { FileTextOutlined } from "@ant-design/icons";
 import clsx from "clsx";
 import { useAtom, useAtomValue } from "jotai";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MdOpenInFull } from "react-icons/md";
-import { RiAddFill } from "react-icons/ri";
+import {
+  Expand,
+  FileText,
+  Plus,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { IconButton } from "../../components";
 import { SearchNoteList } from "./SearchNodeList";
@@ -194,7 +196,7 @@ export const WrittingModal = ({
               "hover:bg-neutral-100 hover:text-neutral-700",
             )}
           >
-            <MdOpenInFull />
+            <Expand />
           </IconButton>
           <Divider orientation="vertical" className="mx-1 my-2 h-5" />
           <Popover
@@ -214,7 +216,7 @@ export const WrittingModal = ({
                   )}
                 >
                   <span className="text-neutral-400">Add to</span>
-                  <FileTextOutlined className="text-neutral-400" />
+                  <FileText className="text-neutral-400" />
                   <span className="max-w-[220px] truncate font-medium text-neutral-900">
                     {targetNote?.title || DEFAULT_TITLE}
                   </span>
@@ -230,7 +232,7 @@ export const WrittingModal = ({
         </div>
       }
       trigger={
-        <RiAddFill
+        <Plus
           onClick={() => {
             onTrigger?.();
             setOpen(true);

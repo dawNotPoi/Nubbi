@@ -1,14 +1,14 @@
 import Input from "antd/es/input/Input";
 import clsx from "clsx";
-import { useState } from "react";
 import {
-  BiCamera,
-  BiCameraOff,
-  BiMicrophone,
-  BiMicrophoneOff,
-} from "react-icons/bi";
-import { LuMessageSquareText } from "react-icons/lu";
-import { SlScreenDesktop } from "react-icons/sl";
+  Camera,
+  CameraOff,
+  MessageSquareText,
+  Mic,
+  MicOff,
+  Monitor,
+} from "lucide-react";
+import { useState } from "react";
 import type {
   DeviceStatus,
   MediaDeviceKind,
@@ -184,7 +184,7 @@ export default function VideoControls({
           <ActionItem
             active={audioStatus.open}
             label="选择音频"
-            icon={audioStatus.open ? <BiMicrophone /> : <BiMicrophoneOff />}
+            icon={audioStatus.open ? <Mic /> : <MicOff />}
             onClick={() => onToggleDevice("audio", !audioStatus.open)}
             withSelect
           >
@@ -200,7 +200,7 @@ export default function VideoControls({
           <ActionItem
             active={videoStatus.open}
             label={videoStatus.open ? "开启视频" : "关闭视频"}
-            icon={videoStatus.open ? <BiCamera /> : <BiCameraOff />}
+            icon={videoStatus.open ? <Camera /> : <CameraOff />}
             onClick={() => onToggleDevice("video", !videoStatus.open)}
             withSelect
           >
@@ -216,14 +216,14 @@ export default function VideoControls({
           <ActionItem
             active={isScreenSharing}
             label={isScreenSharing ? "停止共享" : "共享屏幕"}
-            icon={<SlScreenDesktop />}
+            icon={<Monitor />}
             onClick={onToggleScreenShare}
           />
 
           <ActionItem
             active={isCommentOpen}
             label={isCommentOpen ? "关闭评论" : "打开评论"}
-            icon={<LuMessageSquareText />}
+            icon={<MessageSquareText />}
             badgeCount={commentCount}
             onClick={onToggleComment}
           />
