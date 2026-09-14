@@ -21,6 +21,8 @@ export type MessagePart =
       arguments: Record<string, unknown>;
       result: string;
       success?: boolean;
+      // 工具实际执行耗时（毫秒，不含审批等待）；历史消息可能缺失。
+      durationMs?: number;
     }
   | { type: "error"; message: string };
 

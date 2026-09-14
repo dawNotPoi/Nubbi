@@ -33,6 +33,8 @@ export type MessagePart =
       arguments: Record<string, unknown>;
       result: string;
       success?: boolean;
+      // 工具实际执行耗时（毫秒，不含审批等待）；历史消息可能缺失。
+      durationMs?: number;
       // status 为“运行中/完成”，仅客户端用于展示进度。
       status?: "running" | "done";
     }
@@ -141,7 +143,7 @@ export type StreamEvent = (
       tool: string;
       arguments: Record<string, unknown>;
     }
-  | { type: "tool-result"; callId?: string; server: string; tool: string; result: string; success?: boolean }
+  | { type: "tool-result"; callId?: string; server: string; tool: string; result: string; success?: boolean; durationMs?: number }
   | ApprovalRequest
   | { type: "approval-resolved"; approvalId: string; approved: boolean }
   | { type: "text-delta"; text: string }

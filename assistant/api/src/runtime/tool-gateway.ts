@@ -179,8 +179,11 @@ export class ToolGateway {
       tool: tool.originalName,
       arguments: shownArguments,
     });
+    // 耗时只统计工具实际执行（callMcpTool），不含审批等待与参数校验。
+    const startedAt = Date.now();
     try {
       const result = await callMcpTool(tool, call.arguments, this.signal);
+      const durationMs = Date.now() - startedAt;
       const content = result.content.slice(0, modelResultLimit);
       const shownResult = content.slice(0, displayResultLimit);
       this.emit({
@@ -190,10 +193,12 @@ export class ToolGateway {
         tool: tool.originalName,
         result: shownResult,
         success: result.success,
+        durationMs,
       });
-      parts.push(this.toolPart(call, tool, shownArguments, shownResult, result.success));
+      parts.push(this.toolPart(call, tool, shownArguments, shownResult, result.success, durationMs));
       return { content, parts, success: result.success };
     } catch (error) {
+      const durationMs = Date.now() - startedAt;
       const message = error instanceof Error ? error.message : "MCP 工具执行失败";
       return this.failure(
         call,
@@ -201,6 +206,7 @@ export class ToolGateway {
         shownArguments,
         errorContent("tool_execution_failed", message),
         parts,
+        durationMs,
       );
     }
   }
@@ -220,6 +226,7 @@ export class ToolGateway {
     argumentsValue: Record<string, unknown>,
     content: string,
     parts: MessagePart[] = [],
+    durationMs?: number,
   ): ToolExecutionResult {
     const shownResult = content.slice(0, displayResultLimit);
     this.emit({
@@ -229,8 +236,9 @@ export class ToolGateway {
       tool: tool.originalName,
       result: shownResult,
       success: false,
+      durationMs,
     });
-    parts.push(this.toolPart(call, tool, argumentsValue, shownResult, false));
+    parts.push(this.toolPart(call, tool, argumentsValue, shownResult, false, durationMs));
     return { content, parts, success: false };
   }
 
@@ -249,6 +257,7 @@ export class ToolGateway {
     argumentsValue: Record<string, unknown>,
     result: string,
     success: boolean,
+    durationMs?: number,
   ): MessagePart {
     return {
       type: "tool",
@@ -258,6 +267,7 @@ export class ToolGateway {
       arguments: argumentsValue,
       result,
       success,
+      durationMs,
     };
   }
 }
