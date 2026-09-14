@@ -1,6 +1,7 @@
 import { Bot, CheckCircle2, ChevronDown, Clock3, Loader2, ShieldCheck, Sparkles, XCircle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { formatUserInput } from "@nubbi/assistant-shared/client";
 import { cn } from "../../lib/utils.ts";
 import type { Message, MessagePart } from "../../types.ts";
 
@@ -98,6 +99,7 @@ export const MessageView = ({ message }: { message: Message }): React.JSX.Elemen
         {!user && message.model ? <p className="mb-2 text-xs text-muted-foreground">本次模型：{message.model}</p> : null}
         {message.parts.map((part, index) => {
           const key = `${message.id}-${part.type}-${index}`;
+          if (part.type === "user-input") return <p key={key} className="mb-2 whitespace-pre-wrap rounded-md border p-3 text-sm">{formatUserInput(part)}</p>;
           if (part.type === "text") {
             return (
               <div className="prose prose-sm max-w-none break-words" key={key}>

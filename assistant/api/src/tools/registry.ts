@@ -1,16 +1,14 @@
-import type { ApprovalReview, MessagePart } from "@nubbi/assistant-shared/contracts";
+import type { MessagePart } from "@nubbi/assistant-shared/contracts";
 import type { ToolDefinition, ToolExecutionResult } from "./tool-contracts.ts";
 
 /** 工具执行上下文，取消信号必须传到实际传输层。 */
 export type ToolInvocation = { arguments: Record<string, unknown>; abortSignal: AbortSignal };
-/** 一个工具的定义、审批策略和实际实现，均不依赖模型协议。 */
+/** 一个工具的说明与实现，不承担审批策略；并发安全由实际工具负责。 */
 export type RegisteredTool = {
   definition: ToolDefinition;
   serverName: string;
   originalName: string;
-  readOnly: boolean;
   presentation?: "skill";
-  buildApprovalReview?: (argumentsValue: Record<string, unknown>) => ApprovalReview | undefined;
   invoke: (input: ToolInvocation) => Promise<Omit<ToolExecutionResult, "parts"> & { parts?: MessagePart[] }>;
 };
 

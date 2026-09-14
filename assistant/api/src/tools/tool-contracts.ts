@@ -16,7 +16,10 @@ export type ToolExecutionResult = {
   instruction?: string;
 };
 /** 编排器需要的最小工具执行能力。 */
-export type ToolInvoker = { executeCall: (toolCall: ToolCall) => Promise<ToolExecutionResult> };
+export type ToolInvoker = {
+  executeCall: (toolCall: ToolCall) => Promise<ToolExecutionResult>;
+  executeCalls: (toolCalls: ToolCall[]) => Promise<PromiseSettledResult<ToolExecutionResult>[]>;
+};
 
 /**
  * 校验未知工具参数的基本对象形状，JSON Schema 在执行层继续校验。

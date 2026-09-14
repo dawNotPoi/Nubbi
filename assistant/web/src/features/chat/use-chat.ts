@@ -3,7 +3,7 @@ import { ChatSession, createAssistantClient, type ChatViewState } from "@nubbi/a
 
 /** Web 聊天状态和业务动作。 */
 export type WebChatState = ChatViewState &
-  Pick<ChatSession, "modelSelection" | "selectConversation" | "sendMessage" | "stopGeneration" | "decideApproval" | "deleteConversation">;
+  Pick<ChatSession, "userInputResponder" | "modelSelection" | "selectConversation" | "sendMessage" | "stopGeneration" | "decideApproval" | "deleteConversation">;
 
 /**
  * 订阅聊天业务状态，浏览器 Hook 仅管理 React 生命周期。
@@ -28,6 +28,7 @@ export function useChat(): WebChatState {
   return {
     ...state,
     modelSelection: session.modelSelection,
+    userInputResponder: session.userInputResponder,
     selectConversation: session.selectConversation,
     sendMessage: session.sendMessage,
     stopGeneration: session.stopGeneration,

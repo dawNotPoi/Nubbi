@@ -19,6 +19,7 @@ import { chatStyles as styles } from "./styles.ts";
 import { useMobileChat } from "./use-mobile-chat.ts";
 import { useDefaultModel } from "./use-default-model.ts";
 import { ConversationModelPicker } from "./conversation-model-picker.tsx";
+import { UserInputPanel } from "./user-input-panel.tsx";
 
 /**
  * 聊天主屏：消息流、输入框与历史/设置入口。
@@ -136,6 +137,8 @@ export const ChatScreen = ({
           </ScrollView>
         )}
         {chat.error ? <Text style={styles.bannerError}>{chat.error}</Text> : null}
+        {chat.userInput ? <UserInputPanel key={chat.userInput.requestId} request={chat.userInput}
+          busy={chat.answering} error={chat.answerError} onSubmit={chat.userInputResponder.submit} /> : null}
         {!selectedModel && defaultModel.error ? <Text style={styles.bannerError}>{defaultModel.error}</Text> : null}
         <View style={styles.composerArea}>
           <ConversationModelPicker model={selectedModel} disabled={modelBusy} onSelect={chat.modelSelection.select} />

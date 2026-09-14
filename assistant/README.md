@@ -1,6 +1,6 @@
 # Nubbi Assistant
 
-Nubbi Assistant 是一个以手机 App 为主要入口的个人 AI 助手。手机端使用 Expo + React Native，服务端负责会话、模型调用、本地 Skill、HTTP/stdio MCP 和按工具语义执行的审批策略。
+Nubbi Assistant 是一个以手机 App 为主要入口的个人 AI 助手。手机端使用 Expo + React Native，服务端负责会话、模型调用、本地 Skill、HTTP/stdio MCP 和 Agent 主动发起的用户问答。
 
 ## 项目结构
 
@@ -83,11 +83,15 @@ HTTP 请求头和 stdio 配置中的环境变量占位符 `${ENV_NAME}` 由 Assi
 
 MCP 请求始终由 Assistant API 发出，不是由手机或外部模型公司发出。订阅模式只把工具名和 JSON Schema 暴露给 Codex；URL、Header 和 Token 不进入 Codex 配置。
 
-## 工具审批
+## 用户提问与工具执行
 
-OpenAI-compatible 与 ChatGPT 订阅模式共用 `ToolExecutor`。参数必须先通过 JSON 对象解析和 JSON Schema 校验；无效参数直接返回工具错误，不进入审批或执行。MCP 声明 `readOnlyHint=true` 且不具有破坏性的工具会自动执行；创建、修改、破坏性工具以及缺少 annotations 的工具会向当前客户端发送一次性审批事件。用户可以查看 Server、工具名和参数，选择“允许一次”或“拒绝”。审批不会被永久记住，超时或停止生成会自动拒绝。
+Agent 通过内置 `ask_user` 主动询问用户，支持 1–3 个问题、单选选项及自定义文本。审批只是提问的一种用途；工具注册不包含是否审批的策略，也不根据读写属性自动审批。是否需要询问由模型判断，不构成强制的危险操作拦截。工具服务仍负责身份权限、幂等及并发安全。
 
-只读工具最多四路并发，写工具串行；排队中的操作支持取消，不自动重试写操作。Nubbi 笔记的专用审批文案位于 `api/src/integrations/nubbi`，不进入通用执行器。
+普通工具统一最多四路并发，保留参数校验与取消，不自动重试。提问由独立交互模块等待，不占工具队列。Loop 同一批包含提问和其他调用时，不执行其他调用，要求模型在得到回答后重新决策；已在执行中的操作不回滚。Codex 通过相同的动态提问工具接入，等待期间新收到的普通工具调用被拒绝并要求稍后重新决策。
+
+用户通过 `POST /api/user-input/:requestId` 提交带 `runId` 的结构化答案或“跳过”，服务端校验问题、选项、自定义输入和重复回答。跳过不是同意；停止任务会取消等待。问题和回答进入运行事件，并在 Run 结束时随助手消息保存。旧审批协议仅保留历史兼容，不再自动发起。
+
+当前不恢复重启前的 Run：提问等待只保存在内存，后端重启后旧请求失效，重新发送消息创建新 Run。用户消息立即入库，助手完整消息在 Run 收尾时保存；运行事件不是每次模型调用的完整检查点，因此突然重启仍可能丢失未完成的输出。
 
 ## Agent Runtime
 
@@ -108,14 +112,14 @@ OpenAI-compatible 与 ChatGPT 订阅模式共用 `ToolExecutor`。参数必须�
 
 实时文本增量不会写入 Run 日志，MCP URL、Header、Token 和模型密钥也不会进入事件或模型上下文。
 
-内置 `conversation-summary` Skill 可将当前对话整理为固定结构的 Markdown。用户要求落地时，Agent 会从全部已启用 MCP 中自行选择合适的文档工具；它不绑定 Nubbi，也没有独立预览页面。写入动作仍需按工具执行器的策略审批。
+内置 `conversation-summary` Skill 可将当前对话整理为固定结构的 Markdown。用户要求落地时，Agent 会从全部已启用 MCP 中自行选择合适的文档工具；它不绑定 Nubbi，也没有独立预览页面。需要用户澄清或确认时，由 Agent 调用 `ask_user`，不由写工具自动触发。
 
 ## 代码阅读顺序
 
 1. `shared/src/contracts`：先读持久化消息、配置、审批和运行事件。客户端临时消息的 `running` 状态位于 `shared/src/client/message-state.ts`，不进入数据库协议。
 2. `api/src/features/conversations` → `api/src/runtime/run-coordinator.ts` → `execute-run.ts`：跟踪 HTTP 请求如何成为任务、如何取消和保存结果。其他业务模块同样按 Controller、Service、Repository 分工。
 3. `api/src/agent/agent-loop.ts` → `api/src/llm/model-adapter.ts` → `llm/chat-completions`：理解协议无关循环和单轮适配器的边界。请求转换、响应累积与共享 SSE 分帧分别实现。
-4. `api/src/tools` → `api/src/integrations`：工具定义、校验、审批、调度与执行分开；MCP 管连接/发现/调用，Codex 管进程/RPC/线程/通知/动态工具，通过注入接口存取线程信息。
+4. `api/src/agent/interactive-tool-invoker.ts` → `features/user-input`：模型提问、等待用户、回答校验与取消；再读 `tools` → `integrations`，工具校验和统一并发队列与交互等待分开。MCP 管连接/发现/调用，Codex 管进程/RPC/线程/通知/动态工具，通过注入接口存取线程信息。
 5. `shared/src/client/chat-session.ts` → 两端 `features/chat`：共同状态机处理请求身份、运行身份、工具结果匹配及用量归并；Web/Mobile 各自提供 React Hook 和视图，不共享平台组件。
 6. 两端 `features/settings`、Web `features/trace`：设置表单、账号状态、运行事件归并、历史请求和回放控制按职责拆分。
 

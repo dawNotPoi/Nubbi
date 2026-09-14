@@ -5,6 +5,7 @@ import type {
   ConversationSummary,
   StreamEvent,
   TokenUsage,
+  UserInputRequest,
 } from "../contracts/index.ts";
 import { applyMessageEvent, type ClientMessage } from "./message-state.ts";
 
@@ -15,6 +16,9 @@ export type ChatViewState = {
   pendingMessages: ClientMessage[];
   messages: ClientMessage[];
   approval: ApprovalRequest | null;
+  userInput: UserInputRequest | null;
+  answering: boolean;
+  answerError: string | null;
   contextStatus: ContextStatus | null;
   runTokenUsage: TokenUsage | null;
   traceEvents: StreamEvent[];
@@ -37,6 +41,7 @@ export function createChatViewState(): ChatViewState {
     pendingMessages: [],
     messages: [],
     approval: null,
+    userInput: null, answering: false, answerError: null,
     contextStatus: null,
     runTokenUsage: null,
     traceEvents: [],
@@ -63,6 +68,7 @@ export function createRunViewPatch(): Partial<ChatViewState> {
     traceRunId: null,
     traceText: "",
     approval: null,
+    userInput: null, answering: false, answerError: null,
   };
 }
 
@@ -84,6 +90,16 @@ export function reduceChatEvent(state: ChatViewState, event: StreamEvent): Parti
     }),
   };
   if (event.type === "approval-request") patch.approval = event;
+  if (event.type === "user-input-request") {
+    patch.userInput = event;
+    patch.answering = false;
+    patch.answerError = null;
+  }
+  if (event.type === "user-input-resolved" && event.requestId === state.userInput?.requestId) {
+    patch.userInput = null;
+    patch.answering = false;
+    patch.answerError = null;
+  }
   if (event.type === "approval-resolved" && event.approvalId === state.approval?.approvalId) patch.approval = null;
   if (event.type === "context-status") patch.contextStatus = event;
   if (event.type === "token-usage") patch.runTokenUsage = event;

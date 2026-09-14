@@ -1,4 +1,5 @@
 import type { ApprovalReview } from "./approvals.ts";
+import type { UserInputPart, UserInputRequest } from "./user-input.ts";
 /** 运行事件的身份与顺序信息，用于关联会话、任务及回放。 */
 export type RuntimeEventMeta = {
   eventId: string;
@@ -12,6 +13,8 @@ export type RuntimeEventMeta = {
 
 /** Agent 运行过程中产生、需要实时推送给客户端的业务事件。 */
 export type AgentEvent =
+  | ({ type: "user-input-request" } & UserInputRequest)
+  | { type: "user-input-resolved"; requestId: string; status: Exclude<UserInputPart["status"], "pending">; answers: UserInputPart["answers"] }
   | { type: "skill-active"; name: string; description: string }
   | {
       type: "tool-start";

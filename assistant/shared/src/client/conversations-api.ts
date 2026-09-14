@@ -1,4 +1,4 @@
-import type { Conversation, ConversationSummary, RunSummary, RuntimeEvent } from "../contracts/index.ts";
+import type { Conversation, ConversationSummary, RunSummary, RuntimeEvent, UserInputSubmission } from "../contracts/index.ts";
 import type { HttpTransport } from "./http-transport.ts";
 
 /** conversations 业务接口，与平台无关。 */
@@ -10,6 +10,7 @@ export type ConversationsApi = {
   deleteConversation: (id: string) => Promise<void>;
   stopGeneration: (conversationId: string) => Promise<void>;
   resolveApproval: (id: string, approved: boolean) => Promise<void>;
+  submitUserInput: (requestId: string, input: UserInputSubmission) => Promise<{ accepted: true }>;
   listConversationRuns: (conversationId: string) => Promise<RunSummary[]>;
   getRunEvents: (runId: string) => Promise<RuntimeEvent[]>;
 };
@@ -91,6 +92,9 @@ export function createConversationsApi(transport: HttpTransport): ConversationsA
    */
   const getRunEvents = (runId: string): Promise<RuntimeEvent[]> => transport.request(`/api/runs/${runId}/events`);
   return {
+    submitUserInput: (requestId, input) => transport.request(`/api/user-input/${requestId}`, {
+      method: "POST", body: JSON.stringify(input),
+    }),
     listConversations,
     getConversation,
     createConversation,

@@ -1,4 +1,5 @@
 import { DELTA_PART_TYPES, type Message, type MessagePart, type StreamEvent } from "../contracts/index.ts";
+import { applyUserInputEvent } from "../contracts/user-input-history.ts";
 
 /** 工具的临时执行状态仅供客户端展示，不属于持久化消息协议。 */
 export type ClientMessagePart = MessagePart extends infer Part
@@ -16,6 +17,7 @@ export type ClientMessage = Omit<Message, "parts"> & { parts: ClientMessagePart[
  * @returns 更新后的新数组，不修改输入。
  */
 export function applyMessageEvent(messageParts: ClientMessagePart[], event: StreamEvent): ClientMessagePart[] {
+  if (event.type === "user-input-request" || event.type === "user-input-resolved") return applyUserInputEvent(messageParts, event);
   if (event.type === "done") return event.message.parts;
   if (event.type === "text-delta" || event.type === "reasoning-delta") {
     const type = DELTA_PART_TYPES[event.type];
@@ -66,7 +68,7 @@ export function applyMessageEvent(messageParts: ClientMessagePart[], event: Stre
         ...messageParts,
         { type: "tool", callId: event.callId, server: event.server, tool: event.tool, arguments: {}, ...resultFields },
       ];
-    return messageParts.map((part, index) => (index === matchingIndex ? { ...part, ...resultFields } : part));
+    return messageParts.map((part, index) => (index === matchingIndex && part.type === "tool" ? { ...part, ...resultFields } : part));
   }
   return event.type === "error" ? [...messageParts, { type: "error", message: event.message }] : messageParts;
 }

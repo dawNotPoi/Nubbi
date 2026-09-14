@@ -1,4 +1,5 @@
 import { DELTA_PART_TYPES, type AgentEvent, type MessagePart } from "@nubbi/assistant-shared/contracts";
+import { applyUserInputEvent } from "@nubbi/assistant-shared/contracts";
 
 /** 收集运行中的可见内容，异常退出时也能保存已产生的输出。 */
 export class RunMessageCollector {
@@ -11,6 +12,10 @@ export class RunMessageCollector {
    * @returns 无返回值。
    */
   public record(event: AgentEvent): void {
+    if (event.type === "user-input-request" || event.type === "user-input-resolved") {
+      this.parts = applyUserInputEvent(this.parts, event);
+      return;
+    }
     if (event.type === "text-delta" || event.type === "reasoning-delta") {
       const type = DELTA_PART_TYPES[event.type];
       const previous = this.parts.at(-1);

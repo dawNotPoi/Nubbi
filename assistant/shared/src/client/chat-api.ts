@@ -18,4 +18,5 @@ export type ChatApi = Pick<
   | "streamMessage"
   | "stopGeneration"
   | "resolveApproval"
+  | "submitUserInput"
 >;

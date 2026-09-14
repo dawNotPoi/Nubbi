@@ -107,11 +107,7 @@ export async function runAgentLoop(
       }
       return { messageParts, usage: input.runUsage.snapshot() };
     }
-    const settledResults = await Promise.allSettled(
-      modelResponse.toolCalls.map((toolCall) =>
-        input.toolInvoker.executeCall(toolCall),
-      ),
-    );
+    const settledResults = await input.toolInvoker.executeCalls(modelResponse.toolCalls);
     input.abortSignal.throwIfAborted();
     for (const [index, settled] of settledResults.entries()) {
       if (settled.status === "rejected") throw settled.reason;

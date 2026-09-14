@@ -1,4 +1,5 @@
 import { countTokens, messageOverheadTokens } from "../runtime/tokens.ts";
+import { formatUserInput } from "@nubbi/assistant-shared/contracts";
 import type { Conversation, Message, MessagePart } from "../types.ts";
 
 const TOOL_RESULT_LIMIT = 2_000; // 工具结果截断长度
@@ -26,6 +27,7 @@ export type AgentContext = {
  */
 const partText = (part: MessagePart): string => {
   if (part.type === "text") return part.text;
+  if (part.type === "user-input") return `[用户交互记录]\n${formatUserInput(part)}`;
   // 推理内容只用于前端展示，不回灌给模型，避免泄露/干扰后续生成。
   if (part.type === "reasoning") return "";
   if (part.type === "skill") return `[已激活 Skill：${part.name}]`;

@@ -1,6 +1,7 @@
 import { Activity, Menu, MessageSquarePlus, Settings } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Composer } from "./features/chat/composer.tsx";
+import { UserInputPanel } from "./features/chat/user-input-panel.tsx";
 import { InlineApproval } from "./features/chat/inline-approval.tsx";
 import { ContextStatus } from "./features/chat/context-status.tsx";
 import { ConversationDrawer } from "./features/conversations/conversation-drawer.tsx";
@@ -127,6 +128,8 @@ const ChatApp = (): React.JSX.Element => {
           </div>
         )}
       </main>
+      {chat.userInput ? <UserInputPanel key={chat.userInput.requestId} request={chat.userInput}
+        busy={chat.answering} error={chat.answerError} onSubmit={chat.userInputResponder.submit} /> : null}
 
       {chat.error ? (
         <div className="border-t border-red-100 bg-red-50 px-4 py-2 text-center text-xs text-red-700">{chat.error}</div>

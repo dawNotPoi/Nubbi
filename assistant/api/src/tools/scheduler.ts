@@ -1,7 +1,7 @@
 /** 等待执行的任务；取消后从队列中移除，不占用并发槽。 */
 type WaitingTask = { start: () => void; cancel: () => void };
 
-/** 有界并发队列，读队列四个槽位，写队列一个槽位。 */
+/** 有界并发队列，只管理资源上限，不区分操作的读写语义。 */
 export class ToolScheduler {
   private activeCount = 0;
   private readonly waiting: WaitingTask[] = [];

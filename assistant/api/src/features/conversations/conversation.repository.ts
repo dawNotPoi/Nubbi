@@ -24,6 +24,7 @@ const toConversation = (document: HydratedDocument<StoredConversation>): Convers
     createdAt: message.createdAt,
   })),
   codexThreadId: document.codexThreadId,
+  codexToolSignature: document.codexToolSignature,
   tokenUsage: document.tokenUsage
     ? {
         promptTokens: document.tokenUsage.promptTokens ?? 0,

@@ -31,6 +31,11 @@ export const buildTraceItems = (events: StreamEvent[]): TraceItem[] => {
   for (const event of events) {
     if (event.type === "run-started") {
       items.push({ kind: "run", provider: event.provider, timestamp: event.timestamp });
+    } else if (event.type === "user-input-request") {
+      items.push({ kind: "text", text: `等待用户回答：\n${event.questions.map((question) => question.title).join("\n")}`, timestamp: event.timestamp });
+    } else if (event.type === "user-input-resolved") {
+      const status = event.status === "answered" ? "已回答" : event.status === "dismissed" ? "已跳过（未授权）" : "已取消";
+      items.push({ kind: "text", text: `用户交互${status}`, timestamp: event.timestamp });
     } else if (event.type === "reasoning-delta") {
       const last = items.at(-1);
       if (last?.kind === "reasoning") {

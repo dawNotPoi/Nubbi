@@ -2,7 +2,6 @@ import type { AgentEvent, TokenUsage } from "@nubbi/assistant-shared/contracts";
 import { callMcpTool, type McpTool } from "../integrations/mcp/mcp.ts";
 import { loadSkill, type Skill } from "../integrations/skills/skill-store.ts";
 import type { RegisteredTool } from "../tools/registry.ts";
-import { buildApprovalReview } from "../integrations/nubbi/approval-review.ts";
 
 /** 工具组装依赖，仅运行层接触 MCP、技能文件和统计读取。 */
 export type RunToolsInput = {
@@ -22,8 +21,6 @@ export function createRunTools(input: RunToolsInput): RegisteredTool[] {
     definition: tool.definition,
     serverName: tool.server.name,
     originalName: tool.originalName,
-    readOnly: tool.annotations?.readOnlyHint === true && tool.annotations.destructiveHint !== true,
-    buildApprovalReview: (argumentsValue) => buildApprovalReview(tool, argumentsValue),
     invoke: (invocation) => callMcpTool(tool, invocation.arguments, invocation.abortSignal),
   }));
   tools.push({
@@ -34,7 +31,6 @@ export function createRunTools(input: RunToolsInput): RegisteredTool[] {
     },
     serverName: "assistant",
     originalName: "assistant_session_cache_stats",
-    readOnly: true,
     invoke: async ({ abortSignal }) => {
       abortSignal.throwIfAborted();
       const usage = await input.readUsage();
@@ -70,7 +66,6 @@ function createSkillTool(input: RunToolsInput): RegisteredTool {
     },
     serverName: "assistant",
     originalName: "assistant_activate_skill",
-    readOnly: true,
     presentation: "skill",
     invoke: async ({ arguments: argumentsValue, abortSignal }) => {
       abortSignal.throwIfAborted();
@@ -79,6 +74,8 @@ function createSkillTool(input: RunToolsInput): RegisteredTool {
       const skill = await loadSkill(name);
       abortSignal.throwIfAborted();
       if (!skill) return { success: false, content: `Skill "${name}" 不存在或已禁用` };
+      // 多个调用可能同时读取文件；发布指令前再次去重，保证只激活一次。
+      if (activeSkills.has(name)) return { success: true, content: `Skill "${name}" 已激活` };
       activeSkills.add(name);
       input.publishEvent({ type: "skill-active", name, description: skill.description });
       return {

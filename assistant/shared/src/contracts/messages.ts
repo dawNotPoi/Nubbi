@@ -1,3 +1,4 @@
+import type { UserInputPart } from "./user-input.ts";
 /** 会话列表所需摘要，不携带完整消息历史。 */
 export type ConversationSummary = {
   /** 会话下次发送选择的模型，旧会话可能缺失。 */
@@ -22,6 +23,7 @@ export type TokenUsage = {
 
 /** 消息内的内容块：文本、Skill、工具审批/执行记录或错误，逐块渲染。 */
 export type MessagePart =
+  | UserInputPart
   | { type: "text"; text: string }
   | { type: "reasoning"; text: string }
   | { type: "skill"; name: string; description: string }

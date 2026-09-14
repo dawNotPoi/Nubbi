@@ -1,5 +1,4 @@
 import type { AgentEvent, MessagePart } from "@nubbi/assistant-shared/contracts";
-import { requestApproval } from "./approvals.ts";
 import { createToolRegistry, type RegisteredTool } from "./registry.ts";
 import { ToolScheduler } from "./scheduler.ts";
 import { validateToolInput } from "./validation.ts";
@@ -7,18 +6,15 @@ import type { ToolCall, ToolExecutionResult, ToolInvoker } from "./tool-contract
 
 /** 工具执行所需依赖，由运行组装层提供。 */
 export type ToolExecutorInput = {
-  runId: string;
   registeredTools: RegisteredTool[];
   publishEvent: (event: AgentEvent) => void;
   abortSignal: AbortSignal;
 };
 
-/** 参数校验、审批与调度的统一入口；不识别模型协议或 MCP 传输。 */
+/** 参数校验与有界并发的统一入口；不识别模型协议或 MCP 传输。 */
 export class ToolExecutor implements ToolInvoker {
   private readonly registry: ReadonlyMap<string, RegisteredTool>;
-  private readonly readScheduler = new ToolScheduler(4);
-  private readonly writeScheduler = new ToolScheduler(1);
-  private readonly skillScheduler = new ToolScheduler(1);
+  private readonly scheduler = new ToolScheduler(4);
 
   /**
    * 建立单次运行的工具执行入口。
@@ -29,7 +25,7 @@ export class ToolExecutor implements ToolInvoker {
   }
 
   /**
-   * 调度一次调用；工具不存在或参数非法时不审批、不执行。
+   * 调度一次调用；工具不存在或参数非法时不执行。
    * @param toolCall 完整的工具调用。
    * @returns 包含展示记录的执行结果。
    */
@@ -45,46 +41,20 @@ export class ToolExecutor implements ToolInvoker {
         JSON.stringify({ success: false, error: "invalid_tool_arguments", message: inputError }),
         false,
       );
-    const scheduler =
-      tool.presentation === "skill" ? this.skillScheduler : tool.readOnly ? this.readScheduler : this.writeScheduler;
-    return scheduler.schedule(() => this.invokeTool(toolCall, tool), this.dependencies.abortSignal);
+    return this.scheduler.schedule(() => this.invokeTool(toolCall, tool), this.dependencies.abortSignal);
   }
 
-  /** 校验后的调用按统一审批策略执行；取消不能转换为普通工具失败。 */
+  /** @param toolCalls 本轮调用。 @returns 按输入顺序收集的执行结果。 */
+  public executeCalls(toolCalls: ToolCall[]): Promise<PromiseSettledResult<ToolExecutionResult>[]> {
+    return Promise.allSettled(toolCalls.map((toolCall) => this.executeCall(toolCall)));
+  }
+
+  /** 执行校验后的调用；取消不能转换为普通工具失败。 */
   private async invokeTool(toolCall: ToolCall, tool: RegisteredTool): Promise<ToolExecutionResult> {
-    const { abortSignal, publishEvent, runId } = this.dependencies;
+    const { abortSignal, publishEvent } = this.dependencies;
     abortSignal.throwIfAborted();
     if (!toolCall.input.valid) throw new Error("工具参数未通过校验");
     const argumentsValue = toolCall.input.value;
-    const approvalParts: MessagePart[] = [];
-    if (!tool.readOnly) {
-      const approval = await requestApproval({
-        runId,
-        abortSignal,
-        server: tool.serverName,
-        tool: tool.originalName,
-        arguments: previewArguments(argumentsValue),
-        emit: publishEvent,
-        review: tool.buildApprovalReview?.(previewArguments(argumentsValue)),
-      });
-      abortSignal.throwIfAborted();
-      approvalParts.push({
-        type: "approval",
-        approvalId: approval.approvalId,
-        server: tool.serverName,
-        tool: tool.originalName,
-        arguments: previewArguments(argumentsValue),
-        approved: approval.approved,
-      });
-      if (!approval.approved)
-        return this.recordResult(
-          toolCall,
-          tool,
-          JSON.stringify({ success: false, error: "user_denied" }),
-          false,
-          approvalParts,
-        );
-    }
     if (tool.presentation !== "skill")
       publishEvent({
         type: "tool-start",
@@ -103,7 +73,7 @@ export class ToolExecutor implements ToolInvoker {
         tool,
         toolResult.content,
         toolResult.success,
-        [...approvalParts, ...(toolResult.parts ?? [])],
+        toolResult.parts ?? [],
         Date.now() - startedAt,
       );
       return { ...recorded, instruction: toolResult.instruction };
@@ -118,7 +88,7 @@ export class ToolExecutor implements ToolInvoker {
           message: error instanceof Error ? error.message : "工具执行失败",
         }),
         false,
-        approvalParts,
+        [],
         Date.now() - startedAt,
       );
     }

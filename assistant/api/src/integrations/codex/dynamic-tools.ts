@@ -1,7 +1,7 @@
 import { validateArgumentObject } from "../../tools/tool-contracts.ts";
-import type { McpTool } from "../mcp/mcp.ts";
+import type { ToolDefinition } from "../../tools/tool-contracts.ts";
 import type { MessagePart } from "../../types.ts";
-import type { ToolExecutor } from "../../tools/tool-executor.ts";
+import type { ToolInvoker } from "../../tools/tool-contracts.ts";
 import { codexClient } from "./client.ts";
 import {
   isRecord,
@@ -13,7 +13,7 @@ import {
 
 type RunContext = {
   parts: MessagePart[];
-  gateway: ToolExecutor;
+  gateway: ToolInvoker;
   turnIdentity: Promise<string>;
 };
 
@@ -43,7 +43,7 @@ const parseToolCall = (value: unknown): DynamicToolCallParams | null => {
 };
 
 /**
- * 处理 Codex 发来的工具调用：交给 ToolExecutor 走“校验 → 审批 → 执行”链路，
+ * 处理 Codex 发来的工具调用：交给 ToolExecutor 走“参数校验 → 交互等待或工具执行”链路，
  * 并把工具执行产生的 MessagePart 收集进当前 Run，最终随助手消息一起落库。
  * @param params Codex 发来的动态工具调用参数。
  * @returns 回传给 Codex 的执行结果（内容与成功标记）。
@@ -81,15 +81,15 @@ export const installDynamicToolHandler = (): void => {
 
 /**
  * 把 MCP 工具转换为 Codex 动态工具定义，随 thread/start 一起传给 Codex。
- * @param tools MCP 工具列表。
+ * @param tools 动态能力列表。
  * @returns 对应的动态工具定义数组。
  */
-export const toDynamicTools = (tools: McpTool[]): DynamicToolSpec[] =>
+export const toDynamicTools = (tools: ToolDefinition[]): DynamicToolSpec[] =>
   tools.map((tool) => ({
     type: "function",
-    name: tool.registeredName,
-    description: tool.definition.description,
-    inputSchema: tool.definition.inputSchema,
+    name: tool.name,
+    description: tool.description,
+    inputSchema: tool.inputSchema,
   }));
 
 /**
@@ -102,7 +102,7 @@ export const toDynamicTools = (tools: McpTool[]): DynamicToolSpec[] =>
  */
 export const registerDynamicToolContext = (
   threadId: string,
-  gateway: ToolExecutor,
+  gateway: ToolInvoker,
   parts: MessagePart[],
   turnIdentity: Promise<string>,
 ): void => {

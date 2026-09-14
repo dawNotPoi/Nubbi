@@ -16,6 +16,7 @@ import { createRunTools } from "./run-tools.ts";
 import { RunMessageCollector } from "./message-collector.ts";
 import { createRuntimeEventEmitter } from "./event-emitter.ts";
 import { cancelRunApprovals } from "../tools/approvals.ts";
+import { userInputService } from "../features/user-input/user-input.service.ts";
 
 /** 一次已准备好的运行，连接配置只在组装阶段使用。 */
 export type PreparedRunInput = {
@@ -66,7 +67,6 @@ export async function executePreparedRun(input: PreparedRunInput): Promise<Runti
       readUsage: async () => mergeUsage((await getConversation(input.conversationId))?.tokenUsage, runUsage.snapshot()),
     });
     const toolExecutor = new ToolExecutor({
-      runId: input.runId,
       registeredTools,
       publishEvent,
       abortSignal: input.abortSignal,
@@ -109,6 +109,7 @@ export async function executePreparedRun(input: PreparedRunInput): Promise<Runti
     else emitter.emit({ type: "run-completed", messageId: message.id });
     return { message, error: failureMessage };
   } finally {
+    userInputService.cancelRun(input.runId);
     cancelRunApprovals(input.runId);
     await emitter.flush();
   }

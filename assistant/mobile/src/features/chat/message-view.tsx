@@ -1,6 +1,7 @@
 import { ShieldCheck, Sparkles, Wrench } from "lucide-react-native";
 import { ActivityIndicator, Text, View } from "react-native";
 import Markdown from "react-native-markdown-display";
+import { formatUserInput } from "@nubbi/assistant-shared/client";
 import { colors } from "../../theme.ts";
 import type { Message } from "../../types.ts";
 import { chatStyles as styles, markdownStyles } from "./styles.ts";
@@ -18,6 +19,7 @@ export const MessageView = ({ message }: { message: Message }): React.JSX.Elemen
         {!user && message.model ? <Text style={styles.capabilityText}>本次模型：{message.model}</Text> : null}
         {message.parts.map((part, index) => {
           const key = `${message.id}-${part.type}-${index}`;
+          if (part.type === "user-input") return <Text key={key} style={styles.capabilityText}>{formatUserInput(part)}</Text>;
           if (part.type === "text") {
             return user ? (
               <Text key={key} style={styles.userText}>

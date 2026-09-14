@@ -8,6 +8,7 @@ import { ConversationsModule } from "./features/conversations/conversations.modu
 import { ExtensionsModule } from "./features/extensions/extensions.module.ts";
 import { HealthModule } from "./features/health/health.module.ts";
 import { RunsModule } from "./features/runs/runs.module.ts";
+import { UserInputController } from "./features/user-input/user-input.controller.ts";
 
 /**
  * Assistant API 的根模块。
@@ -16,5 +17,6 @@ import { RunsModule } from "./features/runs/runs.module.ts";
 @Module({
   imports: [HealthModule, ConversationsModule, RunsModule, ApprovalsModule, ExtensionsModule, ConfigModule],
   providers: [RuntimeLifecycleService, { provide: APP_FILTER, useClass: AllExceptionsFilter }],
+  controllers: [UserInputController],
 })
 export class AppModule {}

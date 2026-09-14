@@ -3,11 +3,14 @@ import { ChatStateStore, createChatViewState, createRunViewPatch, reduceChatEven
 import { createPendingMessage } from "./message-state.ts";
 import { ConversationModelSelection } from "./conversation-model-selection.ts";
 import { prepareMessageConversation } from "./message-conversation.ts";
+import { UserInputResponder } from "./user-input-responder.ts";
+import { submitLegacyApproval } from "./legacy-approval.ts";
 
 /** 两端共用的聊天业务状态机，UI 自行订阅与展示。 */
 export class ChatSession {
   public readonly store = new ChatStateStore();
   public readonly modelSelection: ConversationModelSelection;
+  public readonly userInputResponder: UserInputResponder;
   private revision = 0;
   private listRevision = 0;
   private activeGeneration: ActiveGeneration | null = null;
@@ -16,7 +19,10 @@ export class ChatSession {
    * 绑定业务客户端。
    * @param api 平台已配置的请求方法。
    */
-  public constructor(private readonly api: ChatApi) { this.modelSelection = new ConversationModelSelection(this.store, api); }
+  public constructor(private readonly api: ChatApi) {
+    this.modelSelection = new ConversationModelSelection(this.store, api);
+    this.userInputResponder = new UserInputResponder(this.store, api);
+  }
 
   /**
    * 首次加载，移动端可自动打开最近对话。
@@ -119,7 +125,7 @@ export class ChatSession {
       await generation.stopRequest;
       if (this.activeGeneration === generation) {
         this.activeGeneration = null;
-        this.store.update({ generating: false, approval: null });
+        this.store.update({ generating: false, approval: null, userInput: null, answering: false });
       }
     }
   };
@@ -130,7 +136,7 @@ export class ChatSession {
    */
   public stopGeneration = async (): Promise<void> => {
     const generation = this.activeGeneration;
-    this.store.update({ approval: null });
+    this.store.update({ approval: null, userInput: null, answering: false });
     if (!generation?.conversationId || !generation.runId) {
       generation?.controller.abort();
       return;
@@ -152,14 +158,7 @@ export class ChatSession {
     approved: boolean,
     approvalId = this.store.getSnapshot().approval?.approvalId,
   ): Promise<void> => {
-    if (!approvalId || approvalId !== this.store.getSnapshot().approval?.approvalId) return;
-    const revision = this.revision;
-    this.store.update({ approval: null });
-    try {
-      await this.api.resolveApproval(approvalId, approved);
-    } catch (error) {
-      if (revision === this.revision) this.reportError(error);
-    }
+    await submitLegacyApproval(this.store, this.api, approved, approvalId);
   };
 
   /**
