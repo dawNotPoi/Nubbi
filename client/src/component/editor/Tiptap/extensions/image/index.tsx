@@ -55,6 +55,15 @@ const DImage = Image.extend<DImageOptions>({
     // 使用标准的 ['img', HTMLAttributes] 才能让插件识别出这是一个 Markdown Image
     return ["div", ["img", HTMLAttributes]];
   },
+  renderMarkdown: (node) => {
+    const { alt = "", src, status, title = "" } = node.attrs ?? {};
+
+    if (status !== "done" || !src) {
+      return "";
+    }
+
+    return title ? `![${alt}](${src} "${title}")` : `![${alt}](${src})`;
+  },
 
   //图片组件
   addNodeView() {

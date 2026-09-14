@@ -141,7 +141,7 @@ const TiptapEditor = ({
     editor.commands.setContent(nextContent.content, {
       contentType: nextContent.contentType,
       emitUpdate: false,
-    } as any);
+    });
   }, [defaultValue, editor]);
 
   return (
@@ -167,7 +167,7 @@ const TiptapEditor = ({
         </DragHandle>
       )}
       <EditorContent editor={editor} />
-      <FormatBubbleMenu editor={editor} />
+      {editable && <FormatBubbleMenu editor={editor} />}
     </div>
   );
 };

@@ -1,41 +1,65 @@
 import Popover from "@/component/UI/Popover";
 import { LoadingOutlined } from "@ant-design/icons";
 import { NodeViewProps, NodeViewWrapper } from "@tiptap/react";
-import { Button, Input } from "antd";
+import { Button, Input, message } from "antd";
 import clsx from "clsx";
 import { PictureInPicture } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { DImageOptions } from ".";
 import "./index.css";
+
 const ImageNodeView: React.FC<NodeViewProps> = ({
   node,
   updateAttributes,
   extension,
 }) => {
   const { status, file, src } = node.attrs;
-
   const [open, setOpen] = useState(false);
-
+  const [previewUrl, setPreviewUrl] = useState("");
   const isUploading = useRef(false);
-
   const { uploadHandler } = extension.options as DImageOptions;
 
-  //在loding状态时会自动上传文件
   useEffect(() => {
     if (!uploadHandler) {
       console.error("未配置上传方法");
       return;
     }
-    if (status === "uploading" && !isUploading.current) {
-      isUploading.current = true;
-      const upload = async () => {
+
+    if (status !== "uploading" || isUploading.current) {
+      return;
+    }
+
+    isUploading.current = true;
+
+    const upload = async () => {
+      try {
         const url = await uploadHandler(file);
         if (!url) throw new Error("上传失败 请重试");
         updateAttributes({ src: url, status: "done" });
-      };
-      upload();
+      } catch (error) {
+        console.error("图片上传失败", error);
+        message.error("图片上传失败，请重试");
+        isUploading.current = false;
+        updateAttributes({ file: null, src: null, status: "placeholder" });
+      }
+    };
+
+    void upload();
+  }, [status, file, uploadHandler, updateAttributes]);
+
+  useEffect(() => {
+    if (status === "done" || !file) {
+      setPreviewUrl("");
+      return;
     }
-  }, [status, file]);
+
+    const nextPreviewUrl = URL.createObjectURL(file);
+    setPreviewUrl(nextPreviewUrl);
+
+    return () => {
+      URL.revokeObjectURL(nextPreviewUrl);
+    };
+  }, [file, status]);
 
   const PopoverContent = () => {
     const [link, setLink] = useState("");
@@ -57,7 +81,7 @@ const ImageNodeView: React.FC<NodeViewProps> = ({
                 key={tab.value}
                 className={clsx(
                   " hover:bg-[rgba(249,248,247)]  p-1 py-2",
-                  tab.value === selectedTab && "border-b border-black"
+                  tab.value === selectedTab && "border-b border-black",
                 )}
               >
                 {tab.label}
@@ -86,7 +110,7 @@ const ImageNodeView: React.FC<NodeViewProps> = ({
                 />
               </label>
               <footer className="text-center  text-gray-500 text-[12px]">
-                最大只能上传5MB大小的图片
+                请选择要上传的图片文件
               </footer>
             </>
           )}
@@ -117,7 +141,6 @@ const ImageNodeView: React.FC<NodeViewProps> = ({
     );
   };
 
-  // 状态 1：Waiting - 显示上传控制台
   if (status === "placeholder") {
     return (
       <NodeViewWrapper className="image-node-view img-mark">
@@ -145,15 +168,13 @@ const ImageNodeView: React.FC<NodeViewProps> = ({
     );
   }
 
-  // 状态 2：不为placeholder
   return (
     <NodeViewWrapper className="image-node-view flex justify-center  relative">
       <img
         className="max-w-full img-mark h-auto rounded-sm block"
-        src={status === "done" ? src : URL.createObjectURL(file) || ""}
+        src={status === "done" ? src : previewUrl}
         alt={file?.name}
       />
-      {/* 上传中添加loding */}
       {status === "uploading" && (
         <div className="absolute  bg-black/30 right-0 bottom-0 size-8 flex item-center justify-center">
           <LoadingOutlined />

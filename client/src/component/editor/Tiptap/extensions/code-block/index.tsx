@@ -66,9 +66,18 @@ export const CodeBlock = CodeBlockLowlight.extend<CodeBlockOptions>({
   },
   renderMarkdown: (node) => {
     const language = normalizeCodeBlockLanguage(node.attrs?.language);
-    const content = node.content?.[0].text || "";
+    const content =
+      node.content
+        ?.map((child) => child.text ?? "")
+        .join("") ?? "";
     const infoString = language === "plaintext" ? "" : language;
-    return `\`\`\`${infoString}\n${content}\n\`\`\``;
+    const longestBacktickRun = Math.max(
+      2,
+      ...Array.from(content.matchAll(/`+/g), (match) => match[0].length),
+    );
+    const fence = "`".repeat(longestBacktickRun + 1);
+
+    return `${fence}${infoString}\n${content}\n${fence}`;
   },
   addNodeView() {
     return ReactNodeViewRenderer(CodeBlockComponent);
