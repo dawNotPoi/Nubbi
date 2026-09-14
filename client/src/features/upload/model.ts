@@ -33,6 +33,7 @@ export interface UploadSession {
   name: string;
   size: number;
   folderId?: string;
+  folderName?: string;
   chunkSize: number;
   totalChunks: number;
   expiresAt: string;

@@ -41,6 +41,7 @@ export class Uploader {
     private readonly options: UploadCallbacks & {
       file: File;
       folderId?: string;
+      folderName?: string;
     },
   ) {
     this.chunkSize = getChunkSize(options.file.size);
@@ -169,6 +170,7 @@ export class Uploader {
         name: this.options.file.name,
         size: this.options.file.size,
         folderId: this.options.folderId,
+        folderName: this.options.folderName,
         chunkSize: this.chunkSize,
         totalChunks: this.totalChunks,
         expiresAt: response.data.expiresAt,

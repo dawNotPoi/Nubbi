@@ -12,11 +12,14 @@ interface FileToolbarProps {
   activeUploads: number;
   breadcrumbs: FileBreadcrumb[];
   category: FileCategory;
+  dragging: boolean;
   refreshing: boolean;
   search: string;
   sortMode: FileSortMode;
   onBreadcrumb: (item: FileBreadcrumb, index: number) => void;
   onCategoryChange: (value: FileCategory) => void;
+  onDropFiles: (files: File[], folderId: string | null, folderName: string) => void;
+  onDropItems: (item: FileBreadcrumb, index: number) => void;
   onRefresh: () => void;
   onSearchChange: (value: string) => void;
   onSortChange: (value: FileSortMode) => void;
@@ -39,7 +42,10 @@ export function FileToolbar(props: FileToolbarProps) {
   return (
     <div className="mb-1 flex min-h-9 flex-col gap-2 md:flex-row md:items-center md:justify-between">
       <FileBreadcrumbs
+        dragging={props.dragging}
         items={props.breadcrumbs}
+        onDropFiles={props.onDropFiles}
+        onDropItems={props.onDropItems}
         onNavigate={props.onBreadcrumb}
       />
       <div className="flex min-w-0 items-center justify-end gap-1 overflow-x-auto">
@@ -74,7 +80,7 @@ export function FileToolbar(props: FileToolbarProps) {
         >
           <Search className="size-4" />
         </button>
-        <label>
+        <label className="min-[821px]:hidden">
           <span className="sr-only">排序方式</span>
           <select
             className="file-tool-select"

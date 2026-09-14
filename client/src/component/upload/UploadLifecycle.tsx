@@ -68,6 +68,7 @@ export default function UploadLifecycle() {
               name: session.name,
               size: session.size,
               folderId: session.folderId,
+              folderName: session.folderName,
               uploadId: session.uploadId,
               // 服务端已有分块作为保底进度，10% 起步、封顶 99%，剩余部分需重新选文件补齐
               progress: Math.min(
@@ -87,6 +88,7 @@ export default function UploadLifecycle() {
               name: session.name,
               size: session.size,
               folderId: session.folderId,
+              folderName: session.folderName,
               uploadId: session.uploadId,
               progress: 0,
               speed: 0,
