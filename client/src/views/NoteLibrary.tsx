@@ -19,20 +19,20 @@ export default function NoteLibrary(): ReactElement {
       {library.contextHolder}
       <Header className="bg-surface/95" />
 
-      <main className="px-4 pb-16 pt-3 sm:px-6 md:px-12 lg:px-[68px]">
+      <main className="px-4 pb-[calc(96px+env(safe-area-inset-bottom))] pt-3 sm:px-6 md:px-12 md:pb-16 lg:px-[68px]">
         <section className="mb-5">
-          <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+          <div className="mb-5 flex flex-col items-start justify-between gap-4 sm:flex-row">
             <h1 className="text-3xl font-semibold leading-none tracking-[-0.02em] text-text-primary md:text-[40px]">
               Notes
             </h1>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="grid w-full grid-cols-2 items-center gap-2 sm:flex sm:w-auto">
               <MarkdownImportButton
                 disabled={!library.owner}
                 importing={library.importingMarkdown}
                 onImport={(files) => void library.importMarkdownFiles(files)}
               />
               <Button
-                className="h-9 rounded-md px-4 font-medium"
+                className="h-11 w-full rounded-[8px] px-4 font-medium sm:w-auto md:h-9 md:rounded-md"
                 onClick={() => void library.createRootNote()}
                 variant="primary"
                 size="sm"
