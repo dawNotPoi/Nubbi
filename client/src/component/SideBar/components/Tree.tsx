@@ -94,9 +94,9 @@ export function SidebarTreeItem({
 }: SidebarTreeItemProps) {
   const content = (
     <>
-      <div className="truncate text-[13px] leading-5">{title}</div>
+      <div className="truncate text-[15px] leading-[22px] md:text-sm md:leading-5">{title}</div>
       {pathLabel ? (
-        <div className="truncate text-[11px] leading-4 text-text-subtle">
+        <div className="truncate text-[12px] leading-4 text-text-subtle md:text-[11px]">
           {pathLabel}
         </div>
       ) : null}
@@ -106,10 +106,9 @@ export function SidebarTreeItem({
   return (
     <div
       className={clsx(
-        "group/tree-item mt-0.5 flex min-h-7 items-center rounded-[6px] pr-1",
+        "group/tree-item mt-0.5 flex min-h-9 items-center rounded-[6px] pr-1 md:min-h-7",
         "font-normal text-text-muted transition-colors hover:bg-bg-hover hover:text-text-primary",
-        active &&
-          "bg-bg-selected font-medium text-text-primary shadow-[inset_2px_0_0_var(--brand)]",
+        active && "bg-bg-selected font-medium text-text-primary",
         loading && "pointer-events-none opacity-70",
         className,
       )}
