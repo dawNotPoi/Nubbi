@@ -38,18 +38,20 @@ const SideBar: React.FC = () => {
 
   return (
     <ResizeTab
-      className={clsx("group/sidebar bg-sidebar px-3 py-2 text-sm text-text-primary")}
+      className={clsx(
+        "group/sidebar bg-sidebar px-3 pb-[calc(8px+env(safe-area-inset-bottom))] pt-[calc(8px+env(safe-area-inset-top))] text-text-primary md:py-2 md:text-sm",
+      )}
     >
       <div className="flex h-full flex-col">
         <SideBarHeader />
-        <div className="mt-2 flex flex-1 flex-col gap-1 overflow-auto">
+        <div className="mt-2 flex flex-1 flex-col gap-1 overflow-auto overscroll-contain pb-2">
           <NoteDndProvider>
             <MenuItemContainer to={routes.home}>
-              <House size={16} /> 主页
+              <House size={18} className="md:size-4" /> 主页
             </MenuItemContainer>
 
             <MenuItemContainer to={routes.file}>
-              <FolderTree size={16} />
+              <FolderTree size={18} className="md:size-4" />
               <span>文件</span>
               {activeUploads > 0 && (
                 <span className="ml-auto rounded-full bg-red-500 px-1.5 text-[10px] leading-4 text-white">
@@ -58,7 +60,7 @@ const SideBar: React.FC = () => {
               )}
             </MenuItemContainer>
             <MenuItemContainer to={routes.meetings}>
-              <Presentation size={16} />
+              <Presentation size={18} className="md:size-4" />
               <span>会议</span>
             </MenuItemContainer>
             <NoteMenu />
