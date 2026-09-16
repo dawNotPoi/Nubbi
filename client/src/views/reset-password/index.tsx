@@ -10,6 +10,10 @@ interface ResetPasswordFormData {
   confirmPassword: string;
 }
 
+/**
+ * 处理带邮箱验证码的独立密码重置流程。
+ * @returns 与 Nubbi 视觉体系一致的密码重置页面。
+ */
 export const ResetPasswordPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -24,6 +28,11 @@ export const ResetPasswordPage = () => {
     };
   }, [location.search]);
 
+  /**
+   * 校验并提交密码重置请求。
+   * @param values 表单中的邮箱、验证码和两次密码输入。
+   * @returns 无返回值。
+   */
   const handleSubmit = async (values: ResetPasswordFormData) => {
     if (values.password !== values.confirmPassword) {
       message.error("两次输入的密码不一致");
@@ -48,14 +57,14 @@ export const ResetPasswordPage = () => {
   };
 
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-gray-50 px-4 py-6">
-      <div className="w-full max-w-md rounded-lg bg-white p-8 shadow">
+    <div className="flex min-h-[100dvh] items-center justify-center bg-canvas px-4 py-[max(24px,env(safe-area-inset-top))]">
+      <div className="w-full max-w-[420px] rounded-[12px] border border-border-row bg-surface p-6 shadow-[0_8px_30px_rgba(55,53,47,0.06)] sm:p-8">
         <div className="mb-6 text-center">
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-[22px] font-semibold leading-7 tracking-[-0.015em] text-text-primary">
             输入验证码重置密码
           </h1>
-          <p className="mt-2 text-sm text-gray-600">
-            请输入注册邮箱、邮件里的 6 位数字验证码，以及您的新密码。
+          <p className="mt-2 text-[13px] leading-5 text-text-muted">
+            请输入注册邮箱、邮件里的 6 位数字验证码，以及你的新密码。
           </p>
         </div>
 
@@ -67,7 +76,7 @@ export const ResetPasswordPage = () => {
               message="密码已更新"
               description="现在可以返回登录页，使用新密码重新登录。"
             />
-            <Button type="primary" block onClick={() => navigate("/login")}>
+            <Button className="h-11 rounded-[8px]" type="primary" block onClick={() => navigate("/login")}>
               返回登录
             </Button>
           </div>
@@ -86,12 +95,12 @@ export const ResetPasswordPage = () => {
                 { type: "email", message: "请输入有效的邮箱地址" },
               ]}
             >
-              <Input placeholder="请输入注册邮箱" />
+              <Input className="rounded-[8px]" placeholder="请输入注册邮箱" />
             </Form.Item>
 
             <Form.Item
               name="code"
-              label="6位验证码"
+              label="6 位验证码"
               rules={[
                 { required: true, message: "请输入邮件中的验证码" },
                 {
@@ -101,6 +110,7 @@ export const ResetPasswordPage = () => {
               ]}
             >
               <Input
+                className="rounded-[8px] text-center tracking-[0.22em]"
                 maxLength={6}
                 inputMode="numeric"
                 placeholder="请输入 6 位数字验证码"
@@ -115,7 +125,7 @@ export const ResetPasswordPage = () => {
                 { min: 8, message: "密码至少 8 位" },
               ]}
             >
-              <Input.Password placeholder="请输入新密码" />
+              <Input.Password className="rounded-[8px]" placeholder="请输入新密码" />
             </Form.Item>
 
             <Form.Item
@@ -126,11 +136,12 @@ export const ResetPasswordPage = () => {
                 { min: 8, message: "密码至少 8 位" },
               ]}
             >
-              <Input.Password placeholder="请再次输入新密码" />
+              <Input.Password className="rounded-[8px]" placeholder="请再次输入新密码" />
             </Form.Item>
 
             <Form.Item style={{ marginBottom: 0 }}>
               <Button
+                className="h-11 rounded-[8px]"
                 type="primary"
                 htmlType="submit"
                 block
