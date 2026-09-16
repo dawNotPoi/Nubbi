@@ -70,10 +70,12 @@ export function NoteLibraryTable({
   visibleIds,
   viewMode,
 }: NoteLibraryTableProps): ReactElement {
+  const hasSelection = selectedNotes.length > 0;
+
   return (
-    <section>
-      {selectedNotes.length > 0 ? (
-        <div className="mb-2 md:hidden">
+    <section className={hasSelection ? "pb-20 md:pb-0" : undefined}>
+      {hasSelection ? (
+        <div className="fixed bottom-[calc(72px+env(safe-area-inset-bottom))] left-3 right-3 z-40 md:hidden">
           <NoteLibraryBatchActionBar
             moving={moving}
             selectedCount={selectedNotes.length}
@@ -93,7 +95,7 @@ export function NoteLibraryTable({
             onCheckedChange={(checked) => onToggleAll(checked)}
           />
         </div>
-        {selectedNotes.length > 0 ? (
+        {hasSelection ? (
           <div className="col-span-4 flex min-w-0 items-center">
             <NoteLibraryBatchActionBar
               moving={moving}
