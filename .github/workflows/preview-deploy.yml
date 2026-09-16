@@ -25,9 +25,9 @@ jobs:
       DEPLOY_PASSWORD: ${{ secrets.DEPLOY_PASSWORD || '' }}
       DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY || '' }}
       PREVIEW_WEB_PORT: ${{ vars.PREVIEW_WEB_PORT || '8088' }}
-      VITE_API_URL: ${{ vars.PREVIEW_VITE_API_URL || vars.VITE_API_URL || secrets.VITE_API_URL || '' }}
-      VITE_AUTH_URL: ${{ vars.PREVIEW_VITE_AUTH_URL || vars.VITE_AUTH_URL || secrets.VITE_AUTH_URL || '' }}
-      VITE_SOCKET_URL: ${{ vars.PREVIEW_VITE_SOCKET_URL || vars.VITE_SOCKET_URL || secrets.VITE_SOCKET_URL || '' }}
+      PREVIEW_API_PORT: ${{ vars.PREVIEW_API_PORT || vars.SERVER_PORT || secrets.SERVER_PORT || '4000' }}
+      PREVIEW_SOCKET_PORT: ${{ vars.PREVIEW_SOCKET_PORT || vars.SOCKET_PORT || secrets.SOCKET_PORT || '4040' }}
+      PREVIEW_TRUSTED_ORIGIN: ${{ vars.PREVIEW_TRUSTED_ORIGIN || vars.CLIENT_URL || secrets.CLIENT_URL || '' }}
     steps:
       - name: Checkout preview branch
         uses: actions/checkout@v6
@@ -50,7 +50,11 @@ jobs:
       - name: Lint client
         run: pnpm --filter nubbi-client lint
 
-      - name: Build client
+      - name: Build client for same-origin preview
+        env:
+          VITE_API_URL: ""
+          VITE_AUTH_URL: ""
+          VITE_SOCKET_URL: ""
         run: pnpm --filter nubbi-client build
 
       - name: Deploy isolated preview
@@ -59,5 +63,7 @@ jobs:
       - name: Preview URL
         run: |
           echo "Preview: http://${DEPLOY_HOST}:${PREVIEW_WEB_PORT}"
+          echo "Same-origin API proxy -> host:${PREVIEW_API_PORT}"
+          echo "Same-origin Socket.IO proxy -> host:${PREVIEW_SOCKET_PORT}"
           echo "Server path: ~/nubbi-preview"
           echo "Container: nubbi-preview"
