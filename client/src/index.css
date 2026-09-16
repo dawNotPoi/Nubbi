@@ -137,6 +137,21 @@
 
   .ant-dropdown-menu-item,
   .ant-select-item {
+    min-height: 44px;
+  }
+
+  .mobile-note-tag-select.ant-select {
     min-height: 40px;
+  }
+
+  .mobile-note-tag-select .ant-select-selector {
+    min-height: 40px !important;
+    align-items: center;
+    border-radius: 8px !important;
+  }
+
+  .mobile-note-tag-select .ant-select-selection-overflow {
+    min-height: 38px;
+    align-items: center;
   }
 }
