@@ -27,7 +27,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(function Input(
       ref={ref}
       type={type}
       className={cn(
-        "nubbi-input flex h-[46px] w-full rounded-[10px] border px-3.5 pl-[38px] text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium",
+        "nubbi-input flex h-[34px] w-full rounded-[6px] border px-3 pl-9 text-sm font-normal file:border-0 file:bg-transparent file:text-sm file:font-medium",
         className,
       )}
     />
