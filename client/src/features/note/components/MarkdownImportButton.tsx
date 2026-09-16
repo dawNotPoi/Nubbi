@@ -36,6 +36,7 @@ export function MarkdownImportButton({
 
   return (
     <div
+      className="min-w-0 flex-1 sm:flex-none"
       onDragLeave={() => setDragging(false)}
       onDragOver={(event) => {
         event.preventDefault();
@@ -59,9 +60,9 @@ export function MarkdownImportButton({
         variant="outline"
         size="sm"
         loading={importing}
-        icon={<Upload aria-hidden="true" className="size-4" />}
+        icon={<Upload aria-hidden="true" className="size-[18px] md:size-4" />}
         className={clsx(
-          "h-9 rounded-md font-medium",
+          "h-11 w-full rounded-[8px] px-4 font-medium sm:w-auto md:h-9 md:rounded-md",
           dragging && "border-accent-border bg-accent-bg text-accent-text",
         )}
         disabled={unavailable}
@@ -73,4 +74,3 @@ export function MarkdownImportButton({
     </div>
   );
 }
-
