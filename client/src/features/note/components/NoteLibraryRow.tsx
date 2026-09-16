@@ -104,7 +104,7 @@ export function NoteLibraryRow({
   return (
     <li
       className={clsx(
-        "group/note-row grid min-h-16 cursor-pointer grid-cols-[36px_minmax(0,1fr)_36px] items-center border-b border-border-row text-[14px] transition-colors md:grid-cols-[40px_minmax(260px,1fr)_minmax(220px,26vw)_minmax(160px,18vw)_132px]",
+        "group/note-row grid min-h-16 cursor-pointer grid-cols-[36px_minmax(0,1fr)_36px] items-center border-b border-border-row text-[14px] transition-colors duration-150 md:grid-cols-[40px_minmax(260px,1fr)_minmax(220px,26vw)_minmax(160px,18vw)_132px]",
         "hover:bg-bg-hover focus-within:bg-bg-hover",
         viewMode === "search" ? "py-1" : "md:h-11 md:min-h-0",
         selected && "bg-bg-selected",
@@ -163,7 +163,7 @@ export function NoteLibraryRow({
             {editing ? (
               <input
                 ref={inputRef}
-                className="h-8 min-w-0 rounded-md border border-border-button bg-white px-2 font-medium outline-none shadow-focus-input"
+                className="h-8 min-w-0 rounded-md border border-border-button bg-surface px-2 font-medium outline-none shadow-focus-input"
                 onBlur={() => {
                   if (skipBlurCommitRef.current) {
                     skipBlurCommitRef.current = false;
@@ -227,15 +227,18 @@ export function NoteLibraryRow({
         <span
           className={clsx(
             "rounded px-1.5 py-0.5 text-xs font-medium",
-            note.status === "inbox" && "bg-amber-50 text-amber-700",
-            note.status === "active" && "bg-blue-50 text-blue-700",
-            note.status === "archived" && "bg-neutral-100 text-neutral-600",
+            note.status === "inbox" &&
+              "bg-[var(--status-inbox-bg)] text-[var(--status-inbox-text)]",
+            note.status === "active" &&
+              "bg-[var(--status-active-bg)] text-[var(--status-active-text)]",
+            note.status === "archived" &&
+              "bg-[var(--status-archived-bg)] text-[var(--status-archived-text)]",
           )}
         >
           {note.status}
         </span>
         {note.published ? (
-          <span className="rounded bg-purple-50 px-1.5 py-0.5 text-xs font-medium text-purple-700">
+          <span className="rounded bg-[var(--status-published-bg)] px-1.5 py-0.5 text-xs font-medium text-[var(--status-published-text)]">
             published
           </span>
         ) : null}
@@ -264,7 +267,7 @@ export function NoteLibraryRow({
           </button>
         ) : null}
         <button
-          className="hidden h-7 rounded-md border border-border-button bg-white px-3 text-sm font-medium text-text-primary shadow-sm transition-colors hover:border-border-button-hover hover:bg-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring md:inline-flex md:items-center"
+          className="hidden h-7 rounded-md border border-border-button bg-surface px-3 text-sm font-medium text-text-primary transition-colors hover:border-border-button-hover hover:bg-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring md:inline-flex md:items-center"
           onClick={(event) => {
             event.stopPropagation();
             onOpen(note);
