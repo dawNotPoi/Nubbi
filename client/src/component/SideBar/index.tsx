@@ -38,11 +38,11 @@ const SideBar: React.FC = () => {
 
   return (
     <ResizeTab
-      className={clsx("group/sidebar px-3 bg-sidebar py-2 font-medium ")}
+      className={clsx("group/sidebar bg-sidebar px-3 py-2 text-sm text-text-primary")}
     >
-      <div className="h-full flex flex-col">
+      <div className="flex h-full flex-col">
         <SideBarHeader />
-        <div className="flex mt-2 flex-col flex-1 gap-2 overflow-auto ">
+        <div className="mt-2 flex flex-1 flex-col gap-1 overflow-auto">
           <NoteDndProvider>
             <MenuItemContainer to={routes.home}>
               <House size={16} /> 主页
