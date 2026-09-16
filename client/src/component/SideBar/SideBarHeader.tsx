@@ -22,7 +22,7 @@ import Popover from "../UI/Popover";
 import { IconButton } from "./components";
 
 const menuItemClass =
-  "flex h-9 w-full items-center gap-2 rounded-md px-2 text-left text-sm text-text-muted transition-colors duration-150 hover:bg-bg-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring";
+  "flex h-8 w-full items-center gap-2 rounded-[6px] px-2 text-left text-sm font-normal text-text-muted transition-colors duration-150 hover:bg-bg-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring";
 
 const SideBarHeader: React.FC = () => {
   const { user, logout, updateAvatar } = useAuth();
@@ -57,20 +57,20 @@ const SideBarHeader: React.FC = () => {
       <div className="relative flex items-center justify-between gap-2">
         <Popover
           trigger={
-            <div className="flex min-w-0 cursor-pointer items-center gap-2 rounded-md px-1 py-0.5 transition-colors hover:bg-bg-hover">
+            <div className="flex min-w-0 cursor-pointer items-center gap-2 rounded-[6px] px-1.5 py-1 transition-colors hover:bg-bg-hover">
               <Image
-                className="size-7 rounded-md"
+                className="size-7 rounded-[6px]"
                 src={user?.image || ""}
                 defaultLink="/default.jpg"
                 alt={user?.name}
               />
-              <span className="truncate text-sm text-text-primary">{user?.name}</span>
+              <span className="truncate text-sm font-medium text-text-primary">{user?.name}</span>
             </div>
           }
         >
-          <div className="w-[152px] space-y-1 p-1.5">
+          <div className="w-[152px] space-y-1 p-1">
             <button
-              className={menuItemClass + " text-red-600 hover:bg-red-50"}
+              className={menuItemClass + " text-[var(--danger-text)] hover:bg-[var(--danger-bg)]"}
               onClick={handleRequestAccountDeletion}
             >
               <Trash2 size={15} />
