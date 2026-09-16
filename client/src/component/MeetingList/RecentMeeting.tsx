@@ -28,29 +28,16 @@ const weekDayLabels = [
   "星期六",
 ] as const;
 
-/**
- * 把 dayjs 的星期序号转换为中文星期名称。
- * @param weekDay 星期序号，星期日为 0。
- * @returns 中文星期名称。
- */
-const getWeekDayLabel = (weekDay: number): string =>
-  weekDayLabels[weekDay] || "";
+const getWeekDayLabel = (weekDay: number): string => weekDayLabels[weekDay] || "";
 
-/**
- * 渲染近期会议的空状态，并保留直接创建会议的入口。
- * @param onCreate 打开创建会议弹窗的回调。
- * @returns 近期会议空状态。
- */
-const RecentMeetingEmpty = ({
-  onCreate,
-}: RecentMeetingEmptyProps): ReactElement => (
-  <div className="flex min-h-[280px] items-center justify-center rounded-xl border border-border-row bg-bg-panel px-6 py-12 text-center">
+const RecentMeetingEmpty = ({ onCreate }: RecentMeetingEmptyProps): ReactElement => (
+  <div className="flex min-h-[168px] items-center justify-center rounded-[10px] border border-border-row bg-bg-panel px-5 py-8 text-center md:min-h-[280px] md:rounded-xl md:px-6 md:py-12">
     <div className="flex flex-col items-center">
-      <CalendarOff className="text-text-subtle" size={48} strokeWidth={1.5} />
-      <p className="mt-4 font-medium text-text-primary">未来一周没有会议</p>
-      <p className="mt-1 text-sm text-text-muted">创建会议，开始记录与协作。</p>
+      <CalendarOff className="size-9 text-text-subtle md:size-12" strokeWidth={1.5} />
+      <p className="mt-3 text-[14px] font-medium text-text-primary md:mt-4 md:text-base">未来一周没有会议</p>
+      <p className="mt-1 text-[13px] text-text-muted md:text-sm">创建会议，开始记录与协作。</p>
       <Button
-        className="mt-5"
+        className="mt-4 h-10 rounded-[7px] md:mt-5 md:h-auto"
         icon={<Plus size={16} />}
         onClick={onCreate}
         type="primary"
@@ -61,12 +48,6 @@ const RecentMeetingEmpty = ({
   </div>
 );
 
-/**
- * 展示未来一周内尚未结束的会议。
- * @param className 附加样式类名。
- * @param showCreateAction 是否在区块标题处显示创建会议按钮。
- * @returns 近期会议区块。
- */
 const RecentMeetings = ({
   className,
   showCreateAction = true,
@@ -83,7 +64,6 @@ const RecentMeetings = ({
       .filter((meeting) => {
         const start = dayjs(meeting.startTime);
         const end = start.add(meeting.duration, "minute");
-
         return (
           start.isValid() &&
           !meeting.endedAt &&
@@ -100,13 +80,14 @@ const RecentMeetings = ({
 
   return (
     <section className={clsx("min-w-0", className)}>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="flex items-center gap-2 text-base font-semibold text-text-primary">
-          <CalendarDays className="text-text-muted" size={19} />
+      <div className="mb-3 flex items-center justify-between gap-3 md:mb-4">
+        <h2 className="flex items-center gap-2 text-[15px] font-semibold text-text-primary md:text-base">
+          <CalendarDays className="size-[18px] text-text-muted md:size-[19px]" />
           近期会议
         </h2>
         {showCreateAction ? (
           <Button
+            className="h-9 rounded-[7px]"
             icon={<Plus size={15} />}
             onClick={() => setCreateOpen(true)}
           >
@@ -116,32 +97,30 @@ const RecentMeetings = ({
       </div>
 
       {upcomingWeekMeetings.length > 0 ? (
-        <div className="max-h-[400px] overflow-y-auto rounded-xl border border-border-row bg-white scrollbar-thin scrollbar-thumb-border">
+        <div className="overflow-hidden rounded-[10px] border border-border-row bg-surface md:max-h-[400px] md:overflow-y-auto md:rounded-xl">
           {upcomingWeekMeetings.map((meeting) => (
             <article
-              className="grid gap-3 border-b border-border-row px-4 py-4 last:border-b-0 hover:bg-bg-hover sm:grid-cols-[116px_minmax(0,1fr)_auto] sm:items-center"
+              className="grid gap-2.5 border-b border-border-row px-3 py-3.5 last:border-b-0 hover:bg-bg-hover md:grid-cols-[116px_minmax(0,1fr)_auto] md:items-center md:gap-3 md:px-4 md:py-4"
               key={meeting._id}
             >
-              <div className="text-sm text-text-muted">
+              <div className="text-[12px] text-text-muted md:text-sm">
                 {getWeekDayLabel(dayjs(meeting.startTime).day())}
-                <span className="ml-2">
-                  {dayjs(meeting.startTime).format("MM-DD")}
-                </span>
+                <span className="ml-2">{dayjs(meeting.startTime).format("MM-DD")}</span>
               </div>
-              <div className="min-w-0 border-l-2 border-accent-border pl-4">
-                <p className="truncate font-medium text-text-primary">
+              <div className="min-w-0 border-l-2 border-[var(--brand)] pl-3 md:pl-4">
+                <p className="truncate text-[15px] font-medium text-text-primary md:text-base">
                   {meeting.title || "未命名会议"}
                 </p>
-                <p className="mt-1 text-sm text-text-muted">
+                <p className="mt-1 text-[13px] text-text-muted md:text-sm">
                   {dayjs(meeting.startTime).format("HH:mm")} – {dayjs(meeting.startTime)
                     .add(meeting.duration, "minute")
                     .format("HH:mm")}
                 </p>
               </div>
-              <div className="flex flex-wrap gap-2"><MeetingInvitationButton id={meeting._id} title={meeting.title} startTime={meeting.startTime} />
-              <Button onClick={() => navigate(`/meeting/${meeting._id}`)}>
-                进入会议
-              </Button></div>
+              <div className="grid grid-cols-2 gap-2 [&_.ant-btn]:min-h-10 [&_.ant-btn]:rounded-[7px] md:flex md:flex-wrap md:[&_.ant-btn]:min-h-8">
+                <MeetingInvitationButton id={meeting._id} title={meeting.title} startTime={meeting.startTime} />
+                <Button onClick={() => navigate(`/meeting/${meeting._id}`)}>进入会议</Button>
+              </div>
             </article>
           ))}
         </div>
