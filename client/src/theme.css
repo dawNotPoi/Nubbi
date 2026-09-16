@@ -1,34 +1,48 @@
 :root {
-  --canvas: #fcfcfb;
+  --font-ui: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+
+  --canvas: #ffffff;
   --surface: #ffffff;
-  --surface-subtle: #fafaf8;
-  --sidebar: #f7f7f5;
+  --surface-subtle: #fbfbfa;
+  --sidebar: #f9f8f7;
 
   --text-primary: #37352f;
+  --text-primary-hover: #2f2e2a;
+  --text-primary-active: #272622;
   --text-muted: #787774;
   --text-subtle: #9b9a97;
   --text-placeholder: #b4b4b1;
 
-  --bg-hover: #f2f2f0;
-  --bg-selected: #ececea;
-  --bg-icon-hover: #e7e7e4;
-  --bg-panel: #fafaf8;
+  --bg-hover: #f7f7f5;
+  --bg-selected: #f1f1ef;
+  --bg-icon-hover: #efeeeb;
+  --bg-panel: #faf9f7;
   --bg-page: #ffffff;
 
-  --border-row: #ecebe8;
+  --border-row: #e7e5e1;
   --border-button: #deddd9;
   --border-button-hover: #c8c6c0;
-  --border-toolbar: #e6e5e1;
+  --border-toolbar: #e7e5e1;
 
-  --focus-ring: #b9c3fb;
+  --brand: #2383e2;
+  --brand-soft: #eef6ff;
+  --primary: #1f6fc2;
+  --primary-hover: #1a63ad;
+  --primary-active: #155696;
+  --primary-foreground: #ffffff;
+  --focus-border: #2383e2;
+  --focus-ring: #8bc1f2;
+  --selected: #f1f1ef;
+  --selected-foreground: #37352f;
 
-  --accent-border: #6f7fe7;
-  --accent-hover: #6373dc;
-  --accent-active: #5968cf;
-  --accent-bg: #eef0ff;
-  --accent-soft: #e4e8ff;
-  --accent-text: #4f5eb7;
-  --accent-contrast: #ffffff;
+  /* 迁移期兼容旧 Token；新组件优先消费上面的语义角色。 */
+  --accent-border: var(--primary);
+  --accent-hover: var(--primary-hover);
+  --accent-active: var(--primary-active);
+  --accent-bg: var(--brand-soft);
+  --accent-soft: #e2effc;
+  --accent-text: var(--brand);
+  --accent-contrast: var(--primary-foreground);
 
   --status-inbox-bg: #fff4d8;
   --status-inbox-text: #8b6518;
@@ -45,7 +59,7 @@
   --danger-bg: #fef2f2;
   --danger-hover: #fee2e2;
   --danger-text: #b42332;
-  --shadow-popover: 0 8px 24px rgba(55, 53, 47, 0.10), 0 2px 6px rgba(55, 53, 47, 0.06);
+  --shadow-popover: 0 10px 30px rgba(55, 53, 47, 0.08), 0 2px 8px rgba(55, 53, 47, 0.05);
 }
 
 .file-list-grid {
@@ -63,13 +77,13 @@
 
 .file-list-head > .col-span-4 { grid-column: 2 / -1; }
 .file-check-cell { display: grid; height: 100%; place-items: center; }
-.file-checkbox { width: 14px; height: 14px; margin: 0; accent-color: var(--accent-border); }
+.file-checkbox { width: 14px; height: 14px; margin: 0; accent-color: var(--brand); }
 .file-row { min-height: 44px; border-bottom: 1px solid var(--border-row); transition: background 120ms ease; }
 .file-row:hover, .file-row:focus-within { background: var(--bg-hover); }
 .file-row.is-selected { background: var(--bg-selected); }
 .file-row.is-dragging { opacity: .45; }
-.file-row.is-drop-target, .file-row.is-drop-target:hover { background: var(--bg-selected); box-shadow: inset 2px 0 0 var(--accent-border); }
-.file-row.is-file-drop-target, .file-row.is-file-drop-target:hover { background: var(--accent-bg); box-shadow: inset 2px 0 0 var(--accent-border); }
+.file-row.is-drop-target, .file-row.is-drop-target:hover { background: var(--bg-selected); box-shadow: inset 2px 0 0 var(--brand); }
+.file-row.is-file-drop-target, .file-row.is-file-drop-target:hover { background: var(--brand-soft); box-shadow: inset 2px 0 0 var(--brand); }
 .file-row:focus-visible { outline: none; background: var(--bg-hover); }
 .file-head-sort { display: inline-flex; height: 100%; min-width: 0; align-items: center; gap: 4px; border: 0; background: none; color: inherit; font-size: 14px; text-align: left; }
 .file-head-sort:hover { color: var(--text-primary); }
