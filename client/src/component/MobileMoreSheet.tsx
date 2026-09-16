@@ -19,7 +19,7 @@ import {
   UserRoundX,
 } from "lucide-react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import AccountDeletionModal from "./AccountDeletionModal";
 import ApiTokenModal from "./ApiTokenModal";
 import ChangeAvatarModal from "./ChangeAvatarModal";
@@ -33,6 +33,7 @@ type MobileMoreSheetProps = {
 /** 手机端低频全局入口。Desktop Sidebar 不复用这套布局。 */
 export default function MobileMoreSheet({ open, onOpenChange }: MobileMoreSheetProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout, updateAvatar } = useAuth();
   const [avatarModalOpen, setAvatarModalOpen] = useState(false);
   const [apiTokenModalOpen, setApiTokenModalOpen] = useState(false);
@@ -40,7 +41,11 @@ export default function MobileMoreSheet({ open, onOpenChange }: MobileMoreSheetP
 
   const go = (path: string) => {
     onOpenChange(false);
-    navigate(path);
+    navigate(path, {
+      state: {
+        mobileReturnTo: `${location.pathname}${location.search}${location.hash}`,
+      },
+    });
   };
 
   const handleLogout = () => {
