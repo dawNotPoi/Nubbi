@@ -19,6 +19,9 @@ export default {
         "fade-in": "fade-in 0.2s ease-out",
         "scale-in": "scale-in 0.2s ease-out",
       },
+      fontFamily: {
+        sans: ["var(--font-ui)"],
+      },
       colors: {
         canvas: "var(--canvas)",
         surface: "var(--surface)",
@@ -40,6 +43,12 @@ export default {
         "border-button-hover": "var(--border-button-hover)",
         "border-toolbar": "var(--border-toolbar)",
 
+        brand: "var(--brand)",
+        "brand-soft": "var(--brand-soft)",
+        selected: {
+          DEFAULT: "var(--selected)",
+          foreground: "var(--selected-foreground)",
+        },
         "focus-ring": "var(--focus-ring)",
 
         "accent-border": "var(--accent-border)",
@@ -59,8 +68,8 @@ export default {
         popover: "var(--surface)",
         "popover-foreground": "var(--text-primary)",
         primary: {
-          DEFAULT: "var(--accent-border)",
-          foreground: "var(--accent-contrast)",
+          DEFAULT: "var(--primary)",
+          foreground: "var(--primary-foreground)",
         },
         secondary: {
           DEFAULT: "var(--bg-hover)",
@@ -71,25 +80,25 @@ export default {
           foreground: "var(--text-muted)",
         },
         accent: {
-          DEFAULT: "var(--accent-bg)",
-          foreground: "var(--accent-text)",
+          DEFAULT: "var(--bg-hover)",
+          foreground: "var(--text-primary)",
         },
         destructive: {
           DEFAULT: "var(--danger-bg)",
           foreground: "var(--danger-text)",
         },
         border: "var(--border-row)",
-        input: "var(--border-toolbar)",
+        input: "var(--border-button)",
         ring: "var(--focus-ring)",
       },
       borderRadius: {
-        lg: "10px",
-        md: "8px",
+        lg: "9px",
+        md: "7px",
         sm: "6px",
       },
       boxShadow: {
-        "focus-input": "0 0 0 2px var(--focus-ring)",
-        soft: "0 10px 30px rgba(55, 53, 47, 0.06)",
+        "focus-input": "0 0 0 3px var(--focus-ring)",
+        soft: "var(--shadow-popover)",
       },
     },
   },
