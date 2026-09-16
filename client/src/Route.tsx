@@ -1,6 +1,7 @@
 import SideBar from "@/component/SideBar";
 import MobileNavigation from "@/component/MobileNavigation";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { resolveReturnTo, routes } from "@/utils/routes";
 import { PropsWithChildren } from "react";
 import {
@@ -21,18 +22,46 @@ import NoteLibrary from "./views/NoteLibrary";
 import NoteTrash from "./views/note-trash";
 import { ResetPasswordPage } from "./views/reset-password";
 
-const UserLayout = () => {
+const DesktopUserLayout = () => (
+  <div className="flex h-[100dvh] min-h-0 overflow-hidden bg-canvas text-text-primary">
+    <SideBar />
+    <div className="h-[100dvh] min-w-0 flex-1 overflow-hidden bg-surface">
+      <main className="h-[100dvh] min-w-0 overflow-y-auto bg-surface pb-10">
+        <Outlet />
+      </main>
+    </div>
+  </div>
+);
+
+const isMobilePrimaryRoute = (pathname: string) =>
+  pathname === routes.home ||
+  pathname === routes.noteLib ||
+  pathname === routes.file ||
+  pathname.startsWith(`${routes.file}/`);
+
+const MobileUserLayout = () => {
+  const location = useLocation();
+  const showBottomNavigation = isMobilePrimaryRoute(location.pathname);
+
   return (
-    <div className="flex h-[100dvh] min-h-0 overflow-hidden bg-canvas text-text-primary">
-      <SideBar />
-      <div className="h-[100dvh] min-w-0 flex-1 overflow-hidden bg-surface">
-        <main className="h-[100dvh] min-w-0 overflow-y-auto bg-surface pb-[calc(60px+env(safe-area-inset-bottom))] md:pb-10">
-          <Outlet />
-        </main>
-      </div>
-      <MobileNavigation />
+    <div className="h-[100dvh] min-h-0 overflow-hidden bg-surface text-text-primary">
+      <main
+        className={
+          showBottomNavigation
+            ? "h-[100dvh] min-w-0 overflow-y-auto bg-surface pb-[calc(68px+env(safe-area-inset-bottom))]"
+            : "h-[100dvh] min-w-0 overflow-y-auto bg-surface"
+        }
+      >
+        <Outlet />
+      </main>
+      {showBottomNavigation ? <MobileNavigation /> : null}
     </div>
   );
+};
+
+const UserLayout = () => {
+  const isMobile = useIsMobile();
+  return isMobile ? <MobileUserLayout /> : <DesktopUserLayout />;
 };
 
 const AuthRouteFallback = () => (
@@ -95,7 +124,6 @@ const PublicOnlyRoute: React.FC<PropsWithChildren> = ({ children }) => {
   if (!isAuthenticated) {
     return children;
   }
-
   const queryReturnTo = new URLSearchParams(location.search).get("returnTo");
   const stateFrom = (
     location.state as
