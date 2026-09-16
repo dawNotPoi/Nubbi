@@ -5,9 +5,9 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { LoaderCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-/** 按钮视觉变体；保留旧尺寸，避免迁移基础组件时改变其他页面布局。 */
+/** 按钮视觉变体；Preview 先验证紧凑工具栏与克制圆角。 */
 const buttonVariants = cva(
-  "nubbi-button inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[10px] text-sm font-semibold [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "nubbi-button inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[6px] text-sm font-medium [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
@@ -20,14 +20,14 @@ const buttonVariants = cva(
         link: "nubbi-button-link underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-[46px] px-4 py-2",
-        xs: "h-7 rounded-md px-2",
-        sm: "h-9 rounded-[8px] px-3",
-        toolbar: "h-8 rounded px-2",
-        lg: "h-12 rounded-[10px] px-8 text-[15px]",
-        icon: "size-9",
-        "icon-sm": "size-8 rounded",
-        "icon-xs": "size-7 rounded",
+        default: "h-8 px-3",
+        xs: "h-7 rounded-[5px] px-2",
+        sm: "h-[30px] rounded-[6px] px-3",
+        toolbar: "h-8 rounded-[6px] px-2",
+        lg: "h-9 rounded-[7px] px-4",
+        icon: "size-8",
+        "icon-sm": "size-[30px] rounded-[6px]",
+        "icon-xs": "size-7 rounded-[5px]",
       },
     },
     defaultVariants: { variant: "default", size: "default" },
