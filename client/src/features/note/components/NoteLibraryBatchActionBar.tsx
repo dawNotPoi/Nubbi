@@ -25,13 +25,15 @@ export function NoteLibraryBatchActionBar({
   if (selectedCount === 0) return null;
 
   return (
-    <div className="flex items-center gap-1 rounded-md border border-border-toolbar bg-bg-panel px-2 py-1">
-      <span className="px-1 text-xs text-text-muted">已选 {selectedCount}</span>
+    <div className="flex min-h-10 w-full items-center gap-1 rounded-[6px] bg-bg-hover px-2 py-1 md:min-h-0 md:w-auto md:bg-transparent md:px-0 md:py-0">
+      <span className="mr-auto px-1 text-[13px] font-medium text-text-muted md:mr-0 md:text-xs md:font-normal">
+        已选 {selectedCount}
+      </span>
       <Button
         icon={<FolderInput className="size-4" />}
         loading={moving}
         onClick={onMove}
-        size="xs"
+        size="toolbar"
         variant="ghost"
       >
         移动
@@ -39,13 +41,13 @@ export function NoteLibraryBatchActionBar({
       <Button
         icon={<Trash2 className="size-4" />}
         onClick={onDelete}
-        className="text-[color:var(--danger-text)] hover:text-[color:var(--danger-text)] hover:bg-[var(--danger-bg)]"
-        size="xs"
+        className="text-[color:var(--danger-text)] hover:bg-[var(--danger-bg)] hover:text-[color:var(--danger-text)]"
+        size="toolbar"
         variant="ghost"
       >
         删除
       </Button>
-      <Button onClick={onClear} size="xs" variant="ghost">
+      <Button className="text-text-muted" onClick={onClear} size="toolbar" variant="ghost">
         取消
       </Button>
     </div>
