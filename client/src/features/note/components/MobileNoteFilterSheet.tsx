@@ -168,7 +168,7 @@ export function MobileNoteFilterSheet({
                       className={clsx(
                         "min-h-9 rounded-full border px-3 text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
                         selected
-                          ? "border-[var(--brand)] bg-brand-soft text-[var(--brand-strong)]"
+                          ? "border-[var(--brand)] bg-brand-soft text-[var(--brand)]"
                           : "border-border-button bg-surface text-text-muted active:bg-bg-hover",
                       )}
                       onClick={() => toggleTag(tag)}
