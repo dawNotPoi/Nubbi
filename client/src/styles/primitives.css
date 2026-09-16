@@ -113,6 +113,22 @@
   .nubbi-menu-item[data-destructive] { color: var(--danger-text); }
   .nubbi-menu-item[data-destructive][data-highlighted] { background: var(--danger-bg); }
   .nubbi-menu-item[data-disabled] { opacity: 0.5; }
+
+  .nubbi-sheet-backdrop {
+    --backdrop-opacity: 0.3;
+    opacity: calc(var(--backdrop-opacity) * (1 - var(--drawer-swipe-progress, 0)));
+    transition: opacity 220ms ease;
+  }
+  .nubbi-sheet-backdrop[data-starting-style],
+  .nubbi-sheet-backdrop[data-ending-style] { opacity: 0; }
+  .nubbi-sheet-popup {
+    transform: translateY(calc(var(--drawer-snap-point-offset, 0px) + var(--drawer-swipe-movement-y, 0px)));
+    transition: transform 260ms cubic-bezier(.22, 1, .36, 1);
+  }
+  .nubbi-sheet-popup[data-starting-style],
+  .nubbi-sheet-popup[data-ending-style] { transform: translateY(100%); }
+  .nubbi-sheet-popup[data-swiping],
+  .nubbi-sheet-backdrop[data-swiping] { transition-duration: 0ms; }
 }
 
 @layer components {
@@ -127,9 +143,13 @@
   .nubbi-button,
   .nubbi-input,
   .nubbi-checkbox,
-  .nubbi-menu-popup { transition: none; }
+  .nubbi-menu-popup,
+  .nubbi-sheet-popup,
+  .nubbi-sheet-backdrop { transition: none; }
   .nubbi-menu-popup[data-starting-style],
-  .nubbi-menu-popup[data-ending-style] { transform: none; }
+  .nubbi-menu-popup[data-ending-style],
+  .nubbi-sheet-popup[data-starting-style],
+  .nubbi-sheet-popup[data-ending-style] { transform: none; }
 }
 
 }
