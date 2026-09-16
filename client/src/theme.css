@@ -40,6 +40,12 @@
   --status-published-text: #6754b8;
 
   --skeleton: #e8e7e4;
+
+  /* 危险动作与浮层样式集中维护，业务页面不再定义原始色值。 */
+  --danger-bg: #fef2f2;
+  --danger-hover: #fee2e2;
+  --danger-text: #b42332;
+  --shadow-popover: 0 8px 24px rgba(55, 53, 47, 0.10), 0 2px 6px rgba(55, 53, 47, 0.06);
 }
 
 .file-list-grid {

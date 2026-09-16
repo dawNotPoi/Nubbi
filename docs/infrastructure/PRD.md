@@ -117,10 +117,22 @@ payload 都执行运行时校验，遗留的跨 socket 私密转发事件已移�
 3. 在页面组件中通过 TanStack Query 或直接调用
 
 ### 添加共享组件
-1. 放在 `client/src/component/` 下
-2. UI 基础组件放 `component/UI/`
-3. 业务组件按模块放 `component/<module>/`
-4. 使用 Tailwind CSS + Ant Design，遵循界面样式规范
+1. 新的无业务基础控件统一放在 `client/src/components/ui/`。
+2. 交互底座使用 `@base-ui/react`，采用 shadcn 风格的项目自有源码封装，适配 Tailwind 4.3。
+3. 业务组件放在对应 `features/<module>/components/`，不把领域逻辑放进 UI 基础目录。
+4. `component/UI/` 是迁移期兼容区，不新增另一套 Button、Input 或菜单。
+5. 复杂 Select、既有 Dialog/Popover、通知和尚未迁移的业务继续使用原实现，不在本阶段删除 Ant Design 或 Radix 依赖。
+
+### UI 基础控件迁移第一阶段
+
+- 以 `refactor/ui-theme-v1` 的 NoteLibrary 为样板，不改变 SideBar、Header、标题、工具栏、表格的布局及业务控制器。
+- Button、Input、Checkbox、DropdownMenu 的项目封装统一消费 `theme.css`；不重新执行 shadcn init 覆盖现有主题。
+- 为保护未迁移页面，Button/Input 的旧默认尺寸与 Button 的 `asChild` 兼容入口暂时保留；NoteLibrary 显式选择 36/32/28px 原有控件尺寸。
+- Checkbox 使用 `checked: boolean`、`indeterminate: boolean` 和 `onCheckedChange`。每个控件必须有可访问名称；选中的行在鼠标移出后仍显示勾选状态。
+- 菜单通过 `render` 组合现有按钮，不嵌套 button；复用 Base UI 的键盘导航、Escape、焦点管理和定位，Portal 点击不得冒泡触发行选择或打开。
+- 输入框保留搜索清空、原位编辑和 Enter/Escape 语义，输入法组合期间不得提前提交。
+- 菜单和基础控件支持 reduced-motion；复杂标签 Select、Empty、通知与确认弹层暂留 AntD。
+- 依赖版本和根锁文件必须由 pnpm 一起生成，完成全量 lint/build 和浏览器交互验收后才能标记迁移完成。
 
 ### 添加服务端中间件
 1. 放在 `server/app/middleware/`
@@ -140,11 +152,11 @@ payload 都执行运行时校验，遗留的跨 socket 私密转发事件已移�
 | 验证 | Zod | 3.x |
 | 实时通信 | Socket.io | 4.x |
 | WebRTC | simple-peer | - |
-| 前端框架 | React | 18.x |
+| 前端框架 | React | 19.x |
 | 构建 | Vite | 5.x |
 | 状态管理 | Jotai + TanStack Query | - |
-| UI 库 | Ant Design | 5.x |
-| 样式 | Tailwind CSS | 3.x |
+| UI 库 | Base UI + Ant Design（迁移期） | 见 client/package.json |
+| 样式 | Tailwind CSS | 4.3.x |
 | 编辑器 | Tiptap (ProseMirror) | - |
 | 路由 | react-router-dom | 6.x |
 | 邮件 | Nodemailer | - |
@@ -158,3 +170,14 @@ payload 都执行运行时校验，遗留的跨 socket 私密转发事件已移�
 - MCP 不直连 MongoDB，只通过主服务 `/mcp-api/*` 调用业务逻辑。
 - Docker Compose 中 MCP 服务监听 3100，主服务地址通过 `NUBBI_API_URL` 注入；宿主端口默认仅绑定 `127.0.0.1`，改绑其他网卡必须显式配置 `MCP_BIND_ADDRESS`。
 - HTTP 对外必须经 HTTPS 反向代理，并配置允许的 Host 与 Origin。
+
+
+### Tailwind v4 升级边界（2026-09-16）
+
+- 客户端固定 `tailwindcss` 与 `@tailwindcss/vite` 为 4.3.3，通过 Vite 插件处理 CSS，不升级 Vite 或其他 workspace。
+- `index.css` 使用 `@import`、显式 `@config` 和限定到客户端的源码扫描；`tailwind.config.js` 暂时保留原语义 Token、圆角和动画映射，避免一次改写所有页面。
+- 移除客户端旧 PostCSS 配置、Autoprefixer 和第三方 scrollbar 插件；滚动条工具类由 Tailwind 4.3 提供，现有原生 CSS 滚动条外观仍保留。
+- AntD 置于 `antd` 层，共享控件置于 `components` 层，utility 位于最后；编辑器独立 CSS 用 `@reference` 获得原有 `@apply` 上下文。
+- `tailwind-compat.css` 临时保留旧细阴影、模糊、透明轮廓和裸圆角；不要继续扩充历史兼容类，新控件使用明确语义样式。
+- 浏览器最低目标变为 Safari 16.4、Chrome 111、Firefox 128；旧浏览器不在本次 v4 验收范围。
+- 不改 NoteLibrary 表格列宽、侧栏、业务事件、接口或数据模型。尚需实际浏览器确认与预览部署；构建成功不能代替视觉验收。

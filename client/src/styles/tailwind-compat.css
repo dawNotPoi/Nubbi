@@ -1,0 +1,18 @@
+/* 暂时维持 v3 的细阴影与模糊强度，避免升级框架时改变未迁移页面。 */
+@theme {
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --blur-sm: 4px;
+  --default-ring-width: 3px;
+  --default-ring-color: #3b82f6;
+}
+
+/* 旧代码用 outline-none 表示透明轮廓；保留强制颜色模式的可访问性。 */
+@utility outline-none {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+/* rounded-sm 在项目中已自定义为 6px；裸 rounded 继续保持原来的 4px。 */
+@utility rounded {
+  border-radius: 4px;
+}

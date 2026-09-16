@@ -1,7 +1,8 @@
-// tailwind.config.js
+import typography from "@tailwindcss/typography";
+
+// v4 迁移期保留既有 Token 和尺寸映射，由 index.css 的 @config 显式加载。
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
       keyframes: {
@@ -74,8 +75,8 @@ export default {
           foreground: "var(--accent-text)",
         },
         destructive: {
-          DEFAULT: "#fef2f2",
-          foreground: "#dc2626",
+          DEFAULT: "var(--danger-bg)",
+          foreground: "var(--danger-text)",
         },
         border: "var(--border-row)",
         input: "var(--border-toolbar)",
@@ -92,5 +93,5 @@ export default {
       },
     },
   },
-  plugins: [require("@tailwindcss/typography"), require("tailwind-scrollbar")],
+  plugins: [typography],
 };

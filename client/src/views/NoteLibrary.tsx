@@ -4,9 +4,14 @@ import { NoteLibraryTable } from "@/features/note/components/NoteLibraryTable";
 import { NoteLibraryToolbar } from "@/features/note/components/NoteLibraryToolbar";
 import { NoteTargetPickerOverlay } from "@/features/note/components/NoteTargetPickerOverlay";
 import { useNoteLibraryController } from "@/features/note/hooks/useNoteLibraryController";
-import { Button } from "antd";
+import { Button } from "@/components/ui/button";
+import type { ReactElement } from "react";
 
-export default function NoteLibrary() {
+/**
+ * 在原有笔记库结构中组合主题化控件。
+ * @returns 保留现有侧栏、工具栏、表格和移动弹层的笔记库页面。
+ */
+export default function NoteLibrary(): ReactElement {
   const library = useNoteLibraryController();
 
   return (
@@ -29,7 +34,8 @@ export default function NoteLibrary() {
               <Button
                 className="h-9 rounded-md px-4 font-medium"
                 onClick={() => void library.createRootNote()}
-                type="primary"
+                variant="primary"
+                size="sm"
               >
                 新页面
               </Button>

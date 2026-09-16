@@ -37,7 +37,7 @@ const UserLayout = () => {
 
 const AuthRouteFallback = () => (
   <div className="flex h-[100dvh] overflow-hidden bg-canvas">
-    <div className="hidden w-52 flex-shrink-0 animate-pulse bg-sidebar px-3 py-2 md:block">
+    <div className="hidden w-52 shrink-0 animate-pulse bg-sidebar px-3 py-2 md:block">
       <div className="flex flex-col gap-3">
         <div className="mb-1 flex items-center gap-2">
           <div className="size-7 rounded bg-bg-selected" />
