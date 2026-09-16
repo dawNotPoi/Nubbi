@@ -10,14 +10,14 @@ export default function NoteLibrary() {
   const library = useNoteLibraryController();
 
   return (
-    <div className="min-w-0 bg-white text-text-primary">
+    <div className="min-w-0 bg-surface text-text-primary">
       {library.contextHolder}
-      <Header className="bg-white/95" />
+      <Header className="bg-surface/95" />
 
       <main className="px-4 pb-16 pt-3 sm:px-6 md:px-12 lg:px-[68px]">
         <section className="mb-5">
           <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
-            <h1 className="text-3xl font-bold leading-none tracking-normal text-text-primary md:text-[40px]">
+            <h1 className="text-3xl font-semibold leading-none tracking-[-0.02em] text-text-primary md:text-[40px]">
               Notes
             </h1>
             <div className="flex flex-wrap items-center gap-2">
