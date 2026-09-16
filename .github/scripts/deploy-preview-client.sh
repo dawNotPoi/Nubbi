@@ -44,11 +44,14 @@ fi
 # window.location.origin. Nginx then forwards backend paths to the production
 # API/socket ports on the same host. This keeps browser traffic same-origin.
 if [ -n "$PREVIEW_TRUSTED_ORIGIN" ]; then
-  ORIGIN_HEADERS="    proxy_set_header Origin \"$PREVIEW_TRUSTED_ORIGIN\";\n    proxy_set_header Referer \"$PREVIEW_TRUSTED_ORIGIN/\";"
+  printf -v ORIGIN_HEADERS \
+    '    proxy_set_header Origin "%s";\n    proxy_set_header Referer "%s/";' \
+    "$PREVIEW_TRUSTED_ORIGIN" "$PREVIEW_TRUSTED_ORIGIN"
 else
   # The backend treats a missing Origin as server-to-server traffic. This is only
   # a fallback; production CLIENT_URL should normally populate this value.
-  ORIGIN_HEADERS='    proxy_set_header Origin "";\n    proxy_set_header Referer "";'
+  printf -v ORIGIN_HEADERS \
+    '    proxy_set_header Origin "";\n    proxy_set_header Referer "";'
 fi
 
 cat > client/nginx.preview.conf <<EOF
