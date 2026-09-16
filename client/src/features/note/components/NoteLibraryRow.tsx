@@ -114,7 +114,7 @@ export function NoteLibraryRow({
   return (
     <li
       className={clsx(
-        "group/note-row grid min-h-16 cursor-pointer grid-cols-[36px_minmax(0,1fr)_36px] items-center border-b border-border-row text-[14px] transition-colors duration-150 md:grid-cols-[40px_minmax(260px,1fr)_minmax(220px,26vw)_minmax(160px,18vw)_132px]",
+        "group/note-row grid min-h-[72px] cursor-pointer grid-cols-[44px_minmax(0,1fr)_44px] items-center border-b border-border-row text-[15px] transition-colors duration-150 active:bg-bg-selected md:grid-cols-[40px_minmax(260px,1fr)_minmax(220px,26vw)_minmax(160px,18vw)_132px] md:text-[14px]",
         "hover:bg-bg-hover focus-within:bg-bg-hover",
         viewMode === "search" ? "py-1" : "md:h-11 md:min-h-0",
         selected && "bg-bg-selected",
@@ -128,8 +128,11 @@ export function NoteLibraryRow({
       }}
     >
       <div
-        className="flex h-full items-center justify-center"
-        onClick={(event) => event.stopPropagation()}
+        className="flex h-full min-h-11 items-center justify-center"
+        onClick={(event) => {
+          event.stopPropagation();
+          onToggle(!selected, note._id);
+        }}
       >
         <Checkbox
           aria-label={`选择笔记：${noteTitle}`}
@@ -139,18 +142,20 @@ export function NoteLibraryRow({
             "md:group-hover/note-row:opacity-100 md:group-focus-within/note-row:opacity-100",
             selected && "opacity-100 md:opacity-100",
           )}
+          onClick={(event) => event.stopPropagation()}
           onCheckedChange={(checked) => onToggle(checked, note._id)}
         />
       </div>
-      <div className="flex min-w-0 items-center pr-4 text-text-primary">
+      <div className="flex min-w-0 items-center pr-2 text-text-primary md:pr-4">
         <div
           className="flex min-w-0 flex-1 items-center gap-2"
-          style={{ paddingLeft: viewMode === "tree" ? row.depth * 22 : 0 }}
+          style={{ paddingLeft: viewMode === "tree" ? row.depth * 18 : 0 }}
         >
           {viewMode === "tree" ? (
             <button
+              aria-label={row.expanded ? "收起子笔记" : "展开子笔记"}
               className={clsx(
-                "flex size-5 shrink-0 items-center justify-center rounded text-text-subtle transition-colors hover:bg-bg-icon-hover hover:text-text-primary",
+                "flex size-9 shrink-0 items-center justify-center rounded-[7px] text-text-subtle transition-[background-color,color,transform] active:scale-[0.95] active:bg-bg-selected hover:bg-bg-icon-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring md:size-5 md:rounded",
                 !canExpand && "invisible",
               )}
               onClick={(event) => {
@@ -162,7 +167,7 @@ export function NoteLibraryRow({
             >
               <ChevronRight
                 className={clsx(
-                  "size-4 transition-transform",
+                  "size-[18px] transition-transform md:size-4",
                   row.expanded && "rotate-90",
                 )}
                 strokeWidth={2.2}
@@ -175,7 +180,7 @@ export function NoteLibraryRow({
               <Input
                 ref={inputRef}
                 aria-label="重命名笔记"
-                className="h-8 min-w-0 rounded-md border border-border-button bg-surface px-2 pl-2 font-medium outline-none shadow-focus-input"
+                className="h-10 min-w-0 rounded-md border border-border-button bg-surface px-2 pl-2 font-medium outline-none shadow-focus-input md:h-8"
                 onBlur={() => {
                   if (skipBlurCommitRef.current) {
                     skipBlurCommitRef.current = false;
@@ -200,7 +205,7 @@ export function NoteLibraryRow({
               />
             ) : (
               <button
-                className="min-w-0 truncate rounded px-1 py-1 text-left font-medium outline-none hover:bg-bg-hover focus-visible:ring-2 focus-visible:ring-focus-ring"
+                className="min-w-0 truncate rounded-[6px] px-1 py-2 text-left font-medium outline-none active:bg-bg-hover hover:bg-bg-hover focus-visible:ring-2 focus-visible:ring-focus-ring md:rounded md:py-1"
                 onClick={(event) => {
                   if (isMobile) {
                     event.stopPropagation();
@@ -209,7 +214,7 @@ export function NoteLibraryRow({
                   }
                   startRename(event);
                 }}
-                title="重命名"
+                title={isMobile ? "打开笔记" : "重命名"}
                 type="button"
               >
                 {noteTitle}
@@ -220,7 +225,7 @@ export function NoteLibraryRow({
                 {row.pathLabel}
               </span>
             ) : null}
-            <div className="mt-1 flex min-w-0 items-center gap-1.5 overflow-hidden text-xs text-text-muted md:hidden">
+            <div className="mt-0.5 flex min-w-0 items-center gap-1.5 overflow-hidden px-1 text-[12px] text-text-muted md:hidden">
               <span className="shrink-0">{formatNoteEditedTime(note)}</span>
               <span aria-hidden="true">·</span>
               <span className="shrink-0">{note.status}</span>
@@ -265,10 +270,11 @@ export function NoteLibraryRow({
           </span>
         ))}
       </div>
-      <div className="flex items-center justify-end gap-1 pr-1 opacity-100 transition-opacity md:pr-2 md:opacity-0 md:group-hover/note-row:opacity-100 md:group-focus-within/note-row:opacity-100">
+      <div className="flex items-center justify-end gap-1 pr-0.5 opacity-100 transition-opacity md:pr-2 md:opacity-0 md:group-hover/note-row:opacity-100 md:group-focus-within/note-row:opacity-100">
         {viewMode === "search" ? (
           <button
-            className="flex size-7 items-center justify-center rounded text-text-subtle hover:bg-bg-icon-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+            aria-label="在树中定位"
+            className="flex size-10 items-center justify-center rounded-[8px] text-text-subtle transition-[background-color,color,transform] active:scale-[0.95] active:bg-bg-selected hover:bg-bg-icon-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring md:size-7 md:rounded"
             onClick={(event) => {
               event.stopPropagation();
               onRevealInTree(note._id);
@@ -276,7 +282,7 @@ export function NoteLibraryRow({
             title="在树中定位"
             type="button"
           >
-            <LocateFixed className="size-4" />
+            <LocateFixed className="size-[18px] md:size-4" />
           </button>
         ) : null}
         <Button
@@ -297,11 +303,12 @@ export function NoteLibraryRow({
               <Button
                 variant="ghost"
                 size="icon-xs"
+                className="size-10 rounded-[8px] md:size-7 md:rounded-[5px]"
                 aria-label={`更多操作：${noteTitle}`}
                 onClick={(event) => event.stopPropagation()}
                 title="更多"
               >
-                <MoreHorizontal aria-hidden="true" className="size-4" />
+                <MoreHorizontal aria-hidden="true" className="size-[18px] md:size-4" />
               </Button>
             }
           />
