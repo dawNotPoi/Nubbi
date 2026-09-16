@@ -47,10 +47,10 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
-      # WIP 允许生成真实锁文件，但后续独立检查阻止未同步锁文件的 PR 通过。
+      # 锁文件已由升级提交同步；所有后续 WIP 验证使用冻结安装，不再改写依赖。
       - name: Install dependencies
         id: install
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Check committed lockfile
         id: lockfile
