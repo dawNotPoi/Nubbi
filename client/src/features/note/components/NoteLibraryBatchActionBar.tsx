@@ -25,12 +25,13 @@ export function NoteLibraryBatchActionBar({
   if (selectedCount === 0) return null;
 
   return (
-    <div className="flex min-h-10 w-full items-center gap-1 rounded-[6px] bg-bg-hover px-2 py-1 md:min-h-0 md:w-auto md:bg-transparent md:px-0 md:py-0">
-      <span className="mr-auto px-1 text-[13px] font-medium text-text-muted md:mr-0 md:text-xs md:font-normal">
+    <div className="flex min-h-12 w-full items-center gap-1 rounded-[10px] bg-surface px-2 py-1.5 shadow-popover md:min-h-0 md:w-auto md:rounded-none md:bg-transparent md:px-0 md:py-0 md:shadow-none">
+      <span className="mr-auto px-1 text-[14px] font-medium text-text-primary md:mr-0 md:text-xs md:font-normal md:text-text-muted">
         已选 {selectedCount}
       </span>
       <Button
-        icon={<FolderInput className="size-4" />}
+        className="h-10 rounded-[8px] px-3 md:h-8 md:rounded-[5px] md:px-2"
+        icon={<FolderInput className="size-[18px] md:size-4" />}
         loading={moving}
         onClick={onMove}
         size="toolbar"
@@ -39,15 +40,20 @@ export function NoteLibraryBatchActionBar({
         移动
       </Button>
       <Button
-        icon={<Trash2 className="size-4" />}
+        icon={<Trash2 className="size-[18px] md:size-4" />}
         onClick={onDelete}
-        className="text-[color:var(--danger-text)] hover:bg-[var(--danger-bg)] hover:text-[color:var(--danger-text)]"
+        className="h-10 rounded-[8px] px-3 text-[color:var(--danger-text)] hover:bg-[var(--danger-bg)] hover:text-[color:var(--danger-text)] md:h-8 md:rounded-[5px] md:px-2"
         size="toolbar"
         variant="ghost"
       >
         删除
       </Button>
-      <Button className="text-text-muted" onClick={onClear} size="toolbar" variant="ghost">
+      <Button
+        className="h-10 rounded-[8px] px-3 text-text-muted md:h-8 md:rounded-[5px] md:px-2"
+        onClick={onClear}
+        size="toolbar"
+        variant="ghost"
+      >
         取消
       </Button>
     </div>
