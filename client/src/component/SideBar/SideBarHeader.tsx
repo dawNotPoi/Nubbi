@@ -22,7 +22,7 @@ import Popover from "../UI/Popover";
 import { IconButton } from "./components";
 
 const menuItemClass =
-  "flex h-9 w-full items-center gap-2 rounded-md px-2 text-left text-sm text-slate-700 transition-colors hover:bg-gray-200/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300";
+  "flex h-9 w-full items-center gap-2 rounded-md px-2 text-left text-sm text-text-muted transition-colors duration-150 hover:bg-bg-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring";
 
 const SideBarHeader: React.FC = () => {
   const { user, logout, updateAvatar } = useAuth();
@@ -54,21 +54,21 @@ const SideBarHeader: React.FC = () => {
 
   return (
     <>
-      <div className="flex gap-2 justify-between relative">
+      <div className="relative flex items-center justify-between gap-2">
         <Popover
           trigger={
-            <div className="flex gap-2 items-center cursor-pointer">
+            <div className="flex min-w-0 cursor-pointer items-center gap-2 rounded-md px-1 py-0.5 transition-colors hover:bg-bg-hover">
               <Image
-                className="rounded size-7"
+                className="size-7 rounded-md"
                 src={user?.image || ""}
                 defaultLink="/default.jpg"
                 alt={user?.name}
               />
-              <span>{user?.name}</span>
+              <span className="truncate text-sm text-text-primary">{user?.name}</span>
             </div>
           }
         >
-          <div className="w-[144px] space-y-1 p-1.5">
+          <div className="w-[152px] space-y-1 p-1.5">
             <button
               className={menuItemClass + " text-red-600 hover:bg-red-50"}
               onClick={handleRequestAccountDeletion}
@@ -76,17 +76,11 @@ const SideBarHeader: React.FC = () => {
               <Trash2 size={15} />
               <span>注销账号</span>
             </button>
-            <button
-              className={menuItemClass}
-              onClick={() => setAvatarModalOpen(true)}
-            >
+            <button className={menuItemClass} onClick={() => setAvatarModalOpen(true)}>
               <Camera size={15} />
               <span>更换头像</span>
             </button>
-            <button
-              className={menuItemClass}
-              onClick={() => setApiTokenModalOpen(true)}
-            >
+            <button className={menuItemClass} onClick={() => setApiTokenModalOpen(true)}>
               <KeyRound size={15} />
               <span>鉴权管理</span>
             </button>
@@ -98,13 +92,13 @@ const SideBarHeader: React.FC = () => {
         </Popover>
         <div className="flex-1" />
         <div
-          className="flex "
-          onClick={(e) => {
-            e.stopPropagation();
+          className="flex"
+          onClick={(event) => {
+            event.stopPropagation();
           }}
         >
           <IconButton onClick={handleCollapse}>
-            <ChevronsLeft />
+            <ChevronsLeft size={18} />
           </IconButton>
         </div>
       </div>
@@ -119,10 +113,7 @@ const SideBarHeader: React.FC = () => {
         onClose={() => setAvatarModalOpen(false)}
         onConfirm={updateAvatar}
       />
-      <ApiTokenModal
-        open={apiTokenModalOpen}
-        onClose={() => setApiTokenModalOpen(false)}
-      />
+      <ApiTokenModal open={apiTokenModalOpen} onClose={() => setApiTokenModalOpen(false)} />
     </>
   );
 };
