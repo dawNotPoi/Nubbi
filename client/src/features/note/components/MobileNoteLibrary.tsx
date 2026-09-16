@@ -88,6 +88,11 @@ export function MobileNoteLibrary({ library }: MobileNoteLibraryProps) {
     setTab("directory");
   };
 
+  const createAndOpen = async () => {
+    const created = await library.createRootNote();
+    if (created) library.openNote(created);
+  };
+
   const renderRow = (
     note: Note,
     options: {
@@ -260,7 +265,7 @@ export function MobileNoteLibrary({ library }: MobileNoteLibraryProps) {
             aria-label="新建笔记"
             className={clsx(headerActionClass, "text-[var(--brand)]")}
             disabled={!library.owner}
-            onClick={() => void library.createRootNote()}
+            onClick={() => void createAndOpen()}
             type="button"
           >
             <Plus />
