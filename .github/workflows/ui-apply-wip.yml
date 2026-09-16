@@ -1,0 +1,160 @@
+name: Apply Reviewed UI WIP
+
+on:
+  push:
+    branches: [refactor/ui-theme-v1]
+    paths:
+      - '.github/wip/ui-theme-v1.patch.xz.*'
+      - '.github/workflows/ui-apply-wip.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ui-apply-reviewed-wip
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    if: github.repository == 'dawNotPoi/Nubbi'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    outputs:
+      commit: ${{ steps.commit.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Apply checksum-verified patch
+        env:
+          EXPECTED_PARENT: ff7ae593b78270aa2a3ee8cc8ab4d4c2767d4b0a
+        run: |
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_PARENT"
+          python3 - <<'PY'
+          import hashlib
+          import lzma
+          import os
+          from pathlib import Path
+          packed = b''.join(Path(f'.github/wip/ui-theme-v1.patch.xz.{i}').read_bytes() for i in range(4))
+          patch = lzma.decompress(packed)
+          expected = 'a9621a79efce8e9039f5b809831d4c93be55790987967cd81edbf8898f45d8d2'
+          if hashlib.sha256(patch).hexdigest() != expected:
+              raise SystemExit('补丁校验失败，禁止应用')
+          Path(os.environ['RUNNER_TEMP'], 'reviewed-ui.patch').write_bytes(patch)
+          PY
+          git apply --check "$RUNNER_TEMP/reviewed-ui.patch"
+          git apply "$RUNNER_TEMP/reviewed-ui.patch"
+          # 一次性引导不保留在升级后的源码中。
+          rm .github/wip/ui-theme-v1.patch.xz.{0,1,2,3}
+          rm .github/workflows/ui-apply-wip.yml
+          rm docs/changes/2026-09-16-ui-bootstrap.md
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Resolve real lockfile without lifecycle scripts
+        run: |
+          pnpm install --lockfile-only --ignore-scripts --no-frozen-lockfile
+          git diff --check
+          printf '\n### 锁文件同步\n- 一次性 CI 已通过 pnpm 解析真实依赖并同步 pnpm-lock.yaml；安装及项目验证在后续只读任务中独立执行。\n' >> docs/changes/2026-09-16.md
+
+      - name: Commit to existing WIP branch without force
+        id: commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_HEAD: ${{ github.sha }}
+        run: |
+          AUTH="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          echo "::add-mask::$AUTH"
+          HEADER="AUTHORIZATION: basic $AUTH"
+          REMOTE_HEAD="$(git -c "http.https://github.com/.extraheader=$HEADER" ls-remote origin refs/heads/refactor/ui-theme-v1 | cut -f1)"
+          test "$REMOTE_HEAD" = "$EXPECTED_HEAD"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git -c core.hooksPath=/dev/null commit -m 'refactor(client): 升级Tailwind并迁入基础交互组件'
+          git -c "http.https://github.com/.extraheader=$HEADER" push origin HEAD:refs/heads/refactor/ui-theme-v1
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  verify:
+    needs: apply
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.apply.outputs.commit }}
+          persist-credentials: false
+
+      - name: Archive reviewed source
+        run: git archive --format=tar.gz HEAD > "$RUNNER_TEMP/ui-source.tar.gz"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ui-upgraded-source
+          path: ${{ runner.temp }}/ui-source.tar.gz
+          retention-days: 3
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install locked dependencies
+        id: install
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint client
+        id: lint
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        continue-on-error: true
+        run: pnpm --filter nubbi-client lint
+
+      - name: Typecheck client
+        id: typecheck
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        continue-on-error: true
+        run: pnpm --filter nubbi-client exec tsc -b
+
+      - name: Build client
+        id: build
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        continue-on-error: true
+        run: pnpm --filter nubbi-client build
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: ui-upgraded-build
+          path: |
+            pnpm-lock.yaml
+            client/dist
+          retention-days: 3
+
+      - name: Report independent results
+        if: ${{ !cancelled() }}
+        env:
+          INSTALL: ${{ steps.install.outcome }}
+          LINT: ${{ steps.lint.outcome }}
+          TYPECHECK: ${{ steps.typecheck.outcome }}
+          BUILD: ${{ steps.build.outcome }}
+        run: |
+          printf '| Check | Result |\n|---|---|\n| Install | %s |\n| Lint | %s |\n| Typecheck | %s |\n| Build | %s |\n' "$INSTALL" "$LINT" "$TYPECHECK" "$BUILD" >> "$GITHUB_STEP_SUMMARY"
+          test "$INSTALL/$LINT/$TYPECHECK/$BUILD" = 'success/success/success/success'
