@@ -14,13 +14,13 @@ export const MenuItemContainer: FC<NavLinkProps> = ({
   return (
     <NavLink
       to={to}
-      className={({ isActive }) => {
-        return clsx(
-          "hover:bg-gray-200/40  rounded-md px-2 py-1 cursor-pointer flex items-center gap-2",
+      className={({ isActive }) =>
+        clsx(
+          "flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm text-text-muted transition-colors duration-150 hover:bg-bg-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
           className,
-          isActive && "bg-neutral-400/10",
-        );
-      }}
+          isActive && "bg-bg-selected text-text-primary",
+        )
+      }
       role="button"
       {...props}
     >
@@ -34,13 +34,13 @@ export const IconButton: FC<
 > = ({ children, className, onClick, ...props }) => {
   return (
     <button
-      onClick={(e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        onClick?.(e);
+      onClick={(event) => {
+        event.stopPropagation();
+        event.preventDefault();
+        onClick?.(event);
       }}
       className={clsx(
-        "rounded-md p-1 text-neutral-500 hover:bg-neutral-400/20 min-w-6 min-h-6 active:bg-neutral-400/40 flex items-center justify-center text-center ",
+        "flex min-h-6 min-w-6 items-center justify-center rounded-md p-1 text-center text-text-subtle transition-colors duration-150 hover:bg-bg-icon-hover hover:text-text-primary active:bg-bg-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
         className,
       )}
       {...props}
