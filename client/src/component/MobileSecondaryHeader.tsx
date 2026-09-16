@@ -19,9 +19,8 @@ export default function MobileSecondaryHeader({
   const location = useLocation();
   const navigate = useNavigate();
   const state = location.state as { mobileReturnTo?: string } | null;
-  const returnTo = isSafeInternalPath(state?.mobileReturnTo)
-    ? state.mobileReturnTo
-    : fallback;
+  const candidate = state?.mobileReturnTo;
+  const returnTo = isSafeInternalPath(candidate) ? candidate : fallback;
 
   return (
     <Header className="border-b border-border-row bg-surface/98">
