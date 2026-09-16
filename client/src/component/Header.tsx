@@ -19,20 +19,15 @@ export const Header = ({
         className,
       )}
     >
-      {!isMobile ? (
+      {!isMobile && !sideBarOpened ? (
         <button
-          aria-label={sideBarOpened ? "侧边栏已展开" : "展开侧边栏"}
-          className={clsx(
-            "flex size-7 shrink-0 items-center justify-center rounded-md text-text-subtle transition-colors duration-150 hover:bg-bg-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
-            sideBarOpened
-              ? "pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100"
-              : "opacity-100",
-          )}
-          onClick={() => setSideBarOpened(!sideBarOpened)}
-          title={sideBarOpened ? "收起侧边栏" : "展开侧边栏"}
+          aria-label="展开侧边栏"
+          className="flex size-7 shrink-0 items-center justify-center rounded-md text-text-subtle transition-colors duration-150 hover:bg-bg-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          onClick={() => setSideBarOpened(true)}
+          title="展开侧边栏"
           type="button"
         >
-          {!sideBarOpened ? <ChevronsRight size={20} strokeWidth={1.9} /> : null}
+          <ChevronsRight size={20} strokeWidth={1.9} />
         </button>
       ) : null}
       <div className="min-w-0 flex-1">{children}</div>
