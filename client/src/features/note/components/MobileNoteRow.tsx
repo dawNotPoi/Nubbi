@@ -1,8 +1,9 @@
 import type { Note } from "@/api/note";
+import { useLongPress } from "@/hooks/useLongPress";
 import { normalizeNoteTitle } from "@/features/note/model/hierarchy";
 import { formatNoteEditedTime } from "@/features/note/model/library";
 import { Check, ChevronRight, FileText, MoreHorizontal } from "lucide-react";
-import { useRef, useState, type PointerEvent } from "react";
+import { useState } from "react";
 import clsx from "clsx";
 import { MobileNoteActionsSheet } from "./MobileNoteActionsSheet";
 
@@ -24,8 +25,6 @@ type MobileNoteRowProps = {
   onToggleSelection: (note: Note, selected: boolean) => void;
 };
 
-const LONG_PRESS_MS = 460;
-
 export function MobileNoteRow({
   canExpand = false,
   depth = 0,
@@ -44,31 +43,14 @@ export function MobileNoteRow({
   selecting,
 }: MobileNoteRowProps) {
   const [actionsOpen, setActionsOpen] = useState(false);
-  const timerRef = useRef<number | null>(null);
-  const longPressedRef = useRef(false);
   const title = normalizeNoteTitle(note.title);
-
-  const cancelLongPress = () => {
-    if (timerRef.current != null) window.clearTimeout(timerRef.current);
-    timerRef.current = null;
-  };
-
-  const startLongPress = (event: PointerEvent<HTMLButtonElement>) => {
-    if (selecting || event.pointerType === "mouse") return;
-    cancelLongPress();
-    longPressedRef.current = false;
-    timerRef.current = window.setTimeout(() => {
-      longPressedRef.current = true;
-      onEnterSelection(note);
-      if (navigator.vibrate) navigator.vibrate(12);
-    }, LONG_PRESS_MS);
-  };
+  const { consumeTriggered, longPressProps } = useLongPress<HTMLButtonElement>(
+    () => onEnterSelection(note),
+    { disabled: selecting },
+  );
 
   const handleMainClick = () => {
-    if (longPressedRef.current) {
-      longPressedRef.current = false;
-      return;
-    }
+    if (consumeTriggered()) return;
     if (selecting) {
       onToggleSelection(note, !selected);
       return;
@@ -127,13 +109,9 @@ export function MobileNoteRow({
         </div>
 
         <button
+          {...longPressProps}
           className="min-w-0 py-2.5 pr-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus-ring"
           onClick={handleMainClick}
-          onPointerCancel={cancelLongPress}
-          onPointerDown={startLongPress}
-          onPointerLeave={cancelLongPress}
-          onPointerMove={cancelLongPress}
-          onPointerUp={cancelLongPress}
           style={{ paddingLeft: Math.min(depth, 5) * 12 }}
           type="button"
         >
