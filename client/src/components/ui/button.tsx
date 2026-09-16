@@ -61,14 +61,18 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function Button(
 
   // 不改变旧 asChild 的 DOM 结构；新代码不应把 loading 或 icon 用在此兼容分支。
   if (asChild) {
+    // Slot 转发原生属性到子元素，显式保留按钮属性类型而不放宽为 any。
+    const slotProps: React.ButtonHTMLAttributes<HTMLButtonElement> = {
+      ...props,
+      disabled: unavailable,
+      type,
+    };
     return (
       <Slot
-        {...props}
+        {...slotProps}
         ref={ref}
         className={classes}
-        disabled={unavailable}
         aria-busy={loading || undefined}
-        type={type}
       >
         {children}
       </Slot>
