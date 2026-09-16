@@ -18,9 +18,9 @@ export function getNubbiAntdTheme(): ThemeConfig {
 
   return {
     token: {
-      colorPrimary: read("--accent-border"),
-      colorPrimaryHover: read("--accent-hover"),
-      colorPrimaryActive: read("--accent-active"),
+      colorPrimary: read("--primary"),
+      colorPrimaryHover: read("--primary-hover"),
+      colorPrimaryActive: read("--primary-active"),
       colorText: read("--text-primary"),
       colorTextSecondary: read("--text-muted"),
       colorBorder: read("--border-button"),
@@ -29,15 +29,17 @@ export function getNubbiAntdTheme(): ThemeConfig {
       colorBgElevated: read("--surface"),
       colorFillSecondary: read("--bg-hover"),
       colorFillTertiary: read("--sidebar"),
-      borderRadius: 8,
-      controlHeight: 36,
-      controlHeightSM: 32,
+      fontFamily: read("--font-ui"),
+      fontSize: 14,
+      borderRadius: 7,
+      controlHeight: 34,
+      controlHeightSM: 30,
       boxShadowSecondary: read("--shadow-popover"),
     },
     components: {
       Button: { primaryShadow: "none", defaultShadow: "none", fontWeight: 500 },
-      Dropdown: { paddingBlock: 6 },
-      Input: { activeShadow: "0 0 0 2px var(--focus-ring)" },
+      Dropdown: { paddingBlock: 4 },
+      Input: { activeShadow: "0 0 0 3px var(--focus-ring)" },
       Select: { activeOutlineColor: read("--focus-ring") },
     },
   };
