@@ -7,22 +7,26 @@ import { useNoteEditorDraft } from "@/features/note/hooks/useNoteEditorDraft";
 import type { NoteSaveStatus } from "@/features/note/model/types";
 import { noteKeys } from "@/features/note/model/keys";
 import { getNoteAncestors, getNoteDetail } from "@/api/note";
+import { routes } from "@/utils/routes";
 import { useQuery } from "@tanstack/react-query";
 import { Switch } from "antd";
 import {
   AlertCircle,
+  ArrowLeft,
   CheckCircle2,
   Columns2,
   FilePenLine,
   ImagePlus,
   LoaderCircle,
+  MoreHorizontal,
   PanelTop,
   Tag,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import "react-markdown-editor-lite/lib/index.css";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import "./index.css";
+import MobileNoteDetailSheet, { type MobileNoteDisplayMode } from "./MobileNoteDetailSheet";
 import NoteBreadcrumb from "./NoteBreadcrumb";
 import NoteCover from "./NoteCover";
 import { DEFAULT_NOTE_COVER, DEFAULT_NOTE_TAG } from "./noteDefaults";
@@ -32,8 +36,7 @@ import NoteTitleActionButton from "./NoteTitleActionButton";
 const DEFAULT_TITLE = "未命名文档";
 const NOTE_DISPLAY_MODE_KEY = "note-display-mode";
 const noteDisplayModes = ["render", "markdown", "split"] as const;
-
-type NoteDisplayMode = (typeof noteDisplayModes)[number];
+type NoteDisplayMode = MobileNoteDisplayMode;
 
 type MarkdownEditorProps = {
   value: string;
@@ -41,13 +44,11 @@ type MarkdownEditorProps = {
   className?: string;
 };
 
-const isNoteDisplayMode = (value: string | null): value is NoteDisplayMode => {
-  return noteDisplayModes.includes(value as NoteDisplayMode);
-};
+const isNoteDisplayMode = (value: string | null): value is NoteDisplayMode =>
+  noteDisplayModes.includes(value as NoteDisplayMode);
 
 const getStoredNoteDisplayMode = (): NoteDisplayMode => {
   if (typeof window === "undefined") return "render";
-
   const storedMode = window.localStorage.getItem(NOTE_DISPLAY_MODE_KEY);
   return isNoteDisplayMode(storedMode) ? storedMode : "render";
 };
@@ -60,23 +61,11 @@ const getNextDisplayMode = (mode: NoteDisplayMode): NoteDisplayMode => {
 
 const displayModeButtonMeta: Record<
   NoteDisplayMode,
-  {
-    Icon: typeof FilePenLine;
-    label: string;
-  }
+  { Icon: typeof FilePenLine; label: string }
 > = {
-  render: {
-    Icon: FilePenLine,
-    label: "Switch to Markdown edit",
-  },
-  markdown: {
-    Icon: Columns2,
-    label: "Switch to split preview",
-  },
-  split: {
-    Icon: PanelTop,
-    label: "Switch to rendered edit",
-  },
+  render: { Icon: FilePenLine, label: "Switch to Markdown edit" },
+  markdown: { Icon: Columns2, label: "Switch to split preview" },
+  split: { Icon: PanelTop, label: "Switch to rendered edit" },
 };
 
 function MarkdownEditor({ value, onChange, className }: MarkdownEditorProps) {
@@ -84,9 +73,7 @@ function MarkdownEditor({ value, onChange, className }: MarkdownEditorProps) {
     <textarea
       aria-label="Markdown editor"
       className={`note-markdown-editor ${className ?? ""}`}
-      onChange={(event) => {
-        onChange(event.target.value);
-      }}
+      onChange={(event) => onChange(event.target.value)}
       spellCheck={false}
       value={value}
     />
@@ -97,20 +84,14 @@ function NoteSkeleton() {
   return (
     <div className="min-w-0 animate-pulse">
       <main className="w-full items-center pt-10">
-        <div className="mx-auto w-full max-w-[760px] px-4 sm:px-8">
-          <div className="h-12 w-2/3 rounded-lg bg-neutral-100" />
-          <div className="mt-5 flex gap-3">
-            <div className="h-8 w-24 rounded-md bg-neutral-100" />
-            <div className="h-8 w-28 rounded-md bg-neutral-100" />
-            <div className="h-8 w-20 rounded-md bg-neutral-100" />
-          </div>
-          <div className="mt-10 space-y-4">
-            <div className="h-4 w-full rounded bg-neutral-100" />
-            <div className="h-4 w-[92%] rounded bg-neutral-100" />
-            <div className="h-4 w-[96%] rounded bg-neutral-100" />
-            <div className="h-4 w-[78%] rounded bg-neutral-100" />
-            <div className="h-4 w-[88%] rounded bg-neutral-100" />
-            <div className="h-4 w-[70%] rounded bg-neutral-100" />
+        <div className="mx-auto w-full max-w-[780px] px-4 sm:px-8">
+          <div className="h-9 w-2/3 rounded-lg bg-bg-hover md:h-11" />
+          <div className="mt-8 space-y-4">
+            <div className="h-4 w-full rounded bg-bg-hover" />
+            <div className="h-4 w-[92%] rounded bg-bg-hover" />
+            <div className="h-4 w-[96%] rounded bg-bg-hover" />
+            <div className="h-4 w-[78%] rounded bg-bg-hover" />
+            <div className="h-4 w-[88%] rounded bg-bg-hover" />
           </div>
         </div>
       </main>
@@ -118,12 +99,14 @@ function NoteSkeleton() {
   );
 }
 
-function SaveIndicator({ status }: { status: NoteSaveStatus }) {
+function SaveIndicator({ compact = false, status }: { compact?: boolean; status: NoteSaveStatus }) {
   if (status === "idle") return null;
 
   const isSaving = status === "saving";
   const isError = status === "error";
   const isConflict = status === "conflict";
+  if (compact && !isSaving && !isError && !isConflict) return null;
+
   const label = isSaving
     ? "Saving..."
     : isConflict
@@ -133,21 +116,22 @@ function SaveIndicator({ status }: { status: NoteSaveStatus }) {
         : "Saved";
 
   return (
-    <div className="flex items-center gap-1 text-xs text-neutral-500 sm:gap-2" title={label}>
+    <div className="flex items-center gap-1 text-xs text-text-muted sm:gap-2" title={label}>
       {isSaving ? (
-        <LoaderCircle className="size-4 animate-spin text-neutral-500" />
+        <LoaderCircle className="size-4 animate-spin text-text-muted" />
       ) : isError || isConflict ? (
         <AlertCircle className="size-4 text-amber-500" />
       ) : (
-        <CheckCircle2 className="size-4 text-emerald-500" />
+        <CheckCircle2 className="size-4 text-emerald-600" />
       )}
-      <span className="hidden sm:inline">{label}</span>
+      <span className={compact ? "sr-only" : "hidden sm:inline"}>{label}</span>
     </div>
   );
 }
 
 export default function Note() {
   const { Id } = useParams();
+  const navigate = useNavigate();
   const { data, isLoading } = useQuery({
     queryKey: noteKeys.detail(Id!),
     queryFn: async () => {
@@ -181,19 +165,22 @@ export default function Note() {
     defaultTitle: DEFAULT_TITLE,
     noteId: Id,
   });
-  const [displayMode, setDisplayMode] = useState<NoteDisplayMode>(
-    getStoredNoteDisplayMode,
-  );
-  const [mobileSplitPane, setMobileSplitPane] = useState<"source" | "preview">(
-    "source",
-  );
+  const [displayMode, setDisplayMode] = useState<NoteDisplayMode>(getStoredNoteDisplayMode);
+  const [mobileSplitPane, setMobileSplitPane] = useState<"source" | "preview">("source");
+  const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
   const isMobile = useIsMobile();
   const [coverEditorOpen, setCoverEditorOpen] = useState(false);
   const [editor, setEditor] = useState<Editor | null>(null);
 
   useEffect(() => {
     setCoverEditorOpen(false);
+    setMobileActionsOpen(false);
   }, [Id]);
+
+  const setDisplayModePersisted = useCallback((nextMode: NoteDisplayMode) => {
+    window.localStorage.setItem(NOTE_DISPLAY_MODE_KEY, nextMode);
+    setDisplayMode(nextMode);
+  }, []);
 
   const switchDisplayMode = useCallback(() => {
     setDisplayMode((currentMode) => {
@@ -207,9 +194,7 @@ export default function Note() {
   const DisplayModeIcon = displayModeMeta.Icon;
 
   const handleAddCover = useCallback(() => {
-    if (!data?.cover) {
-      updateProperties({ cover: DEFAULT_NOTE_COVER });
-    }
+    if (!data?.cover) updateProperties({ cover: DEFAULT_NOTE_COVER });
   }, [data?.cover, updateProperties]);
 
   const handleAddTag = useCallback(() => {
@@ -226,11 +211,11 @@ export default function Note() {
 
     if (displayMode === "split" && isMobile) {
       return (
-        <div className="mt-6">
-          <div className="mb-3 inline-flex rounded-lg bg-bg-selected p-1 text-sm">
+        <div className="mt-5">
+          <div className="mb-3 grid grid-cols-2 rounded-[8px] bg-bg-hover p-1 text-[14px]">
             <button
-              className={`rounded-md px-3 py-1.5 ${
-                mobileSplitPane === "source" ? "bg-white shadow-sm" : ""
+              className={`min-h-9 rounded-[6px] ${
+                mobileSplitPane === "source" ? "bg-surface font-medium shadow-[0_1px_2px_rgba(55,53,47,0.08)]" : "text-text-muted"
               }`}
               onClick={() => setMobileSplitPane("source")}
               type="button"
@@ -238,8 +223,8 @@ export default function Note() {
               Markdown
             </button>
             <button
-              className={`rounded-md px-3 py-1.5 ${
-                mobileSplitPane === "preview" ? "bg-white shadow-sm" : ""
+              className={`min-h-9 rounded-[6px] ${
+                mobileSplitPane === "preview" ? "bg-surface font-medium shadow-[0_1px_2px_rgba(55,53,47,0.08)]" : "text-text-muted"
               }`}
               onClick={() => setMobileSplitPane("preview")}
               type="button"
@@ -306,38 +291,62 @@ export default function Note() {
 
   return (
     <div className="flex h-full min-w-0 flex-col overflow-hidden">
-      <Header>
-        <div className="flex min-w-0 items-center justify-between gap-2 sm:gap-4">
-          <NoteBreadcrumb
-            ancestors={ancestors}
-            current={{ _id: Id, title: headerTitle }}
-          />
-          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-            <label className="flex items-center gap-1 text-xs text-neutral-500 sm:gap-2">
-              <span className="hidden sm:inline">Published</span>
-              <Switch
-                checked={data.published}
-                size="small"
-                onChange={(published) => {
-                  updateProperties({ published });
-                }}
-              />
-            </label>
-            <SaveIndicator status={saveStatus} />
+      <Header className="border-b border-border-row bg-surface/98">
+        {isMobile ? (
+          <div className="grid h-full grid-cols-[44px_minmax(0,1fr)_76px] items-center gap-1">
             <button
-              aria-label={displayModeMeta.label}
-              className="note-display-mode-button"
-              onClick={switchDisplayMode}
-              title={displayModeMeta.label}
+              aria-label="返回笔记"
+              className="grid size-11 place-items-center rounded-[8px] text-text-subtle transition-colors active:bg-bg-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              onClick={() => navigate(routes.noteLib)}
               type="button"
             >
-              <DisplayModeIcon className="size-4" />
+              <ArrowLeft className="size-5" />
             </button>
+            <div className="truncate text-center text-[14px] font-medium text-text-primary">{headerTitle}</div>
+            <div className="flex items-center justify-end gap-1">
+              <SaveIndicator compact status={saveStatus} />
+              <button
+                aria-label="笔记更多操作"
+                className="grid size-11 place-items-center rounded-[8px] text-text-subtle transition-colors active:bg-bg-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                onClick={() => setMobileActionsOpen(true)}
+                type="button"
+              >
+                <MoreHorizontal className="size-5" />
+              </button>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex min-w-0 items-center justify-between gap-4">
+            <NoteBreadcrumb
+              ancestors={ancestors}
+              current={{ _id: Id, title: headerTitle }}
+            />
+            <div className="flex shrink-0 items-center gap-3">
+              <label className="flex items-center gap-2 text-xs text-text-muted">
+                <span>Published</span>
+                <Switch
+                  checked={data.published}
+                  size="small"
+                  onChange={(published) => updateProperties({ published })}
+                />
+              </label>
+              <SaveIndicator status={saveStatus} />
+              <button
+                aria-label={displayModeMeta.label}
+                className="note-display-mode-button"
+                onClick={switchDisplayMode}
+                title={displayModeMeta.label}
+                type="button"
+              >
+                <DisplayModeIcon className="size-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </Header>
+
       <main
-        className="min-h-0 flex-1 overflow-y-auto bg-white pb-10"
+        className="min-h-0 flex-1 overflow-y-auto bg-surface pb-[max(28px,env(safe-area-inset-bottom))] md:pb-10"
         data-note-scroll-container
       >
         <NoteCover
@@ -351,16 +360,16 @@ export default function Note() {
         <div
           className={`note-editor-shell mx-auto ${
             displayMode === "split" ? "note-editor-shell--wide" : ""
-          } ${data.cover ? "" : "pt-6 md:pt-10"}`}
+          } ${data.cover ? "" : "pt-4 md:pt-10"}`}
         >
           <div>
             <div
               className={`group/title relative inline-grid max-w-full align-top ${
-                !data.cover || data.tags.length === 0 ? "pt-[30px]" : ""
+                !data.cover || data.tags.length === 0 ? "md:pt-[30px]" : ""
               }`}
             >
               {!data.cover || data.tags.length === 0 ? (
-                <div className="pointer-events-none absolute left-1 top-0 z-10 opacity-100 transition-opacity md:opacity-0 md:group-hover/title:opacity-100 md:group-focus-within/title:opacity-100">
+                <div className="pointer-events-none absolute left-1 top-0 z-10 hidden opacity-0 transition-opacity md:block md:group-hover/title:opacity-100 md:group-focus-within/title:opacity-100">
                   <div className="pointer-events-auto flex items-center gap-2">
                     {!data.cover ? (
                       <NoteTitleActionButton
@@ -383,15 +392,13 @@ export default function Note() {
               ) : null}
               <span
                 aria-hidden="true"
-                className="invisible col-start-1 row-start-1 max-w-full overflow-hidden whitespace-pre px-2 text-4xl font-extrabold md:text-5xl"
+                className="invisible col-start-1 row-start-1 max-w-full overflow-hidden whitespace-pre px-1 text-[30px] font-semibold leading-[1.2] tracking-[-0.015em] md:px-2 md:text-[42px] md:leading-[1.15]"
               >
                 {title || DEFAULT_TITLE}
               </span>
               <input
-                className="col-start-1 row-start-1 min-w-0 bg-transparent px-2 text-4xl font-extrabold outline-none md:text-5xl"
-                onChange={(event) => {
-                  setTitle(event.target.value);
-                }}
+                className="col-start-1 row-start-1 min-w-0 bg-transparent px-1 text-[30px] font-semibold leading-[1.2] tracking-[-0.015em] outline-none md:px-2 md:text-[42px] md:leading-[1.15]"
+                onChange={(event) => setTitle(event.target.value)}
                 placeholder={DEFAULT_TITLE}
                 value={title}
               />
@@ -401,6 +408,22 @@ export default function Note() {
           {editorContent}
         </div>
       </main>
+
+      {isMobile ? (
+        <MobileNoteDetailSheet
+          displayMode={displayMode}
+          hasCover={Boolean(data.cover)}
+          hasTags={data.tags.length > 0}
+          open={mobileActionsOpen}
+          published={data.published}
+          title={headerTitle}
+          onAddCover={handleAddCover}
+          onAddTag={handleAddTag}
+          onDisplayModeChange={setDisplayModePersisted}
+          onOpenChange={setMobileActionsOpen}
+          onPublishedChange={(published) => updateProperties({ published })}
+        />
+      ) : null}
     </div>
   );
 }
