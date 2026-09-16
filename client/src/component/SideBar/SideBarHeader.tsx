@@ -22,7 +22,7 @@ import Popover from "../UI/Popover";
 import { IconButton } from "./components";
 
 const menuItemClass =
-  "flex h-8 w-full items-center gap-2 rounded-[6px] px-2 text-left text-sm font-normal text-text-muted transition-colors duration-150 hover:bg-bg-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring";
+  "flex h-11 w-full items-center gap-2 rounded-[8px] px-2.5 text-left text-[15px] font-normal text-text-muted transition-[background-color,color,transform] active:scale-[0.99] active:bg-bg-selected hover:bg-bg-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring md:h-8 md:rounded-[6px] md:px-2 md:text-sm";
 
 const SideBarHeader: React.FC = () => {
   const { user, logout, updateAvatar } = useAuth();
@@ -54,38 +54,38 @@ const SideBarHeader: React.FC = () => {
 
   return (
     <>
-      <div className="relative flex items-center justify-between gap-2">
+      <div className="relative flex min-h-11 items-center justify-between gap-2 md:min-h-0">
         <Popover
           trigger={
-            <div className="flex min-w-0 cursor-pointer items-center gap-2 rounded-[6px] px-1.5 py-1 transition-colors hover:bg-bg-hover">
+            <div className="flex min-h-11 min-w-0 cursor-pointer items-center gap-2 rounded-[8px] px-1.5 py-1 transition-[background-color,transform] active:scale-[0.99] active:bg-bg-selected hover:bg-bg-hover md:min-h-0 md:rounded-[6px]">
               <Image
-                className="size-7 rounded-[6px]"
+                className="size-8 rounded-[7px] md:size-7 md:rounded-[6px]"
                 src={user?.image || ""}
                 defaultLink="/default.jpg"
                 alt={user?.name}
               />
-              <span className="truncate text-sm font-medium text-text-primary">{user?.name}</span>
+              <span className="truncate text-[15px] font-medium text-text-primary md:text-sm">{user?.name}</span>
             </div>
           }
         >
-          <div className="w-[152px] space-y-1 p-1">
+          <div className="w-[184px] space-y-1 p-1.5 md:w-[152px] md:p-1">
             <button
               className={menuItemClass + " text-[var(--danger-text)] hover:bg-[var(--danger-bg)]"}
               onClick={handleRequestAccountDeletion}
             >
-              <Trash2 size={15} />
+              <Trash2 size={16} />
               <span>注销账号</span>
             </button>
             <button className={menuItemClass} onClick={() => setAvatarModalOpen(true)}>
-              <Camera size={15} />
+              <Camera size={16} />
               <span>更换头像</span>
             </button>
             <button className={menuItemClass} onClick={() => setApiTokenModalOpen(true)}>
-              <KeyRound size={15} />
+              <KeyRound size={16} />
               <span>鉴权管理</span>
             </button>
             <button className={menuItemClass} onClick={logout}>
-              <LogOut size={15} />
+              <LogOut size={16} />
               <span>退出登录</span>
             </button>
           </div>
@@ -97,8 +97,8 @@ const SideBarHeader: React.FC = () => {
             event.stopPropagation();
           }}
         >
-          <IconButton onClick={handleCollapse}>
-            <ChevronsLeft size={18} />
+          <IconButton aria-label="关闭侧边栏" onClick={handleCollapse}>
+            <ChevronsLeft size={20} />
           </IconButton>
         </div>
       </div>
