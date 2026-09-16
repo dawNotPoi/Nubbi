@@ -1,8 +1,9 @@
 import type { FileListItem } from "@/api/file";
 import { Input } from "@/components/ui/input";
 import { getFileMobileMeta } from "@/features/file/model";
+import { useLongPress } from "@/hooks/useLongPress";
 import { Check, FileText, Folder, MoreHorizontal } from "lucide-react";
-import { useEffect, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import { MobileFileActionsSheet } from "./MobileFileActionsSheet";
 
@@ -22,8 +23,6 @@ type MobileFileRowProps = {
   onToggleSelection: (item: FileListItem, selected: boolean) => void;
 };
 
-const LONG_PRESS_MS = 460;
-
 export function MobileFileRow({
   editing,
   item,
@@ -42,8 +41,11 @@ export function MobileFileRow({
   const [actionsOpen, setActionsOpen] = useState(false);
   const [draftName, setDraftName] = useState(item.name);
   const inputRef = useRef<HTMLInputElement>(null);
-  const timerRef = useRef<number | null>(null);
-  const longPressedRef = useRef(false);
+  const skipBlurCommitRef = useRef(false);
+  const { consumeTriggered, longPressProps } = useLongPress<HTMLButtonElement>(
+    () => onEnterSelection(item),
+    { disabled: selecting || editing },
+  );
 
   useEffect(() => {
     setDraftName(item.name);
@@ -51,31 +53,13 @@ export function MobileFileRow({
 
   useEffect(() => {
     if (!editing) return;
+    skipBlurCommitRef.current = false;
     inputRef.current?.focus();
     inputRef.current?.select();
   }, [editing]);
 
-  const cancelLongPress = () => {
-    if (timerRef.current != null) window.clearTimeout(timerRef.current);
-    timerRef.current = null;
-  };
-
-  const startLongPress = (event: PointerEvent<HTMLButtonElement>) => {
-    if (selecting || editing || event.pointerType === "mouse") return;
-    cancelLongPress();
-    longPressedRef.current = false;
-    timerRef.current = window.setTimeout(() => {
-      longPressedRef.current = true;
-      onEnterSelection(item);
-      if (navigator.vibrate) navigator.vibrate(12);
-    }, LONG_PRESS_MS);
-  };
-
   const handleOpen = () => {
-    if (longPressedRef.current) {
-      longPressedRef.current = false;
-      return;
-    }
+    if (consumeTriggered()) return;
     if (selecting) {
       onToggleSelection(item, !selected);
       return;
@@ -96,6 +80,11 @@ export function MobileFileRow({
     }
     const result = await onRename(item, nextName);
     if (result !== false) onCancelRename();
+  };
+
+  const commitFromKeyboard = async () => {
+    skipBlurCommitRef.current = true;
+    await finishRename();
   };
 
   const LeadingIcon = item.kind === "folder" ? Folder : FileText;
@@ -142,16 +131,23 @@ export function MobileFileRow({
               aria-label="重命名"
               className="h-10 rounded-[8px] px-3 pl-3 text-[15px]"
               value={draftName}
-              onBlur={() => void finishRename()}
+              onBlur={() => {
+                if (skipBlurCommitRef.current) {
+                  skipBlurCommitRef.current = false;
+                  return;
+                }
+                void finishRename();
+              }}
               onChange={(event) => setDraftName(event.target.value)}
               onKeyDown={(event) => {
                 if (event.nativeEvent.isComposing) return;
                 if (event.key === "Enter") {
                   event.preventDefault();
-                  void finishRename();
+                  void commitFromKeyboard();
                 }
                 if (event.key === "Escape") {
                   event.preventDefault();
+                  skipBlurCommitRef.current = true;
                   setDraftName(item.name);
                   onCancelRename();
                 }
@@ -160,13 +156,9 @@ export function MobileFileRow({
           </div>
         ) : (
           <button
+            {...longPressProps}
             className="min-w-0 py-2.5 pr-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus-ring"
             onClick={handleOpen}
-            onPointerCancel={cancelLongPress}
-            onPointerDown={startLongPress}
-            onPointerLeave={cancelLongPress}
-            onPointerMove={cancelLongPress}
-            onPointerUp={cancelLongPress}
             type="button"
           >
             <div className="truncate text-[15px] font-medium leading-5 text-text-primary">{item.name}</div>
