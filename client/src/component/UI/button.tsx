@@ -3,24 +3,28 @@ import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
+/**
+ * 认证兼容区按钮。新业务仍应优先使用 `components/ui/button`；
+ * 此处只保留旧调用 API，并与当前 Nubbi Token / 几何对齐。
+ */
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[10px] text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[8px] text-sm font-medium leading-none transition-[background-color,border-color,color,box-shadow] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-foreground text-white hover:bg-foreground/90",
-        primary: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_4px_14px_rgba(79,140,255,0.22)]",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        outline: "border border-border-button bg-white text-text-primary hover:bg-bg-hover hover:border-border-button-hover hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)]",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        default: "bg-text-primary text-white hover:bg-[var(--text-primary-hover)] active:bg-[var(--text-primary-active)]",
+        primary: "bg-primary text-primary-foreground hover:bg-[var(--primary-hover)] active:bg-[var(--primary-active)]",
+        destructive: "bg-[var(--danger-bg)] text-[var(--danger-text)] hover:bg-[var(--danger-hover)]",
+        outline: "border border-border-button bg-surface text-text-primary hover:border-border-button-hover hover:bg-bg-hover",
+        secondary: "bg-bg-selected text-text-primary hover:bg-bg-icon-hover",
         ghost: "text-text-muted hover:bg-bg-hover hover:text-text-primary",
-        link: "text-primary underline-offset-4 hover:underline",
+        link: "text-[var(--brand)] underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-[46px] px-4 py-2",
-        sm: "h-9 rounded-[8px] px-3",
-        lg: "h-12 rounded-[10px] px-8 text-[15px]",
-        icon: "size-9",
+        default: "h-11 px-4 [&_svg]:size-4",
+        sm: "h-10 rounded-[7px] px-3 [&_svg]:size-4",
+        lg: "h-11 rounded-[8px] px-5 text-[15px] [&_svg]:size-[18px]",
+        icon: "size-11 [&_svg]:size-[18px]",
       },
     },
     defaultVariants: {
