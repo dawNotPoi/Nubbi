@@ -16,10 +16,9 @@ export const MenuItemContainer: FC<NavLinkProps> = ({
       to={to}
       className={({ isActive }) =>
         clsx(
-          "flex min-h-8 cursor-pointer items-center gap-2 rounded-[6px] px-2 py-1.5 text-sm font-normal text-text-muted transition-colors duration-150 hover:bg-bg-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
+          "flex min-h-9 cursor-pointer items-center gap-2 rounded-[6px] px-2 py-1.5 text-[15px] font-normal text-text-muted transition-colors duration-150 hover:bg-bg-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring md:min-h-8 md:text-sm",
           className,
-          isActive &&
-            "bg-bg-selected font-medium text-text-primary shadow-[inset_2px_0_0_var(--brand)]",
+          isActive && "bg-bg-selected font-medium text-text-primary",
         )
       }
       role="button"
