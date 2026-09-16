@@ -1,38 +1,61 @@
 import { Header } from "@/component/Header";
 import { MarkdownImportButton } from "@/features/note/components/MarkdownImportButton";
+import { MobileNoteLibrary } from "@/features/note/components/MobileNoteLibrary";
 import { NoteLibraryTable } from "@/features/note/components/NoteLibraryTable";
 import { NoteLibraryToolbar } from "@/features/note/components/NoteLibraryToolbar";
 import { NoteTargetPickerOverlay } from "@/features/note/components/NoteTargetPickerOverlay";
 import { useNoteLibraryController } from "@/features/note/hooks/useNoteLibraryController";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { Button } from "@/components/ui/button";
 import type { ReactElement } from "react";
 
-/**
- * 在原有笔记库结构中组合主题化控件。
- * @returns 保留现有侧栏、工具栏、表格和移动弹层的笔记库页面。
- */
+/** Desktop 保留高密度 NoteLibrary；Mobile 使用独立任务流。 */
 export default function NoteLibrary(): ReactElement {
   const library = useNoteLibraryController();
+  const isMobile = useIsMobile();
+
+  const moveOverlay = (
+    <NoteTargetPickerOverlay
+      allNotes={library.allNotes}
+      blockedIds={library.blockedMoveTargetIds}
+      disabled={library.moving}
+      emptyMessage="暂无可移动的位置"
+      open={library.moveOpen}
+      targets={library.moveTargets}
+      onCancel={library.closeMoveModal}
+      onSelect={library.moveToTarget}
+    />
+  );
+
+  if (isMobile) {
+    return (
+      <>
+        {library.contextHolder}
+        <MobileNoteLibrary library={library} />
+        {moveOverlay}
+      </>
+    );
+  }
 
   return (
     <div className="min-w-0 bg-surface text-text-primary">
       {library.contextHolder}
       <Header className="bg-surface/95" />
 
-      <main className="px-4 pb-[calc(96px+env(safe-area-inset-bottom))] pt-3 sm:px-6 md:px-12 md:pb-16 lg:px-[68px]">
+      <main className="px-4 pb-16 pt-3 sm:px-6 md:px-12 lg:px-[68px]">
         <section className="mb-5">
-          <div className="mb-5 flex flex-col items-start justify-between gap-4 sm:flex-row">
+          <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
             <h1 className="text-3xl font-semibold leading-none tracking-[-0.02em] text-text-primary md:text-[40px]">
               Notes
             </h1>
-            <div className="grid w-full grid-cols-2 items-center gap-2 sm:flex sm:w-auto">
+            <div className="flex flex-wrap items-center gap-2">
               <MarkdownImportButton
                 disabled={!library.owner}
                 importing={library.importingMarkdown}
                 onImport={(files) => void library.importMarkdownFiles(files)}
               />
               <Button
-                className="h-11 w-full rounded-[8px] px-4 font-medium sm:w-auto md:h-9 md:rounded-md"
+                className="h-9 rounded-md px-4 font-medium"
                 onClick={() => void library.createRootNote()}
                 variant="primary"
                 size="sm"
@@ -87,16 +110,7 @@ export default function NoteLibrary(): ReactElement {
         />
       </main>
 
-      <NoteTargetPickerOverlay
-        allNotes={library.allNotes}
-        blockedIds={library.blockedMoveTargetIds}
-        disabled={library.moving}
-        emptyMessage="暂无可移动的位置"
-        open={library.moveOpen}
-        targets={library.moveTargets}
-        onCancel={library.closeMoveModal}
-        onSelect={library.moveToTarget}
-      />
+      {moveOverlay}
     </div>
   );
 }
