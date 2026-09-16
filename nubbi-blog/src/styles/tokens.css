@@ -1,0 +1,53 @@
+:root {
+  --font-body: "Instrument Sans", MiSans, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-serif: Georgia, "Noto Serif CJK SC", "Source Han Serif SC", "Songti SC", STSong, SimSun, serif;
+  --font-mono: "Cascadia Code", "SF Mono", Consolas, monospace;
+  --font-reading: var(--font-body);
+  --text-caption: .75rem;
+  --text-small: .8125rem;
+  --text-ui: .875rem;
+  --text-body: 1rem;
+  --text-reading: 1rem;
+  --text-title-sm: 1.25rem;
+  --text-title: 1.5rem;
+  --text-heading: 2rem;
+  --text-display: 2.25rem;
+  --reading-leading: 1.7;
+  --space-xs: 8px;
+  --space-sm: 16px;
+  --space-md: 24px;
+  --space-lg: 32px;
+  --space-xl: 48px;
+  --space-section: 64px;
+  --radius: 8px;
+  --control-size: 44px;
+  --width: 896px;
+  --feed-width: 588px;
+  --reading-width: 920px;
+  --motion-fast: 160ms;
+  --shadow-popover: 0 8px 32px var(--shadow-color);
+  --shadow-subtle: 0 1px 4px var(--shadow-color);
+  --shadow-row: 0 2px 12px var(--shadow-color), 0 0 0 1px var(--border-faint);
+}
+:root[data-font="serif"] { --font-reading: var(--font-serif); }
+:root[data-size="large"] { --text-reading: 1.25rem; }
+@theme inline { --font-sans: var(--font-body); }
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 32px; scrollbar-gutter: stable; }
+body { margin: 0; background: var(--bg-page); color: var(--text-primary); font-family: var(--font-body); -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration: none; }
+button, input, select { font: inherit; }
+button, a, input, select { -webkit-tap-highlight-color: transparent; }
+button, select { cursor: pointer; }
+button:disabled { cursor: default; }
+button, input, select { color: inherit; }
+select option { background: var(--bg-surface); color: var(--text-primary); }
+::selection { color: var(--selection-text); background: var(--selection-bg); }
+:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 4px; border-radius: 2px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.accent { color: var(--accent); }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
