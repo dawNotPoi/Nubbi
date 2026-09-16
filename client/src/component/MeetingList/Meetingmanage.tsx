@@ -10,15 +10,6 @@ type MeetingManageProps = PropsWithChildren<{
   className?: string;
 }>;
 
-/**
- * 会议管理入口组件。
- * - variant="page"：直接内嵌渲染。
- * - variant="modal"（默认）：通过触发元素打开弹窗。
- * @param variant 渲染模式。
- * @param className 附加类名。
- * @param children 弹窗模式的触发元素。
- * @returns 会议管理页面区块或弹窗入口。
- */
 const Meetingmanage = ({
   children,
   variant = "modal",
@@ -32,7 +23,7 @@ const Meetingmanage = ({
     <MeetingManageContent
       className={clsx(
         isPage &&
-          "rounded-xl border border-border-row bg-white p-4 shadow-soft sm:p-6",
+          "bg-surface md:rounded-[10px] md:border md:border-border-row md:p-6 md:shadow-[0_3px_16px_rgba(55,53,47,0.04)]",
         className,
       )}
       meetings={meetingManage.meetings}
