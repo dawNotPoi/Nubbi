@@ -1,19 +1,14 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-/* Custom CSS Needed for TipTap PlaceHolder */
-/* .tiptap .is-empty::before {
-  @apply text-slate-300;
-  @apply content-[attr(data-placeholder)];
-  @apply float-left;
-  @apply pointer-events-none;
-  @apply h-0;
-} */
+/* 固定层叠顺序，避免未分层的 AntD 样式压过项目控件。 */
+@layer theme, base, antd, components, utilities;
+@import "tailwindcss" source(".");
+@import "./styles/tailwind-compat.css";
+@import "./styles/primitives.css";
+@config "../tailwind.config.js";
+@source "../index.html";
 
 @layer base {
   * {
-    border-color: var(--border-row, #efefed);
+    border-color: var(--border-row, #ecebe8);
   }
 
   body {
@@ -24,7 +19,7 @@
     overflow-x: hidden;
     max-width: 100vw;
     color: var(--text-primary, #37352f);
-    background: #fbfbfa;
+    background: var(--canvas, #fcfcfb);
     font-feature-settings: "rlig" 1, "calt" 1;
     -webkit-tap-highlight-color: transparent;
     overscroll-behavior-y: none;
@@ -41,17 +36,17 @@
   :root {
     --app-scrollbar-size: 12px;
     --app-scrollbar-track: transparent;
-    --app-scrollbar-thumb: rgba(55, 53, 47, 0.18);
-    --app-scrollbar-thumb-hover: rgba(55, 53, 47, 0.28);
-    --app-scrollbar-thumb-active: rgba(55, 53, 47, 0.38);
+    --app-scrollbar-thumb: rgba(55, 53, 47, 0.16);
+    --app-scrollbar-thumb-hover: rgba(55, 53, 47, 0.26);
+    --app-scrollbar-thumb-active: rgba(55, 53, 47, 0.36);
     --app-scrollbar-thumb-inset: 3px;
 
     --novel-highlight-default: #ffffff;
-    --novel-highlight-purple: #f6f3f8;
-    --novel-highlight-red: #fdebeb;
+    --novel-highlight-purple: #f3f0ff;
+    --novel-highlight-red: #fdeceb;
     --novel-highlight-yellow: #fbf4a2;
-    --novel-highlight-blue: #c1ecf9;
-    --novel-highlight-green: #acf79f;
+    --novel-highlight-blue: #dceeff;
+    --novel-highlight-green: #dff5ea;
     --novel-highlight-orange: #faebdd;
     --novel-highlight-pink: #faf1f5;
     --novel-highlight-gray: #f1f1ef;

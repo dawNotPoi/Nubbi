@@ -5,8 +5,15 @@ import {
   type NoteLibraryViewMode,
 } from "@/features/note/model/library";
 import { normalizeNoteTitle } from "@/features/note/model/hierarchy";
-import type { MenuProps } from "antd";
-import { Checkbox, Dropdown } from "antd";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import clsx from "clsx";
 import {
   ChevronRight,
@@ -16,7 +23,7 @@ import {
   MoreHorizontal,
   Trash2,
 } from "lucide-react";
-import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { useEffect, useRef, useState, type MouseEvent, type ReactElement } from "react";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
 type NoteLibraryRowProps = {
@@ -32,6 +39,11 @@ type NoteLibraryRowProps = {
   onToggleExpand: (noteId: string) => void;
 };
 
+/**
+ * 保留桌面点击选择、标题重命名及移动端点击打开的交互分工。
+ * @param props 行模型、选中状态及原业务回调。
+ * @returns 带统一基础控件的笔记行。
+ */
 export function NoteLibraryRow({
   onDelete,
   onMove,
@@ -43,7 +55,7 @@ export function NoteLibraryRow({
   row,
   selected,
   viewMode,
-}: NoteLibraryRowProps) {
+}: NoteLibraryRowProps): ReactElement {
   const { note } = row;
   const isMobile = useIsMobile();
   const noteTitle = normalizeNoteTitle(note.title);
@@ -52,21 +64,6 @@ export function NoteLibraryRow({
   const inputRef = useRef<HTMLInputElement>(null);
   const skipBlurCommitRef = useRef(false);
   const canExpand = viewMode === "tree" && row.hasChildren;
-  const menuItems: MenuProps["items"] = [
-    {
-      key: "move",
-      icon: <FolderInput className="size-4" />,
-      label: "移动",
-      onClick: () => onMove([note]),
-    },
-    {
-      danger: true,
-      key: "delete",
-      icon: <Trash2 className="size-4" />,
-      label: "删除",
-      onClick: () => onDelete(note),
-    },
-  ];
 
   useEffect(() => {
     setDraftTitle(noteTitle);
@@ -78,13 +75,22 @@ export function NoteLibraryRow({
     inputRef.current?.select();
   }, [editing]);
 
-  const startRename = (event: MouseEvent) => {
+  /**
+   * 进入原位重命名，阻止点击同时触发整行选择。
+   * @param event 标题按钮的点击事件。
+   * @returns 无返回值。
+   */
+  const startRename = (event: MouseEvent): void => {
     event.stopPropagation();
     skipBlurCommitRef.current = false;
     setEditing(true);
   };
 
-  const finishRename = () => {
+  /**
+   * 提交实际变化的名称，并阻止 Enter 后的 blur 再次提交。
+   * @returns 无返回值。
+   */
+  const finishRename = (): void => {
     skipBlurCommitRef.current = true;
     const nextTitle = normalizeNoteTitle(draftTitle);
     setDraftTitle(nextTitle);
@@ -95,7 +101,11 @@ export function NoteLibraryRow({
     }
   };
 
-  const cancelRename = () => {
+  /**
+   * 放弃临时名称，后续 blur 不再提交。
+   * @returns 无返回值。
+   */
+  const cancelRename = (): void => {
     skipBlurCommitRef.current = true;
     setDraftTitle(noteTitle);
     setEditing(false);
@@ -104,7 +114,7 @@ export function NoteLibraryRow({
   return (
     <li
       className={clsx(
-        "group/note-row grid min-h-16 cursor-pointer grid-cols-[36px_minmax(0,1fr)_36px] items-center border-b border-border-row text-[14px] transition-colors md:grid-cols-[40px_minmax(260px,1fr)_minmax(220px,26vw)_minmax(160px,18vw)_132px]",
+        "group/note-row grid min-h-16 cursor-pointer grid-cols-[36px_minmax(0,1fr)_36px] items-center border-b border-border-row text-[14px] transition-colors duration-150 md:grid-cols-[40px_minmax(260px,1fr)_minmax(220px,26vw)_minmax(160px,18vw)_132px]",
         "hover:bg-bg-hover focus-within:bg-bg-hover",
         viewMode === "search" ? "py-1" : "md:h-11 md:min-h-0",
         selected && "bg-bg-selected",
@@ -122,13 +132,14 @@ export function NoteLibraryRow({
         onClick={(event) => event.stopPropagation()}
       >
         <Checkbox
+          aria-label={`选择笔记：${noteTitle}`}
           checked={selected}
           className={clsx(
             "opacity-100 transition-opacity md:opacity-0",
             "md:group-hover/note-row:opacity-100 md:group-focus-within/note-row:opacity-100",
-            selected && "opacity-100",
+            selected && "opacity-100 md:opacity-100",
           )}
-          onChange={(event) => onToggle(event.target.checked, note._id)}
+          onCheckedChange={(checked) => onToggle(checked, note._id)}
         />
       </div>
       <div className="flex min-w-0 items-center pr-4 text-text-primary">
@@ -161,9 +172,10 @@ export function NoteLibraryRow({
           <FileText className="size-5 shrink-0 text-text-subtle" />
           <div className="flex min-w-0 flex-1 flex-col justify-center">
             {editing ? (
-              <input
+              <Input
                 ref={inputRef}
-                className="h-8 min-w-0 rounded-md border border-border-button bg-white px-2 font-medium outline-none shadow-focus-input"
+                aria-label="重命名笔记"
+                className="h-8 min-w-0 rounded-md border border-border-button bg-surface px-2 pl-2 font-medium outline-none shadow-focus-input"
                 onBlur={() => {
                   if (skipBlurCommitRef.current) {
                     skipBlurCommitRef.current = false;
@@ -174,6 +186,7 @@ export function NoteLibraryRow({
                 onChange={(event) => setDraftTitle(event.target.value)}
                 onClick={(event) => event.stopPropagation()}
                 onKeyDown={(event) => {
+                  if (event.nativeEvent.isComposing) return;
                   if (event.key === "Enter") {
                     event.preventDefault();
                     finishRename();
@@ -227,15 +240,18 @@ export function NoteLibraryRow({
         <span
           className={clsx(
             "rounded px-1.5 py-0.5 text-xs font-medium",
-            note.status === "inbox" && "bg-amber-50 text-amber-700",
-            note.status === "active" && "bg-blue-50 text-blue-700",
-            note.status === "archived" && "bg-neutral-100 text-neutral-600",
+            note.status === "inbox" &&
+              "bg-[var(--status-inbox-bg)] text-[var(--status-inbox-text)]",
+            note.status === "active" &&
+              "bg-[var(--status-active-bg)] text-[var(--status-active-text)]",
+            note.status === "archived" &&
+              "bg-[var(--status-archived-bg)] text-[var(--status-archived-text)]",
           )}
         >
           {note.status}
         </span>
         {note.published ? (
-          <span className="rounded bg-purple-50 px-1.5 py-0.5 text-xs font-medium text-purple-700">
+          <span className="rounded bg-[var(--status-published-bg)] px-1.5 py-0.5 text-xs font-medium text-[var(--status-published-text)]">
             published
           </span>
         ) : null}
@@ -263,8 +279,10 @@ export function NoteLibraryRow({
             <LocateFixed className="size-4" />
           </button>
         ) : null}
-        <button
-          className="hidden h-7 rounded-md border border-border-button bg-white px-3 text-sm font-medium text-text-primary shadow-sm transition-colors hover:border-border-button-hover hover:bg-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring md:inline-flex md:items-center"
+        <Button
+          variant="outline"
+          size="xs"
+          className="hidden rounded-md px-3 font-medium md:inline-flex"
           onClick={(event) => {
             event.stopPropagation();
             onOpen(note);
@@ -272,17 +290,32 @@ export function NoteLibraryRow({
           type="button"
         >
           打开
-        </button>
-        <Dropdown menu={{ items: menuItems }} placement="bottomRight" trigger={["click"]}>
-          <button
-            className="flex size-7 items-center justify-center rounded text-text-subtle hover:bg-bg-icon-hover hover:text-text-primary"
-            onClick={(event) => event.stopPropagation()}
-            title="更多"
-            type="button"
-          >
-            <MoreHorizontal className="size-4" />
-          </button>
-        </Dropdown>
+        </Button>
+        <DropdownMenu modal={false}>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                aria-label={`更多操作：${noteTitle}`}
+                onClick={(event) => event.stopPropagation()}
+                title="更多"
+              >
+                <MoreHorizontal aria-hidden="true" className="size-4" />
+              </Button>
+            }
+          />
+          <DropdownMenuContent aria-label="笔记操作">
+            <DropdownMenuItem onClick={() => onMove([note])}>
+              <FolderInput aria-hidden="true" className="size-4" />
+              移动
+            </DropdownMenuItem>
+            <DropdownMenuItem destructive onClick={() => onDelete(note)}>
+              <Trash2 aria-hidden="true" className="size-4" />
+              删除
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </li>
   );

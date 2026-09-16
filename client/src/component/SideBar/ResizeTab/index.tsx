@@ -123,7 +123,7 @@ export default function ResizeTab({
         <div
           onMouseLeave={() => setDesktopHovered(false)}
           className={clsx(
-            "fixed bottom-3 left-0 top-3 z-40 box-border pl-2 transition-[opacity,transform] duration-150 ease-out",
+            "fixed bottom-3 left-0 top-3 z-40 box-border pl-2 transition-[opacity,transform,translate] duration-150 ease-out",
             desktopHovered
               ? "translate-x-0 opacity-100"
               : "pointer-events-none -translate-x-2 opacity-0",

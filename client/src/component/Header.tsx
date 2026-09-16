@@ -22,16 +22,16 @@ export const Header = ({
   return (
     <header
       className={clsx(
-        "group sticky top-0 z-20 flex h-12 items-center gap-2 overflow-hidden border-b border-transparent bg-white/90 px-3 backdrop-blur md:h-10 md:gap-4 md:px-2",
+        "group sticky top-0 z-20 flex h-12 items-center gap-2 overflow-hidden border-b border-transparent bg-surface/90 px-3 backdrop-blur-md md:h-10 md:gap-4 md:px-2",
         className,
       )}
     >
       <button
         aria-label={opened ? "收起侧边栏" : "展开侧边栏"}
         className={clsx(
-          "flex size-9 shrink-0 items-center justify-center rounded-md text-neutral-500 transition-all duration-200 hover:bg-neutral-100 hover:text-neutral-800 md:size-7",
+          "flex size-9 shrink-0 items-center justify-center rounded-md text-text-subtle transition-colors duration-150 hover:bg-bg-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring md:size-7",
           !isMobile && sideBarOpened
-            ? "opacity-0 group-hover:opacity-100"
+            ? "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
             : "opacity-100",
         )}
         onClick={() => {

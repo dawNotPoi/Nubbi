@@ -14,7 +14,7 @@
 | -------- | ------------------------------------------------------ |
 | 主服务端 | Express 4.x + Mongoose 8.x + Zod 3.x + Better-Auth 1.x |
 | Assistant API | NestJS 11.x + Fastify 5.x + Mongoose 8.x + Zod 3.x |
-| 客户端   | React 18.x + Ant Design 5.x + Tailwind 3.x + Vite 5.x  |
+| 客户端   | React 19.x + Base UI（迁移中）+ Ant Design 5.x + Tailwind 4.x + Vite 5.x  |
 | 状态管理 | TanStack Query（服务端状态）+ Jotai（UI 状态）         |
 
 引入新依赖前检查 `.agent/rules/core.md` 禁止项。

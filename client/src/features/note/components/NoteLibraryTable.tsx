@@ -3,7 +3,10 @@ import type {
   NoteLibraryRow as NoteLibraryRowModel,
   NoteLibraryViewMode,
 } from "@/features/note/model/library";
-import { Button, Checkbox, Empty } from "antd";
+import { Empty } from "antd";
+import type { ReactElement } from "react";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Clock, FileText, Plus } from "lucide-react";
 import { NoteLibraryBatchActionBar } from "./NoteLibraryBatchActionBar";
 import { NoteLibraryRow } from "./NoteLibraryRow";
@@ -36,6 +39,11 @@ type NoteLibraryTableProps = {
   onToggleExpand: (noteId: string) => void;
 };
 
+/**
+ * 保留原表格的列宽、批量操作及空态，只替换基础控件。
+ * @param props 表格数据、选择状态和原有业务回调。
+ * @returns 笔记库表格及其加载、错误和空状态。
+ */
 export function NoteLibraryTable({
   allVisibleSelected,
   emptyDescription,
@@ -61,7 +69,7 @@ export function NoteLibraryTable({
   selectedNotes,
   visibleIds,
   viewMode,
-}: NoteLibraryTableProps) {
+}: NoteLibraryTableProps): ReactElement {
   return (
     <section>
       {selectedNotes.length > 0 ? (
@@ -78,10 +86,11 @@ export function NoteLibraryTable({
       <div className="hidden h-11 grid-cols-[40px_minmax(260px,1fr)_minmax(220px,26vw)_minmax(160px,18vw)_132px] items-center border-b border-border-row text-[14px] text-text-muted md:grid">
         <div className="flex items-center justify-center">
           <Checkbox
+            aria-label="选择全部可见笔记"
             checked={allVisibleSelected}
             disabled={visibleIds.length === 0}
             indeterminate={partiallyVisibleSelected}
-            onChange={(event) => onToggleAll(event.target.checked)}
+            onCheckedChange={(checked) => onToggleAll(checked)}
           />
         </div>
         {selectedNotes.length > 0 ? (
@@ -115,7 +124,7 @@ export function NoteLibraryTable({
       ) : isError ? (
         <div className="flex flex-col items-center justify-center gap-3 py-16">
           <Empty description="加载 note 失败" />
-          <Button onClick={onRetry}>重试</Button>
+          <Button onClick={onRetry} variant="outline" size="sm">重试</Button>
         </div>
       ) : rows.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 py-16">
@@ -124,7 +133,8 @@ export function NoteLibraryTable({
             <Button
               icon={<Plus className="size-4" />}
               onClick={onCreate}
-              type="primary"
+              variant="primary"
+              size="sm"
             >
               新页面
             </Button>

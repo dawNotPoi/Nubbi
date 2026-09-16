@@ -1,0 +1,100 @@
+name: UI Review
+
+on:
+  pull_request:
+    branches: [dev/out]
+    paths:
+      - 'client/**'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'package.json'
+      - '.github/workflows/ui-review.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ui-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  client:
+    name: Validate UI WIP
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Archive reviewed source
+        run: git archive --format=tar.gz HEAD > "$RUNNER_TEMP/ui-source.tar.gz"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ui-review-source
+          path: ${{ runner.temp }}/ui-source.tar.gz
+          retention-days: 3
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      # 锁文件已由升级提交同步；所有后续 WIP 验证使用冻结安装，不再改写依赖。
+      - name: Install dependencies
+        id: install
+        run: pnpm install --frozen-lockfile
+
+      - name: Check committed lockfile
+        id: lockfile
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        continue-on-error: true
+        run: git diff --exit-code -- pnpm-lock.yaml
+
+      - name: Lint client
+        id: lint
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        continue-on-error: true
+        run: pnpm --filter nubbi-client lint
+
+      - name: Typecheck client
+        id: typecheck
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        continue-on-error: true
+        run: pnpm --filter nubbi-client exec tsc -b
+
+      - name: Build client
+        id: build
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        continue-on-error: true
+        run: pnpm --filter nubbi-client build
+
+      - name: Upload verification artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-review-build
+          path: |
+            pnpm-lock.yaml
+            client/package.json
+            client/dist
+          retention-days: 3
+
+      - name: Report independent results
+        if: ${{ !cancelled() }}
+        env:
+          INSTALL: ${{ steps.install.outcome }}
+          LOCKFILE: ${{ steps.lockfile.outcome }}
+          LINT: ${{ steps.lint.outcome }}
+          TYPECHECK: ${{ steps.typecheck.outcome }}
+          BUILD: ${{ steps.build.outcome }}
+        run: |
+          printf '| Check | Result |\n|---|---|\n| Install | %s |\n| Lockfile | %s |\n| Lint | %s |\n| Typecheck | %s |\n| Build | %s |\n' "$INSTALL" "$LOCKFILE" "$LINT" "$TYPECHECK" "$BUILD" >> "$GITHUB_STEP_SUMMARY"
+          test "$INSTALL/$LOCKFILE/$LINT/$TYPECHECK/$BUILD" = 'success/success/success/success/success'

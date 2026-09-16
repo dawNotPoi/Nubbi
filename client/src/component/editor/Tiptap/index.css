@@ -1,4 +1,5 @@
 @import "tippy.js/themes/light.css";
+@reference "../../../index.css";
 
 .dn-editor {
   @apply relative size-full rounded-2xl transition-shadow duration-200;
