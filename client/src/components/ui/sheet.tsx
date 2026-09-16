@@ -5,10 +5,12 @@ import { cn } from "@/lib/utils";
 
 /**
  * Nubbi 的移动端 Sheet 基础组件。
- * 基于 Base UI Drawer，统一焦点管理、遮罩、向下滑动关闭与安全区。
+ * 基于 Base UI Drawer，统一焦点管理、软件键盘、向下滑动关闭与安全区。
  */
 const Sheet = ({ swipeDirection = "down", ...props }: React.ComponentProps<typeof Drawer.Root>) => (
-  <Drawer.Root swipeDirection={swipeDirection} {...props} />
+  <Drawer.VirtualKeyboardProvider>
+    <Drawer.Root swipeDirection={swipeDirection} {...props} />
+  </Drawer.VirtualKeyboardProvider>
 );
 
 const SheetTrigger = Drawer.Trigger;
@@ -22,7 +24,7 @@ const SheetContent = React.forwardRef<
 >(function SheetContent({ className, children, showClose = false, ...props }, ref) {
   return (
     <Drawer.Portal>
-      <Drawer.Backdrop className="nubbi-sheet-backdrop fixed inset-0 z-[70] bg-black/30" />
+      <Drawer.Backdrop className="nubbi-sheet-backdrop absolute inset-0 z-[70] bg-black/30" />
       <Drawer.Viewport className="fixed inset-0 z-[71] flex items-end justify-center">
         <Drawer.Popup
           {...props}
@@ -41,7 +43,7 @@ const SheetContent = React.forwardRef<
               <X aria-hidden="true" className="size-5" />
             </Drawer.Close>
           ) : null}
-          <Drawer.Content className="min-h-0 overflow-y-auto overscroll-contain px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3">
+          <Drawer.Content className="min-h-0 overflow-y-auto overscroll-contain px-4 pb-[max(16px,calc(env(safe-area-inset-bottom)+var(--drawer-keyboard-inset,0px)))] pt-3">
             {children}
           </Drawer.Content>
         </Drawer.Popup>
@@ -91,7 +93,7 @@ const SheetRow = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<
         ref={ref}
         type={type ?? "button"}
         className={cn(
-          "flex min-h-12 w-full items-center gap-3 rounded-[8px] px-2.5 text-left text-[15px] font-normal text-text-primary transition-colors active:bg-bg-selected hover:bg-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring [&>svg]:size-5 [&>svg]:shrink-0 [&>svg]:text-text-subtle",
+          "flex min-h-12 w-full items-center gap-3 rounded-[8px] px-2.5 text-left text-[15px] font-normal text-text-primary transition-colors active:bg-bg-selected hover:bg-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-45 [&>svg]:size-5 [&>svg]:shrink-0 [&>svg]:text-text-subtle",
           className,
         )}
       >
