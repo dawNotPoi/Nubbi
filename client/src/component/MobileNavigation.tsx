@@ -1,4 +1,5 @@
 import { activeUploadCountAtom } from "@/store/atom/FileAtom";
+import { mobileBottomNavHiddenAtom } from "@/store/atom/common";
 import { routes } from "@/utils/routes";
 import { useAtomValue } from "jotai";
 import { Ellipsis, FileText, FolderTree, House } from "lucide-react";
@@ -42,7 +43,10 @@ export default function MobileNavigation() {
   const location = useLocation();
   const navigate = useNavigate();
   const activeUploads = useAtomValue(activeUploadCountAtom);
+  const hidden = useAtomValue(mobileBottomNavHiddenAtom);
   const [moreOpen, setMoreOpen] = useState(false);
+
+  if (hidden) return null;
 
   return (
     <>
