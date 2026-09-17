@@ -25,6 +25,12 @@ type MobileNoteRowProps = {
   onToggleSelection: (note: Note, selected: boolean) => void;
 };
 
+const statusClass: Record<Note["status"], string> = {
+  inbox: "bg-[var(--status-inbox-bg)] text-[var(--status-inbox-text)]",
+  active: "bg-[var(--status-active-bg)] text-[var(--status-active-text)]",
+  archived: "bg-[var(--status-archived-bg)] text-[var(--status-archived-text)]",
+};
+
 export function MobileNoteRow({
   canExpand = false,
   depth = 0,
@@ -102,7 +108,7 @@ export function MobileNoteRow({
               />
             </button>
           ) : (
-            <span className="grid size-10 place-items-center text-text-subtle">
+            <span className="grid size-8 place-items-center rounded-[7px] bg-[var(--entity-note-soft)] text-[var(--entity-note)]">
               <FileText className="size-[18px]" strokeWidth={1.9} />
             </span>
           )}
@@ -119,7 +125,9 @@ export function MobileNoteRow({
           <div className="mt-1 flex min-w-0 items-center gap-1.5 overflow-hidden text-[12px] leading-4 text-text-muted">
             <span className="shrink-0">{formatNoteEditedTime(note)}</span>
             <span aria-hidden="true">·</span>
-            <span className="shrink-0">{note.status}</span>
+            <span className={clsx("shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium", statusClass[note.status])}>
+              {note.status}
+            </span>
             {pathLabel ? (
               <>
                 <span aria-hidden="true">·</span>
