@@ -7,6 +7,7 @@ import { NoteTargetPickerOverlay } from "@/features/note/components/NoteTargetPi
 import { useNoteLibraryController } from "@/features/note/hooks/useNoteLibraryController";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { Button } from "@/components/ui/button";
+import { NotebookPen } from "lucide-react";
 import type { ReactElement } from "react";
 
 /** Desktop 保留高密度 NoteLibrary；Mobile 使用独立任务流。 */
@@ -42,12 +43,22 @@ export default function NoteLibrary(): ReactElement {
       {library.contextHolder}
       <Header className="bg-surface/95" />
 
-      <main className="px-4 pb-16 pt-3 sm:px-6 md:px-12 lg:px-[68px]">
+      <main className="px-4 pb-16 pt-5 sm:px-6 md:px-12 lg:px-[68px]">
         <section className="mb-5">
           <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
-            <h1 className="text-3xl font-semibold leading-none tracking-[-0.02em] text-text-primary md:text-[40px]">
-              Notes
-            </h1>
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="grid size-9 shrink-0 place-items-center rounded-[8px] bg-[var(--entity-note-soft)] text-[var(--entity-note)]">
+                <NotebookPen className="size-[18px]" strokeWidth={1.9} />
+              </span>
+              <div className="min-w-0">
+                <h1 className="text-[28px] font-semibold leading-8 tracking-[-0.015em] text-text-primary">
+                  Notes
+                </h1>
+                <p className="mt-1 text-[13px] leading-5 text-text-muted">
+                  浏览、筛选并整理你的笔记空间。
+                </p>
+              </div>
+            </div>
             <div className="flex flex-wrap items-center gap-2">
               <MarkdownImportButton
                 disabled={!library.owner}
