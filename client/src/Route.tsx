@@ -1,4 +1,5 @@
 import SideBar from "@/component/SideBar";
+import MobileErrorBoundary from "@/component/MobileErrorBoundary";
 import MobileNavigation from "@/component/MobileNavigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -52,9 +53,15 @@ const MobileUserLayout = () => {
             : "h-[100dvh] min-w-0 overflow-y-auto bg-surface"
         }
       >
-        <Outlet />
+        <MobileErrorBoundary scope="page">
+          <Outlet />
+        </MobileErrorBoundary>
       </main>
-      {showBottomNavigation ? <MobileNavigation /> : null}
+      {showBottomNavigation ? (
+        <MobileErrorBoundary scope="navigation">
+          <MobileNavigation />
+        </MobileErrorBoundary>
+      ) : null}
     </div>
   );
 };
