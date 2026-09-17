@@ -23,12 +23,12 @@ const highlights = [
 ] as const;
 
 /**
- * 渲染认证页的品牌叙事层，让品牌、标题与能力提示共享同一视觉中心轴。
+ * 渲染桌面认证页的品牌叙事层；移动端隐藏该层，把单屏空间优先留给认证表单。
  * @returns 与整页工作台背景融合的 Nubbi 品牌内容。
  */
 export function AuthBrandPanel(): ReactElement {
   return (
-    <aside className="relative flex w-full justify-center pt-1 sm:pt-2 lg:min-h-[76vh] lg:items-center lg:pt-0">
+    <aside className="auth-brand-panel hidden h-full min-h-0 w-full items-center justify-center lg:flex">
       <div className="flex w-full max-w-[620px] flex-col items-center text-center lg:pb-[5vh]">
         <NubbiBrand
           className="justify-center"
