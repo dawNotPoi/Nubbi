@@ -7,10 +7,14 @@ import { cn } from "@/lib/utils";
  * Nubbi 的移动端 Sheet 基础组件。
  * 基于 Base UI Drawer，统一焦点管理、软件键盘、向下滑动关闭与安全区。
  */
-const Sheet = ({ swipeDirection = "down", ...props }: React.ComponentProps<typeof Drawer.Root>) => (
-  <Drawer.VirtualKeyboardProvider>
-    <Drawer.Root swipeDirection={swipeDirection} {...props} />
-  </Drawer.VirtualKeyboardProvider>
+const Sheet = ({
+  swipeDirection = "down",
+  children,
+  ...props
+}: React.ComponentProps<typeof Drawer.Root>) => (
+  <Drawer.Root swipeDirection={swipeDirection} {...props}>
+    <Drawer.VirtualKeyboardProvider>{children}</Drawer.VirtualKeyboardProvider>
+  </Drawer.Root>
 );
 
 const SheetTrigger = Drawer.Trigger;
@@ -34,7 +38,10 @@ const SheetContent = React.forwardRef<
             className,
           )}
         >
-          <div aria-hidden="true" className="mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full bg-border-button" />
+          <div
+            aria-hidden="true"
+            className="mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full bg-border-button"
+          />
           {showClose ? (
             <Drawer.Close
               aria-label="关闭"
@@ -54,7 +61,10 @@ const SheetContent = React.forwardRef<
 SheetContent.displayName = "SheetContent";
 
 const SheetHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn("mb-3 flex min-h-10 flex-col justify-center gap-1 pr-10", className)} {...props} />
+  <div
+    className={cn("mb-3 flex min-h-10 flex-col justify-center gap-1 pr-10", className)}
+    {...props}
+  />
 );
 
 const SheetTitle = React.forwardRef<
@@ -85,23 +95,24 @@ const SheetDescription = React.forwardRef<
 });
 SheetDescription.displayName = "SheetDescription";
 
-const SheetRow = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement>>(
-  function SheetRow({ className, children, type, ...props }, ref) {
-    return (
-      <button
-        {...props}
-        ref={ref}
-        type={type ?? "button"}
-        className={cn(
-          "flex min-h-12 w-full items-center gap-3 rounded-[8px] px-2.5 text-left text-[15px] font-normal text-text-primary transition-colors active:bg-bg-selected hover:bg-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-45 [&>svg]:size-5 [&>svg]:shrink-0 [&>svg]:text-text-subtle",
-          className,
-        )}
-      >
-        {children}
-      </button>
-    );
-  },
-);
+const SheetRow = React.forwardRef<
+  HTMLButtonElement,
+  React.ButtonHTMLAttributes<HTMLButtonElement>
+>(function SheetRow({ className, children, type, ...props }, ref) {
+  return (
+    <button
+      {...props}
+      ref={ref}
+      type={type ?? "button"}
+      className={cn(
+        "flex min-h-12 w-full items-center gap-3 rounded-[8px] px-2.5 text-left text-[15px] font-normal text-text-primary transition-colors active:bg-bg-selected hover:bg-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-45 [&>svg]:size-5 [&>svg]:shrink-0 [&>svg]:text-text-subtle",
+        className,
+      )}
+    >
+      {children}
+    </button>
+  );
+});
 SheetRow.displayName = "SheetRow";
 
 const SheetSeparator = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
