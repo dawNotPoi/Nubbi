@@ -21,20 +21,26 @@
 
 ## UI 长期约束
 
-以下是已确认的稳定方向；具体实现、Token 和验收细则必须继续读取 `.agent/skills/style.md`。
+以下是已确认的稳定方向；具体实现、Token、品牌和验收细则必须继续读取 `.agent/skills/style.md` 与 `docs/ui/rebuild-plan.md`。
 
-- 视觉语言固定为 **Warm Neutral + Clear Blue**：中性色负责空间与大部分状态，蓝色只承担明确意图；不要重新引入大面积蓝紫主题。
+- Nubbi 的视觉方向固定为 **Warm Neutral + Soft Semantic Accents + Mascot Identity**：暖白 / 暖灰负责大面积空间，蓝 / 青绿 / 紫 / 琥珀等只承担品牌、对象身份和状态，不把页面做成彩色 Dashboard。
+- 产品品牌默认使用 **NUBBI**；中文名不是必需 UI 元素。
+- 品牌 Logo 固定使用用户已确认的 **高光眼睛便签精灵**。该 Logo 是品牌资产，不允许 Agent、生成模型或业务页面重新演绎另一版角色；只允许调整尺寸、位置、留白和 lockup。
+- UI 可以带轻二次元、陪伴感，但主体必须仍是现代生产力工具；禁止把品牌风格扩张成满屏动漫装饰、霓虹渐变、玻璃拟态或游戏 HUD。
 - UI 使用 System UI 字体栈，常用字重 400 / 500 / 600；不为“高级感”额外引入装饰字体。
 - 基础控件源码统一放 `client/src/components/ui/`，以 Base UI 作为交互原语；不要新增平行的 Button / Input / Menu / Sheet 组件体系。
 - 当前是项目自有、shadcn 风格的源码组件层，不得把它描述为已经完成 canonical shadcn CLI 迁移；也不得重新执行 `shadcn init` 覆盖主题。
 - Desktop 与 Mobile 是**不同 interaction model**，但共享 controller、数据契约与 Design Token：
   - Desktop：Sidebar + Content + compact toolbar + Dropdown/Popover + hover / drag-drop。
   - Mobile：Bottom Navigation + Page + Bottom Sheet + press；**不渲染 Desktop Sidebar**。
+- Desktop Sidebar 的普通导航图标使用中性 Lucide 风格；模块语义色主要进入内容区、快捷动作和真实状态，不长期给每个导航项分配不同颜色。
 - Mobile 一级导航固定为「首页 / 笔记 / 文件 / 更多」；二级页默认隐藏 Bottom Navigation。
 - Mobile 复杂操作优先使用共享 Sheet；普通浏览不常驻 checkbox，长按/菜单进入独立 Selection Mode。
 - Mobile 不要求逐一复刻 Desktop interaction；只要求同一用户任务有清晰、安全的完成路径。例如文件移动代替手机端 Drag & Drop。
 - 图标默认统一使用 `lucide-react`；hit box、layout box、SVG visual size 分离。禁止用 `translate-y` 或负 margin 修图标基线。
 - UI 重构不得改变已有权限、确认、保存、删除、恢复、上传等业务语义。
+- 概念图中的控件只有在真实业务契约存在时才能进入实现；禁止加入不能工作的假搜索、假按钮或占位功能。
+- 当前首页快捷动作本轮只允许真实存在的「新建笔记 / 上传文件 / 创建会议」；AI 对话、扩展便签与更强统一搜索属于未来扩展，不在本轮 UI 重构中实现。
 
 ## UI 提交前 Review Gate
 
@@ -42,7 +48,8 @@
 
 - 普通本地 Git 流程：形成完整 patch → static UI review → 再 commit。
 - 直接使用 GitHub Contents 等“写入即 commit”的工具时：必须在工具写入前完成 pre-write review，不能把远端 commit 当 staging area。
-- Review 至少检查：业务回归、Desktop/Mobile interaction model、icon geometry、触控目标、hover 依赖、文本溢出、focus、safe area、destructive flow。
+- Review 至少检查：业务回归、Desktop/Mobile interaction model、品牌一致性、icon geometry、触控目标、hover 依赖、文本溢出、focus、safe area、destructive flow。
+- 品牌 review 必须检查：Logo 是否仍为已确认便签精灵、是否出现第二套 Logo、Sidebar / Auth / favicon 是否使用同一资产。
 - 提交后继续执行 lint / build / Preview 验证；**Build / Deploy 成功不等于视觉验收通过**。
 - 没有实际浏览器或设备证据时，只能报告 static review 与 CI 状态；不得声称视觉验收通过。
 
@@ -55,6 +62,7 @@
 | 服务端编码细节           | `server/**`                  | `.agent/skills/code.md`          |
 | 客户端编码细节           | `client/**`                  | `.agent/skills/code.md`          |
 | UI / Tailwind / 组件选型 | `client/src/**`              | `.agent/skills/style.md`         |
+| 全站 UI 重构 / 品牌方向  | `client/**`（涉及 UI 重构时） | `docs/ui/rebuild-plan.md`        |
 | 工作流或 changes 格式    | `**/*`（任务涉及代码变更时） | `.agent/skills/workflow.md`      |
 | code review              | `**/*`（review 阶段）        | `.agent/skills/review.md`        |
 | 长方案讨论需要沉淀       | `docs/**`（讨论时）          | `.agent/rules/discussion-log.md` |
