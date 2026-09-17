@@ -44,6 +44,9 @@
   --entity-file-soft: #edf7f5;
   --entity-folder: #9a6a16;
   --entity-folder-soft: #fbf5e8;
+  --file-image: #2f7a58;
+  --file-video: #7658ad;
+  --file-audio: #a24f78;
 
   /* 迁移期兼容旧 Token；新组件优先消费上面的语义角色。 */
   --accent-border: var(--primary);
