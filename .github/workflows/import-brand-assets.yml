@@ -1,0 +1,27 @@
+name: Import Approved Brand Assets
+on:
+  push:
+    branches: [ui/brand-auth-20260917]
+    paths:
+      - .github/workflows/import-brand-assets.yml
+      - .github/scripts/import-brand-assets.py
+      - .github/scripts/brand-import-manifest.json
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - name: Verify and import image bytes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 .github/scripts/import-brand-assets.py
+      - name: Commit approved binary assets
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add client/public/brand/*.webp docs/changes/2026-09-17.md
+          git commit -m 'feat(client): 导入已确认的压缩品牌资产'
+          git push origin HEAD:ui/brand-auth-20260917
