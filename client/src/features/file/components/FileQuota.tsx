@@ -15,13 +15,13 @@ export function FileQuota({ stats }: FileQuotaProps) {
   );
   const fillClass =
     percent >= 100
-      ? "bg-red-500"
+      ? "bg-[var(--danger-text)]"
       : percent >= 90
-        ? "bg-amber-500"
-        : "bg-accent-border";
+        ? "bg-[var(--status-inbox-text)]"
+        : "bg-[var(--entity-file)]";
 
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-text-muted">
+    <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-text-muted">
       <span className="tabular-nums">
         已用 {formatFileSize(usedBytes)} / {formatFileSize(stats.quotaBytes)}
       </span>
