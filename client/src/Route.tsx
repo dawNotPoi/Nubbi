@@ -17,6 +17,7 @@ import Note from "./views/note";
 import FileManager from "./views/file-manage";
 import Home from "./views/home";
 import { LoginPage } from "./views/login";
+import { AuthShell } from "./views/login/AuthShell";
 import MeetingAccessGuard from "./views/meeting-room/MeetingAccessGuard";
 import Meetings from "./views/meetings";
 import NoteLibrary from "./views/NoteLibrary";
@@ -165,11 +166,20 @@ export const RouteWrapper = () => {
             path={routes.login}
             element={
               <PublicOnlyRoute>
-                <LoginPage />
+                <AuthShell>
+                  <LoginPage />
+                </AuthShell>
               </PublicOnlyRoute>
             }
           />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route
+            path="/reset-password"
+            element={
+              <AuthShell>
+                <ResetPasswordPage />
+              </AuthShell>
+            }
+          />
           <Route path="/meeting/:roomId" element={<MeetingAccessGuard />} />
           <Route
             element={
