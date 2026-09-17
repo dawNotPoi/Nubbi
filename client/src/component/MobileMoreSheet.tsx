@@ -76,11 +76,15 @@ export default function MobileMoreSheet({ open, onOpenChange }: MobileMoreSheetP
 
           <div className="space-y-0.5">
             <SheetRow onClick={() => go(routes.meetings)}>
-              <Presentation />
+              <span className="grid size-8 shrink-0 place-items-center rounded-[7px] bg-[var(--entity-meeting-soft)] text-[var(--entity-meeting)]">
+                <Presentation className="size-[18px]" />
+              </span>
               <span className="flex-1">会议</span>
             </SheetRow>
             <SheetRow onClick={() => go(routes.noteTrash)}>
-              <Trash2 />
+              <span className="grid size-8 shrink-0 place-items-center rounded-[7px] bg-[var(--danger-bg)] text-[var(--danger-text)]">
+                <Trash2 className="size-[18px]" />
+              </span>
               <span className="flex-1">回收站</span>
             </SheetRow>
           </div>
