@@ -21,7 +21,7 @@ export function RecentNoteCard({
     >
       <header className="relative mb-3">
         <div className="h-10 bg-[var(--entity-note-soft)]" />
-        <div className="absolute bottom-0 left-4 grid size-7 translate-y-3 place-items-center rounded-[6px] border border-[color-mix(in_srgb,var(--entity-note)_18%,var(--border-row))] bg-surface text-[var(--entity-note)] shadow-[0_1px_4px_rgba(55,53,47,0.06)]">
+        <div className="absolute bottom-0 left-4 grid size-7 translate-y-3 place-items-center rounded-[6px] border border-border-row bg-surface text-[var(--entity-note)] shadow-[0_1px_4px_rgba(55,53,47,0.06)]">
           <FileText className="size-4" strokeWidth={1.9} />
         </div>
       </header>
