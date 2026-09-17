@@ -10,12 +10,13 @@ import MobileMoreSheet from "./MobileMoreSheet";
 
 type NavItemProps = {
   active: boolean;
+  activeIconClass?: string;
   icon: React.ReactNode;
   label: string;
   onClick: () => void;
 };
 
-function NavItem({ active, icon, label, onClick }: NavItemProps) {
+function NavItem({ active, activeIconClass, icon, label, onClick }: NavItemProps) {
   return (
     <button
       aria-current={active ? "page" : undefined}
@@ -29,7 +30,7 @@ function NavItem({ active, icon, label, onClick }: NavItemProps) {
       <span
         className={clsx(
           "grid size-8 place-items-center rounded-[8px] transition-colors [&>svg]:size-[21px]",
-          active && "bg-bg-selected",
+          active && (activeIconClass || "bg-bg-selected text-text-primary"),
         )}
       >
         {icon}
@@ -56,18 +57,21 @@ export default function MobileNavigation() {
       >
         <NavItem
           active={location.pathname === routes.home}
+          activeIconClass="bg-[var(--brand-soft)] text-[var(--brand)]"
           icon={<House />}
           label="首页"
           onClick={() => navigate(routes.home)}
         />
         <NavItem
           active={location.pathname === routes.noteLib}
+          activeIconClass="bg-[var(--entity-note-soft)] text-[var(--entity-note)]"
           icon={<FileText />}
           label="笔记"
           onClick={() => navigate(routes.noteLib)}
         />
         <NavItem
           active={location.pathname.startsWith(routes.file)}
+          activeIconClass="bg-[var(--entity-file-soft)] text-[var(--entity-file)]"
           icon={
             <span className="relative grid size-[21px] place-items-center">
               <FolderTree className="size-[21px]" />
