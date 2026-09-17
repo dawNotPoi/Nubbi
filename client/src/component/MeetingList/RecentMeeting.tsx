@@ -33,7 +33,9 @@ const getWeekDayLabel = (weekDay: number): string => weekDayLabels[weekDay] || "
 const RecentMeetingEmpty = ({ onCreate }: RecentMeetingEmptyProps): ReactElement => (
   <div className="flex min-h-[168px] items-center justify-center rounded-[10px] border border-border-row bg-bg-panel px-5 py-8 text-center md:min-h-[280px] md:rounded-xl md:px-6 md:py-12">
     <div className="flex flex-col items-center">
-      <CalendarOff className="size-9 text-text-subtle md:size-12" strokeWidth={1.5} />
+      <span className="grid size-12 place-items-center rounded-[10px] bg-[var(--entity-meeting-soft)] text-[var(--entity-meeting)]">
+        <CalendarOff className="size-7 md:size-8" strokeWidth={1.6} />
+      </span>
       <p className="mt-3 text-[14px] font-medium text-text-primary md:mt-4 md:text-base">未来一周没有会议</p>
       <p className="mt-1 text-[13px] text-text-muted md:text-sm">创建会议，开始记录与协作。</p>
       <Button
@@ -82,7 +84,7 @@ const RecentMeetings = ({
     <section className={clsx("min-w-0", className)}>
       <div className="mb-3 flex items-center justify-between gap-3 md:mb-4">
         <h2 className="flex items-center gap-2 text-[15px] font-semibold text-text-primary md:text-base">
-          <CalendarDays className="size-[18px] text-text-muted md:size-[19px]" />
+          <CalendarDays className="size-[18px] text-[var(--entity-meeting)] md:size-[19px]" />
           近期会议
         </h2>
         {showCreateAction ? (
@@ -107,7 +109,7 @@ const RecentMeetings = ({
                 {getWeekDayLabel(dayjs(meeting.startTime).day())}
                 <span className="ml-2">{dayjs(meeting.startTime).format("MM-DD")}</span>
               </div>
-              <div className="min-w-0 border-l-2 border-[var(--brand)] pl-3 md:pl-4">
+              <div className="min-w-0 border-l-2 border-[var(--entity-meeting)] pl-3 md:pl-4">
                 <p className="truncate text-[15px] font-medium text-text-primary md:text-base">
                   {meeting.title || "未命名会议"}
                 </p>
