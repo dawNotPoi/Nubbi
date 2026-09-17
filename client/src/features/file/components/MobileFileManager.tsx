@@ -200,7 +200,7 @@ export function MobileFileManager({ manager }: MobileFileManagerProps) {
             <div className="space-y-1 py-2">
               {Array.from({ length: 5 }).map((_, index) => (
                 <div key={index} className="flex min-h-[68px] items-center gap-3 border-b border-border-row px-2">
-                  <div className="size-9 animate-pulse rounded-[8px] bg-bg-hover" />
+                  <div className="size-9 animate-pulse rounded-[8px] bg-[var(--entity-file-soft)]" />
                   <div className="flex-1 space-y-2">
                     <div className="h-4 w-1/2 animate-pulse rounded bg-bg-hover" />
                     <div className="h-3 w-1/3 animate-pulse rounded bg-bg-hover" />
@@ -243,7 +243,7 @@ export function MobileFileManager({ manager }: MobileFileManagerProps) {
             <h1 className="truncate text-[20px] font-semibold leading-7">{manager.currentFolderName}</h1>
             {manager.activeUploads > 0 ? (
               <button
-                className="text-[11px] text-[var(--brand)]"
+                className="text-[11px] text-[var(--entity-file)]"
                 onClick={() => manager.setUploadOpen(true)}
                 type="button"
               >
@@ -288,7 +288,7 @@ export function MobileFileManager({ manager }: MobileFileManagerProps) {
           <div className="space-y-1 py-2">
             {Array.from({ length: 6 }).map((_, index) => (
               <div key={index} className="flex min-h-[68px] items-center gap-3 border-b border-border-row px-2">
-                <div className="size-9 animate-pulse rounded-[8px] bg-bg-hover" />
+                <div className="size-9 animate-pulse rounded-[8px] bg-[var(--entity-file-soft)]" />
                 <div className="flex-1 space-y-2">
                   <div className="h-4 w-1/2 animate-pulse rounded bg-bg-hover" />
                   <div className="h-3 w-1/3 animate-pulse rounded bg-bg-hover" />
@@ -309,8 +309,11 @@ export function MobileFileManager({ manager }: MobileFileManagerProps) {
           renderRows()
         ) : (
           <div className="grid min-h-[260px] place-items-center text-center">
-            <div>
-              <p className="text-[14px] text-text-muted">当前目录暂无文件</p>
+            <div className="flex flex-col items-center">
+              <span className="grid size-12 place-items-center rounded-[10px] bg-[var(--entity-folder-soft)] text-[var(--entity-folder)]">
+                <FolderPlus className="size-6" />
+              </span>
+              <p className="mt-3 text-[14px] text-text-muted">当前目录暂无文件</p>
               <Button className="mt-3 h-10 rounded-[8px]" variant="outline" onClick={() => setCreateOpen(true)}>
                 新建或上传
               </Button>
@@ -356,7 +359,9 @@ export function MobileFileManager({ manager }: MobileFileManagerProps) {
                 uploadInputRef.current?.click();
               }}
             >
-              <Upload />
+              <span className="grid size-8 shrink-0 place-items-center rounded-[7px] bg-[var(--entity-file-soft)] text-[var(--entity-file)]">
+                <Upload className="size-[18px]" />
+              </span>
               <span>
                 <span className="block">上传文件</span>
                 <span className="block text-[12px] text-text-muted">选择一个或多个本地文件</span>
@@ -368,7 +373,9 @@ export function MobileFileManager({ manager }: MobileFileManagerProps) {
                 void manager.createFolder();
               }}
             >
-              <FolderPlus />
+              <span className="grid size-8 shrink-0 place-items-center rounded-[7px] bg-[var(--entity-folder-soft)] text-[var(--entity-folder)]">
+                <FolderPlus className="size-[18px]" />
+              </span>
               <span>
                 <span className="block">新建文件夹</span>
                 <span className="block text-[12px] text-text-muted">创建后直接重命名</span>
