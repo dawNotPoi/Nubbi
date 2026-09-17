@@ -34,11 +34,6 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
   const listRef = useRef<HTMLUListElement>(null);
   const hasNotes = data.length > 0;
 
-  /**
-   * 创建一篇根级笔记（无父节点）并跳转到编辑页。
-   * 仅当用户已登录时执行，未登录时静默忽略。
-   * @returns 无返回值。
-   */
   const handleCreateNote = () => {
     if (!user?.id) return;
     const note = newNote();
@@ -52,11 +47,6 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
     );
   };
 
-  /**
-   * 测量列表容器与卡片宽度，计算当前可视区域内能容纳的卡片数、
-   * 单页滚动步长以及右侧渐隐遮罩宽度。
-   * @returns 布局计算结果，卡片不可用时返回 null。
-   */
   const getListLayout = useCallback(() => {
     const wrapper = wrapperRef.current;
     const list = listRef.current;
@@ -154,7 +144,7 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
       className={className}
       header={
         <>
-          <Clock />
+          <Clock className="text-[var(--entity-note)]" />
           <span>最近编辑</span>
           {isFetching && !isPending ? (
             <span className="ml-2 text-xs text-text-muted">更新中...</span>
@@ -196,15 +186,11 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
               onClick={handleCreateNote}
             >
               <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 py-6 text-center">
-                <div className="grid size-12 place-items-center rounded-full bg-bg-panel">
-                  <Plus className="size-6 text-text-subtle" />
+                <div className="grid size-12 place-items-center rounded-[10px] bg-[var(--entity-note-soft)] text-[var(--entity-note)]">
+                  <Plus className="size-6" />
                 </div>
-                <p className="text-sm font-medium text-text-primary">
-                  还没有笔记
-                </p>
-                <p className="text-xs text-text-muted">
-                  点击创建第一篇
-                </p>
+                <p className="text-sm font-medium text-text-primary">还没有笔记</p>
+                <p className="text-xs text-text-muted">点击创建第一篇</p>
               </div>
             </li>
           )}
@@ -217,7 +203,7 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
                 scrollNotes(-1);
               }}
               aria-label="向左查看更多最近编辑"
-              className="pointer-events-auto flex cursor-pointer items-center justify-center rounded-full border bg-white p-2 opacity-0 hover:border-sky-400 group-hover:opacity-100"
+              className="pointer-events-auto flex cursor-pointer items-center justify-center rounded-full border border-border-row bg-white p-2 text-text-muted opacity-0 transition-colors hover:border-border-button-hover hover:text-[var(--entity-note)] group-hover:opacity-100"
             >
               <ChevronLeft size={14} />
             </button>
@@ -234,7 +220,7 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
                   scrollNotes(1);
                 }}
                 aria-label="向右查看更多最近编辑"
-                className="pointer-events-auto flex cursor-pointer items-center justify-center rounded-full border bg-white p-2 opacity-0 hover:border-sky-400 group-hover:opacity-100"
+                className="pointer-events-auto flex cursor-pointer items-center justify-center rounded-full border border-border-row bg-white p-2 text-text-muted opacity-0 transition-colors hover:border-border-button-hover hover:text-[var(--entity-note)] group-hover:opacity-100"
               >
                 <ChevronRight size={14} />
               </button>
