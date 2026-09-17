@@ -76,7 +76,7 @@ export default function MobileNavigation() {
             <span className="relative grid size-[21px] place-items-center">
               <FolderTree className="size-[21px]" />
               {activeUploads > 0 ? (
-                <span className="absolute -right-2 -top-1 grid min-w-4 place-items-center rounded-full bg-red-500 px-1 text-[9px] leading-4 text-white">
+                <span className="absolute -right-2 -top-1 grid min-w-4 place-items-center rounded-full bg-[var(--entity-file)] px-1 text-[9px] leading-4 text-white">
                   {activeUploads > 9 ? "9+" : activeUploads}
                 </span>
               ) : null}
