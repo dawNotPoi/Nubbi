@@ -1,4 +1,5 @@
-import { Button } from "antd";
+import { Button } from "@/components/ui/button";
+import { Upload } from "lucide-react";
 import { useRef } from "react";
 
 interface FileUploadButtonProps {
@@ -20,7 +21,10 @@ export function FileUploadButton({
           className ??
           "h-9 w-full rounded-md px-4 font-medium min-[430px]:w-auto"
         }
+        icon={<Upload />}
         onClick={() => inputRef.current?.click()}
+        size="lg"
+        variant="outline"
       >
         {label}
       </Button>
