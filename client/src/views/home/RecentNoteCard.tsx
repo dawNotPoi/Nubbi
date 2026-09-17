@@ -20,8 +20,8 @@ export function RecentNoteCard({
       onClick={() => navigate(`/note/${note._id}`)}
     >
       <header className="relative mb-3">
-        <div className="h-10 bg-surface-subtle" />
-        <div className="absolute bottom-0 left-4 grid size-7 translate-y-3 place-items-center rounded-[6px] border border-border-row bg-surface text-text-muted shadow-[0_1px_4px_rgba(55,53,47,0.06)]">
+        <div className="h-10 bg-[var(--entity-note-soft)]" />
+        <div className="absolute bottom-0 left-4 grid size-7 translate-y-3 place-items-center rounded-[6px] border border-[color-mix(in_srgb,var(--entity-note)_18%,var(--border-row))] bg-surface text-[var(--entity-note)] shadow-[0_1px_4px_rgba(55,53,47,0.06)]">
           <FileText className="size-4" strokeWidth={1.9} />
         </div>
       </header>
@@ -54,7 +54,7 @@ export function RecentNoteCardSkeleton() {
   return (
     <li className="flex min-h-[156px] w-[176px] min-w-[176px] max-w-[176px] snap-start flex-col overflow-hidden rounded-[10px] border border-border-row bg-surface">
       <header className="relative mb-3">
-        <div className="h-10 animate-pulse bg-bg-hover" />
+        <div className="h-10 animate-pulse bg-[var(--entity-note-soft)]" />
         <div className="absolute bottom-0 left-4 size-7 translate-y-3 rounded-[6px] bg-skeleton" />
       </header>
       <div className="flex flex-1 flex-col px-4 pb-4 pt-2">
