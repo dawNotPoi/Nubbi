@@ -3,9 +3,9 @@ import MobileSecondaryHeader from "@/component/MobileSecondaryHeader";
 import Meetingmanage from "@/component/MeetingList/Meetingmanage";
 import RecentMeetings from "@/component/MeetingList/RecentMeeting";
 import { CreateMeetingModal } from "@/component/MeetingList/create-meeting-modal";
+import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { Button } from "antd";
-import { Plus } from "lucide-react";
+import { Plus, Presentation } from "lucide-react";
 import { useState, type ReactElement } from "react";
 
 /** 会议列表页；Mobile 使用二级页 Header，Desktop 保留工作区布局。 */
@@ -33,23 +33,29 @@ export default function Meetings(): ReactElement {
         <Header className="bg-surface/95" />
       )}
 
-      <main className="px-4 pb-[max(28px,env(safe-area-inset-bottom))] pt-4 sm:px-6 md:px-10 md:pb-16 md:pt-7 lg:px-[68px]">
+      <main className="px-4 pb-[max(28px,env(safe-area-inset-bottom))] pt-4 sm:px-6 md:px-10 md:pb-16 md:pt-5 lg:px-[68px]">
         <section className="mx-auto max-w-screen-xl space-y-7 md:space-y-8">
           {!isMobile ? (
             <div className="flex flex-wrap items-start justify-between gap-5">
-              <div>
-                <h1 className="text-3xl font-semibold leading-none tracking-[-0.015em] text-text-primary md:text-[40px]">
-                  Meetings
-                </h1>
-                <p className="mt-3 text-sm text-text-muted">
-                  管理会议安排、审批状态与历史记录。
-                </p>
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="grid size-9 shrink-0 place-items-center rounded-[8px] bg-[var(--entity-meeting-soft)] text-[var(--entity-meeting)]">
+                  <Presentation className="size-[18px]" strokeWidth={1.9} />
+                </span>
+                <div className="min-w-0">
+                  <h1 className="text-[28px] font-semibold leading-8 tracking-[-0.015em] text-text-primary">
+                    Meetings
+                  </h1>
+                  <p className="mt-1 text-[13px] leading-5 text-text-muted">
+                    管理会议安排、审批状态与历史记录。
+                  </p>
+                </div>
               </div>
               <Button
                 className="h-9 rounded-md px-4 font-medium"
-                icon={<Plus size={16} />}
+                icon={<Plus />}
                 onClick={() => setCreateOpen(true)}
-                type="primary"
+                size="lg"
+                variant="primary"
               >
                 创建会议
               </Button>
