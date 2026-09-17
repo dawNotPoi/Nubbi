@@ -6,78 +6,89 @@ const highlights = [
     label: "记录",
     desc: "捕捉闪现的想法",
     icon: BookOpenText,
-    iconClassName: "bg-[var(--entity-note-soft)] text-[var(--entity-note)]",
+    iconClassName:
+      "bg-[var(--entity-folder-soft)] text-[var(--entity-folder)]",
+    placementClassName: "right-10 top-0",
   },
   {
     label: "整理",
     desc: "让知识井井有条",
     icon: FolderKanban,
     iconClassName: "bg-[var(--entity-file-soft)] text-[var(--entity-file)]",
+    placementClassName: "bottom-0 left-7",
   },
   {
     label: "协作",
     desc: "与伙伴共同推进",
     icon: UsersRound,
-    iconClassName: "bg-[var(--entity-meeting-soft)] text-[var(--entity-meeting)]",
+    iconClassName:
+      "bg-[var(--entity-meeting-soft)] text-[var(--entity-meeting)]",
+    placementClassName: "bottom-5 right-0",
   },
 ] as const;
 
 /**
- * 渲染桌面认证页左侧品牌主视觉，严格承载已确认产品稿中的 mascot、口号、插画和能力提示。
- * @returns 登录、注册、验证和重置密码共用的桌面品牌面板。
+ * 渲染认证页的品牌叙事层；桌面保留轻量能力提示，移动端只保留品牌与标题。
+ * @returns 与整页工作台背景融合的 Nubbi 品牌内容。
  */
 export function AuthBrandPanel() {
   return (
-    <aside className="relative hidden min-h-[100dvh] overflow-hidden border-r border-border-row bg-[#f7fbff] lg:flex lg:flex-col">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_4%,rgba(120,176,255,0.22),transparent_34%),radial-gradient(circle_at_82%_12%,rgba(255,219,154,0.22),transparent_30%)]" />
-
-      <div className="relative z-10 flex min-h-[100dvh] flex-col items-center px-8 pt-[5.5vh] text-center xl:px-12 xl:pt-[6vh]">
+    <aside className="relative w-full pt-1 sm:pt-2 lg:min-h-[76vh] lg:pt-4">
+      <div className="max-w-[650px]">
         <NubbiBrand
-          className="flex-col gap-2.5"
-          markClassName="!size-[112px] xl:!size-[132px]"
-          size="lg"
-          wordmarkClassName="!text-[42px] !font-bold !tracking-[0.015em] xl:!text-[50px]"
+          markClassName="!size-10 sm:!size-11"
+          size="md"
+          wordmarkClassName="!text-[20px] !font-semibold !tracking-[0.04em] sm:!text-[22px]"
         />
 
-        <div className="mt-6 max-w-[600px]">
-          <h1 className="text-[33px] font-semibold leading-[1.18] tracking-[-0.025em] text-text-primary xl:text-[39px]">
-            Capture ideas.
+        <div className="mt-7 sm:mt-10 lg:mt-[8vh]">
+          <h1 className="max-w-[610px] text-[34px] font-semibold leading-[1.23] tracking-[-0.02em] text-text-primary sm:text-[42px] lg:text-[50px] xl:text-[56px]">
+            让重要的想法，
             <br />
-            <span className="text-[var(--brand)]">Brighten</span> your tomorrow.
+            在时间里发光。
           </h1>
-          <p className="mt-4 text-[16px] leading-7 tracking-[0.04em] text-text-muted xl:text-[17px]">
-            让重要的想法，在时间里发光。
+          <p className="mt-4 text-[16px] font-medium tracking-[0.22em] text-text-primary sm:text-[18px]">
+            记录 · 整理 · 思考
+          </p>
+          <p className="mt-3 text-[11px] font-medium tracking-[0.24em] text-text-muted sm:text-[12px]">
+            CAPTURE IDEAS · BRIGHTEN YOUR TOMORROW
           </p>
         </div>
-      </div>
 
-      <div className="absolute inset-x-0 bottom-0 h-[48%] min-h-[360px] overflow-hidden">
-        <img
-          alt="Nubbi 灵感工作台插画"
-          className="h-full w-full object-cover object-center"
-          decoding="async"
-          loading="eager"
-          src="/brand/auth-scene.webp"
-        />
-        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#f7fbff] to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-white/90 via-white/65 to-transparent" />
-      </div>
-
-      <div className="absolute inset-x-7 bottom-7 z-20 grid grid-cols-3 gap-3 xl:inset-x-10 xl:bottom-8 xl:gap-4">
-        {highlights.map(({ label, desc, icon: Icon, iconClassName }) => (
-          <div
-            className="flex min-w-0 items-center gap-3 rounded-[14px] border border-white/80 bg-white/84 px-3.5 py-3 text-left shadow-[0_10px_26px_rgba(74,101,142,0.08)] backdrop-blur-md xl:px-4"
-            key={label}
-          >
-            <span className={`grid size-9 shrink-0 place-items-center rounded-[10px] ${iconClassName}`}>
-              <Icon aria-hidden="true" className="size-[18px]" strokeWidth={1.9} />
-            </span>
-            <span className="min-w-0">
-              <span className="block text-[13px] font-semibold text-text-primary xl:text-[14px]">{label}</span>
-              <span className="mt-0.5 block truncate text-[11px] text-text-subtle xl:text-[12px]">{desc}</span>
-            </span>
-          </div>
-        ))}
+        <div className="relative mt-12 hidden h-44 max-w-[620px] lg:block xl:mt-14">
+          {highlights.map(
+            ({
+              label,
+              desc,
+              icon: Icon,
+              iconClassName,
+              placementClassName,
+            }) => (
+              <div
+                className={`absolute flex min-w-[188px] items-center gap-3 rounded-[14px] border border-border-row bg-surface/80 px-3.5 py-3 shadow-[var(--shadow-popover)] backdrop-blur-sm ${placementClassName}`}
+                key={label}
+              >
+                <span
+                  className={`grid size-9 shrink-0 place-items-center rounded-[10px] ${iconClassName}`}
+                >
+                  <Icon
+                    aria-hidden="true"
+                    className="size-[18px]"
+                    strokeWidth={1.9}
+                  />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[13px] font-semibold text-text-primary">
+                    {label}
+                  </span>
+                  <span className="mt-0.5 block text-[11px] text-text-subtle">
+                    {desc}
+                  </span>
+                </span>
+              </div>
+            ),
+          )}
+        </div>
       </div>
     </aside>
   );
