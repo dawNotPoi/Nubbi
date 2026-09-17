@@ -76,7 +76,10 @@ export default function MobileHome() {
       <main className="space-y-7 px-4 pb-6 pt-4">
         <section>
           <div className="mb-2 flex min-h-9 items-center justify-between">
-            <h2 className="text-[15px] font-semibold text-text-primary">最近笔记</h2>
+            <h2 className="flex items-center gap-2 text-[15px] font-semibold text-text-primary">
+              <FileText className="size-[17px] text-[var(--entity-note)]" strokeWidth={2} />
+              最近笔记
+            </h2>
             <button
               className="flex min-h-9 items-center gap-1 rounded-[7px] px-2 text-[13px] text-text-muted active:bg-bg-hover"
               onClick={() => navigate(routes.noteLib)}
@@ -90,7 +93,7 @@ export default function MobileHome() {
             {notesPending ? (
               Array.from({ length: 4 }).map((_, index) => (
                 <div key={index} className="flex min-h-[64px] items-center gap-3 border-b border-border-row px-3 last:border-b-0">
-                  <div className="size-8 animate-pulse rounded-[7px] bg-bg-hover" />
+                  <div className="size-8 animate-pulse rounded-[7px] bg-[var(--entity-note-soft)]" />
                   <div className="flex-1 space-y-2">
                     <div className="h-4 w-1/2 animate-pulse rounded bg-bg-hover" />
                     <div className="h-3 w-1/3 animate-pulse rounded bg-bg-hover" />
@@ -105,7 +108,7 @@ export default function MobileHome() {
                   onClick={() => navigate(routes.note(note._id))}
                   type="button"
                 >
-                  <span className="grid size-8 shrink-0 place-items-center rounded-[7px] bg-bg-hover text-text-subtle">
+                  <span className="grid size-8 shrink-0 place-items-center rounded-[7px] bg-[var(--entity-note-soft)] text-[var(--entity-note)]">
                     <FileText className="size-[17px]" strokeWidth={1.9} />
                   </span>
                   <span className="min-w-0 flex-1">
@@ -121,7 +124,7 @@ export default function MobileHome() {
               ))
             ) : (
               <button
-                className="flex min-h-[76px] w-full items-center justify-center gap-2 px-4 text-[14px] text-text-muted active:bg-bg-hover"
+                className="flex min-h-[76px] w-full items-center justify-center gap-2 px-4 text-[14px] text-[var(--entity-note)] active:bg-bg-hover"
                 onClick={createNote}
                 type="button"
               >
@@ -133,7 +136,10 @@ export default function MobileHome() {
 
         <section>
           <div className="mb-2 flex min-h-9 items-center justify-between">
-            <h2 className="text-[15px] font-semibold text-text-primary">近期会议</h2>
+            <h2 className="flex items-center gap-2 text-[15px] font-semibold text-text-primary">
+              <CalendarDays className="size-[17px] text-[var(--entity-meeting)]" strokeWidth={2} />
+              近期会议
+            </h2>
             <button
               className="flex min-h-9 items-center gap-1 rounded-[7px] px-2 text-[13px] text-text-muted active:bg-bg-hover"
               onClick={() => navigate(routes.meetings)}
@@ -147,7 +153,7 @@ export default function MobileHome() {
             {meetingsPending ? (
               Array.from({ length: 3 }).map((_, index) => (
                 <div key={index} className="flex min-h-[64px] items-center gap-3 border-b border-border-row px-3 last:border-b-0">
-                  <div className="size-8 animate-pulse rounded-[7px] bg-bg-hover" />
+                  <div className="size-8 animate-pulse rounded-[7px] bg-[var(--entity-meeting-soft)]" />
                   <div className="flex-1 space-y-2">
                     <div className="h-4 w-2/3 animate-pulse rounded bg-bg-hover" />
                     <div className="h-3 w-1/3 animate-pulse rounded bg-bg-hover" />
@@ -162,7 +168,7 @@ export default function MobileHome() {
                   onClick={() => navigate(`/meeting/${meeting._id}`)}
                   type="button"
                 >
-                  <span className="grid size-8 shrink-0 place-items-center rounded-[7px] bg-bg-hover text-text-subtle">
+                  <span className="grid size-8 shrink-0 place-items-center rounded-[7px] bg-[var(--entity-meeting-soft)] text-[var(--entity-meeting)]">
                     <CalendarDays className="size-[17px]" strokeWidth={1.9} />
                   </span>
                   <span className="min-w-0 flex-1">
@@ -178,7 +184,7 @@ export default function MobileHome() {
               ))
             ) : (
               <button
-                className="flex min-h-[76px] w-full items-center justify-center gap-2 px-4 text-[14px] text-text-muted active:bg-bg-hover"
+                className="flex min-h-[76px] w-full items-center justify-center gap-2 px-4 text-[14px] text-[var(--entity-meeting)] active:bg-bg-hover"
                 onClick={() => setMeetingCreateOpen(true)}
                 type="button"
               >
@@ -197,7 +203,9 @@ export default function MobileHome() {
           </SheetHeader>
           <div className="space-y-0.5">
             <SheetRow onClick={createNote}>
-              <FileText />
+              <span className="grid size-8 shrink-0 place-items-center rounded-[7px] bg-[var(--entity-note-soft)] text-[var(--entity-note)]">
+                <FileText className="size-[18px]" />
+              </span>
               <span>
                 <span className="block">新建笔记</span>
                 <span className="block text-[12px] text-text-muted">从空白笔记开始</span>
@@ -209,7 +217,9 @@ export default function MobileHome() {
                 setMeetingCreateOpen(true);
               }}
             >
-              <Video />
+              <span className="grid size-8 shrink-0 place-items-center rounded-[7px] bg-[var(--entity-meeting-soft)] text-[var(--entity-meeting)]">
+                <Video className="size-[18px]" />
+              </span>
               <span>
                 <span className="block">创建会议</span>
                 <span className="block text-[12px] text-text-muted">安排会议并进入协作</span>
