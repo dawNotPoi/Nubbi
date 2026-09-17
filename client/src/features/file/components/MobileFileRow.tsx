@@ -88,6 +88,10 @@ export function MobileFileRow({
   };
 
   const LeadingIcon = item.kind === "folder" ? Folder : FileText;
+  const iconTone =
+    item.kind === "folder"
+      ? "bg-[var(--entity-folder-soft)] text-[var(--entity-folder)]"
+      : "bg-[var(--entity-file-soft)] text-[var(--entity-file)]";
 
   return (
     <>
@@ -118,7 +122,7 @@ export function MobileFileRow({
               </span>
             </button>
           ) : (
-            <span className="grid size-10 place-items-center text-text-subtle">
+            <span className={clsx("grid size-8 place-items-center rounded-[7px]", iconTone)}>
               <LeadingIcon className="size-[19px]" strokeWidth={1.9} />
             </span>
           )}
