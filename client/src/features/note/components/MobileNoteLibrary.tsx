@@ -8,6 +8,7 @@ import { useNoteLibraryController } from "@/features/note/hooks/useNoteLibraryCo
 import { useSetAtom } from "jotai";
 import {
   ArrowLeft,
+  FileText,
   FolderInput,
   ListFilter,
   Plus,
@@ -297,7 +298,7 @@ export function MobileNoteLibrary({ library }: MobileNoteLibraryProps) {
           <div className="space-y-1 py-2">
             {Array.from({ length: 6 }).map((_, index) => (
               <div key={index} className="flex min-h-[68px] items-center gap-3 border-b border-border-row px-2">
-                <div className="size-9 animate-pulse rounded-[8px] bg-bg-hover" />
+                <div className="size-9 animate-pulse rounded-[8px] bg-[var(--entity-note-soft)]" />
                 <div className="flex-1 space-y-2">
                   <div className="h-4 w-1/2 animate-pulse rounded bg-bg-hover" />
                   <div className="h-3 w-1/3 animate-pulse rounded bg-bg-hover" />
@@ -318,8 +319,13 @@ export function MobileNoteLibrary({ library }: MobileNoteLibraryProps) {
           recentNotes.length > 0 ? (
             <ul>{recentNotes.map((note) => renderRow(note))}</ul>
           ) : (
-            <div className="grid min-h-[260px] place-items-center text-center text-[14px] text-text-muted">
-              暂无最近笔记
+            <div className="grid min-h-[260px] place-items-center text-center">
+              <div className="flex flex-col items-center">
+                <span className="grid size-12 place-items-center rounded-[10px] bg-[var(--entity-note-soft)] text-[var(--entity-note)]">
+                  <FileText className="size-6" />
+                </span>
+                <p className="mt-3 text-[14px] text-text-muted">暂无最近笔记</p>
+              </div>
             </div>
           )
         ) : library.libraryRows.length > 0 ? (
@@ -333,8 +339,13 @@ export function MobileNoteLibrary({ library }: MobileNoteLibraryProps) {
             )}
           </ul>
         ) : (
-          <div className="grid min-h-[260px] place-items-center text-center text-[14px] text-text-muted">
-            暂无笔记
+          <div className="grid min-h-[260px] place-items-center text-center">
+            <div className="flex flex-col items-center">
+              <span className="grid size-12 place-items-center rounded-[10px] bg-[var(--entity-note-soft)] text-[var(--entity-note)]">
+                <FileText className="size-6" />
+              </span>
+              <p className="mt-3 text-[14px] text-text-muted">暂无笔记</p>
+            </div>
           </div>
         )}
       </main>
