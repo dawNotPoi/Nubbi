@@ -53,7 +53,7 @@ export function FileToolbar(props: FileToolbarProps) {
           <label className="relative min-w-[164px] flex-1 md:w-[220px] md:flex-none">
             <span className="sr-only">搜索当前目录</span>
             <input
-              className="h-8 w-full rounded-md border border-border-toolbar bg-white px-2.5 pr-8 text-[13px] outline-none placeholder:text-text-placeholder focus:border-border-button-hover focus:ring-2 focus:ring-focus-ring"
+              className="h-8 w-full rounded-md border border-border-toolbar bg-surface px-2.5 pr-8 text-[13px] outline-none placeholder:text-text-placeholder focus:border-border-button-hover focus:ring-2 focus:ring-focus-ring"
               onChange={(event) => props.onSearchChange(event.target.value)}
               placeholder="搜索当前目录"
               ref={inputRef}
@@ -115,7 +115,7 @@ export function FileToolbar(props: FileToolbarProps) {
         >
           传输
           {props.activeUploads > 0 ? (
-            <span className="grid min-w-[17px] place-items-center rounded-full bg-bg-selected px-1 text-[10px]">
+            <span className="grid min-w-[17px] place-items-center rounded-full bg-[var(--entity-file-soft)] px-1 text-[10px] font-medium text-[var(--entity-file)]">
               {props.activeUploads}
             </span>
           ) : null}
