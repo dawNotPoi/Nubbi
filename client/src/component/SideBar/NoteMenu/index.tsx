@@ -96,7 +96,7 @@ export default function NoteMenu() {
           open={open}
           title={
             <span className="inline-flex min-w-0 items-center gap-2">
-              <span className="inline-grid size-5 shrink-0 place-items-center text-[var(--entity-note)]">
+              <span className="inline-grid size-5 shrink-0 place-items-center text-text-subtle">
                 <NotebookPen className="size-4" strokeWidth={1.9} />
               </span>
               <span className="truncate">小记</span>
