@@ -16,7 +16,7 @@ export function AuthShell({ children }: PropsWithChildren) {
           <div className="mb-7 flex justify-center lg:hidden">
             <NubbiBrand size="md" />
           </div>
-          <div className="[&>div]:!min-h-0 [&>div]:!bg-transparent [&>div]:!p-0 [&>div]:sm:!p-0 [&_img]:hidden">
+          <div className="[&>div]:!min-h-0 [&>div]:!bg-transparent [&>div]:!p-0 [&_img]:hidden">
             {children}
           </div>
         </div>
