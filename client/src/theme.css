@@ -35,6 +35,16 @@
   --selected: #f1f1ef;
   --selected-foreground: #37352f;
 
+  /* 对象身份色：只用于图标容器、轻量标签和小面积强调，不承担 hover/selected。 */
+  --entity-note: #2f78c7;
+  --entity-note-soft: #edf6ff;
+  --entity-meeting: #6d5ab5;
+  --entity-meeting-soft: #f3f0fb;
+  --entity-file: #2f7b73;
+  --entity-file-soft: #edf7f5;
+  --entity-folder: #9a6a16;
+  --entity-folder-soft: #fbf5e8;
+
   /* 迁移期兼容旧 Token；新组件优先消费上面的语义角色。 */
   --accent-border: var(--primary);
   --accent-hover: var(--primary-hover);
