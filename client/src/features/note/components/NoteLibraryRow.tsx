@@ -174,7 +174,7 @@ export function NoteLibraryRow({
               />
             </button>
           ) : null}
-          <FileText className="size-5 shrink-0 text-text-subtle" />
+          <FileText className="size-5 shrink-0 text-[var(--entity-note)]" strokeWidth={1.9} />
           <div className="flex min-w-0 flex-1 flex-col justify-center">
             {editing ? (
               <Input
