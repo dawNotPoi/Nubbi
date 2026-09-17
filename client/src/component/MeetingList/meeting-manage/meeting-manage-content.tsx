@@ -29,7 +29,7 @@ export const MeetingManageContent = ({
   <div className={className}>
     <div className="mb-4 flex items-center justify-between gap-3 md:mb-5">
       <div className="flex min-w-0 items-center gap-2 text-[15px] font-semibold text-text-primary md:text-lg">
-        <CalendarDays className="size-[18px] shrink-0 text-text-muted md:size-[19px]" />
+        <CalendarDays className="size-[18px] shrink-0 text-[var(--entity-meeting)] md:size-[19px]" />
         <span>会议管理</span>
       </div>
       <Button
@@ -46,13 +46,13 @@ export const MeetingManageContent = ({
         <div className="truncate text-[11px] text-text-muted md:text-sm">会议总数</div>
         <div className="mt-1 text-xl font-semibold text-text-primary md:text-2xl">{stats.total}</div>
       </div>
-      <div className="rounded-[9px] border border-amber-100 bg-amber-50 px-3 py-3 md:rounded-xl md:px-4 md:py-4">
-        <div className="truncate text-[11px] text-amber-700 md:text-sm">待审批</div>
-        <div className="mt-1 text-xl font-semibold text-amber-900 md:text-2xl">{stats.pending}</div>
+      <div className="rounded-[9px] border border-border-row bg-[var(--status-inbox-bg)] px-3 py-3 md:rounded-xl md:px-4 md:py-4">
+        <div className="truncate text-[11px] text-[var(--status-inbox-text)] md:text-sm">待审批</div>
+        <div className="mt-1 text-xl font-semibold text-[var(--status-inbox-text)] md:text-2xl">{stats.pending}</div>
       </div>
-      <div className="rounded-[9px] border border-emerald-100 bg-emerald-50 px-3 py-3 md:rounded-xl md:px-4 md:py-4">
-        <div className="truncate text-[11px] text-emerald-700 md:text-sm">已结束</div>
-        <div className="mt-1 text-xl font-semibold text-emerald-900 md:text-2xl">{stats.ended}</div>
+      <div className="rounded-[9px] border border-border-row bg-[var(--status-active-bg)] px-3 py-3 md:rounded-xl md:px-4 md:py-4">
+        <div className="truncate text-[11px] text-[var(--status-active-text)] md:text-sm">已结束</div>
+        <div className="mt-1 text-xl font-semibold text-[var(--status-active-text)] md:text-2xl">{stats.ended}</div>
       </div>
     </div>
 
