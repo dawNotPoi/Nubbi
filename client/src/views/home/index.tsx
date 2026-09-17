@@ -12,7 +12,7 @@ export default function Home() {
   return (
     <div className="bg-surface text-text-primary">
       <Header className="bg-surface/95" />
-      <main className="mx-auto max-w-[1040px] space-y-12 px-8 py-12 lg:px-10">
+      <main className="mx-auto max-w-[1120px] space-y-9 px-8 py-8 lg:px-10 lg:py-10">
         <RecentNoteList />
         <RecentMeeting />
       </main>
