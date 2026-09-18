@@ -12,6 +12,7 @@ import { message } from "antd";
 import { useEffect, useMemo, useState } from "react";
 import { Github, Loader2 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
+import faviconSvg from "/favicon.svg";
 import { Button } from "@/component/UI/button";
 import { Input } from "@/component/UI/input";
 import { PasswordInput } from "@/component/UI/password-input";
@@ -336,24 +337,8 @@ export const LoginPage = () => {
   };
 
   const header = {
-    title:
-      view === "register"
-        ? "创建账号"
-        : view === "verifyEmail"
-          ? "验证邮箱"
-          : view === "forgotPassword"
-            ? "重置密码"
-            : "欢迎回来",
-    desc:
-      view === "register"
-        ? "记录，从今天开始。"
-        : view === "verifyEmail"
-          ? verificationCodeSent
-            ? `验证码已发送至 ${verificationEmail}`
-            : `请获取验证码以验证 ${verificationEmail}`
-          : view === "forgotPassword"
-            ? "通过邮箱验证设置新密码"
-            : "继续记录今天的想法",
+    title: view === "register" ? "创建账号" : view === "verifyEmail" ? "验证邮箱" : view === "forgotPassword" ? "重置密码" : "登录 Nubbi",
+    desc: view === "register" ? "加入 Nubbi，开启结构化学习之旅" : view === "verifyEmail" ? (verificationCodeSent ? `验证码已发送至 ${verificationEmail}` : `请获取验证码以验证 ${verificationEmail}`) : view === "forgotPassword" ? "通过邮箱验证设置新密码" : "欢迎回来，继续你的知识旅程",
   };
 
   const handleGitHubLogin = async () => {
@@ -362,14 +347,15 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className="auth-login-page flex min-h-[100dvh] items-center justify-center bg-[#fbfbfa] px-4 py-6 sm:px-5 sm:py-10" data-auth-view={view}>
+    <div className="flex min-h-[100dvh] items-center justify-center bg-[#fbfbfa] px-4 py-6 sm:px-5 sm:py-10">
       <Card className="w-full max-w-[420px]">
-        <CardHeader key={`header-${view}`} className="auth-view-header mb-5">
+        <CardHeader className="mb-6">
+          <img className="size-12 rounded-xl border border-[#ededeb] bg-white" src={faviconSvg} alt="Nubbi" />
           <CardTitle>{header.title}</CardTitle>
           <CardDescription>{header.desc}</CardDescription>
         </CardHeader>
 
-        <CardContent key={`content-${view}`} className="auth-view-panel">
+        <CardContent>
           {/* ═══ verifyEmail ═══ */}
           {view === "verifyEmail" ? (
             <form onSubmit={handleVerifyEmail} className="flex flex-col gap-4">
@@ -392,7 +378,7 @@ export const LoginPage = () => {
                   placeholder="请输入 6 位数字"
                 />
               </div>
-              <Button variant="primary" className="auth-primary-button w-full" size="lg" type="submit" disabled={verifyingEmail}>
+              <Button variant="primary" className="w-full" size="lg" type="submit" disabled={verifyingEmail}>
                 {verifyingEmail && <Loader2 className="animate-spin" />}
                 {verifyingEmail
                   ? verificationIntent === "login" ? "验证并登录中..." : "验证中..."
@@ -446,7 +432,7 @@ export const LoginPage = () => {
                   💡 先输入邮箱获取验证码，收到邮件后在此处完成密码重置。
                 </div>
               )}
-              <Button variant="primary" className="auth-primary-button w-full !bg-[linear-gradient(135deg,#f59e0b,#f97316)]" size="lg" type="submit" disabled={submittingReset}>
+              <Button variant="primary" className="w-full !bg-[linear-gradient(135deg,#f59e0b,#f97316)]" size="lg" type="submit" disabled={submittingReset}>
                 {submittingReset ? "重置中..." : "重置密码"}
               </Button>
               <Button variant="link" className="w-full" type="button" onClick={() => goView("login")}>返回登录</Button>
@@ -491,7 +477,7 @@ export const LoginPage = () => {
                   <Label htmlFor="reg-confirm-password">确认密码</Label>
                   <PasswordInput id="reg-confirm-password" name="confirm-password" autoComplete="new-password" value={regConfirmPassword} placeholder="请再次输入密码" onChange={e => setRegConfirmPassword(e.target.value)} />
                 </div>
-                <Button className="auth-primary-button" variant="primary" size="lg" type="submit" disabled={loading || sendingRegisterCode}>
+                <Button variant="primary" size="lg" type="submit" disabled={loading || sendingRegisterCode}>
                   {loading && <Loader2 className="animate-spin" />}
                   注册
                 </Button>
@@ -499,50 +485,33 @@ export const LoginPage = () => {
             </form>
           ) : (
             /* ═══ login ═══ */
-            <>
-              <form onSubmit={handleLogin}>
-                <div className="flex flex-col gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="login-email">邮箱</Label>
-                    <Input id="login-email" name="email" type="email" value={loginEmail} placeholder="请输入邮箱" autoComplete="email" required onChange={e => setLoginEmail(e.target.value)} />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <div className="flex items-center justify-between gap-3">
-                      <Label htmlFor="login-password">密码</Label>
-                      <Button
-                        variant="link"
-                        className="h-auto p-0 text-[13px] font-medium"
-                        type="button"
-                        onClick={() => goView("forgotPassword")}
-                      >
-                        忘记密码？
-                      </Button>
-                    </div>
-                    <PasswordInput id="login-password" name="password" value={loginPassword} placeholder="请输入密码" autoComplete="current-password" required onChange={e => setLoginPassword(e.target.value)} />
-                  </div>
-                  <Button className="auth-primary-button" variant="primary" size="lg" type="submit" disabled={loading}>
-                    {loading && <Loader2 className="animate-spin" />}
-                    登录
-                  </Button>
+            <form onSubmit={handleLogin}>
+              <Button variant="outline" className="w-full" type="button" onClick={handleGitHubLogin} disabled={loading}>
+                <Github size={20} /> 使用 GitHub 登录
+              </Button>
+              <div className="flex items-center gap-3.5 my-6">
+                <Separator className="flex-1" />
+                <span className="text-[13px] text-text-subtle">或使用邮箱</span>
+                <Separator className="flex-1" />
+              </div>
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="login-email">邮箱</Label>
+                  <Input id="login-email" name="email" type="email" value={loginEmail} placeholder="请输入邮箱" autoComplete="email" required onChange={e => setLoginEmail(e.target.value)} />
                 </div>
-              </form>
-
-              <div className="auth-alt-login flex flex-col items-center gap-2.5">
-                <span className="text-[12px] text-text-subtle">其他登录方式</span>
-                <Button
-                  aria-label="使用 GitHub 登录"
-                  title="使用 GitHub 登录"
-                  className="auth-github-button rounded-full"
-                  variant="outline"
-                  size="icon"
-                  type="button"
-                  onClick={handleGitHubLogin}
-                  disabled={loading}
-                >
-                  <Github size={19} />
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="login-password">密码</Label>
+                  <PasswordInput id="login-password" name="password" value={loginPassword} placeholder="请输入密码" autoComplete="current-password" required onChange={e => setLoginPassword(e.target.value)} />
+                </div>
+                <div className="flex justify-end -mt-2">
+                  <Button variant="link" type="button" onClick={() => goView("forgotPassword")}>忘记密码？</Button>
+                </div>
+                <Button variant="primary" size="lg" type="submit" disabled={loading}>
+                  {loading && <Loader2 className="animate-spin" />}
+                  登录
                 </Button>
               </div>
-            </>
+            </form>
           )}
 
           {socialLoginError ? (

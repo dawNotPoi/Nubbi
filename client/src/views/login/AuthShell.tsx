@@ -3,8 +3,6 @@ import type { PropsWithChildren, ReactElement } from "react";
 import { AuthBrandPanel } from "./AuthBrandPanel";
 import "./auth-shell.css";
 
-const DAILY_NOTES_LABEL = "DAILY NOTES";
-
 /**
  * 为认证流程提供固定视口的响应式工作台背景，并保持既有认证表单状态与提交语义不变。
  * @param props 登录、注册、验证或重置密码等既有认证内容。
@@ -31,39 +29,17 @@ export function AuthShell({ children }: PropsWithChildren): ReactElement {
         <AuthBrandPanel />
 
         <main className="auth-shell-main flex w-full min-w-0 justify-center lg:justify-end">
-          <div className="auth-paper-stack">
-            <div
-              aria-hidden="true"
-              className="auth-paper-sheet auth-paper-sheet-back-two border border-border-row bg-surface/80 shadow-[var(--shadow-popover)]"
-            />
-            <div
-              aria-hidden="true"
-              className="auth-paper-sheet auth-paper-sheet-back-one border border-border-row bg-surface/90 shadow-[var(--shadow-popover)]"
-            />
+          <section className="auth-shell-card w-full max-w-[480px] rounded-[20px] border border-border-row bg-surface/95 px-4 py-4 shadow-[var(--shadow-popover)] backdrop-blur-md sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+            <div className="auth-shell-card-brand mb-4 flex justify-center sm:mb-5">
+              <NubbiBrand
+                markClassName="!size-10 sm:!size-11"
+                size="md"
+                wordmarkClassName="!text-[20px] !font-semibold !tracking-[0.05em] sm:!text-[21px]"
+              />
+            </div>
 
-            <section className="auth-shell-card relative z-[2] w-full rounded-[20px] border border-border-row bg-surface/95 px-4 py-4 shadow-[var(--shadow-popover)] backdrop-blur-md sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-              <div className="auth-note-label" aria-hidden="true">
-                {Array.from(DAILY_NOTES_LABEL).map((character, index) => (
-                  <span
-                    key={`${character}-${index}`}
-                    style={{ animationDelay: `${index * 34}ms` }}
-                  >
-                    {character === " " ? "\u00A0" : character}
-                  </span>
-                ))}
-              </div>
-
-              <div className="auth-shell-card-brand mb-4 flex justify-center sm:mb-5">
-                <NubbiBrand
-                  markClassName="!size-10 sm:!size-11"
-                  size="md"
-                  wordmarkClassName="!text-[20px] !font-semibold !tracking-[0.05em] sm:!text-[21px]"
-                />
-              </div>
-
-              <div className="auth-shell-content">{children}</div>
-            </section>
-          </div>
+            <div className="auth-shell-content">{children}</div>
+          </section>
         </main>
       </div>
     </div>
