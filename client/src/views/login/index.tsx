@@ -12,6 +12,7 @@ import { message } from "antd";
 import { useEffect, useMemo, useState } from "react";
 import { Github, Loader2 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
+import faviconSvg from "/favicon.svg";
 import { Button } from "@/component/UI/button";
 import { Input } from "@/component/UI/input";
 import { PasswordInput } from "@/component/UI/password-input";
@@ -346,18 +347,19 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className="auth-login-page flex min-h-[100dvh] items-center justify-center bg-[#fbfbfa] px-4 py-6 sm:px-5 sm:py-10" data-auth-view={view}>
-      <Card className="auth-login-card w-full max-w-[420px]">
-        <CardHeader key={`auth-header-${view}`} className="auth-login-header auth-view-enter mb-6">
+    <div className="flex min-h-[100dvh] items-center justify-center bg-[#fbfbfa] px-4 py-6 sm:px-5 sm:py-10">
+      <Card className="w-full max-w-[420px]">
+        <CardHeader className="mb-6">
+          <img className="size-12 rounded-xl border border-[#ededeb] bg-white" src={faviconSvg} alt="Nubbi" />
           <CardTitle>{header.title}</CardTitle>
-          <CardDescription className="auth-login-description">{header.desc}</CardDescription>
+          <CardDescription>{header.desc}</CardDescription>
         </CardHeader>
 
-        <CardContent key={`auth-content-${view}`} className="auth-login-content auth-view-enter">
+        <CardContent>
           {/* ═══ verifyEmail ═══ */}
           {view === "verifyEmail" ? (
-            <form onSubmit={handleVerifyEmail} className="auth-form auth-form-verify flex flex-col gap-4">
-              <div className="auth-login-info flex items-start gap-2.5 rounded-[10px] bg-accent p-3.5 text-[13px] leading-relaxed text-accent-foreground">
+            <form onSubmit={handleVerifyEmail} className="flex flex-col gap-4">
+              <div className="flex items-start gap-2.5 rounded-[10px] bg-accent p-3.5 text-[13px] leading-relaxed text-accent-foreground">
                 <span className="text-[17px] shrink-0">💡</span>
                 <span>如果没有收到邮件，请检查垃圾箱，或点击下方按钮重新发送。</span>
               </div>
@@ -376,7 +378,7 @@ export const LoginPage = () => {
                   placeholder="请输入 6 位数字"
                 />
               </div>
-              <Button variant="primary" className="auth-primary-button w-full" size="lg" type="submit" disabled={verifyingEmail}>
+              <Button variant="primary" className="w-full" size="lg" type="submit" disabled={verifyingEmail}>
                 {verifyingEmail && <Loader2 className="animate-spin" />}
                 {verifyingEmail
                   ? verificationIntent === "login" ? "验证并登录中..." : "验证中..."
@@ -393,7 +395,7 @@ export const LoginPage = () => {
             </form>
           ) : view === "forgotPassword" ? (
             /* ═══ forgotPassword ═══ */
-            <form onSubmit={handleResetPassword} className="auth-form auth-form-forgot flex flex-col gap-4">
+            <form onSubmit={handleResetPassword} className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="reset-email">账号邮箱</Label>
                 <Input id="reset-email" name="email" type="email" autoComplete="email" value={resetEmail} placeholder="请输入注册邮箱"
@@ -422,28 +424,28 @@ export const LoginPage = () => {
                 <PasswordInput id="reset-confirm-password" name="confirm-password" autoComplete="new-password" value={resetConfirmPassword} placeholder="请再次输入新密码" onChange={e => setResetConfirmPassword(e.target.value)} />
               </div>
               {resetCodeSent ? (
-                <div className="auth-login-info rounded-[10px] bg-[#ecfdf5] p-3.5 text-[13px] leading-relaxed text-[#059669]">
+                <div className="rounded-[10px] bg-[#ecfdf5] p-3.5 text-[13px] leading-relaxed text-[#059669]">
                   ✅ 验证码已发送，请输入邮箱收到的 6 位数字验证码并设置新密码。
                 </div>
               ) : (
-                <div className="auth-login-info rounded-[10px] bg-accent p-3.5 text-[13px] leading-relaxed text-accent-foreground">
+                <div className="rounded-[10px] bg-accent p-3.5 text-[13px] leading-relaxed text-accent-foreground">
                   💡 先输入邮箱获取验证码，收到邮件后在此处完成密码重置。
                 </div>
               )}
-              <Button variant="primary" className="auth-primary-button w-full !bg-[linear-gradient(135deg,#f59e0b,#f97316)]" size="lg" type="submit" disabled={submittingReset}>
+              <Button variant="primary" className="w-full !bg-[linear-gradient(135deg,#f59e0b,#f97316)]" size="lg" type="submit" disabled={submittingReset}>
                 {submittingReset ? "重置中..." : "重置密码"}
               </Button>
               <Button variant="link" className="w-full" type="button" onClick={() => goView("login")}>返回登录</Button>
             </form>
           ) : view === "register" ? (
             /* ═══ register ═══ */
-            <form onSubmit={handleRegister} className="auth-form auth-form-register">
-              <div className="auth-login-separator auth-register-separator flex items-center gap-3.5 mb-6">
+            <form onSubmit={handleRegister}>
+              <div className="flex items-center gap-3.5 mb-6">
                 <Separator className="flex-1" />
                 <span className="text-[13px] text-text-subtle">邮箱注册</span>
                 <Separator className="flex-1" />
               </div>
-              <div className="auth-form-stack flex flex-col gap-4">
+              <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="reg-username">用户名</Label>
                   <Input id="reg-username" name="username" autoComplete="username" value={regUsername} placeholder="3-20 位字母、数字或下划线" onChange={e => setRegUsername(e.target.value)} />
@@ -475,7 +477,7 @@ export const LoginPage = () => {
                   <Label htmlFor="reg-confirm-password">确认密码</Label>
                   <PasswordInput id="reg-confirm-password" name="confirm-password" autoComplete="new-password" value={regConfirmPassword} placeholder="请再次输入密码" onChange={e => setRegConfirmPassword(e.target.value)} />
                 </div>
-                <Button className="auth-primary-button" variant="primary" size="lg" type="submit" disabled={loading || sendingRegisterCode}>
+                <Button variant="primary" size="lg" type="submit" disabled={loading || sendingRegisterCode}>
                   {loading && <Loader2 className="animate-spin" />}
                   注册
                 </Button>
@@ -483,46 +485,28 @@ export const LoginPage = () => {
             </form>
           ) : (
             /* ═══ login ═══ */
-            <form onSubmit={handleLogin} className="auth-form auth-form-login">
-              <div className="auth-social-login flex justify-center">
-                <Button
-                  aria-label="使用 GitHub 登录"
-                  title="使用 GitHub 登录"
-                  className="auth-github-button rounded-full"
-                  variant="outline"
-                  size="icon"
-                  type="button"
-                  onClick={handleGitHubLogin}
-                  disabled={loading}
-                >
-                  <Github size={20} />
-                </Button>
-              </div>
-              <div className="auth-login-separator flex items-center gap-3.5 my-5">
+            <form onSubmit={handleLogin}>
+              <Button variant="outline" className="w-full" type="button" onClick={handleGitHubLogin} disabled={loading}>
+                <Github size={20} /> 使用 GitHub 登录
+              </Button>
+              <div className="flex items-center gap-3.5 my-6">
                 <Separator className="flex-1" />
                 <span className="text-[13px] text-text-subtle">或使用邮箱</span>
                 <Separator className="flex-1" />
               </div>
-              <div className="auth-form-stack flex flex-col gap-4">
+              <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="login-email">邮箱</Label>
                   <Input id="login-email" name="email" type="email" value={loginEmail} placeholder="请输入邮箱" autoComplete="email" required onChange={e => setLoginEmail(e.target.value)} />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between gap-3">
-                    <Label htmlFor="login-password">密码</Label>
-                    <Button
-                      variant="link"
-                      className="h-auto p-0 text-[13px] font-medium"
-                      type="button"
-                      onClick={() => goView("forgotPassword")}
-                    >
-                      忘记密码？
-                    </Button>
-                  </div>
+                  <Label htmlFor="login-password">密码</Label>
                   <PasswordInput id="login-password" name="password" value={loginPassword} placeholder="请输入密码" autoComplete="current-password" required onChange={e => setLoginPassword(e.target.value)} />
                 </div>
-                <Button className="auth-primary-button" variant="primary" size="lg" type="submit" disabled={loading}>
+                <div className="flex justify-end -mt-2">
+                  <Button variant="link" type="button" onClick={() => goView("forgotPassword")}>忘记密码？</Button>
+                </div>
+                <Button variant="primary" size="lg" type="submit" disabled={loading}>
                   {loading && <Loader2 className="animate-spin" />}
                   登录
                 </Button>
@@ -538,7 +522,7 @@ export const LoginPage = () => {
           ) : null}
 
           {view === "login" || view === "register" ? (
-            <div className="auth-view-switch flex items-center justify-center gap-1 text-sm text-text-muted">
+            <div className="flex items-center justify-center gap-1 text-sm text-text-muted">
               {view === "register" ? "已有账号？" : "还没有账号？"}
               <Button variant="link" className="p-0 h-auto font-bold" onClick={() => goView(view === "register" ? "login" : "register")}>
                 {view === "register" ? "返回登录" : "立即注册"}
