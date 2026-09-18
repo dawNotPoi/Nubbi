@@ -486,9 +486,20 @@ export const LoginPage = () => {
           ) : (
             /* ═══ login ═══ */
             <form onSubmit={handleLogin}>
-              <Button variant="outline" className="w-full" type="button" onClick={handleGitHubLogin} disabled={loading}>
-                <Github size={20} /> 使用 GitHub 登录
-              </Button>
+              <div className="flex justify-center">
+                <Button
+                  aria-label="使用 GitHub 登录"
+                  title="使用 GitHub 登录"
+                  variant="outline"
+                  size="icon"
+                  className="rounded-full"
+                  type="button"
+                  onClick={handleGitHubLogin}
+                  disabled={loading}
+                >
+                  <Github aria-hidden="true" />
+                </Button>
+              </div>
               <div className="flex items-center gap-3.5 my-6">
                 <Separator className="flex-1" />
                 <span className="text-[13px] text-text-subtle">或使用邮箱</span>
