@@ -12,7 +12,7 @@ export function AuthShell({ children }: PropsWithChildren): ReactElement {
   return (
     <div className="auth-shell relative w-full bg-surface-subtle text-text-primary">
       <div aria-hidden="true" className="pointer-events-none fixed inset-0">
-        {/* 使用用户确认的原构图；移动端偏向笔记本裁切，不拉伸或重新生成场景。 */}
+        {/* 使用用户确认的高质量工作台背景；移动端偏向笔记本裁切，不拉伸场景。 */}
         <img
           alt=""
           className="h-full w-full object-cover object-[38%_center] sm:object-center"
@@ -20,7 +20,7 @@ export function AuthShell({ children }: PropsWithChildren): ReactElement {
           fetchPriority="high"
           height={941}
           loading="eager"
-          src="/brand/auth-workspace-20260917.avif"
+          src="/brand/auth-workspace-hq.webp"
           width={1672}
         />
       </div>
