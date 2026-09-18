@@ -443,7 +443,7 @@ export const LoginPage = () => {
                 <span className="text-[13px] text-text-subtle">邮箱注册</span>
                 <Separator className="flex-1" />
               </div>
-              <div className="flex flex-col gap-4">
+              <div className="auth-form-stack flex flex-col gap-4">
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="reg-username">用户名</Label>
                   <Input id="reg-username" name="username" autoComplete="username" value={regUsername} placeholder="3-20 位字母、数字或下划线" onChange={e => setRegUsername(e.target.value)} />
