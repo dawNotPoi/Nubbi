@@ -1,6 +1,7 @@
+import { Button } from "@/components/ui/button";
 import clsx from "clsx";
-import { LoaderCircle, Upload } from "lucide-react";
-import { useRef, useState } from "react";
+import { Upload } from "lucide-react";
+import { useRef, useState, type ReactElement } from "react";
 
 type MarkdownImportButtonProps = {
   disabled?: boolean;
@@ -8,16 +9,26 @@ type MarkdownImportButtonProps = {
   onImport: (files: File[]) => void;
 };
 
+/**
+ * 保留 Markdown 文件选择与拖入导入流程，仅统一操作按钮。
+ * @param props 可用状态、导入进度和文件回调。
+ * @returns 支持拖入文件的导入按钮。
+ */
 export function MarkdownImportButton({
   disabled = false,
   importing = false,
   onImport,
-}: MarkdownImportButtonProps) {
+}: MarkdownImportButtonProps): ReactElement {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const unavailable = disabled || importing;
 
-  const submitFiles = (fileList: FileList | null) => {
+  /**
+   * 提交选中文件并清空原生输入，允许再次选择同一个文件。
+   * @param fileList 浏览器提供的文件集合。
+   * @returns 无返回值。
+   */
+  const submitFiles = (fileList: FileList | null): void => {
     const files = Array.from(fileList ?? []);
     if (files.length > 0) onImport(files);
     if (inputRef.current) inputRef.current.value = "";
@@ -25,6 +36,7 @@ export function MarkdownImportButton({
 
   return (
     <div
+      className="min-w-0 flex-1 sm:flex-none"
       onDragLeave={() => setDragging(false)}
       onDragOver={(event) => {
         event.preventDefault();
@@ -44,27 +56,21 @@ export function MarkdownImportButton({
         onChange={(event) => submitFiles(event.target.files)}
         type="file"
       />
-      <button
+      <Button
+        variant="outline"
+        size="sm"
+        loading={importing}
+        icon={<Upload aria-hidden="true" className="size-[18px] md:size-4" />}
         className={clsx(
-          "inline-flex h-9 items-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
-          dragging
-            ? "border-accent-border bg-accent-bg text-accent-text"
-            : "border-border-button bg-white text-text-primary hover:border-border-button-hover hover:bg-bg-hover",
-          unavailable && "cursor-not-allowed opacity-60",
+          "h-11 w-full rounded-[8px] px-4 font-medium sm:w-auto md:h-9 md:rounded-md",
+          dragging && "border-accent-border bg-accent-bg text-accent-text",
         )}
         disabled={unavailable}
         onClick={() => inputRef.current?.click()}
         type="button"
       >
-        {importing ? (
-          <LoaderCircle className="size-4 animate-spin" />
-        ) : (
-          <Upload className="size-4" />
-        )}
         <span>{importing ? "导入中" : "导入 Markdown"}</span>
-      </button>
+      </Button>
     </div>
   );
 }
-

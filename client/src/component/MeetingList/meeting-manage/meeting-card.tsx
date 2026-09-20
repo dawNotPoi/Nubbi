@@ -7,7 +7,6 @@ import type { ReactElement } from "react";
 import type { MeetingActions } from "./types";
 import { MeetingInvitationButton } from "@/features/meeting/meeting-invitation";
 
-/** 会议审批状态 → 标签样式映射 */
 const statusMap = {
   unreviewd: {
     label: "待审批",
@@ -28,30 +27,16 @@ type MeetingCardProps = MeetingActions & {
   currentUserId?: string;
 };
 
-/**
- * 格式化会议时间范围为可读字符串。
- * @param meeting 会议对象。
- * @returns "MM-DD HH:mm - MM-DD HH:mm" 格式的时间范围。
- */
 const getMeetingTimeRange = (meeting: MeetingType): string => {
   const start = dayjs(meeting.startTime || meeting.createdAt);
   const end = start.add(meeting.duration, "minute");
   return `${start.format("MM-DD HH:mm")} - ${end.format("MM-DD HH:mm")}`;
 };
 
-/**
- * 会议状态标签组件。
- * 已结束显示蓝色标签；其他按 status 映射为待审批/已通过/已拒绝。
- * @param meeting 会议对象。
- */
-const MeetingStatusTag = ({
-  meeting,
-}: {
-  meeting: MeetingType;
-}): ReactElement => {
+const MeetingStatusTag = ({ meeting }: { meeting: MeetingType }): ReactElement => {
   if (meeting.endedAt) {
     return (
-      <Tag className="rounded-full border-blue-200 bg-blue-50 px-3 py-1 text-blue-700">
+      <Tag className="m-0 rounded-full border-blue-200 bg-blue-50 px-2.5 py-0.5 text-[12px] text-blue-700">
         已结束
       </Tag>
     );
@@ -60,29 +45,18 @@ const MeetingStatusTag = ({
   const key = meeting.status || "approved";
   const config = statusMap[key];
   return (
-    <Tag className={clsx("rounded-full border px-3 py-1", config.className)}>
+    <Tag className={clsx("m-0 rounded-full border px-2.5 py-0.5 text-[12px]", config.className)}>
       {config.label}
     </Tag>
   );
 };
 
-/** 会议卡片骨架屏，加载中占位 */
 export const MeetingCardSkeleton = (): ReactElement => (
-  <div className="rounded-lg border border-border-row bg-white p-5 shadow-soft">
+  <div className="rounded-[10px] border border-border-row bg-surface p-4 md:p-5">
     <Skeleton active paragraph={{ rows: 3 }} title={{ width: "48%" }} />
   </div>
 );
 
-/**
- * 会议列表卡片。
- * 展示标题、状态、时间范围；根据当前用户身份显示审批、加入、评论、删除等操作。
- * @param meeting 会议数据。
- * @param currentUserId 当前登录用户 ID，用于判断是否为会议主持人。
- * @param onVet 审批回调。
- * @param onJoin 加入会议回调。
- * @param onViewComments 查看评论回调。
- * @param onDelete 删除回调。
- */
 export const MeetingCard = ({
   meeting,
   currentUserId,
@@ -94,40 +68,36 @@ export const MeetingCard = ({
   const isHost = Boolean(currentUserId && meeting.hostId === currentUserId);
 
   return (
-    <div className="rounded-lg border border-border-row bg-white p-4 shadow-soft transition-colors hover:bg-bg-hover sm:p-5">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+    <article className="rounded-[10px] border border-border-row bg-surface p-4 transition-colors hover:bg-bg-hover md:p-5">
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0 flex-1">
-          <div className="mb-2 flex flex-wrap items-center gap-2">
-            <h3 className="text-base font-semibold text-text-primary">
+          <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2">
+            <h3 className="min-w-0 flex-1 truncate text-[15px] font-semibold text-text-primary md:text-base">
               {meeting.title || "未命名会议"}
             </h3>
             <MeetingStatusTag meeting={meeting} />
           </div>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-text-muted">
-            <span className="inline-flex items-center gap-1">
-              <Clock3 size={14} />
-              {getMeetingTimeRange(meeting)}
+          <div className="space-y-1.5 text-[13px] text-text-muted md:flex md:flex-wrap md:items-center md:gap-x-4 md:gap-y-2 md:space-y-0 md:text-sm">
+            <span className="flex items-center gap-1.5">
+              <Clock3 className="size-[15px] shrink-0" />
+              <span className="truncate">{getMeetingTimeRange(meeting)}</span>
             </span>
             {meeting.endedAt ? (
-              <span className="inline-flex items-center gap-1 text-blue-600">
-                <MessageSquareText size={14} />
-                已于 {dayjs(meeting.endedAt).format("MM-DD HH:mm")} 结束
+              <span className="flex items-center gap-1.5 text-text-muted">
+                <MessageSquareText className="size-[15px] shrink-0" />
+                <span className="truncate">已于 {dayjs(meeting.endedAt).format("MM-DD HH:mm")} 结束</span>
               </span>
             ) : null}
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+
+        <div className="grid w-full grid-cols-2 gap-2 [&_.ant-btn]:min-h-10 [&_.ant-btn]:rounded-[7px] md:flex md:w-auto md:flex-wrap md:items-center md:[&_.ant-btn]:min-h-8">
           {isHost && meeting.status === "unreviewd" ? (
             <>
-              <Button
-                type="primary"
-                onClick={() => void onVet(meeting._id, "approved")}
-              >
+              <Button type="primary" onClick={() => void onVet(meeting._id, "approved")}>
                 同意
               </Button>
-              <Button onClick={() => void onVet(meeting._id, "rejected")}>
-                拒绝
-              </Button>
+              <Button onClick={() => void onVet(meeting._id, "rejected")}>拒绝</Button>
             </>
           ) : null}
 
@@ -135,15 +105,11 @@ export const MeetingCard = ({
             <MeetingInvitationButton id={meeting._id} title={meeting.title} startTime={meeting.startTime} />
           ) : null}
           {!meeting.endedAt ? (
-            <Button type="primary" onClick={() => onJoin(meeting._id)}>
-              加入会议
-            </Button>
+            <Button type="primary" onClick={() => onJoin(meeting._id)}>加入会议</Button>
           ) : null}
 
           {isHost && meeting.endedAt ? (
-            <Button onClick={() => void onViewComments(meeting)}>
-              查看评论
-            </Button>
+            <Button onClick={() => void onViewComments(meeting)}>查看评论</Button>
           ) : null}
 
           {isHost ? (
@@ -154,13 +120,11 @@ export const MeetingCard = ({
               cancelText="取消"
               onConfirm={() => void onDelete(meeting._id)}
             >
-              <Button danger icon={<Trash2 size={14} />}>
-                删除
-              </Button>
+              <Button danger icon={<Trash2 size={14} />}>删除</Button>
             </Popconfirm>
           ) : null}
         </div>
       </div>
-    </div>
+    </article>
   );
 };

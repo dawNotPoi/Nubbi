@@ -47,7 +47,7 @@ export const useNoteLibraryActions = ({
   };
 
   const createRootNote = async (note?: Partial<NoteWithContent>) => {
-    if (!owner) return;
+    if (!owner) return undefined;
 
     const createdAt = new Date().toISOString();
     const draft = newNote({
@@ -57,6 +57,7 @@ export const useNoteLibraryActions = ({
       ...note,
     });
     await createNote({ note: draft });
+    return draft;
   };
 
   const confirmDelete = (notes: Note[]) => {

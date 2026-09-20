@@ -24,10 +24,10 @@ export function TrashToolbar({
   total,
 }: TrashToolbarProps) {
   return (
-    <div className="flex flex-col gap-2 border-y border-border-toolbar py-3 sm:flex-row sm:items-center">
+    <div className="flex flex-col gap-2 border-y border-border-toolbar py-3 md:flex-row md:items-center">
       <Input
         allowClear
-        className="min-w-0 flex-1 sm:max-w-sm"
+        className="h-11 min-w-0 flex-1 rounded-[8px] md:h-8 md:max-w-sm md:rounded-[6px]"
         disabled={disabled}
         onChange={(event) => onFilterTextChange(event.target.value)}
         placeholder="搜索回收站标题"
@@ -36,7 +36,7 @@ export function TrashToolbar({
       />
       <div className="flex min-w-0 items-center gap-2">
         <Select
-          className="min-w-0 flex-1 sm:w-32 sm:flex-none"
+          className="h-11 min-w-0 flex-1 md:h-8 md:w-32 md:flex-none"
           disabled={disabled}
           onChange={onSourceFilterChange}
           options={[
@@ -47,12 +47,13 @@ export function TrashToolbar({
           value={sourceFilter}
         />
         <Button
+          className="h-11 rounded-[8px] md:h-8 md:rounded-[6px]"
           disabled={disabled}
           icon={<RefreshCw className="size-4" />}
           loading={refreshing}
           onClick={onRefresh}
         >
-          刷新
+          <span className="hidden sm:inline">刷新</span>
         </Button>
         <span className="shrink-0 text-xs text-text-muted">{total} 项</span>
       </div>

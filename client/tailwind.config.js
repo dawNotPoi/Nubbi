@@ -1,7 +1,8 @@
-// tailwind.config.js
+import typography from "@tailwindcss/typography";
+
+// v4 迁移期保留既有 Token 和尺寸映射，由 index.css 的 @config 显式加载。
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
       keyframes: {
@@ -18,7 +19,13 @@ export default {
         "fade-in": "fade-in 0.2s ease-out",
         "scale-in": "scale-in 0.2s ease-out",
       },
+      fontFamily: {
+        sans: ["var(--font-ui)"],
+      },
       colors: {
+        canvas: "var(--canvas)",
+        surface: "var(--surface)",
+        "surface-subtle": "var(--surface-subtle)",
         sidebar: "var(--sidebar)",
 
         "text-primary": "var(--text-primary)",
@@ -36,55 +43,64 @@ export default {
         "border-button-hover": "var(--border-button-hover)",
         "border-toolbar": "var(--border-toolbar)",
 
+        brand: "var(--brand)",
+        "brand-soft": "var(--brand-soft)",
+        selected: {
+          DEFAULT: "var(--selected)",
+          foreground: "var(--selected-foreground)",
+        },
         "focus-ring": "var(--focus-ring)",
 
         "accent-border": "var(--accent-border)",
+        "accent-hover": "var(--accent-hover)",
+        "accent-active": "var(--accent-active)",
         "accent-bg": "var(--accent-bg)",
+        "accent-soft": "var(--accent-soft)",
         "accent-text": "var(--accent-text)",
+        "accent-contrast": "var(--accent-contrast)",
 
         skeleton: "var(--skeleton)",
 
-        // shadcn/ui semantic tokens
-        background: "hsl(0 0% 100%)",
-        foreground: "hsl(0 0% 3.9%)",
-        card: "hsl(0 0% 100%)",
-        "card-foreground": "hsl(0 0% 3.9%)",
-        popover: "hsl(0 0% 100%)",
-        "popover-foreground": "hsl(0 0% 3.9%)",
+        background: "var(--canvas)",
+        foreground: "var(--text-primary)",
+        card: "var(--surface)",
+        "card-foreground": "var(--text-primary)",
+        popover: "var(--surface)",
+        "popover-foreground": "var(--text-primary)",
         primary: {
-          DEFAULT: "hsl(222 100% 64%)",
-          foreground: "hsl(0 0% 98%)",
+          DEFAULT: "var(--primary)",
+          foreground: "var(--primary-foreground)",
         },
         secondary: {
-          DEFAULT: "hsl(0 0% 96.1%)",
-          foreground: "hsl(0 0% 9%)",
+          DEFAULT: "var(--bg-hover)",
+          foreground: "var(--text-primary)",
         },
         muted: {
-          DEFAULT: "hsl(0 0% 96.1%)",
-          foreground: "hsl(0 0% 45.1%)",
+          DEFAULT: "var(--bg-hover)",
+          foreground: "var(--text-muted)",
         },
         accent: {
-          DEFAULT: "#eef3ff",
-          foreground: "#4f8cff",
+          DEFAULT: "var(--bg-hover)",
+          foreground: "var(--text-primary)",
         },
         destructive: {
-          DEFAULT: "#fef2f2",
-          foreground: "#dc2626",
+          DEFAULT: "var(--danger-bg)",
+          foreground: "var(--danger-text)",
         },
-        border: "hsl(0 0% 93%)",
-        input: "hsl(0 0% 93%)",
-        ring: "hsl(222 100% 64%)",
+        border: "var(--border-row)",
+        input: "var(--border-button)",
+        ring: "var(--focus-ring)",
       },
       borderRadius: {
-        lg: "10px",
-        md: "8px",
+        lg: "9px",
+        md: "7px",
         sm: "6px",
       },
       boxShadow: {
-        "focus-input": "0 0 0 2px var(--focus-ring)",
-        soft: "var(--shadow-soft)",
+        "focus-input": "0 0 0 3px var(--focus-ring)",
+        soft: "var(--shadow-popover)",
       },
     },
   },
-  plugins: [require("@tailwindcss/typography"), require("tailwind-scrollbar")],
+  plugins: [typography],
 };

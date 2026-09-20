@@ -18,6 +18,7 @@ export default function ResizeTab({
   const sidebarRef = useRef<HTMLElement>(null);
   const startXRef = useRef(0);
   const startWidthRef = useRef(0);
+
   // 开始调整大小
   const startResizing = (e: React.MouseEvent) => {
     if (isMobile || sidebarRef.current == null) return null;
@@ -79,10 +80,11 @@ export default function ResizeTab({
     <aside
       ref={sidebarRef}
       aria-hidden={!opened}
+      aria-label={isMobile ? "移动端侧边栏" : "侧边栏"}
       className={clsx(
         "h-full overflow-hidden bg-sidebar",
         isMobile
-          ? "fixed inset-y-0 left-0 z-50 w-[min(86vw,320px)] max-w-[320px] shadow-2xl transition-transform duration-200"
+          ? "fixed inset-y-0 left-0 z-50 w-[min(92vw,360px)] max-w-[360px] overscroll-contain rounded-r-[14px] shadow-2xl transition-transform duration-200 ease-out"
           : "relative",
         desktopCollapsed &&
           "rounded-xl border border-border-toolbar shadow-2xl",
@@ -108,7 +110,7 @@ export default function ResizeTab({
       {isMobile && opened ? (
         <div
           aria-hidden="true"
-          className="fixed inset-0 z-40 bg-black/25 backdrop-blur-[1px] md:hidden"
+          className="fixed inset-0 z-40 bg-black/35 backdrop-blur-[1px] md:hidden"
           onClick={() => setMobileSideBarOpened(false)}
         />
       ) : null}
@@ -123,7 +125,7 @@ export default function ResizeTab({
         <div
           onMouseLeave={() => setDesktopHovered(false)}
           className={clsx(
-            "fixed bottom-3 left-0 top-3 z-40 box-border pl-2 transition-[opacity,transform] duration-150 ease-out",
+            "fixed bottom-3 left-0 top-3 z-40 box-border pl-2 transition-[opacity,transform,translate] duration-150 ease-out",
             desktopHovered
               ? "translate-x-0 opacity-100"
               : "pointer-events-none -translate-x-2 opacity-0",

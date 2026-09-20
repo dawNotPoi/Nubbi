@@ -1,6 +1,7 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 
+/** 认证兼容区 Card；保留旧 API，视觉统一到 Nubbi surface token。 */
 const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -8,7 +9,7 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-[20px] border-none bg-white p-10 shadow-[0_2px_16px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.04)]",
+      "rounded-[12px] border border-border-row bg-surface p-6 shadow-[0_8px_30px_rgba(55,53,47,0.06)] sm:p-8",
       className
     )}
     {...props}
@@ -22,7 +23,7 @@ const CardHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex flex-col items-center gap-4 text-center", className)}
+    className={cn("flex flex-col items-center gap-3 text-center", className)}
     {...props}
   />
 ))
@@ -35,7 +36,7 @@ const CardTitle = React.forwardRef<
   <h2
     ref={ref}
     className={cn(
-      "text-2xl font-bold tracking-[-0.3px] text-text-primary",
+      "text-[22px] font-semibold leading-7 tracking-[-0.015em] text-text-primary",
       className
     )}
     {...props}
@@ -49,7 +50,7 @@ const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={cn("mt-1.5 text-sm text-text-muted", className)}
+    className={cn("mt-0.5 text-[13px] leading-5 text-text-muted", className)}
     {...props}
   />
 ))

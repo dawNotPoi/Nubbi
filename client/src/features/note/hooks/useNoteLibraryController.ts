@@ -168,6 +168,7 @@ export const useNoteLibraryController = () => {
     filterText,
     libraryRows,
     allNotes,
+    recentNotes,
     isError,
     isLoading,
     moveOpen,

@@ -1,50 +1,61 @@
+import { StyleProvider } from "@ant-design/cssinjs";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { ConfigProvider } from "antd";
 import { Provider } from "jotai";
 import { queryClientAtom } from "jotai-tanstack-query";
 import { useHydrateAtoms } from "jotai/utils";
-import { useEffect } from "react";
+import { useEffect, useMemo, type PropsWithChildren, type ReactElement } from "react";
 import { ModalProvider } from "./component/UI/Dialog";
 import UploadLifecycle from "./component/upload/UploadLifecycle";
+import { getNubbiAntdTheme } from "./styles/antd-theme";
 import { restoreAuthSession } from "./utils/auth";
 import { queryClient } from "./utils/queryClient";
 
 /**
- * 将 React Query 的 queryClient 单例桥接到 jotai 的 queryClientAtom，
- * 使 atomWithQuery / atomWithMutation 与组件里的 useQuery 共享同一实例和缓存。
+ * 让 Jotai 查询原子与组件查询共享同一个缓存。
+ * @param props 需要查询上下文的子树。
+ * @returns 完成查询实例注入的子树。
  */
-const HydrateQueryClient = ({ children }: { children: React.ReactNode }) => {
+const HydrateQueryClient = ({ children }: PropsWithChildren): ReactElement => {
   useHydrateAtoms([[queryClientAtom, queryClient]]);
-  return children;
+  return <>{children}</>;
 };
 
 /**
- * 应用启动时的会话恢复（无 UI）：首次挂载调用 restoreAuthSession，
- * 从服务端拉取会话并写回内存 token，标记 initialized，让路由守卫知道登录态已就绪。
+ * 恢复会话；UI 迁移不改变认证与路由守卫的原有职责。
+ * @param props 应用子树。
+ * @returns 原样传递的子树。
  */
-const AuthBootstrap = ({ children }: { children: React.ReactNode }) => {
+const AuthBootstrap = ({ children }: PropsWithChildren): ReactElement => {
   useEffect(() => {
     void restoreAuthSession();
   }, []);
-
-  return children;
+  return <>{children}</>;
 };
 
 /**
- * 应用根 Provider：组装 React Query + jotai 状态树，
- * 并挂载上传生命周期管理与会话恢复等全局副作用。
+ * 固定样式层叠与共享状态顺序，AntD 仅作为未迁移控件的兼容层。
+ * @param props 业务应用子树。
+ * @returns 带主题、查询、会话和弹层上下文的应用。
  */
-const AppProvider = ({ children }: { children: React.ReactNode }) => {
+const AppProvider = ({ children }: PropsWithChildren): ReactElement => {
+  const theme = useMemo(getNubbiAntdTheme, []);
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <Provider>
-        <HydrateQueryClient>
-          <AuthBootstrap>
-            <UploadLifecycle />
-            <ModalProvider>{children}</ModalProvider>
-          </AuthBootstrap>
-        </HydrateQueryClient>
-      </Provider>
-    </QueryClientProvider>
+    <StyleProvider layer>
+      <ConfigProvider theme={theme}>
+        <QueryClientProvider client={queryClient}>
+          <Provider>
+            <HydrateQueryClient>
+              <AuthBootstrap>
+                <UploadLifecycle />
+                <ModalProvider>{children}</ModalProvider>
+              </AuthBootstrap>
+            </HydrateQueryClient>
+          </Provider>
+        </QueryClientProvider>
+      </ConfigProvider>
+    </StyleProvider>
   );
 };
 

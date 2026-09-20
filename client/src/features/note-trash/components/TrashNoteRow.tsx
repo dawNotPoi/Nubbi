@@ -35,8 +35,8 @@ export function TrashNoteRow({
   const SourceIcon = note.source === "agent" ? Bot : UserRound;
 
   return (
-    <li className="grid min-h-14 grid-cols-[32px_minmax(0,1fr)_auto] items-center border-b border-border-row px-2 transition-colors hover:bg-bg-hover md:grid-cols-[40px_minmax(0,1fr)_112px_148px_176px]">
-      <div className="flex items-center justify-center">
+    <li className="grid min-h-[68px] grid-cols-[44px_minmax(0,1fr)_88px] items-center border-b border-border-row transition-colors hover:bg-bg-hover md:min-h-14 md:grid-cols-[40px_minmax(0,1fr)_112px_148px_176px]">
+      <div className="flex h-full min-h-11 items-center justify-center">
         <Checkbox
           aria-label={`选择 ${normalizeNoteTitle(note.title)}`}
           checked={selected}
@@ -45,32 +45,32 @@ export function TrashNoteRow({
         />
       </div>
 
-      <div className="min-w-0 py-2 pr-2">
+      <div className="min-w-0 py-2.5 pr-2 md:py-2">
         <div
           className="flex min-w-0 items-center gap-2"
-          style={{ paddingInlineStart: `${Math.min(row.depth, 5) * 16}px` }}
+          style={{ paddingInlineStart: `${Math.min(row.depth, 5) * 12}px` }}
         >
           {row.depth > 0 ? (
-            <CornerDownRight className="size-4 shrink-0 text-text-subtle" />
+            <CornerDownRight className="size-[18px] shrink-0 text-text-subtle md:size-4" />
           ) : (
-            <FileText className="size-4 shrink-0 text-text-subtle" />
+            <FileText className="size-[18px] shrink-0 text-text-subtle md:size-4" />
           )}
           <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-medium text-text-primary">
+            <div className="truncate text-[15px] font-medium text-text-primary md:text-sm">
               {normalizeNoteTitle(note.title)}
             </div>
             {showPath && row.pathLabel ? (
-              <div className="truncate text-xs text-text-subtle">{row.pathLabel}</div>
+              <div className="truncate text-[12px] text-text-subtle md:text-xs">{row.pathLabel}</div>
             ) : null}
             {parentInTrash ? (
-              <div className="truncate text-xs text-text-subtle">随父级一并恢复</div>
+              <div className="truncate text-[11px] text-text-subtle md:text-xs">随父级一并恢复</div>
             ) : null}
-            <div className="mt-1 flex flex-wrap items-center gap-1 md:hidden">
-              <span className="text-xs text-text-muted">{sourceLabel}</span>
-              <span className="text-xs text-text-subtle">·</span>
-              <span className="text-xs text-text-muted">{statusLabel}</span>
-              <span className="text-xs text-text-subtle">·</span>
-              <span className="text-xs text-text-muted">{formatDeletedTime(note.deletedAt)}</span>
+            <div className="mt-1 flex min-w-0 items-center gap-1 overflow-hidden text-[12px] text-text-muted md:hidden">
+              <span className="shrink-0">{sourceLabel}</span>
+              <span aria-hidden="true">·</span>
+              <span className="shrink-0">{statusLabel}</span>
+              <span aria-hidden="true">·</span>
+              <span className="truncate">{formatDeletedTime(note.deletedAt)}</span>
             </div>
           </div>
         </div>
@@ -84,13 +84,14 @@ export function TrashNoteRow({
         {formatDeletedTime(note.deletedAt)}
       </span>
 
-      <div className="flex items-center justify-end gap-1">
+      <div className="grid grid-cols-2 items-center justify-end gap-0.5 md:flex md:gap-1">
         <Tooltip title={parentInTrash ? "请先恢复父级页面" : "恢复到原位置"}>
-          <span>
+          <span className="grid place-items-center">
             <Button
               aria-label="恢复"
+              className="h-10 w-10 rounded-[8px] p-0 md:h-auto md:w-auto md:rounded-[6px] md:px-2"
               disabled={busy || parentInTrash}
-              icon={<RotateCcw className="size-4" />}
+              icon={<RotateCcw className="size-[17px] md:size-4" />}
               onClick={onRestore}
               size="small"
             >
@@ -100,9 +101,10 @@ export function TrashNoteRow({
         </Tooltip>
         <Button
           aria-label="永久删除"
+          className="h-10 w-10 rounded-[8px] p-0 md:h-auto md:w-auto md:rounded-[6px] md:px-2"
           danger
           disabled={busy}
-          icon={<Trash2 className="size-4" />}
+          icon={<Trash2 className="size-[17px] md:size-4" />}
           onClick={onPurge}
           size="small"
           title="永久删除"

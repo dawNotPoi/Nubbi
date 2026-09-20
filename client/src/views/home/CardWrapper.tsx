@@ -8,12 +8,12 @@ const CardWrapper = ({
   className?: string;
 }) => {
   return (
-    <div className={className}>
-      <header className="flex items-center gap-2 text-[13px] text-gray-500">
+    <section className={className}>
+      <header className="flex items-center gap-2 text-[13px] font-medium text-text-muted">
         {header}
       </header>
-      <main className="mt-4">{children}</main>
-    </div>
+      <div className="mt-4">{children}</div>
+    </section>
   );
 };
 

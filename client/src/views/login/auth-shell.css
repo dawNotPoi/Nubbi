@@ -1,0 +1,164 @@
+.auth-shell {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.auth-shell-layout {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  padding-top: max(12px, env(safe-area-inset-top));
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+
+.auth-shell-main {
+  height: 100%;
+  min-height: 0;
+  align-items: center;
+}
+
+.auth-shell-card {
+  max-height: calc(100dvh - 24px);
+  overflow: hidden;
+}
+
+.auth-shell-content {
+  min-height: 0;
+}
+
+.auth-shell-content > div {
+  min-height: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+.auth-shell-content > div > div {
+  width: 100% !important;
+  max-width: none !important;
+  border: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+.auth-shell-content img {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .auth-shell-layout {
+    padding-top: 24px;
+    padding-bottom: 24px;
+  }
+}
+
+@media (max-width: 1023px) {
+  .auth-brand-panel {
+    display: none;
+  }
+}
+
+/* 短屏时压缩认证表单，保证常见手机与笔记本视口不产生页面滚动。 */
+@media (max-height: 740px) {
+  .auth-shell-card {
+    padding: 12px 16px !important;
+  }
+
+  .auth-shell-card-brand {
+    display: none;
+  }
+
+  .auth-shell-content > div > div > div:first-child {
+    margin-bottom: 10px !important;
+    gap: 6px !important;
+  }
+
+  .auth-shell-content .mb-6 {
+    margin-bottom: 12px !important;
+  }
+
+  .auth-shell-content .my-6 {
+    margin-top: 12px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .auth-shell-content .gap-4 {
+    gap: 10px !important;
+  }
+
+  .auth-shell-content .gap-3 {
+    gap: 8px !important;
+  }
+
+  .auth-shell-content input:not([type="checkbox"]) {
+    height: 40px;
+  }
+
+  .auth-shell-content button.h-11,
+  .auth-shell-content button.h-10 {
+    height: 40px !important;
+  }
+
+  .auth-shell-content .ant-form-item {
+    margin-bottom: 10px !important;
+  }
+
+  .auth-shell-content .ant-form-item-label {
+    padding-bottom: 4px !important;
+  }
+
+  .auth-shell-content .ant-input {
+    height: 40px !important;
+  }
+
+  .auth-shell-content .ant-input-affix-wrapper {
+    height: 40px !important;
+    min-height: 40px !important;
+  }
+
+  .auth-shell-content .ant-input-affix-wrapper > input.ant-input {
+    height: auto !important;
+  }
+
+  .auth-shell-content .ant-btn {
+    height: 40px !important;
+  }
+}
+
+/* 极短视口进一步移除说明性内容；保留全部认证字段与主操作。 */
+@media (max-height: 640px) {
+  .auth-shell-card {
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+  }
+
+  .auth-shell-content > div > div > div:first-child > p {
+    display: none;
+  }
+
+  .auth-shell-content .mb-6 {
+    margin-bottom: 8px !important;
+  }
+
+  .auth-shell-content .my-6 {
+    margin-top: 8px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .auth-shell-content .gap-4,
+  .auth-shell-content .gap-3 {
+    gap: 8px !important;
+  }
+
+  .auth-shell-content form:has(#reg-username) > div:first-child,
+  .auth-shell-content form:has(#verify-code) > div:first-child,
+  .auth-shell-content form:has(#reset-email) > div:nth-of-type(5) {
+    display: none;
+  }
+
+  .auth-shell-content .ant-form-item {
+    margin-bottom: 8px !important;
+  }
+}

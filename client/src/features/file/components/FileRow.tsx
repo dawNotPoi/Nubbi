@@ -72,18 +72,15 @@ const getFileIcon = (item: FileListItem) => {
 };
 
 /**
- * 根据文件类型返回图标颜色类名，用于快速视觉区分。
- * 文件夹用 amber，图片用 emerald，视频用 purple，音频用 pink，其余用 subtle。
- * @param item 文件或文件夹条目。
- * @returns Tailwind 文字颜色类名。
+ * 文件类型色只表达对象身份，不承担选中、悬停或危险状态。
  */
 const getFileIconColor = (item: FileListItem) => {
-  if (item.kind === "folder") return "text-amber-500";
+  if (item.kind === "folder") return "text-[var(--entity-folder)]";
   const mime = item.mimeType ?? "";
-  if (mime.startsWith("image/")) return "text-emerald-500";
-  if (mime.startsWith("video/")) return "text-purple-500";
-  if (mime.startsWith("audio/")) return "text-pink-500";
-  return "text-text-subtle";
+  if (mime.startsWith("image/")) return "text-[var(--file-image)]";
+  if (mime.startsWith("video/")) return "text-[var(--file-video)]";
+  if (mime.startsWith("audio/")) return "text-[var(--file-audio)]";
+  return "text-[var(--entity-file)]";
 };
 
 /**
@@ -104,7 +101,7 @@ const highlightText = (text: string, query: string): ReactNode => {
     if (matchIndex > cursor) parts.push(text.slice(cursor, matchIndex));
     parts.push(
       <mark
-        className="rounded-sm bg-amber-100 px-px text-inherit"
+        className="rounded-sm bg-[var(--status-inbox-bg)] px-px text-inherit"
         key={`${matchIndex}-${keyword}`}
       >
         {text.slice(matchIndex, matchIndex + keyword.length)}

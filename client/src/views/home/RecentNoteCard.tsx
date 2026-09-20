@@ -1,17 +1,9 @@
 import type { Note } from "@/api/note";
 import Image from "@/component/UI/Image";
-import clsx from "clsx";
-import dayjs from "dayjs";
-import { Notebook } from "lucide-react";
+import { normalizeNoteTitle } from "@/features/note/model/hierarchy";
+import { formatNoteEditedTime } from "@/features/note/model/library";
+import { FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
-const TITLE_LIMIT = 34;
-
-const getDisplayTitle = (title?: string) => {
-  const value = title?.trim();
-  if (!value) return "未命名笔记";
-  return value.length > TITLE_LIMIT ? `${value.slice(0, TITLE_LIMIT)}...` : value;
-};
 
 export function RecentNoteCard({
   avatarSrc,
@@ -21,27 +13,21 @@ export function RecentNoteCard({
   note: Note;
 }) {
   const navigate = useNavigate();
-  const displayTitle = getDisplayTitle(note.title);
 
   return (
     <li
-      className="flex min-h-[164px] w-[76vw] min-w-[76vw] snap-start cursor-pointer flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-colors hover:border-sky-400 sm:w-[168px] sm:min-w-[168px] sm:max-w-[168px]"
-      onClick={() => {
-        navigate("/note/" + note._id);
-      }}
+      className="flex min-h-[156px] w-[176px] min-w-[176px] max-w-[176px] snap-start cursor-pointer flex-col overflow-hidden rounded-[10px] border border-border-row bg-surface shadow-[0_2px_10px_rgba(55,53,47,0.04)] transition-[border-color,background-color,box-shadow] hover:border-border-button-hover hover:bg-bg-hover hover:shadow-[0_5px_18px_rgba(55,53,47,0.07)] focus-within:ring-2 focus-within:ring-focus-ring"
+      onClick={() => navigate(`/note/${note._id}`)}
     >
-      <header className="relative mb-4">
-        <div className="h-11 bg-slate-50" />
-        <div className="absolute bottom-0 flex size-7 translate-x-5 translate-y-3 items-center justify-center overflow-hidden rounded-md bg-white text-slate-700 shadow-sm ring-1 ring-slate-200">
-          <Notebook className="size-4" />
+      <header className="relative mb-3">
+        <div className="h-10 bg-[var(--entity-note-soft)]" />
+        <div className="absolute bottom-0 left-4 grid size-7 translate-y-3 place-items-center rounded-[6px] border border-border-row bg-surface text-[var(--entity-note)] shadow-[0_1px_4px_rgba(55,53,47,0.06)]">
+          <FileText className="size-4" strokeWidth={1.9} />
         </div>
       </header>
       <div className="flex flex-1 flex-col px-4 pb-4 pt-2">
         <div
-          className={clsx(
-            "h-10 overflow-hidden break-words text-[14px] font-medium leading-5 text-slate-800 [overflow-wrap:anywhere]",
-            !note.title && "text-zinc-500",
-          )}
+          className="h-10 overflow-hidden break-words text-[14px] font-medium leading-5 text-text-primary [overflow-wrap:anywhere]"
           style={{
             WebkitBoxOrient: "vertical",
             WebkitLineClamp: 2,
@@ -49,15 +35,15 @@ export function RecentNoteCard({
           }}
           title={note.title || "未命名笔记"}
         >
-          {displayTitle}
+          {normalizeNoteTitle(note.title)}
         </div>
-        <section className="mt-auto flex items-center gap-1.5 pt-3 text-[13px] text-gray-500">
+        <section className="mt-auto flex items-center gap-1.5 pt-3 text-[12px] text-text-muted">
           <Image
             alt="user avatar"
-            className="size-5 shrink-0 rounded-full border border-slate-200 bg-slate-100 object-cover"
+            className="size-5 shrink-0 rounded-full border border-border-row bg-bg-hover object-cover"
             src={avatarSrc}
           />
-          <span className="truncate">{dayjs(note.updatedAt).format("YYYY-MM-DD")}</span>
+          <span className="truncate">{formatNoteEditedTime(note)}</span>
         </section>
       </div>
     </li>
@@ -66,19 +52,19 @@ export function RecentNoteCard({
 
 export function RecentNoteCardSkeleton() {
   return (
-    <li className="flex min-h-[164px] w-[76vw] min-w-[76vw] snap-start flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm sm:w-[168px] sm:min-w-[168px] sm:max-w-[168px]">
-      <header className="relative mb-4">
-        <div className="h-11 animate-pulse bg-slate-100" />
-        <div className="absolute bottom-0 size-7 translate-x-5 translate-y-3 rounded-md bg-slate-200" />
+    <li className="flex min-h-[156px] w-[176px] min-w-[176px] max-w-[176px] snap-start flex-col overflow-hidden rounded-[10px] border border-border-row bg-surface">
+      <header className="relative mb-3">
+        <div className="h-10 animate-pulse bg-[var(--entity-note-soft)]" />
+        <div className="absolute bottom-0 left-4 size-7 translate-y-3 rounded-[6px] bg-skeleton" />
       </header>
       <div className="flex flex-1 flex-col px-4 pb-4 pt-2">
         <div className="space-y-2">
-          <div className="h-4 animate-pulse rounded bg-slate-200" />
-          <div className="h-4 w-4/5 animate-pulse rounded bg-slate-200" />
+          <div className="h-4 animate-pulse rounded bg-skeleton" />
+          <div className="h-4 w-4/5 animate-pulse rounded bg-skeleton" />
         </div>
         <div className="mt-auto flex items-center gap-2 pt-3">
-          <div className="size-5 animate-pulse rounded-full bg-slate-200" />
-          <div className="h-3 w-20 animate-pulse rounded bg-slate-200" />
+          <div className="size-5 animate-pulse rounded-full bg-skeleton" />
+          <div className="h-3 w-20 animate-pulse rounded bg-skeleton" />
         </div>
       </div>
     </li>

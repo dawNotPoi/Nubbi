@@ -1,3 +1,4 @@
+import { NubbiBrand } from "@/components/brand/NubbiBrand";
 import { activeUploadCountAtom } from "@/store/atom/FileAtom";
 import { routes } from "@/utils/routes";
 import clsx from "clsx";
@@ -38,27 +39,32 @@ const SideBar: React.FC = () => {
 
   return (
     <ResizeTab
-      className={clsx("group/sidebar px-3 bg-sidebar py-2 font-medium ")}
+      className={clsx(
+        "group/sidebar bg-sidebar px-3 pb-[calc(8px+env(safe-area-inset-bottom))] pt-[calc(8px+env(safe-area-inset-top))] text-text-primary md:py-2 md:text-sm",
+      )}
     >
-      <div className="h-full flex flex-col">
+      <div className="flex h-full flex-col">
+        <div className="mb-2 flex min-h-9 items-center px-1.5">
+          <NubbiBrand size="sm" />
+        </div>
         <SideBarHeader />
-        <div className="flex mt-2 flex-col flex-1 gap-2 overflow-auto ">
+        <div className="mt-2 flex flex-1 flex-col gap-1 overflow-auto overscroll-contain pb-2">
           <NoteDndProvider>
             <MenuItemContainer to={routes.home}>
-              <House size={16} /> 主页
+              <House size={18} className="text-text-subtle md:size-4" /> 主页
             </MenuItemContainer>
 
             <MenuItemContainer to={routes.file}>
-              <FolderTree size={16} />
+              <FolderTree size={18} className="text-text-subtle md:size-4" />
               <span>文件</span>
               {activeUploads > 0 && (
-                <span className="ml-auto rounded-full bg-red-500 px-1.5 text-[10px] leading-4 text-white">
+                <span className="ml-auto rounded-full bg-[var(--entity-file)] px-1.5 text-[10px] font-medium leading-4 text-white">
                   {activeUploads > 99 ? "99+" : activeUploads}
                 </span>
               )}
             </MenuItemContainer>
             <MenuItemContainer to={routes.meetings}>
-              <Presentation size={16} />
+              <Presentation size={18} className="text-text-subtle md:size-4" />
               <span>会议</span>
             </MenuItemContainer>
             <NoteMenu />
