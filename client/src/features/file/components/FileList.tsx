@@ -54,6 +54,11 @@ interface FileListProps {
   onUpload: (files: File[]) => void;
 }
 
+/**
+ * 展示文件列表并协调行级选择、键盘导航与拖拽。
+ * @param props 列表数据、状态及业务操作回调。
+ * @returns 文件列表界面。
+ */
 export function FileList(props: FileListProps): ReactElement {
   const [activeIndex, setActiveIndex] = useState(-1);
   const [moveDropTargetId, setMoveDropTargetId] = useState<string | null>(null);
@@ -85,10 +90,21 @@ export function FileList(props: FileListProps): ReactElement {
     rowRefs.current[clamped]?.focus();
   };
 
-  /** 列表键盘操作：方向键移动、Shift 连续选择、回车打开、空格选择、Delete 删除 */
-  const handleKeyDown = (event: KeyboardEvent<HTMLUListElement>) => {
+  /**
+   * 行和文件名使用列表快捷键，独立控件与浮层保留自己的键盘语义。
+   * @param event 列表接收的键盘事件。
+   * @returns 无返回值。
+   */
+  const handleKeyDown = (event: KeyboardEvent<HTMLUListElement>): void => {
     const target = event.target as HTMLElement;
-    if (target.closest("input, textarea, select, [contenteditable='true']")) return;
+    if (
+      props.pending || event.defaultPrevented || event.nativeEvent.isComposing ||
+      !event.currentTarget.contains(target) ||
+      target.closest(
+        "input, textarea, select, [contenteditable]:not([contenteditable='false']), " +
+        "button:not([data-file-row-name]), a, [role='menu'], [role='menuitem']",
+      )
+    ) return;
     const count = props.items.length;
     if (count === 0) return;
     const active = activeIndex >= 0 && activeIndex < count ? activeIndex : -1;
