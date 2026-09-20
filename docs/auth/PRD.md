@@ -104,6 +104,12 @@ Better Auth 的账号关联配置只声明在 `account.accountLinking`；认证�
 
 ### 登录页 `/login`
 - `client/src/views/login/` — 邮箱登录、注册表单、OAuth 按钮
+- 登录卡片提供同级的 Google / GitHub 图标加文字按钮，复用现有 `useAuth` 和 Better Auth OAuth 流程，不新增认证 SDK。
+- 发起第三方登录时显示对应渠道的等待状态，阻止重复点击和同时提交邮箱登录；失败后在卡片内提示并恢复重试。
+- 成功回跳沿用校验后的 `returnTo`；用户取消或 OAuth 回调失败沿用现有错误回跳处理，不改变账号关联策略。
+- 客户端不保存 OAuth 密钥。服务端配置 `AUTH_GOOGLE_ID`、`AUTH_GOOGLE_SECRET`、`BETTER_AUTH_URL` 和 `CLIENT_URL` 后重启。
+- 本地授权回调为 `http://localhost:4000/api/auth/callback/google`；线上登记实际认证服务的 HTTPS 地址加 `/api/auth/callback/google`，必须与 Google 控制台完全一致。
+- 配置和真实 Google 授权登录需单独验收；按钮接入不代表 OAuth 控制台配置已完成。
 
 ### 密码重置 `/reset-password`
 - `client/src/views/reset-password/` — 邮件验证码重置密码

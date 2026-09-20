@@ -9,8 +9,9 @@ import {
 } from "@/utils/auth";
 import { resolveReturnTo, routes } from "@/utils/routes";
 import { message } from "antd";
-import { useEffect, useMemo, useState } from "react";
-import { Github, Loader2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
+import { Loader2 } from "lucide-react";
+import { SocialLoginButtons, type SocialLoginProvider } from "./SocialLoginButtons";
 import { useLocation, useNavigate } from "react-router-dom";
 import faviconSvg from "/favicon.svg";
 import { Button } from "@/component/UI/button";
@@ -35,13 +36,20 @@ const getEmailDomainCorrection = (email: string) => {
   return domain ? emailDomainCorrections[domain] : undefined;
 };
 
-export const LoginPage = () => {
+/**
+ * 展示认证表单并协调邮箱、验证码和第三方登录入口。
+ * @returns 使用既有认证服务及安全回跳地址的登录界面。
+ */
+export const LoginPage = (): ReactElement => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, register, loginWithGitHub, loading } = useAuth();
+  const { login, register, loginWithGitHub, loginWithGoogle, loading } = useAuth();
 
   const [view, setView] = useState<AuthView>("login");
   const [socialLoginError, setSocialLoginError] = useState<string | null>(null);
+  const [pendingProvider, setPendingProvider] = useState<SocialLoginProvider | null>(null);
+  const socialLoginInFlight = useRef(false);
+  const loginBusy = loading || pendingProvider !== null;
 
   /* login */
   const [loginEmail, setLoginEmail] = useState("");
@@ -144,9 +152,14 @@ export const LoginPage = () => {
     setResetCodeCooldown(0); setResetEmailError("");
   };
 
-  /* ── login ── */
-  const handleLogin = async (e: React.FormEvent) => {
+  /**
+   * 提交邮箱登录，第三方认证正在发起时不再并行创建会话。
+   * @param e 登录表单的提交事件。
+   * @returns 登录与页面跳转处理完成的 Promise。
+   */
+  const handleLogin = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
+    if (loading || socialLoginInFlight.current) return;
     const email = loginEmail.trim();
     if (!emailPattern.test(email)) {
       message.error("请输入有效的邮箱地址");
@@ -341,9 +354,29 @@ export const LoginPage = () => {
     desc: view === "register" ? "加入 Nubbi，开启结构化学习之旅" : view === "verifyEmail" ? (verificationCodeSent ? `验证码已发送至 ${verificationEmail}` : `请获取验证码以验证 ${verificationEmail}`) : view === "forgotPassword" ? "通过邮箱验证设置新密码" : "欢迎回来，继续你的知识旅程",
   };
 
-  const handleGitHubLogin = async () => {
-    const result = await loginWithGitHub(callbackURL);
-    if (!result.success) message.error(result.error?.message || "GitHub 登录失败");
+  /**
+   * 复用既有 OAuth 入口，锁住重复点击并在失败后恢复按钮。
+   * @param provider 用户选择的第三方认证渠道。
+   * @returns 登录发起及错误反馈处理完成的 Promise。
+   */
+  const handleSocialLogin = async (provider: SocialLoginProvider): Promise<void> => {
+    if (loading || socialLoginInFlight.current) return;
+    socialLoginInFlight.current = true;
+    setPendingProvider(provider);
+    setSocialLoginError(null);
+    const providerName = provider === "google" ? "Google" : "GitHub";
+    try {
+      const startLogin = provider === "google" ? loginWithGoogle : loginWithGitHub;
+      const result = await startLogin(callbackURL);
+      if (!result.success) {
+        setSocialLoginError(result.error?.message || `${providerName} 登录暂不可用，请稍后重试或使用其他方式。`);
+      }
+    } catch {
+      setSocialLoginError(`${providerName} 登录暂不可用，请稍后重试或使用其他方式。`);
+    } finally {
+      socialLoginInFlight.current = false;
+      setPendingProvider(null);
+    }
   };
 
   return (
@@ -486,20 +519,11 @@ export const LoginPage = () => {
           ) : (
             /* ═══ login ═══ */
             <form onSubmit={handleLogin}>
-              <div className="flex justify-center">
-                <Button
-                  aria-label="使用 GitHub 登录"
-                  title="使用 GitHub 登录"
-                  variant="outline"
-                  size="icon"
-                  className="rounded-full"
-                  type="button"
-                  onClick={handleGitHubLogin}
-                  disabled={loading}
-                >
-                  <Github aria-hidden="true" />
-                </Button>
-              </div>
+              <SocialLoginButtons
+                disabled={loading}
+                pendingProvider={pendingProvider}
+                onLogin={handleSocialLogin}
+              />
               <div className="flex items-center gap-3.5 my-6">
                 <Separator className="flex-1" />
                 <span className="text-[13px] text-text-subtle">或使用邮箱</span>
@@ -515,10 +539,10 @@ export const LoginPage = () => {
                   <PasswordInput id="login-password" name="password" value={loginPassword} placeholder="请输入密码" autoComplete="current-password" required onChange={e => setLoginPassword(e.target.value)} />
                 </div>
                 <div className="flex justify-end -mt-2">
-                  <Button variant="link" type="button" onClick={() => goView("forgotPassword")}>忘记密码？</Button>
+                  <Button variant="link" type="button" disabled={loginBusy} onClick={() => goView("forgotPassword")}>忘记密码？</Button>
                 </div>
-                <Button variant="primary" size="lg" type="submit" disabled={loading}>
-                  {loading && <Loader2 className="animate-spin" />}
+                <Button variant="primary" size="lg" type="submit" disabled={loginBusy}>
+                  {loading && pendingProvider === null && <Loader2 className="animate-spin" />}
                   登录
                 </Button>
               </div>
@@ -535,7 +559,7 @@ export const LoginPage = () => {
           {view === "login" || view === "register" ? (
             <div className="flex items-center justify-center gap-1 text-sm text-text-muted">
               {view === "register" ? "已有账号？" : "还没有账号？"}
-              <Button variant="link" className="p-0 h-auto font-bold" onClick={() => goView(view === "register" ? "login" : "register")}>
+              <Button variant="link" className="p-0 h-auto font-bold" disabled={loginBusy} onClick={() => goView(view === "register" ? "login" : "register")}>
                 {view === "register" ? "返回登录" : "立即注册"}
               </Button>
             </div>

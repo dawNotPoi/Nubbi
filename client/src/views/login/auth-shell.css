@@ -21,7 +21,10 @@
 
 .auth-shell-card {
   max-height: calc(100dvh - 24px);
-  overflow: hidden;
+  /* 多渠道登录或错误提示增加高度时，允许卡片滚动以保留全部入口。 */
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .auth-shell-content {
