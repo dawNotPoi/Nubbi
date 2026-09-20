@@ -14,6 +14,10 @@ const MAX_FILE_BYTES =
   Number(import.meta.env.VITE_FILE_UPLOAD_MAX_BYTES) || 10 * 1024 ** 3;
 const MAX_ACTIVE_TASKS = 5;
 
+/**
+ * 创建全局上传任务，并在服务端用量变化后刷新文件页缓存。
+ * @returns 单文件及批量上传入口。
+ */
 export const useGlobalUpload = () => {
   const setUploadTasks = useSetAtom(uploadTasksAtom);
   const store = useStore();
@@ -101,7 +105,21 @@ export const useGlobalUpload = () => {
       file,
       folderId: targetFolderId,
       folderName: targetFolderName,
+      /**
+       * 同步任务快照，在初始化确认预留后刷新用量。
+       * @param snapshot 上传器发布的最新状态。
+       * @returns 无返回值。
+       */
       onChange: (snapshot) => {
+        // 只有服务端初始化成功才形成预留；分片进度通知不重复请求用量。
+        const previous = store.get(uploadTaskAtomFamily(taskId));
+        if (
+          previous?.status === UploadStatus.initializing &&
+          snapshot.status === UploadStatus.uploading &&
+          snapshot.uploadId
+        ) {
+          void queryClient.invalidateQueries({ queryKey: [FILE_STATS_QUERY_KEY] });
+        }
         store.set(uploadTaskAtomFamily(taskId), (previous) =>
           previous ? { ...previous, ...snapshot } : null,
         );
