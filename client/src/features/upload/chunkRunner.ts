@@ -2,6 +2,7 @@ import { uploadChunk } from "@/api/file";
 import { ChunkStatus } from "./model";
 import { uploadPool } from "./pool";
 import { uploadWithRetry } from "./retry";
+import { getUploadProgress } from "./progress";
 
 type Chunk = { index: number; blob: Blob; status: ChunkStatus };
 const PER_FILE_CONCURRENCY = 3;
@@ -76,17 +77,30 @@ export class ChunkUploadRunner {
     });
   }
 
-  private reportProgress(chunk: Chunk) {
-    this.confirmedBytes += chunk.blob.size;
-    const elapsed = Math.max((performance.now() - this.startedAt) / 1000, 0.001);
+  /**
+   * 读取已确认分片进度，初始化续传时立即恢复到服务端已有进度。
+   * @returns 分片阶段的展示百分比。
+   */
+  getProgress(): number {
     const completed = this.chunks.filter(
       (item) => item.status === ChunkStatus.success,
     ).length;
-    const progress = Math.min(
-      99,
-      10 + Math.round((completed / this.options.totalChunks) * 89),
+    return getUploadProgress(
+      this.options.file.size,
+      completed,
+      this.options.totalChunks,
     );
-    this.options.onProgress(progress, this.confirmedBytes / elapsed);
+  }
+
+  /**
+   * 仅在分片确认成功后推进进度，速度按本轮实际上传量计算。
+   * @param chunk 刚完成的分片。
+   * @returns 无返回值。
+   */
+  private reportProgress(chunk: Chunk): void {
+    this.confirmedBytes += chunk.blob.size;
+    const elapsed = Math.max((performance.now() - this.startedAt) / 1000, 0.001);
+    this.options.onProgress(this.getProgress(), this.confirmedBytes / elapsed);
   }
 
   private async uploadOne(chunk: Chunk, generation: number) {

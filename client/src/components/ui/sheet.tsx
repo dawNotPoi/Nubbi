@@ -6,14 +6,20 @@ import { cn } from "@/lib/utils";
 /**
  * Nubbi 的移动端 Sheet 基础组件。
  * 基于 Base UI Drawer，统一焦点管理、软件键盘、向下滑动关闭与安全区。
+ * @param props 抽屉状态、滑动方向及静态或函数形式的内容。
+ * @returns 包含软件键盘上下文的抽屉。
  */
 const Sheet = ({
   swipeDirection = "down",
   children,
   ...props
-}: React.ComponentProps<typeof Drawer.Root>) => (
+}: React.ComponentProps<typeof Drawer.Root>): React.ReactElement => (
   <Drawer.Root swipeDirection={swipeDirection} {...props}>
-    <Drawer.VirtualKeyboardProvider>{children}</Drawer.VirtualKeyboardProvider>
+    {(payload) => (
+      <Drawer.VirtualKeyboardProvider>
+        {typeof children === "function" ? children(payload) : children}
+      </Drawer.VirtualKeyboardProvider>
+    )}
   </Drawer.Root>
 );
 

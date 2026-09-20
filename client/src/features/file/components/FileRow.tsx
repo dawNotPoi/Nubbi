@@ -161,6 +161,11 @@ interface FileRowProps {
   onToggle: (id: string, checked: boolean) => void;
 }
 
+/**
+ * 展示文件条目，文件名参与列表导航，操作区保留独立控件语义。
+ * @param props 条目状态和行级操作回调。
+ * @returns 文件或文件夹列表行。
+ */
 export function FileRow(props: FileRowProps): ReactElement {
   const [name, setName] = useState(props.item.name);
   const [saving, setSaving] = useState(false);
@@ -282,6 +287,7 @@ export function FileRow(props: FileRowProps): ReactElement {
             ) : (
               <button
                 className="flex min-w-0 rounded px-1 py-0.5 text-left text-sm font-medium hover:bg-bg-hover"
+                data-file-row-name
                 onClick={(event) =>
                   compact
                     ? open()

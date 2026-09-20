@@ -1,4 +1,5 @@
 import { getUploadTaskStatus } from "@/api/file";
+import { getUploadProgress } from "@/features/upload/progress";
 import {
   type UploadTask,
   hasActiveUploadAtom,
@@ -23,6 +24,7 @@ const restoredTaskId = (uploadId: string) => `restored:${uploadId}`;
  * - 启动时从 localStorage 恢复上次中断的上传任务，查询服务端已传分块，
  *   重建为 needsFile 状态的条目供用户续传；已完成的会话会被清理。
  * - 存在活跃上传时监听 beforeunload，拦截页面关闭/刷新，防止上传丢失。
+ * @returns 不渲染可见内容。
  */
 export default function UploadLifecycle() {
   const store = useStore();
@@ -70,10 +72,11 @@ export default function UploadLifecycle() {
               folderId: session.folderId,
               folderName: session.folderName,
               uploadId: session.uploadId,
-              // 服务端已有分块作为保底进度，10% 起步、封顶 99%，剩余部分需重新选文件补齐
-              progress: Math.min(
-                99,
-                10 + Math.round((completed / session.totalChunks) * 89),
+              // 与实时上传使用相同口径，避免大文件刷新后凭空增加校验进度。
+              progress: getUploadProgress(
+                session.size,
+                completed,
+                session.totalChunks,
               ),
               speed: 0,
               // 服务端只存了分块，没有完整文件，必须由用户重新选择原文件才能续传

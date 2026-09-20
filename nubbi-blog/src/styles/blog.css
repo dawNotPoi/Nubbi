@@ -1,0 +1,48 @@
+.blog-layout { display: grid; grid-template-columns: minmax(0, 1fr) 252px; column-gap: 56px; scroll-margin-top: 100px; }
+.feed-header { grid-column: 1; grid-row: 1; min-width: 0; margin-bottom: 28px; }
+.feed-header h1, .feed-header h2 { margin: 10px 0 0; font-size: 28px; line-height: 36px; font-weight: 400; overflow-wrap: anywhere; }
+.feed-toolbar { grid-column: 1; grid-row: 2; min-width: 0; }
+.post-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 44px; border-bottom: 1px solid var(--border-default); font-size: 12px; color: var(--text-tertiary); }
+.post-toolbar nav { display: flex; gap: 14px; flex-shrink: 0; }
+.post-toolbar a { display: inline-flex; align-items: center; min-height: 36px; }
+.post-toolbar a[aria-current] { color: var(--accent); text-decoration: underline; text-underline-offset: 4px; }
+.post-toolbar a:hover { color: var(--accent); }
+.article-feed { grid-column: 1; grid-row: 4; min-width: 0; scroll-margin-top: 100px; }
+.post-item { margin: 4px 0; }
+.compact-post { position: relative; display: block; margin-inline: -14px; padding: 14px; border-radius: 7px; transition: background-color 180ms, box-shadow 180ms, transform 180ms; }
+.compact-post:hover, .compact-post:focus-visible { background: var(--post-hover); box-shadow: var(--shadow-row); transform: translateY(-1px); }
+.post-title { margin: 0; color: var(--text-primary); font-size: 16px; line-height: 26px; font-weight: 500; overflow-wrap: anywhere; }
+.post-excerpt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 4px 0 0; font-size: 13px; line-height: 20px; color: var(--text-secondary); }
+.post-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; color: var(--text-tertiary); font-size: 12px; line-height: 18px; }
+.compact-post .post-meta { flex-wrap: nowrap; margin-top: 6px; }
+.post-meta time { flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.post-meta-topics { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; color: var(--text-secondary); }
+.post-more-tags { margin-left: 6px; color: var(--text-tertiary); }
+.meta-separator { color: var(--border-strong); }
+.compact-post > .navigation-hint { position: absolute; right: -8px; top: 20px; }
+.post-tags { display: flex; flex-wrap: wrap; gap: 8px; font-size: 12px; color: var(--text-secondary); }
+.post-tags a { display: inline-flex; align-items: center; min-height: 28px; overflow-wrap: anywhere; }
+.post-tags a:hover { color: var(--accent); }
+.filter-summary { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; font-size: 12px; color: var(--text-secondary); }
+.filter-summary > span { min-width: 0; overflow-wrap: anywhere; }
+.filter-summary a { flex-shrink: 0; color: var(--accent); text-decoration: underline; text-underline-offset: 4px; }
+.pagination { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; justify-items: center; margin-top: 32px; font-size: 13px; color: var(--text-secondary); }
+.pagination > :nth-child(2) { grid-column: 1 / -1; grid-row: 2; font-size: 12px; color: var(--text-tertiary); }
+.pagination > :first-child { justify-self: end; }
+.pagination > :last-child { justify-self: start; }
+.pagination a { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; }
+.pagination a:hover { color: var(--accent); }
+.pagination [aria-disabled] { line-height: 36px; color: var(--text-tertiary); }
+.empty-state { display: grid; justify-items: center; align-content: center; min-height: 300px; padding: 40px 16px; color: var(--text-tertiary); text-align: center; }
+.empty-state .empty-title { margin: 20px 0 10px; font-size: 18px; color: var(--text-secondary); }
+.empty-state p { margin: 0; font-size: 13px; line-height: 1.8; }
+@media (max-width: 1023px) {
+  .blog-layout { grid-template-columns: minmax(0, 1fr); scroll-margin-top: 24px; }
+  .feed-header { margin-bottom: 24px; }
+  .article-feed { scroll-margin-top: 24px; }
+  .post-toolbar nav { gap: 14px; }
+  .post-toolbar a { min-height: 44px; }
+  .compact-post { padding-block: 16px; margin-inline: -10px; padding-inline: 10px; }
+  .compact-post > .navigation-hint { right: 2px; }
+  .post-item { margin-block: 8px; }
+}

@@ -4,7 +4,7 @@ import {
   mergeChunk,
 } from "@/api/file";
 import { calculateFileHash } from "./hash";
-import { FULL_HASH_THRESHOLD_BYTES } from "./hashPolicy";
+import { getHashProgressWeight } from "./progress";
 import { ChunkUploadRunner } from "./chunkRunner";
 import {
   UploadStatus,
@@ -139,22 +139,26 @@ export class Uploader {
     }
   }
 
-  async upload() {
+  /**
+   * 校验并初始化上传，恢复已有分片后继续传输。
+   * @returns 上传初始化流程完成的 Promise。
+   */
+  async upload(): Promise<void> {
     try {
       this.resetController();
       this.setStatus(UploadStatus.hashing, { progress: 0, error: undefined });
       // 大文件使用抽样哈希，读取量固定且几乎瞬间完成，不把哈希进度映射到进度条，
       // 避免进度 0→10% 跳变后长时间停滞；小文件仍按完整哈希进度平滑推进。
-      const sampledHash = this.options.file.size >= FULL_HASH_THRESHOLD_BYTES;
+      const hashWeight = getHashProgressWeight(this.options.file.size);
       this.hash = await calculateFileHash(
         this.options.file,
         this.abortController.signal,
         (percentage) => {
-          if (sampledHash) return;
-          this.emit({ progress: Math.round(percentage / 10) });
+          if (hashWeight === 0) return;
+          this.emit({ progress: Math.round(percentage * hashWeight / 100) });
         },
       );
-      this.setStatus(UploadStatus.initializing, { progress: 10 });
+      this.setStatus(UploadStatus.initializing, { progress: hashWeight });
       const response = await initUploadTask({
         fileName: this.options.file.name,
         fileHash: this.hash,
@@ -183,7 +187,10 @@ export class Uploader {
         expiresAt: response.data.expiresAt,
       });
       this.runner.configure(response.data.uploadedChunks);
-      this.setStatus(UploadStatus.uploading, { uploadId: this.uploadId });
+      this.setStatus(UploadStatus.uploading, {
+        uploadId: this.uploadId,
+        progress: this.runner.getProgress(),
+      });
       if (this.runner.isComplete()) {
         await this.complete();
       } else {

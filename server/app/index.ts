@@ -22,6 +22,7 @@ import { startNotePurgeMaintenance } from "./services/note/purge";
 import { startStorageCleanupMaintenance } from "./services/storageCleanupQueue";
 
 import authRouter from "./routes/auth";
+import blogRouter from "./routes/blog";
 import fileRouter from "./routes/file";
 import imageRouter from "./routes/image";
 import meetingRouter from "./routes/meeting";
@@ -102,6 +103,7 @@ app.get("/", (req, res) => {
 
 //接口路由处理
 app.use("/auth", authRouter);
+app.use("/blog", blogRouter);
 app.use("/note", noteRouter);
 app.use("/mcp-api", mcpApiRouter);
 app.use(

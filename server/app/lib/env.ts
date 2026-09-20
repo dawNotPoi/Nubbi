@@ -78,6 +78,7 @@ const envSchema = z.object({
   BETTER_AUTH_SECRET: requiredString("BETTER_AUTH_SECRET"),
   BETTER_AUTH_URL: requiredString("BETTER_AUTH_URL"),
   CLIENT_URL: optionalString().default("http://localhost:5173"),
+  BLOG_AUTHOR_ID: optionalString(),
   AUTH_GITHUB_ID: requiredString("AUTH_GITHUB_ID"),
   AUTH_GITHUB_SECRET: requiredString("AUTH_GITHUB_SECRET"),
   AUTH_GOOGLE_ID: optionalString(),

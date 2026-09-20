@@ -111,6 +111,16 @@ payload 都执行运行时校验，遗留的跨 socket 私密转发事件已移�
 
 ## 开发约定
 
+### Nubbi Blog 工作区（2026-09-05）
+
+`nubbi-blog/`（`nubbi-blog`）导入自 dawNotPoi/dawn，产品和公开 API 边界见
+[`博客 PRD`](../blog/PRD.md)。替代已移除的 Website，独立升级 Next.js / React，不影响原 Client。
+`pnpm dev:blog` 仅启动博客（3002）；`pnpm dev:blog:full` 启动博客与主服务；
+`pnpm dev:all` 再加入 Client。原 `pnpm dev` 行为保持不变。
+`build:blog`、`start:blog`、`lint:blog`、`typecheck:blog` 是博客的构建、运行和检查入口。
+主服务在 `/blog` 注册只读公开接口，Nubbi Blog 服务端通过 `NUBBI_API_URL` 调用。
+接口使用 Note 的发布状态，按白名单返回公开字段，无需给博客配置数据库或认证密钥。
+
 ### 添加新的 API 调用
 1. 在 `client/src/api/` 新建文件，参考 `request.ts` 的封装
 2. 定义请求/响应的 TypeScript 类型

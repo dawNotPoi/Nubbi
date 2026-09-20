@@ -1,0 +1,137 @@
+/* 余白式奶白纸面与玫瑰暖色统一在此维护；组件只能引用语义变量。 */
+:root {
+  color-scheme: light;
+  --bg-page: #fefefb;
+  --bg-floating: #fffffff0;
+  --bg-panel: #ffffff80;
+  --border-faint: #24231f08;
+  --border-strong: #c5c3b8;
+  --accent-border: #b56f8226;
+  --dialog-overlay: #24231f38;
+  --sparkle-color: #d5b77170;
+  --bg-surface: #ffffff;
+  --bg-muted: #f7f7f3;
+  --text-primary: #24231f;
+  --text-secondary: #686760;
+  --text-tertiary: #77756e;
+  --border-default: #eeede7;
+  --accent: #a65f73;
+  --accent-hover: #8d465a;
+  --accent-soft: #f8edf0;
+  --accent-brand: #bd7e8d;
+  --on-accent: #ffffff;
+  --focus-ring: #a65f73;
+  --shadow-color: #24231f0b;
+  --overlay-bg: #201c19eb;
+  --overlay-text: #faf5ef;
+  --tag-bg: #f8f8f5;
+  --tag-text: #925369;
+  --post-hover: #ffffffc9;
+  --notice-info: #24659a;
+  --notice-info-bg: #edf5fc;
+  --notice-warning: #805b13;
+  --notice-warning-bg: #fbf4e6;
+  --notice-danger: #9f4038;
+  --notice-danger-bg: #fdf0ef;
+  --code-bg: #292724;
+  --code-text: #eee7de;
+  --code-muted: #bfb5a8;
+  --code-border: #4c463f;
+  --code-keyword: #d8b5e5;
+  --code-string: #e6bc8c;
+  --code-title: #a7cbe0;
+  --selection-bg: var(--accent-soft);
+  --selection-text: var(--text-primary);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg-page: #1c1c1a;
+    --bg-floating: #232320ed;
+    --bg-panel: #23232080;
+    --border-faint: #eeeee70a;
+    --border-strong: #626257;
+    --accent-border: #dfa3b330;
+    --dialog-overlay: #08080670;
+    --sparkle-color: #b9a37338;
+    --bg-surface: #232320;
+    --bg-muted: #292925;
+    --text-primary: #eeeee7;
+    --text-secondary: #b9b9af;
+    --text-tertiary: #a4a49a;
+    --border-default: #373730;
+    --accent: #dfa3b3;
+    --accent-hover: #edbbc8;
+    --accent-soft: #36282e;
+    --on-accent: #271c20;
+    --focus-ring: #dfa3b3;
+    --shadow-color: #120e0a33;
+    --tag-bg: #30272b;
+    --tag-text: #e2abb9;
+    --post-hover: #ffffff08;
+    --notice-info: #9eceff;
+    --notice-info-bg: #283b4b;
+    --notice-warning: #ebc577;
+    --notice-warning-bg: #453e2c;
+    --notice-danger: #ecb0a6;
+    --notice-danger-bg: #493432;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg-page: #1c1c1a;
+  --bg-floating: #232320ed;
+  --bg-panel: #23232080;
+  --border-faint: #eeeee70a;
+  --border-strong: #626257;
+  --accent-border: #dfa3b330;
+  --dialog-overlay: #08080670;
+  --sparkle-color: #b9a37338;
+  --bg-surface: #232320;
+  --bg-muted: #292925;
+  --text-primary: #eeeee7;
+  --text-secondary: #b9b9af;
+  --text-tertiary: #a4a49a;
+  --border-default: #373730;
+  --accent: #dfa3b3;
+  --accent-hover: #edbbc8;
+  --accent-soft: #36282e;
+  --on-accent: #271c20;
+  --focus-ring: #dfa3b3;
+  --shadow-color: #120e0a33;
+  --tag-bg: #30272b;
+  --tag-text: #e2abb9;
+  --post-hover: #ffffff08;
+  --notice-info: #9eceff;
+  --notice-info-bg: #283b4b;
+  --notice-warning: #ebc577;
+  --notice-warning-bg: #453e2c;
+  --notice-danger: #ecb0a6;
+  --notice-danger-bg: #493432;
+}
+
+/* 关闭默认色板，仅向 Tailwind 暴露语义颜色，与普通 CSS 共用同一来源。 */
+@theme inline {
+  --color-*: initial;
+  --color-page: var(--bg-page);
+  --color-surface: var(--bg-surface);
+  --color-surface-muted: var(--bg-muted);
+  --color-primary: var(--text-primary);
+  --color-secondary: var(--text-secondary);
+  --color-tertiary: var(--text-tertiary);
+  --color-divider: var(--border-default);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
+  --color-focus: var(--focus-ring);
+  --color-code-bg: var(--code-bg);
+  --color-code-text: var(--code-text);
+  --color-code-muted: var(--code-muted);
+  --color-code-border: var(--code-border);
+  --color-code-keyword: var(--code-keyword);
+  --color-code-string: var(--code-string);
+  --color-code-title: var(--code-title);
+}
