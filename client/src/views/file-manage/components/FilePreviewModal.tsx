@@ -424,11 +424,11 @@ const FilePreviewModal = ({
         );
       case "image":
         return (
-          <div className="flex min-h-[min(520px,60dvh)] items-center justify-center rounded-2xl bg-[#f7f7f8] p-4">
+          <div className="flex min-h-[min(520px,60dvh)] items-center justify-center rounded-panel bg-[#f7f7f8] p-4">
             <img
               src={previewState.objectUrl}
               alt={record?.name || "preview"}
-              className="max-h-[62vh] max-w-full rounded-xl object-contain shadow-sm"
+              className="max-h-[62vh] max-w-full rounded-control object-contain shadow-sm"
             />
           </div>
         );
@@ -438,24 +438,24 @@ const FilePreviewModal = ({
             key={previewState.src}
             title={record?.name || "pdf-preview"}
             src={previewState.src}
-            className="h-[70vh] w-full rounded-2xl border border-[#ebecef] bg-white"
+            className="h-[70vh] w-full rounded-panel border border-[#ebecef] bg-white"
           />
         );
       case "video":
         return (
-          <div className="flex min-h-[min(520px,60dvh)] items-center justify-center rounded-2xl bg-black p-4">
+          <div className="flex min-h-[min(520px,60dvh)] items-center justify-center rounded-panel bg-black p-4">
             <video
               key={previewState.src}
               src={previewState.src}
               controls
               preload="metadata"
-              className="max-h-[62vh] max-w-full rounded-xl"
+              className="max-h-[62vh] max-w-full rounded-control"
             />
           </div>
         );
       case "audio":
         return (
-          <div className="flex min-h-[320px] items-center justify-center rounded-2xl bg-[#f7f7f8]">
+          <div className="flex min-h-[320px] items-center justify-center rounded-panel bg-[#f7f7f8]">
             <audio
               key={previewState.src}
               src={previewState.src}
@@ -469,26 +469,26 @@ const FilePreviewModal = ({
         return (
           <div className="space-y-3">
             {previewState.note ? (
-              <div className="rounded-xl border border-[#e5e7eb] bg-[#fafafa] px-4 py-3 text-sm text-[#6b7280]">
+              <div className="rounded-control border border-[#e5e7eb] bg-[#fafafa] px-4 py-3 text-sm text-[#6b7280]">
                 {previewState.note}
               </div>
             ) : null}
             <article
-              className="prose prose-slate max-w-none rounded-2xl border border-[#ebecef] bg-white px-6 py-5"
+              className="prose prose-slate max-w-none rounded-panel border border-[#ebecef] bg-white px-6 py-5"
               dangerouslySetInnerHTML={{ __html: previewState.html }}
             />
           </div>
         );
       case "sheet":
         return (
-          <div className="rounded-2xl border border-[#ebecef] bg-white px-4 py-3">
+          <div className="rounded-panel border border-[#ebecef] bg-white px-4 py-3">
             <Tabs
               items={previewState.sheets.map((sheet) => ({
                 key: sheet.key,
                 label: sheet.label,
                 children: (
                   <div
-                    className="overflow-auto rounded-xl border border-[#f1f2f4] bg-white p-3 [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-[#ebecef] [&_td]:px-3 [&_td]:py-2 [&_th]:border [&_th]:border-[#d9dce1] [&_th]:bg-[#f7f7f8] [&_th]:px-3 [&_th]:py-2"
+                    className="overflow-auto rounded-control border border-[#f1f2f4] bg-white p-3 [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-[#ebecef] [&_td]:px-3 [&_td]:py-2 [&_th]:border [&_th]:border-[#d9dce1] [&_th]:bg-[#f7f7f8] [&_th]:px-3 [&_th]:py-2"
                     dangerouslySetInnerHTML={{ __html: sheet.html }}
                   />
                 ),
@@ -500,7 +500,7 @@ const FilePreviewModal = ({
         return (
           <div className="space-y-3">
             {previewState.note ? (
-              <div className="rounded-xl border border-[#e5e7eb] bg-[#fafafa] px-4 py-3 text-sm text-[#6b7280]">
+              <div className="rounded-control border border-[#e5e7eb] bg-[#fafafa] px-4 py-3 text-sm text-[#6b7280]">
                 {previewState.note}
               </div>
             ) : null}
@@ -508,7 +508,7 @@ const FilePreviewModal = ({
               previewState.slides.map((slide, index) => (
                 <section
                   key={`${record?._id}-slide-${index + 1}`}
-                  className="rounded-2xl border border-[#ebecef] bg-white p-5"
+                  className="rounded-panel border border-[#ebecef] bg-white p-5"
                 >
                   <div className="mb-3 flex items-center gap-2 text-sm font-medium text-[#6b7280]">
                     <Presentation className="size-4" />
@@ -520,7 +520,7 @@ const FilePreviewModal = ({
                 </section>
               ))
             ) : (
-              <div className="rounded-2xl border border-dashed border-[#d9dce1] bg-[#fafafa] px-6 py-10 text-center text-[#6b7280]">
+              <div className="rounded-panel border border-dashed border-[#d9dce1] bg-[#fafafa] px-6 py-10 text-center text-[#6b7280]">
                 未提取到可预览的幻灯片文本内容
               </div>
             )}
@@ -530,11 +530,11 @@ const FilePreviewModal = ({
         return (
           <div className="space-y-3">
             {previewState.note ? (
-              <div className="rounded-xl border border-[#e5e7eb] bg-[#fafafa] px-4 py-3 text-sm text-[#6b7280]">
+              <div className="rounded-control border border-[#e5e7eb] bg-[#fafafa] px-4 py-3 text-sm text-[#6b7280]">
                 {previewState.note}
               </div>
             ) : null}
-            <div className="overflow-auto rounded-2xl border border-[#ebecef] bg-[#0f172a] p-5">
+            <div className="overflow-auto rounded-panel border border-[#ebecef] bg-[#0f172a] p-5">
               <pre className="whitespace-pre-wrap break-words font-mono text-[13px] leading-6 text-slate-100">
                 {previewState.text}
               </pre>
@@ -544,7 +544,7 @@ const FilePreviewModal = ({
       case "unsupported":
         return (
           <div className="space-y-4">
-            <div className="flex min-h-[220px] flex-col items-center justify-center rounded-2xl border border-dashed border-[#d9dce1] bg-[#fafafa] px-6 text-center">
+            <div className="flex min-h-[220px] flex-col items-center justify-center rounded-panel border border-dashed border-[#d9dce1] bg-[#fafafa] px-6 text-center">
               <FileWarning className="mb-4 size-10 text-[#9ca3af]" />
               <div className="text-base font-medium text-[#1f1f1f]">
                 当前文件无法解析预览
@@ -554,7 +554,7 @@ const FilePreviewModal = ({
               </div>
             </div>
             {previewState.fallbackText ? (
-              <div className="overflow-auto rounded-2xl border border-[#ebecef] bg-[#0f172a] p-5">
+              <div className="overflow-auto rounded-panel border border-[#ebecef] bg-[#0f172a] p-5">
                 <pre className="whitespace-pre-wrap break-words font-mono text-[13px] leading-6 text-slate-100">
                   {previewState.fallbackText}
                 </pre>

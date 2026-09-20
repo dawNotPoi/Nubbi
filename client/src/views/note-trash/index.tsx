@@ -26,7 +26,7 @@ export default function NoteTrash() {
       <main className="mx-auto w-full max-w-6xl px-3 pb-[max(28px,env(safe-area-inset-bottom))] pt-4 sm:px-8 md:px-8 md:pb-16 md:pt-5 lg:px-12">
         {!isMobile ? (
           <div className="mb-5 flex items-start gap-3">
-            <div className="mt-1 flex size-9 shrink-0 items-center justify-center rounded-md bg-bg-selected text-text-muted">
+            <div className="mt-1 flex size-9 shrink-0 items-center justify-center rounded-control bg-bg-selected text-text-muted">
               <Trash2 className="size-5" />
             </div>
             <div className="min-w-0">

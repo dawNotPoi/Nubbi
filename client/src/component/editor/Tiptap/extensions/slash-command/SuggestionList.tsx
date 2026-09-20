@@ -102,14 +102,14 @@ const SuggestionList = forwardRef<SuggestionListRef, SuggestionListProps>(
             key={index}
             ref={selectedIndex === index ? selectedItemRef : undefined}
             className={clsx(
-              "flex h-10 shrink-0 cursor-pointer items-center gap-2 overflow-hidden rounded-lg px-2 transition-colors",
+              "flex h-10 shrink-0 cursor-pointer items-center gap-2 overflow-hidden rounded-compact px-2 transition-colors",
               selectedIndex === index
                 ? "bg-[rgba(55,53,47,0.08)]"
                 : "hover:bg-[rgba(55,53,47,0.05)]"
             )}
             onClick={() => selectItem(index)}
           >
-            <div className="flex size-7 shrink-0 items-center justify-center rounded-md border border-[rgba(55,53,47,0.06)] bg-[rgba(255,255,255,0.88)] text-[rgba(55,53,47,0.72)]">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-control border border-[rgba(55,53,47,0.06)] bg-[rgba(255,255,255,0.88)] text-[rgba(55,53,47,0.72)]">
               {item.icon}
             </div>
             <div className="min-w-0 flex-1">

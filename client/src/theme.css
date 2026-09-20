@@ -1,4 +1,13 @@
 :root {
+  /* 按组件角色统一圆角；品牌图形和用户文档内容不属于界面容器。 */
+  --radius-compact: 6px;
+  --radius-control: 8px;
+  --radius-panel: 10px;
+  --radius-sheet: 14px;
+  --radius-full: 9999px;
+  /* 16px 复选框保留清晰的小方框轮廓。 */
+  --radius-checkbox: 4px;
+
   --font-ui: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
 
   --canvas: #ffffff;
@@ -12,6 +21,9 @@
   --text-muted: #787774;
   --text-subtle: #9b9a97;
   --text-placeholder: #b4b4b1;
+
+  /* 认证页的小字号说明需在暖白纸面上保持清楚；不改变现有业务页次级文字。 */
+  --auth-text-secondary: #706d66;
 
   --bg-hover: #f7f7f5;
   --bg-selected: #f1f1ef;
@@ -107,23 +119,23 @@
 .file-meta { min-width: 0; overflow: hidden; color: var(--text-muted); text-overflow: ellipsis; white-space: nowrap; }
 .file-mobile-meta { display: none; margin: 2px 4px 0; color: var(--text-muted); font-size: 11px; }
 .file-row-actions { display: flex; align-items: center; justify-content: flex-end; gap: 4px; padding-right: 8px; }
-.file-open-button { height: 28px; padding: 0 12px; border: 1px solid var(--border-button); border-radius: 6px; background: var(--bg-page); font-size: 12px; font-weight: 500; }
+.file-open-button { height: 28px; padding: 0 12px; border: 1px solid var(--border-button); border-radius: var(--radius-compact); background: var(--bg-page); font-size: 12px; font-weight: 500; }
 .file-open-button:hover { border-color: var(--border-button-hover); background: var(--bg-hover); }
-.file-more-button, .file-tool-button { display: inline-grid; place-items: center; border: 0; border-radius: 4px; background: transparent; color: var(--text-subtle); }
+.file-more-button, .file-tool-button { display: inline-grid; place-items: center; border: 0; border-radius: var(--radius-compact); background: transparent; color: var(--text-subtle); }
 .file-more-button { width: 28px; height: 28px; }
 .file-tool-button { min-width: 32px; height: 32px; }
 .file-more-button:hover, .file-tool-button:hover { background: var(--bg-icon-hover); color: var(--text-primary); }
 .file-tool-button:disabled { cursor: not-allowed; opacity: .55; }
-.file-tool-select { height: 32px; max-width: 126px; border: 0; border-radius: 4px; background: transparent; padding: 0 6px; color: var(--text-muted); font-size: 13px; outline: none; }
+.file-tool-select { height: 32px; max-width: 126px; border: 0; border-radius: var(--radius-compact); background: transparent; padding: 0 6px; color: var(--text-muted); font-size: 13px; outline: none; }
 .file-tool-select:hover { background: var(--bg-hover); color: var(--text-primary); }
 .file-tool-select:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 1px; }
-.file-text-action { height: 28px; flex: 0 0 auto; border: 0; border-radius: 4px; background: transparent; padding: 0 8px; }
+.file-text-action { height: 28px; flex: 0 0 auto; border: 0; border-radius: var(--radius-compact); background: transparent; padding: 0 8px; }
 .file-text-action:hover { background: var(--bg-hover); }
-.file-page-button { display: inline-flex; height: 30px; align-items: center; gap: 3px; border: 1px solid var(--border-button); border-radius: 5px; background: var(--bg-page); padding: 0 8px; }
+.file-page-button { display: inline-flex; height: 30px; align-items: center; gap: 3px; border: 1px solid var(--border-button); border-radius: var(--radius-compact); background: var(--bg-page); padding: 0 8px; }
 .file-page-button:hover:not(:disabled), .file-state-button:hover { border-color: var(--border-button-hover); background: var(--bg-hover); }
 .file-page-button:disabled { cursor: not-allowed; opacity: .45; }
 .file-state { display: grid; min-height: 260px; place-items: center; align-content: center; gap: 10px; color: var(--text-muted); font-size: 13px; }
-.file-state-button { height: 32px; border: 1px solid var(--border-button); border-radius: 5px; background: var(--bg-page); padding: 0 10px; color: var(--text-primary); }
+.file-state-button { height: 32px; border: 1px solid var(--border-button); border-radius: var(--radius-compact); background: var(--bg-page); padding: 0 10px; color: var(--text-primary); }
 
 @media (max-width: 1150px) {
   .file-list-grid { grid-template-columns: 40px minmax(180px, 1fr) 140px 100px; }

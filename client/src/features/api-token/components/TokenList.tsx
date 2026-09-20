@@ -19,8 +19,8 @@ const formatTime = (value: string | Date | null) =>
 const Badge = ({ children, accent = false }: { children: string; accent?: boolean }) => (
   <span
     className={accent
-      ? "rounded border border-accent-border/20 bg-accent-bg px-1.5 py-0.5 text-xs text-accent-text"
-      : "rounded border border-border-toolbar bg-bg-panel px-1.5 py-0.5 text-xs text-text-muted"}
+      ? "rounded-compact border border-accent-border/20 bg-accent-bg px-1.5 py-0.5 text-xs text-accent-text"
+      : "rounded-compact border border-border-toolbar bg-bg-panel px-1.5 py-0.5 text-xs text-text-muted"}
   >
     {children}
   </span>

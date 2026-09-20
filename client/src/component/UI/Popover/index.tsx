@@ -184,7 +184,7 @@ const Popover: FC<PopoverProps> = ({
           : undefined,
         ...style,
       } as CSSProperties}
-      className={className ?? "bg-white rounded-md border shadow-md"}
+      className={className ?? "bg-white rounded-panel border shadow-md"}
     >
       {children}
     </div>

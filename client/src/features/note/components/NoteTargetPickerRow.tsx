@@ -30,7 +30,7 @@ export function NoteTargetPickerRow({
   return (
     <div
       className={clsx(
-        "group flex min-h-9 w-full items-center gap-1 rounded-md pr-2 text-left transition-colors",
+        "group flex min-h-9 w-full items-center gap-1 rounded-control pr-2 text-left transition-colors",
         "hover:bg-bg-hover focus-within:bg-bg-hover",
         active && "bg-bg-hover",
         disabled && "cursor-wait opacity-70",
@@ -41,7 +41,7 @@ export function NoteTargetPickerRow({
         <button
           aria-expanded={expanded}
           aria-label={expanded ? "收起子 note" : "展开子 note"}
-          className="flex size-5 shrink-0 items-center justify-center rounded text-text-subtle hover:bg-bg-icon-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          className="flex size-5 shrink-0 items-center justify-center rounded-compact text-text-subtle hover:bg-bg-icon-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           disabled={disabled}
           onClick={(event) => {
             event.stopPropagation();
@@ -57,7 +57,7 @@ export function NoteTargetPickerRow({
         <span className="size-5 shrink-0" />
       )}
       <button
-        className="flex min-w-0 flex-1 items-center gap-2 rounded py-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+        className="flex min-w-0 flex-1 items-center gap-2 rounded-compact py-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         disabled={disabled}
         onClick={() => onSelect(note)}
         type="button"

@@ -31,15 +31,15 @@ const weekDayLabels = [
 const getWeekDayLabel = (weekDay: number): string => weekDayLabels[weekDay] || "";
 
 const RecentMeetingEmpty = ({ onCreate }: RecentMeetingEmptyProps): ReactElement => (
-  <div className="flex min-h-[168px] items-center justify-center rounded-[10px] border border-border-row bg-bg-panel px-5 py-8 text-center md:min-h-[280px] md:rounded-xl md:px-6 md:py-12">
+  <div className="flex min-h-[168px] items-center justify-center rounded-panel border border-border-row bg-bg-panel px-5 py-8 text-center md:min-h-[280px] md:px-6 md:py-12">
     <div className="flex flex-col items-center">
-      <span className="grid size-12 place-items-center rounded-[10px] bg-[var(--entity-meeting-soft)] text-[var(--entity-meeting)]">
+      <span className="grid size-12 place-items-center rounded-control bg-[var(--entity-meeting-soft)] text-[var(--entity-meeting)]">
         <CalendarOff className="size-7 md:size-8" strokeWidth={1.6} />
       </span>
       <p className="mt-3 text-[14px] font-medium text-text-primary md:mt-4 md:text-base">未来一周没有会议</p>
       <p className="mt-1 text-[13px] text-text-muted md:text-sm">创建会议，开始记录与协作。</p>
       <Button
-        className="mt-4 h-10 rounded-[7px] md:mt-5 md:h-auto"
+        className="mt-4 h-10 rounded-control md:mt-5 md:h-auto"
         icon={<Plus size={16} />}
         onClick={onCreate}
         type="primary"
@@ -89,7 +89,7 @@ const RecentMeetings = ({
         </h2>
         {showCreateAction ? (
           <Button
-            className="h-9 rounded-[7px]"
+            className="h-9 rounded-control"
             icon={<Plus size={15} />}
             onClick={() => setCreateOpen(true)}
           >
@@ -99,7 +99,7 @@ const RecentMeetings = ({
       </div>
 
       {upcomingWeekMeetings.length > 0 ? (
-        <div className="overflow-hidden rounded-[10px] border border-border-row bg-surface md:max-h-[400px] md:overflow-y-auto md:rounded-xl">
+        <div className="overflow-hidden rounded-panel border border-border-row bg-surface md:max-h-[400px] md:overflow-y-auto">
           {upcomingWeekMeetings.map((meeting) => (
             <article
               className="grid gap-2.5 border-b border-border-row px-3 py-3.5 last:border-b-0 hover:bg-bg-hover md:grid-cols-[116px_minmax(0,1fr)_auto] md:items-center md:gap-3 md:px-4 md:py-4"
@@ -119,7 +119,7 @@ const RecentMeetings = ({
                     .format("HH:mm")}
                 </p>
               </div>
-              <div className="grid grid-cols-2 gap-2 [&_.ant-btn]:min-h-10 [&_.ant-btn]:rounded-[7px] md:flex md:flex-wrap md:[&_.ant-btn]:min-h-8">
+              <div className="grid grid-cols-2 gap-2 [&_.ant-btn]:min-h-10 [&_.ant-btn]:rounded-control md:flex md:flex-wrap md:[&_.ant-btn]:min-h-8">
                 <MeetingInvitationButton id={meeting._id} title={meeting.title} startTime={meeting.startTime} />
                 <Button onClick={() => navigate(`/meeting/${meeting._id}`)}>进入会议</Button>
               </div>

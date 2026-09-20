@@ -39,7 +39,7 @@ type MobileFileManagerProps = {
 };
 
 const headerActionClass =
-  "grid size-11 shrink-0 place-items-center rounded-[8px] text-text-subtle transition-colors active:bg-bg-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring [&>svg]:size-5";
+  "grid size-11 shrink-0 place-items-center rounded-control text-text-subtle transition-colors active:bg-bg-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring [&>svg]:size-5";
 
 export function MobileFileManager({ manager }: MobileFileManagerProps) {
   const [createOpen, setCreateOpen] = useState(false);
@@ -111,7 +111,7 @@ export function MobileFileManager({ manager }: MobileFileManagerProps) {
         <Header className="border-b border-border-row bg-surface/98">
           <div className="flex h-full items-center justify-between">
             <button
-              className="min-h-11 rounded-[8px] px-2 text-[15px] text-text-muted active:bg-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              className="min-h-11 rounded-control px-2 text-[15px] text-text-muted active:bg-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               onClick={leaveSelection}
               type="button"
             >
@@ -125,7 +125,7 @@ export function MobileFileManager({ manager }: MobileFileManagerProps) {
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border-row bg-surface/98 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-2 backdrop-blur-lg">
           <div className="mx-auto grid max-w-sm grid-cols-2 gap-2">
             <Button
-              className="h-11 rounded-[8px]"
+              className="h-11 rounded-control"
               disabled={manager.selectedItems.length === 0}
               icon={<FolderInput />}
               variant="outline"
@@ -137,7 +137,7 @@ export function MobileFileManager({ manager }: MobileFileManagerProps) {
               移动
             </Button>
             <Button
-              className="h-11 rounded-[8px] text-[var(--danger-text)] hover:bg-[var(--danger-bg)] hover:text-[var(--danger-text)]"
+              className="h-11 rounded-control text-[var(--danger-text)] hover:bg-[var(--danger-bg)] hover:text-[var(--danger-text)]"
               disabled={manager.selectedItems.length === 0}
               icon={<Trash2 />}
               variant="ghost"
@@ -174,7 +174,7 @@ export function MobileFileManager({ manager }: MobileFileManagerProps) {
               <Input
                 autoFocus
                 aria-label="搜索文件"
-                className="h-10 rounded-[8px] border-transparent bg-bg-hover px-3 pl-3 pr-10 text-[16px] focus-visible:bg-surface"
+                className="h-10 rounded-control border-transparent bg-bg-hover px-3 pl-3 pr-10 text-[16px] focus-visible:bg-surface"
                 placeholder="搜索当前目录"
                 value={manager.search}
                 onChange={(event) => manager.setSearch(event.target.value)}
@@ -182,7 +182,7 @@ export function MobileFileManager({ manager }: MobileFileManagerProps) {
               {manager.search ? (
                 <button
                   aria-label="清除搜索"
-                  className="absolute right-0 top-0 grid size-10 place-items-center rounded-[8px] text-text-subtle active:bg-bg-selected"
+                  className="absolute right-0 top-0 grid size-10 place-items-center rounded-control text-text-subtle active:bg-bg-selected"
                   onClick={() => manager.setSearch("")}
                   type="button"
                 >
@@ -200,10 +200,10 @@ export function MobileFileManager({ manager }: MobileFileManagerProps) {
             <div className="space-y-1 py-2">
               {Array.from({ length: 5 }).map((_, index) => (
                 <div key={index} className="flex min-h-[68px] items-center gap-3 border-b border-border-row px-2">
-                  <div className="size-9 animate-pulse rounded-[8px] bg-[var(--entity-file-soft)]" />
+                  <div className="size-9 animate-pulse rounded-control bg-[var(--entity-file-soft)]" />
                   <div className="flex-1 space-y-2">
-                    <div className="h-4 w-1/2 animate-pulse rounded bg-bg-hover" />
-                    <div className="h-3 w-1/3 animate-pulse rounded bg-bg-hover" />
+                    <div className="h-4 w-1/2 animate-pulse rounded-compact bg-bg-hover" />
+                    <div className="h-3 w-1/3 animate-pulse rounded-compact bg-bg-hover" />
                   </div>
                 </div>
               ))}
@@ -288,10 +288,10 @@ export function MobileFileManager({ manager }: MobileFileManagerProps) {
           <div className="space-y-1 py-2">
             {Array.from({ length: 6 }).map((_, index) => (
               <div key={index} className="flex min-h-[68px] items-center gap-3 border-b border-border-row px-2">
-                <div className="size-9 animate-pulse rounded-[8px] bg-[var(--entity-file-soft)]" />
+                <div className="size-9 animate-pulse rounded-control bg-[var(--entity-file-soft)]" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-4 w-1/2 animate-pulse rounded bg-bg-hover" />
-                  <div className="h-3 w-1/3 animate-pulse rounded bg-bg-hover" />
+                  <div className="h-4 w-1/2 animate-pulse rounded-compact bg-bg-hover" />
+                  <div className="h-3 w-1/3 animate-pulse rounded-compact bg-bg-hover" />
                 </div>
               </div>
             ))}
@@ -300,7 +300,7 @@ export function MobileFileManager({ manager }: MobileFileManagerProps) {
           <div className="grid min-h-[260px] place-items-center text-center">
             <div>
               <p className="text-[14px] text-text-muted">文件加载失败</p>
-              <Button className="mt-3 h-10 rounded-[8px]" variant="outline" onClick={() => void manager.query.refetch()}>
+              <Button className="mt-3 h-10 rounded-control" variant="outline" onClick={() => void manager.query.refetch()}>
                 重试
               </Button>
             </div>
@@ -310,11 +310,11 @@ export function MobileFileManager({ manager }: MobileFileManagerProps) {
         ) : (
           <div className="grid min-h-[260px] place-items-center text-center">
             <div className="flex flex-col items-center">
-              <span className="grid size-12 place-items-center rounded-[10px] bg-[var(--entity-folder-soft)] text-[var(--entity-folder)]">
+              <span className="grid size-12 place-items-center rounded-control bg-[var(--entity-folder-soft)] text-[var(--entity-folder)]">
                 <FolderPlus className="size-6" />
               </span>
               <p className="mt-3 text-[14px] text-text-muted">当前目录暂无文件</p>
-              <Button className="mt-3 h-10 rounded-[8px]" variant="outline" onClick={() => setCreateOpen(true)}>
+              <Button className="mt-3 h-10 rounded-control" variant="outline" onClick={() => setCreateOpen(true)}>
                 新建或上传
               </Button>
             </div>
@@ -325,7 +325,7 @@ export function MobileFileManager({ manager }: MobileFileManagerProps) {
           <div className="mt-4 flex items-center justify-center gap-3 py-2">
             <button
               aria-label="上一页"
-              className="grid size-10 place-items-center rounded-[8px] text-text-muted transition-colors active:bg-bg-selected disabled:opacity-35"
+              className="grid size-10 place-items-center rounded-control text-text-muted transition-colors active:bg-bg-selected disabled:opacity-35"
               disabled={manager.offset <= 0}
               onClick={() => manager.setOffset(Math.max(0, manager.offset - pageSize))}
               type="button"
@@ -335,7 +335,7 @@ export function MobileFileManager({ manager }: MobileFileManagerProps) {
             <span className="min-w-12 text-center text-[13px] text-text-muted">第 {pageNumber} 页</span>
             <button
               aria-label="下一页"
-              className="grid size-10 place-items-center rounded-[8px] text-text-muted transition-colors active:bg-bg-selected disabled:opacity-35"
+              className="grid size-10 place-items-center rounded-control text-text-muted transition-colors active:bg-bg-selected disabled:opacity-35"
               disabled={!manager.data?.hasMore}
               onClick={() => manager.setOffset(manager.offset + pageSize)}
               type="button"
@@ -359,7 +359,7 @@ export function MobileFileManager({ manager }: MobileFileManagerProps) {
                 uploadInputRef.current?.click();
               }}
             >
-              <span className="grid size-8 shrink-0 place-items-center rounded-[7px] bg-[var(--entity-file-soft)] text-[var(--entity-file)]">
+              <span className="grid size-8 shrink-0 place-items-center rounded-control bg-[var(--entity-file-soft)] text-[var(--entity-file)]">
                 <Upload className="size-[18px]" />
               </span>
               <span>
@@ -373,7 +373,7 @@ export function MobileFileManager({ manager }: MobileFileManagerProps) {
                 void manager.createFolder();
               }}
             >
-              <span className="grid size-8 shrink-0 place-items-center rounded-[7px] bg-[var(--entity-folder-soft)] text-[var(--entity-folder)]">
+              <span className="grid size-8 shrink-0 place-items-center rounded-control bg-[var(--entity-folder-soft)] text-[var(--entity-folder)]">
                 <FolderPlus className="size-[18px]" />
               </span>
               <span>

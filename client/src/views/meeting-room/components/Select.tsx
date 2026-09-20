@@ -36,7 +36,7 @@ export default function Select({ children }: SelectProps) {
         ref={triggerRef}
         onClick={() => setOpen((prev) => !prev)}
         className={clsx(
-          "flex h-full px-1 cursor-pointer items-center justify-center rounded-r-xl border-l border-slate-200 text-slate-400 transition-all",
+          "flex h-full px-1 cursor-pointer items-center justify-center rounded-r-control border-l border-slate-200 text-slate-400 transition-all",
           open
             ? "bg-slate-100 text-slate-700"
             : "bg-white hover:bg-slate-100 hover:text-slate-700",
@@ -49,7 +49,7 @@ export default function Select({ children }: SelectProps) {
       {open && (
         <div
           ref={menuRef}
-          className="absolute bottom-[calc(100%+8px)] right-0 min-w-[220px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg"
+          className="absolute bottom-[calc(100%+8px)] right-0 min-w-[220px] overflow-hidden rounded-panel border border-slate-200 bg-white shadow-lg"
         >
           {children}
         </div>

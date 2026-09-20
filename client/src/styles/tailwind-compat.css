@@ -12,7 +12,7 @@
   outline-offset: 2px;
 }
 
-/* rounded-sm 在项目中已自定义为 6px；裸 rounded 继续保持原来的 4px。 */
+/* 裸 rounded 仅保留兼容入口，与紧凑控件共用圆角。 */
 @utility rounded {
-  border-radius: 4px;
+  border-radius: var(--radius-compact);
 }

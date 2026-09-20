@@ -33,7 +33,7 @@ export function MeetingLobby({ title, media, onJoin, onCancel }: MeetingLobbyPro
 
   return (
     <main className="flex min-h-[100dvh] items-center justify-center bg-canvas px-3 py-[max(16px,env(safe-area-inset-top))] sm:p-6">
-      <section className="w-full max-w-3xl space-y-5 rounded-[12px] border border-border-row bg-surface p-4 shadow-[0_8px_30px_rgba(55,53,47,0.06)] sm:p-7">
+      <section className="w-full max-w-3xl space-y-5 rounded-panel border border-border-row bg-surface p-4 shadow-[0_8px_30px_rgba(55,53,47,0.06)] sm:p-7">
         <header>
           <h1 className="text-[20px] font-semibold leading-7 tracking-[-0.015em] text-text-primary sm:text-[22px]">
             准备加入 · {title || "会议"}
@@ -43,7 +43,7 @@ export function MeetingLobby({ title, media, onJoin, onCancel }: MeetingLobbyPro
           </p>
         </header>
 
-        <div className="relative aspect-video overflow-hidden rounded-[10px] bg-bg-selected">
+        <div className="relative aspect-video overflow-hidden rounded-panel bg-bg-selected">
           <video
             ref={videoRef}
             autoPlay
@@ -63,7 +63,7 @@ export function MeetingLobby({ title, media, onJoin, onCancel }: MeetingLobbyPro
             <div key={kind} className="min-w-0 space-y-2">
               <Button
                 block
-                className="min-h-11 rounded-[8px] sm:min-h-9"
+                className="min-h-11 rounded-control sm:min-h-9"
                 loading={media.busy[kind]}
                 onClick={() => void media.toggle(kind, !media[kind].open)}
               >
@@ -103,11 +103,11 @@ export function MeetingLobby({ title, media, onJoin, onCancel }: MeetingLobbyPro
         ) : null}
 
         <footer className="grid grid-cols-1 gap-2 pt-1 sm:flex sm:flex-wrap sm:justify-end">
-          <Button className="min-h-11 rounded-[8px] sm:min-h-9" onClick={onCancel}>
+          <Button className="min-h-11 rounded-control sm:min-h-9" onClick={onCancel}>
             返回会议列表
           </Button>
           <Button
-            className="min-h-11 rounded-[8px] sm:min-h-9"
+            className="min-h-11 rounded-control sm:min-h-9"
             onClick={() => {
               void media.toggle("audio", false);
               void media.toggle("video", false);
@@ -117,7 +117,7 @@ export function MeetingLobby({ title, media, onJoin, onCancel }: MeetingLobbyPro
             仅收听加入
           </Button>
           <Button
-            className="min-h-11 rounded-[8px] sm:min-h-9"
+            className="min-h-11 rounded-control sm:min-h-9"
             type="primary"
             disabled={pending}
             onClick={onJoin}

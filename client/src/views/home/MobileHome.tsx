@@ -23,7 +23,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const headerActionClass =
-  "grid size-11 shrink-0 place-items-center rounded-[8px] text-[var(--brand)] transition-colors active:bg-bg-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring [&>svg]:size-5";
+  "grid size-11 shrink-0 place-items-center rounded-control text-[var(--brand)] transition-colors active:bg-bg-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring [&>svg]:size-5";
 
 export default function MobileHome() {
   const navigate = useNavigate();
@@ -81,7 +81,7 @@ export default function MobileHome() {
               最近笔记
             </h2>
             <button
-              className="flex min-h-9 items-center gap-1 rounded-[7px] px-2 text-[13px] text-text-muted active:bg-bg-hover"
+              className="flex min-h-9 items-center gap-1 rounded-control px-2 text-[13px] text-text-muted active:bg-bg-hover"
               onClick={() => navigate(routes.noteLib)}
               type="button"
             >
@@ -89,14 +89,14 @@ export default function MobileHome() {
             </button>
           </div>
 
-          <div className="overflow-hidden rounded-[10px] border border-border-row bg-surface">
+          <div className="overflow-hidden rounded-panel border border-border-row bg-surface">
             {notesPending ? (
               Array.from({ length: 4 }).map((_, index) => (
                 <div key={index} className="flex min-h-[64px] items-center gap-3 border-b border-border-row px-3 last:border-b-0">
-                  <div className="size-8 animate-pulse rounded-[7px] bg-[var(--entity-note-soft)]" />
+                  <div className="size-8 animate-pulse rounded-control bg-[var(--entity-note-soft)]" />
                   <div className="flex-1 space-y-2">
-                    <div className="h-4 w-1/2 animate-pulse rounded bg-bg-hover" />
-                    <div className="h-3 w-1/3 animate-pulse rounded bg-bg-hover" />
+                    <div className="h-4 w-1/2 animate-pulse rounded-compact bg-bg-hover" />
+                    <div className="h-3 w-1/3 animate-pulse rounded-compact bg-bg-hover" />
                   </div>
                 </div>
               ))
@@ -108,7 +108,7 @@ export default function MobileHome() {
                   onClick={() => navigate(routes.note(note._id))}
                   type="button"
                 >
-                  <span className="grid size-8 shrink-0 place-items-center rounded-[7px] bg-[var(--entity-note-soft)] text-[var(--entity-note)]">
+                  <span className="grid size-8 shrink-0 place-items-center rounded-control bg-[var(--entity-note-soft)] text-[var(--entity-note)]">
                     <FileText className="size-[17px]" strokeWidth={1.9} />
                   </span>
                   <span className="min-w-0 flex-1">
@@ -141,7 +141,7 @@ export default function MobileHome() {
               近期会议
             </h2>
             <button
-              className="flex min-h-9 items-center gap-1 rounded-[7px] px-2 text-[13px] text-text-muted active:bg-bg-hover"
+              className="flex min-h-9 items-center gap-1 rounded-control px-2 text-[13px] text-text-muted active:bg-bg-hover"
               onClick={() => navigate(routes.meetings)}
               type="button"
             >
@@ -149,14 +149,14 @@ export default function MobileHome() {
             </button>
           </div>
 
-          <div className="overflow-hidden rounded-[10px] border border-border-row bg-surface">
+          <div className="overflow-hidden rounded-panel border border-border-row bg-surface">
             {meetingsPending ? (
               Array.from({ length: 3 }).map((_, index) => (
                 <div key={index} className="flex min-h-[64px] items-center gap-3 border-b border-border-row px-3 last:border-b-0">
-                  <div className="size-8 animate-pulse rounded-[7px] bg-[var(--entity-meeting-soft)]" />
+                  <div className="size-8 animate-pulse rounded-control bg-[var(--entity-meeting-soft)]" />
                   <div className="flex-1 space-y-2">
-                    <div className="h-4 w-2/3 animate-pulse rounded bg-bg-hover" />
-                    <div className="h-3 w-1/3 animate-pulse rounded bg-bg-hover" />
+                    <div className="h-4 w-2/3 animate-pulse rounded-compact bg-bg-hover" />
+                    <div className="h-3 w-1/3 animate-pulse rounded-compact bg-bg-hover" />
                   </div>
                 </div>
               ))
@@ -168,7 +168,7 @@ export default function MobileHome() {
                   onClick={() => navigate(`/meeting/${meeting._id}`)}
                   type="button"
                 >
-                  <span className="grid size-8 shrink-0 place-items-center rounded-[7px] bg-[var(--entity-meeting-soft)] text-[var(--entity-meeting)]">
+                  <span className="grid size-8 shrink-0 place-items-center rounded-control bg-[var(--entity-meeting-soft)] text-[var(--entity-meeting)]">
                     <CalendarDays className="size-[17px]" strokeWidth={1.9} />
                   </span>
                   <span className="min-w-0 flex-1">
@@ -203,7 +203,7 @@ export default function MobileHome() {
           </SheetHeader>
           <div className="space-y-0.5">
             <SheetRow onClick={createNote}>
-              <span className="grid size-8 shrink-0 place-items-center rounded-[7px] bg-[var(--entity-note-soft)] text-[var(--entity-note)]">
+              <span className="grid size-8 shrink-0 place-items-center rounded-control bg-[var(--entity-note-soft)] text-[var(--entity-note)]">
                 <FileText className="size-[18px]" />
               </span>
               <span>
@@ -217,7 +217,7 @@ export default function MobileHome() {
                 setMeetingCreateOpen(true);
               }}
             >
-              <span className="grid size-8 shrink-0 place-items-center rounded-[7px] bg-[var(--entity-meeting-soft)] text-[var(--entity-meeting)]">
+              <span className="grid size-8 shrink-0 place-items-center rounded-control bg-[var(--entity-meeting-soft)] text-[var(--entity-meeting)]">
                 <Video className="size-[18px]" />
               </span>
               <span>

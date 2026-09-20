@@ -138,7 +138,7 @@ const ImageNodeView = ({
               onKeyDown={handlePlaceholderKeyDown}
               role="button"
               tabIndex={0}
-              className="upload-placeholder rounded-md cursor-pointer flex bg-[rgba(249,248,247)] text-gray-400 text-[14px] items-center p-4"
+              className="upload-placeholder rounded-control cursor-pointer flex bg-[rgba(249,248,247)] text-gray-400 text-[14px] items-center p-4"
               contentEditable={false}
             >
               <PictureInPicture size={20} />
@@ -157,7 +157,7 @@ const ImageNodeView = ({
   const imageNode = (
     <div className="image-node-view flex justify-center  relative">
       <img
-        className="max-w-full img-mark h-auto rounded-sm block"
+        className="max-w-full img-mark h-auto rounded-compact block"
         src={status === "done" ? src ?? "" : previewUrl}
         alt={alt ?? ""}
         title={node.attrs.title ?? undefined}

@@ -50,7 +50,7 @@ const publishedOptions: Array<{ value: PublishedFilter; label: string }> = [
 function ChoiceRow({ checked, label, onClick }: { checked: boolean; label: string; onClick: () => void }) {
   return (
     <button
-      className="flex min-h-11 w-full items-center rounded-[8px] px-2.5 text-left text-[15px] text-text-primary transition-colors active:bg-bg-selected hover:bg-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+      className="flex min-h-11 w-full items-center rounded-control px-2.5 text-left text-[15px] text-text-primary transition-colors active:bg-bg-selected hover:bg-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
       onClick={onClick}
       type="button"
     >
@@ -183,10 +183,10 @@ export function MobileNoteFilterSheet({
         </div>
 
         <div className="sticky bottom-0 -mx-4 mt-2 flex gap-2 border-t border-border-row bg-surface px-4 pb-1 pt-3">
-          <Button className="h-11 flex-1 rounded-[8px]" variant="ghost" onClick={reset}>
+          <Button className="h-11 flex-1 rounded-control" variant="ghost" onClick={reset}>
             重置
           </Button>
-          <Button className="h-11 flex-1 rounded-[8px]" variant="primary" onClick={apply}>
+          <Button className="h-11 flex-1 rounded-control" variant="primary" onClick={apply}>
             完成
           </Button>
         </div>

@@ -110,6 +110,11 @@ Better Auth 的账号关联配置只声明在 `account.accountLinking`；认证�
 - 客户端不保存 OAuth 密钥。服务端配置 `AUTH_GOOGLE_ID`、`AUTH_GOOGLE_SECRET`、`BETTER_AUTH_URL` 和 `CLIENT_URL` 后重启。
 - 本地授权回调为 `http://localhost:4000/api/auth/callback/google`；线上登记实际认证服务的 HTTPS 地址加 `/api/auth/callback/google`，必须与 Google 控制台完全一致。
 - 配置和真实 Google 授权登录需单独验收；按钮接入不代表 OAuth 控制台配置已完成。
+- 认证卡片采用已确认的「欢迎便签」方向：暖白纸面、左对齐欢迎文案与固定便签精灵，精简无功能的折角和短线装饰；桌面保留左侧品牌场景并降低标语重量，移动端在卡片标题区显示 NUBBI 字标。
+- 登录页 Google / GitHub 并排呈现，邮箱为主表单，忘记密码入口与密码标签同排；登录、注册、验证及重置共用标题与卡片样式，沿用认证流程。
+- 短屏通过卡片滚动保留说明和操作；主要按钮至少 44px，输入框 48px，减少动态效果偏好下关闭过渡。
+- OAuth 错误提示位于欢迎区下方、登录入口之前，短屏回跳后无需滚动到卡片底部即可理解失败原因并重试；密码找回保留 44px 热区，不以加高标签行换取点击范围。
+- 小字号说明和占位文字使用 `theme.css` 的 `--auth-text-secondary`，仅在 AuthShell 内映射次级文字色；其在暖白纸面与白色输入框上的对比度均超过 4.5:1，不修改其他业务页的 Token 映射。
 
 ### 密码重置 `/reset-password`
 - `client/src/views/reset-password/` — 邮件验证码重置密码

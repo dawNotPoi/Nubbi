@@ -144,7 +144,7 @@ export function NoteTargetPickerPanel({
       <div className="px-3 pb-2 pt-3">
         <div
           className={clsx(
-            "flex h-9 items-center gap-2 rounded-lg border border-accent-border bg-white px-2.5",
+            "flex h-9 items-center gap-2 rounded-control border border-accent-border bg-white px-2.5",
             "shadow-focus-input",
           )}
         >

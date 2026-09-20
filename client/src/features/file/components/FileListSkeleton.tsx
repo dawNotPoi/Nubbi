@@ -6,9 +6,9 @@ export function FileListSkeleton() {
       {rows.map((row) => (
         <li className="file-list-grid file-row" key={row}>
           <span />
-          <span className="h-3 w-2/3 animate-pulse rounded bg-skeleton" />
-          <span className="h-3 w-1/2 animate-pulse rounded bg-skeleton" />
-          <span className="h-3 w-1/2 animate-pulse rounded bg-skeleton" />
+          <span className="h-3 w-2/3 animate-pulse rounded-compact bg-skeleton" />
+          <span className="h-3 w-1/2 animate-pulse rounded-compact bg-skeleton" />
+          <span className="h-3 w-1/2 animate-pulse rounded-compact bg-skeleton" />
           <span />
         </li>
       ))}

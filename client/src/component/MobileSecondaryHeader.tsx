@@ -27,7 +27,7 @@ export default function MobileSecondaryHeader({
       <div className="grid h-full grid-cols-[44px_minmax(0,1fr)_44px] items-center gap-1">
         <button
           aria-label="返回"
-          className="grid size-11 place-items-center rounded-[8px] text-text-subtle transition-colors active:bg-bg-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          className="grid size-11 place-items-center rounded-control text-text-subtle transition-colors active:bg-bg-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           onClick={() => navigate(returnTo)}
           type="button"
         >

@@ -76,13 +76,13 @@ export default function MobileMoreSheet({ open, onOpenChange }: MobileMoreSheetP
 
           <div className="space-y-0.5">
             <SheetRow onClick={() => go(routes.meetings)}>
-              <span className="grid size-8 shrink-0 place-items-center rounded-[7px] bg-[var(--entity-meeting-soft)] text-[var(--entity-meeting)]">
+              <span className="grid size-8 shrink-0 place-items-center rounded-control bg-[var(--entity-meeting-soft)] text-[var(--entity-meeting)]">
                 <Presentation className="size-[18px]" />
               </span>
               <span className="flex-1">会议</span>
             </SheetRow>
             <SheetRow onClick={() => go(routes.noteTrash)}>
-              <span className="grid size-8 shrink-0 place-items-center rounded-[7px] bg-[var(--danger-bg)] text-[var(--danger-text)]">
+              <span className="grid size-8 shrink-0 place-items-center rounded-control bg-[var(--danger-bg)] text-[var(--danger-text)]">
                 <Trash2 className="size-[18px]" />
               </span>
               <span className="flex-1">回收站</span>
@@ -94,7 +94,7 @@ export default function MobileMoreSheet({ open, onOpenChange }: MobileMoreSheetP
           <div className="flex min-h-14 items-center gap-3 px-2.5 py-1">
             <Image
               alt={user?.name || "用户头像"}
-              className="size-9 rounded-[8px] object-cover"
+              className="size-9 rounded-full object-cover"
               defaultLink="/default.jpg"
               src={user?.image || ""}
             />

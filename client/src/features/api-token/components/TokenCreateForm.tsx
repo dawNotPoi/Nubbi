@@ -27,7 +27,7 @@ export function TokenCreateForm({
   const isMcp = purpose === "mcp";
 
   return (
-    <section className="space-y-3 rounded-md border border-border-toolbar bg-bg-panel p-3">
+    <section className="space-y-3 rounded-control border border-border-toolbar bg-bg-panel p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <Typography.Text strong>Token 用途</Typography.Text>

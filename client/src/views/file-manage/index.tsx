@@ -67,7 +67,7 @@ export default function FileManager(): ReactElement {
         <section className="mb-5 shrink-0">
           <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
             <div className="flex min-w-0 items-center gap-3">
-              <span className="grid size-9 shrink-0 place-items-center rounded-[8px] bg-[var(--entity-file-soft)] text-[var(--entity-file)]">
+              <span className="grid size-9 shrink-0 place-items-center rounded-control bg-[var(--entity-file-soft)] text-[var(--entity-file)]">
                 <FolderTree className="size-[18px]" strokeWidth={1.9} />
               </span>
               <div className="min-w-0">
@@ -82,7 +82,7 @@ export default function FileManager(): ReactElement {
                 <FileUploadButton onSelect={manager.upload} />
               </span>
               <Button
-                className="h-9 flex-1 rounded-md px-4 font-medium min-[430px]:flex-none"
+                className="h-9 flex-1 rounded-control px-4 font-medium min-[430px]:flex-none"
                 icon={<FolderPlus />}
                 loading={manager.creating}
                 onClick={() => void manager.createFolder()}

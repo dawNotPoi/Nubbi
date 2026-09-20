@@ -67,7 +67,7 @@ export default function NoteCover({
                     onClick={() => {
                       updateCover(item);
                     }}
-                    className="h-20 overflow-hidden rounded"
+                    className="h-20 overflow-hidden rounded-compact"
                     type="button"
                   >
                     <img
@@ -150,7 +150,7 @@ export default function NoteCover({
       <div className="relative pt-7">
         {cover ? (
           <button
-            className="absolute right-0 top-0 rounded px-2 py-1 text-sm text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700"
+            className="absolute right-0 top-0 rounded-compact px-2 py-1 text-sm text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700"
             onClick={() => {
               updateCover("");
               onEditorOpenChange(false);
@@ -176,7 +176,7 @@ export default function NoteCover({
         >
           <div className="absolute right-3 top-3 z-10 flex gap-2 opacity-100 transition-opacity md:opacity-0 md:group-hover/cover:opacity-100">
             <button
-              className="py-1 rounded-[3px] border border-neutral-200 bg-white/90 px-2.5 text-[12px] font-medium text-[#37352f] shadow-[0_1px_3px_rgba(15,15,15,0.12)] backdrop-blur-sm transition hover:bg-white hover:shadow-[0_2px_6px_rgba(15,15,15,0.16)]"
+              className="py-1 rounded-compact border border-neutral-200 bg-white/90 px-2.5 text-[12px] font-medium text-[#37352f] shadow-[0_1px_3px_rgba(15,15,15,0.12)] backdrop-blur-sm transition hover:bg-white hover:shadow-[0_2px_6px_rgba(15,15,15,0.16)]"
               onClick={showModal}
               type="button"
             >

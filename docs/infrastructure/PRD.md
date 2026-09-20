@@ -133,6 +133,18 @@ payload 都执行运行时校验，遗留的跨 socket 私密转发事件已移�
 4. `component/UI/` 是迁移期兼容区，不新增另一套 Button、Input 或菜单。
 5. 复杂 Select、既有 Dialog/Popover、通知和尚未迁移的业务继续使用原实现，不在本阶段删除 Ant Design 或 Radix 依赖。
 
+### 全系统圆角规范（2026-09-20）
+
+- `client/src/theme.css` 是圆角数值的唯一来源；Tailwind、原生 CSS 和 AntD 兼容主题共用这些 Token。
+- `rounded-compact` / `--radius-compact`：6px，紧凑工具按钮、菜单项、树节点和轻量标签。
+- `rounded-control` / `--radius-control`：8px，常规按钮、输入框、小容器和卡片内提示。
+- `rounded-panel` / `--radius-panel`：10px，卡片、对话框、菜单浮层和内容面板；登录卡片也遵守此档位。
+- `rounded-t-sheet` / `--radius-sheet`：14px，仅用于贴底移动面板的顶部；桌面同组件恢复 panel 档位。
+- `rounded-full` 用于头像、状态圆点、胶囊和进度条；直角拼接继续使用 `rounded-none`。16px 复选框保留独立的 `--radius-checkbox`（4px），避免小方框过度圆化；品牌资产和编辑器用户内容的图形不做机械替换。
+- 同一角色跨页面、跨断点保持同档位；嵌套提示和控件使用 control/compact，不能跟随外层卡片无限增大。
+- 覆盖共享新旧控件、认证、首页、笔记/回收站、文件、会议和账户浮层；只调整外观，不改变高度、热区、接口和交互流程。
+- 旧 `rounded` / `sm` 对应 compact，`md` 对应 control，`lg` / `xl` / `2xl` / `3xl` 对应 panel，仅保留兼容映射；业务源码使用语义名称，避免继续引入任意圆角值。
+
 ### UI 基础控件迁移第一阶段
 
 - 以 `refactor/ui-theme-v1` 的 NoteLibrary 为样板，不改变 SideBar、Header、标题、工具栏、表格的布局及业务控制器。

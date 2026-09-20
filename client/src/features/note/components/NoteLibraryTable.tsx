@@ -124,7 +124,7 @@ export function NoteLibraryTable({
         <NoteLibrarySkeleton />
       ) : isError ? (
         <div className="flex min-h-[260px] flex-col items-center justify-center px-6 text-center">
-          <span className="grid size-11 place-items-center rounded-[9px] bg-[var(--danger-bg)] text-[var(--danger-text)]">
+          <span className="grid size-11 place-items-center rounded-control bg-[var(--danger-bg)] text-[var(--danger-text)]">
             <CircleAlert className="size-5" />
           </span>
           <p className="mt-3 text-sm font-medium text-text-primary">笔记加载失败</p>
@@ -133,7 +133,7 @@ export function NoteLibraryTable({
         </div>
       ) : rows.length === 0 ? (
         <div className="flex min-h-[260px] flex-col items-center justify-center px-6 text-center">
-          <span className="grid size-11 place-items-center rounded-[9px] bg-[var(--entity-note-soft)] text-[var(--entity-note)]">
+          <span className="grid size-11 place-items-center rounded-control bg-[var(--entity-note-soft)] text-[var(--entity-note)]">
             <NotebookPen className="size-5" />
           </span>
           <p className="mt-3 text-sm font-medium text-text-primary">{emptyDescription}</p>

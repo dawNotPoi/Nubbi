@@ -78,7 +78,7 @@ export function FileBreadcrumbs({
     return (
       <button
         aria-current={current ? "page" : undefined}
-        className={`h-7 rounded px-1.5 text-left transition-colors hover:bg-bg-hover hover:text-text-primary disabled:cursor-default disabled:text-text-primary${
+        className={`h-7 rounded-compact px-1.5 text-left transition-colors hover:bg-bg-hover hover:text-text-primary disabled:cursor-default disabled:text-text-primary${
           isDropTarget ? " bg-bg-selected text-text-primary" : ""
         }`}
         disabled={current}
@@ -123,7 +123,7 @@ export function FileBreadcrumbs({
           >
             <button
               aria-label="展开隐藏路径"
-              className="grid h-7 w-6 place-items-center rounded hover:bg-bg-hover hover:text-text-primary"
+              className="grid h-7 w-6 place-items-center rounded-compact hover:bg-bg-hover hover:text-text-primary"
               type="button"
             >
               <MoreHorizontal className="size-4" />

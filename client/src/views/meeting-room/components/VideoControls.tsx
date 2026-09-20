@@ -21,7 +21,7 @@ type ActionProps = { label: string; icon: ReactNode; active: boolean; count?: nu
 /** @param props 操作状态和回调。@returns 有明确按压状态的控制按钮。 */
 function ControlAction({ label, icon, active, count, disabled, onClick }: ActionProps): ReactElement {
   return <button type="button" aria-pressed={active} disabled={disabled} onClick={onClick}
-    className={`relative flex min-h-11 min-w-16 shrink-0 flex-col items-center justify-center gap-1 rounded-lg border px-2 py-1 text-xs disabled:opacity-50 ${active ? "border-accent-border bg-accent-bg text-accent-text" : "border-border-button bg-white text-text-primary hover:bg-bg-hover"}`}>
+    className={`relative flex min-h-11 min-w-16 shrink-0 flex-col items-center justify-center gap-1 rounded-control border px-2 py-1 text-xs disabled:opacity-50 ${active ? "border-accent-border bg-accent-bg text-accent-text" : "border-border-button bg-white text-text-primary hover:bg-bg-hover"}`}>
     {icon}<span>{label}{count ? ` (${count > 99 ? "99+" : count})` : ""}</span>
   </button>;
 }
@@ -42,7 +42,7 @@ export default function VideoControls(props: VideoControlsProps): ReactElement {
         <ControlAction label="成员" icon={<Users size={18} />} active={props.isParticipantOpen} count={props.participantCount} onClick={props.onToggleParticipants} />
         <ControlAction label="聊天" icon={<MessageSquareText size={18} />} active={props.isCommentOpen} count={props.commentCount} onClick={props.onToggleComment} />
       </div>
-      <button type="button" disabled={props.ending} onClick={props.onEndMeeting} className="min-h-11 shrink-0 rounded-lg px-2 text-sm text-rose-600 hover:bg-rose-50 disabled:opacity-50">
+      <button type="button" disabled={props.ending} onClick={props.onEndMeeting} className="min-h-11 shrink-0 rounded-control px-2 text-sm text-rose-600 hover:bg-rose-50 disabled:opacity-50">
         {props.ending ? "处理中…" : props.endActionLabel}
       </button>
     </div>

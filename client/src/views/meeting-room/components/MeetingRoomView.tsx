@@ -141,8 +141,8 @@ export default function MeetingRoomView({
         {(chat.sending || (chat.feedback && chat.feedback.status !== "sent")) && <div className="flex max-h-24 flex-wrap items-center gap-2 overflow-auto border-t border-border-row bg-white px-3 py-2">
           <span>{chat.sending ? "正在发送消息，你可以继续编辑下一条。" : chat.feedback?.message}</span>
           {chat.needsResendConfirmation && !chat.sending && <>
-            {!isCommentOpen && <button type="button" onClick={onToggleComment} className="min-h-9 rounded border border-border-button px-2 text-accent-text">查看聊天记录</button>}
-            <button type="button" onClick={() => void chat.confirmResend()} className="min-h-9 rounded border border-border-button px-2 text-accent-text">已核对记录，重发</button>
+            {!isCommentOpen && <button type="button" onClick={onToggleComment} className="min-h-9 rounded-compact border border-border-button px-2 text-accent-text">查看聊天记录</button>}
+            <button type="button" onClick={() => void chat.confirmResend()} className="min-h-9 rounded-compact border border-border-button px-2 text-accent-text">已核对记录，重发</button>
           </>}
         </div>}
       </div>

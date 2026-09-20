@@ -56,7 +56,7 @@ export default function ApiTokenModal({ open, onClose }: ApiTokenModalProps) {
             description={(
               <div className="space-y-2">
                 <div className="flex min-w-0 items-center gap-2">
-                  <code className="min-w-0 flex-1 break-all rounded bg-bg-selected px-2 py-1 font-mono text-xs">
+                  <code className="min-w-0 flex-1 break-all rounded-compact bg-bg-selected px-2 py-1 font-mono text-xs">
                     {manager.createdKey}
                   </code>
                   <Button

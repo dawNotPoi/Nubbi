@@ -89,7 +89,7 @@ export function TrashNoteRow({
           <span className="grid place-items-center">
             <Button
               aria-label="恢复"
-              className="h-10 w-10 rounded-[8px] p-0 md:h-auto md:w-auto md:rounded-[6px] md:px-2"
+              className="h-10 w-10 rounded-control p-0 md:h-auto md:w-auto md:rounded-compact md:px-2"
               disabled={busy || parentInTrash}
               icon={<RotateCcw className="size-[17px] md:size-4" />}
               onClick={onRestore}
@@ -101,7 +101,7 @@ export function TrashNoteRow({
         </Tooltip>
         <Button
           aria-label="永久删除"
-          className="h-10 w-10 rounded-[8px] p-0 md:h-auto md:w-auto md:rounded-[6px] md:px-2"
+          className="h-10 w-10 rounded-control p-0 md:h-auto md:w-auto md:rounded-compact md:px-2"
           danger
           disabled={busy}
           icon={<Trash2 className="size-[17px] md:size-4" />}

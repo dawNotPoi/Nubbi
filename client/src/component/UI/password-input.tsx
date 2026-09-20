@@ -21,7 +21,7 @@ const PasswordInput = React.forwardRef<
         type="button"
         aria-label={visible ? "隐藏密码" : "显示密码"}
         onClick={() => setVisible(v => !v)}
-        className="absolute inset-y-0 right-1 grid w-10 cursor-pointer place-items-center rounded-[7px] text-text-subtle transition-colors hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+        className="absolute inset-y-0 right-1 grid w-10 cursor-pointer place-items-center rounded-control text-text-subtle transition-colors hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
       >
         {visible ? <EyeOff className="size-[18px]" /> : <Eye className="size-[18px]" />}
       </button>

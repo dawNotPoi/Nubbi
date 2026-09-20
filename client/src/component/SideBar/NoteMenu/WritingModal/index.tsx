@@ -112,9 +112,9 @@ export const WrittingModal = ({ parent, onTrigger, trigger }: WritingModalProps)
       <Modal
         className={clsx(
           "h-[90dvh] w-full !max-h-[90dvh] !overflow-hidden",
-          "rounded-t-3xl border border-border-toolbar bg-white shadow-soft",
+          "rounded-t-sheet border border-border-toolbar bg-white shadow-soft",
           "md:!mt-[5dvh] md:h-[88dvh] md:!max-h-[860px]",
-          "md:!w-[min(94vw,1120px)] md:!rounded-2xl",
+          "md:!w-[min(94vw,1120px)] md:!rounded-panel",
         )}
         onCancel={closeModal}
         onOpenChange={(nextOpen) => {
@@ -127,7 +127,7 @@ export const WrittingModal = ({ parent, onTrigger, trigger }: WritingModalProps)
             <button
               aria-label="在完整页面中打开"
               className={clsx(
-                "grid size-8 shrink-0 place-items-center rounded-md text-text-muted transition-colors",
+                "grid size-8 shrink-0 place-items-center rounded-control text-text-muted transition-colors",
                 "hover:bg-bg-icon-hover hover:text-text-primary",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
               )}
@@ -141,7 +141,7 @@ export const WrittingModal = ({ parent, onTrigger, trigger }: WritingModalProps)
               className="mx-1 h-5 w-px shrink-0 bg-border-row"
             />
             <Popover
-              className="overflow-hidden rounded-xl border border-border-toolbar bg-white shadow-soft"
+              className="overflow-hidden rounded-panel border border-border-toolbar bg-white shadow-soft"
               onClickOutside={() => {
                 draft.setTargetPickerOpen(false);
               }}
@@ -149,7 +149,7 @@ export const WrittingModal = ({ parent, onTrigger, trigger }: WritingModalProps)
               trigger={
                 <button
                   className={clsx(
-                    "flex h-8 min-w-0 items-center gap-2 rounded-md px-2 text-text-muted transition-colors",
+                    "flex h-8 min-w-0 items-center gap-2 rounded-control px-2 text-text-muted transition-colors",
                     "hover:bg-bg-hover hover:text-text-primary",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
                   )}

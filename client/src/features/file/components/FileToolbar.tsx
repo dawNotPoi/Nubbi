@@ -53,7 +53,7 @@ export function FileToolbar(props: FileToolbarProps) {
           <label className="relative min-w-[164px] flex-1 md:w-[220px] md:flex-none">
             <span className="sr-only">搜索当前目录</span>
             <input
-              className="h-8 w-full rounded-md border border-border-toolbar bg-surface px-2.5 pr-8 text-[13px] outline-none placeholder:text-text-placeholder focus:border-border-button-hover focus:ring-2 focus:ring-focus-ring"
+              className="h-8 w-full rounded-control border border-border-toolbar bg-surface px-2.5 pr-8 text-[13px] outline-none placeholder:text-text-placeholder focus:border-border-button-hover focus:ring-2 focus:ring-focus-ring"
               onChange={(event) => props.onSearchChange(event.target.value)}
               placeholder="搜索当前目录"
               ref={inputRef}
@@ -63,7 +63,7 @@ export function FileToolbar(props: FileToolbarProps) {
             {props.search ? (
               <button
                 aria-label="清空搜索"
-                className="absolute right-1 top-1 grid size-6 place-items-center rounded text-text-subtle hover:bg-bg-icon-hover hover:text-text-primary"
+                className="absolute right-1 top-1 grid size-6 place-items-center rounded-compact text-text-subtle hover:bg-bg-icon-hover hover:text-text-primary"
                 onClick={() => props.onSearchChange("")}
                 type="button"
               >

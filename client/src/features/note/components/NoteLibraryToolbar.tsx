@@ -69,7 +69,7 @@ export function NoteLibraryToolbar({
               ref={inputRef}
               aria-label="搜索页面"
               autoFocus={searchOpen}
-              className="h-10 rounded-[8px] border-border-toolbar bg-surface pl-3 pr-10 text-[15px] md:h-8 md:rounded-md md:pl-2 md:pr-8 md:text-sm"
+              className="h-10 rounded-control border-border-toolbar bg-surface pl-3 pr-10 text-[15px] md:h-8 md:rounded-control md:pl-2 md:pr-8 md:text-sm"
               onChange={(event) => onFilterTextChange(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === "Enter" && !event.nativeEvent.isComposing) {
@@ -82,7 +82,7 @@ export function NoteLibraryToolbar({
             {filterText && (
               <Button
                 aria-label="清除搜索"
-                className="absolute right-0 top-0 size-10 rounded-[8px] md:right-0.5 md:top-0.5 md:size-7 md:rounded-[5px]"
+                className="absolute right-0 top-0 size-10 rounded-control md:right-0.5 md:top-0.5 md:size-7 md:rounded-compact"
                 variant="ghost"
                 size="icon-xs"
                 onClick={() => {
@@ -106,7 +106,7 @@ export function NoteLibraryToolbar({
             <Button
               variant="ghost"
               size="icon-sm"
-              className="size-10 rounded-[8px] md:size-8 md:rounded-[5px]"
+              className="size-10 rounded-control md:size-8 md:rounded-compact"
               aria-label="排序"
               title="排序"
             >
@@ -123,7 +123,7 @@ export function NoteLibraryToolbar({
             <Button
               variant="ghost"
               size="toolbar"
-              className="h-10 shrink-0 rounded-[8px] px-3 font-normal md:h-8 md:rounded-[5px] md:px-2"
+              className="h-10 shrink-0 rounded-control px-3 font-normal md:h-8 md:rounded-compact md:px-2"
               title="Status filter"
             >
               <span className="md:hidden">{statusFilter === "all" ? "状态" : STATUS_LABELS[statusFilter]}</span>
@@ -140,7 +140,7 @@ export function NoteLibraryToolbar({
             <Button
               variant="ghost"
               size="toolbar"
-              className="h-10 shrink-0 rounded-[8px] px-3 font-normal md:h-8 md:rounded-[5px] md:px-2"
+              className="h-10 shrink-0 rounded-control px-3 font-normal md:h-8 md:rounded-compact md:px-2"
               title="Publish filter"
             >
               <span className="md:hidden">{publishedFilter === "all" ? "发布" : PUBLISHED_LABELS[publishedFilter]}</span>
@@ -166,7 +166,7 @@ export function NoteLibraryToolbar({
         <Button
           variant="ghost"
           size="icon-sm"
-          className="size-10 rounded-[8px] md:size-8 md:rounded-[5px]"
+          className="size-10 rounded-control md:size-8 md:rounded-compact"
           aria-label="搜索"
           title="搜索"
           aria-expanded={searchOpen || Boolean(filterText)}

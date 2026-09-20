@@ -55,7 +55,7 @@ const ImagePopoverContent = ({
   );
 
   return (
-    <div className="w-[min(500px,calc(100vw-24px))] rounded-md border bg-white py-1">
+    <div className="w-[min(500px,calc(100vw-24px))] rounded-panel border bg-white py-1">
       <header className="flex gap-1 overflow-x-auto border-b px-2 pt-1 scrollbar-none">
         {tabs.map((tab) => (
           <button
@@ -75,7 +75,7 @@ const ImagePopoverContent = ({
         {selectedTab === "upload" && (
           <>
             <label htmlFor={fileInputId}>
-              <div className="border cursor-pointer rounded-md py-1 hover:bg-[rgba(249,248,247)] w-full  flex justify-center ">
+              <div className="border cursor-pointer rounded-control py-1 hover:bg-[rgba(249,248,247)] w-full  flex justify-center ">
                 <Upload className="mr-2" size={16} />
                 <span>{status === "done" ? "替换图片" : "图片上传"}</span>
               </div>

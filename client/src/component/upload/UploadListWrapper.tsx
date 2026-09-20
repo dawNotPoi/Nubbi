@@ -40,7 +40,7 @@ export default function UploadListWrapper({
       ref={wrapperRef}
       aria-label="上传任务"
       className={clsx(
-        "fixed inset-x-0 bottom-0 z-50 flex h-[min(70dvh,520px)] w-full flex-col rounded-t-2xl bg-white p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-2xl md:inset-x-auto md:bottom-auto md:right-[10%] md:top-4 md:h-[400px] md:w-[700px] md:rounded-xl md:pb-4 md:shadow-md",
+        "fixed inset-x-0 bottom-0 z-50 flex h-[min(70dvh,520px)] w-full flex-col rounded-t-sheet bg-white p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-2xl md:inset-x-auto md:bottom-auto md:right-[10%] md:top-4 md:h-[400px] md:w-[700px] md:rounded-panel md:pb-4 md:shadow-md",
         open ? "flex" : "hidden",
       )}
     >

@@ -101,7 +101,7 @@ const highlightText = (text: string, query: string): ReactNode => {
     if (matchIndex > cursor) parts.push(text.slice(cursor, matchIndex));
     parts.push(
       <mark
-        className="rounded-sm bg-[var(--status-inbox-bg)] px-px text-inherit"
+        className="rounded-compact bg-[var(--status-inbox-bg)] px-px text-inherit"
         key={`${matchIndex}-${keyword}`}
       >
         {text.slice(matchIndex, matchIndex + keyword.length)}
@@ -266,7 +266,7 @@ export function FileRow(props: FileRowProps): ReactElement {
             {props.editing ? (
               <input
                 aria-label="重命名"
-                className="h-8 w-full max-w-[360px] rounded border border-border-button bg-white px-2 text-sm outline-none focus:border-border-button-hover focus:ring-2 focus:ring-focus-ring"
+                className="h-8 w-full max-w-[360px] rounded-compact border border-border-button bg-white px-2 text-sm outline-none focus:border-border-button-hover focus:ring-2 focus:ring-focus-ring"
                 disabled={saving}
                 onBlur={() => {
                   if (skipBlurRef.current) { skipBlurRef.current = false; return; }
@@ -286,7 +286,7 @@ export function FileRow(props: FileRowProps): ReactElement {
               />
             ) : (
               <button
-                className="flex min-w-0 rounded px-1 py-0.5 text-left text-sm font-medium hover:bg-bg-hover"
+                className="flex min-w-0 rounded-compact px-1 py-0.5 text-left text-sm font-medium hover:bg-bg-hover"
                 data-file-row-name
                 onClick={(event) =>
                   compact

@@ -30,7 +30,7 @@ export function TrashBatchBar({
             已选 {selectedCount} 项 · 处理 {topLevelCount} 个顶层项
           </span>
           <Button
-            className="h-9 rounded-[7px] md:h-auto"
+            className="h-9 rounded-control md:h-auto"
             disabled={busy}
             icon={<X className="size-4" />}
             onClick={onClear}
@@ -42,7 +42,7 @@ export function TrashBatchBar({
         </div>
         <div className="grid grid-cols-2 gap-2 md:inline-flex md:items-center md:gap-1">
           <Button
-            className="h-11 rounded-[8px] md:h-auto"
+            className="h-11 rounded-control md:h-auto"
             disabled={busy || restoreBlocked}
             icon={<RotateCcw className="size-4" />}
             onClick={onRestore}
@@ -51,7 +51,7 @@ export function TrashBatchBar({
             恢复
           </Button>
           <Button
-            className="h-11 rounded-[8px] md:h-auto"
+            className="h-11 rounded-control md:h-auto"
             danger
             disabled={busy}
             icon={<Trash2 className="size-4" />}

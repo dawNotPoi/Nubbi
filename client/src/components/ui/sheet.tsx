@@ -40,7 +40,7 @@ const SheetContent = React.forwardRef<
           {...props}
           ref={ref}
           className={cn(
-            "nubbi-sheet-popup relative flex max-h-[calc(100dvh-32px)] w-full max-w-[640px] flex-col overflow-hidden rounded-t-[14px] border border-b-0 border-border-row bg-surface shadow-[0_-12px_40px_rgba(55,53,47,0.12)] outline-none",
+            "nubbi-sheet-popup relative flex max-h-[calc(100dvh-32px)] w-full max-w-[640px] flex-col overflow-hidden rounded-t-sheet border border-b-0 border-border-row bg-surface shadow-[0_-12px_40px_rgba(55,53,47,0.12)] outline-none",
             className,
           )}
         >
@@ -51,7 +51,7 @@ const SheetContent = React.forwardRef<
           {showClose ? (
             <Drawer.Close
               aria-label="关闭"
-              className="absolute right-2 top-2 grid size-10 place-items-center rounded-[8px] text-text-subtle transition-colors active:bg-bg-selected hover:bg-bg-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              className="absolute right-2 top-2 grid size-10 place-items-center rounded-control text-text-subtle transition-colors active:bg-bg-selected hover:bg-bg-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             >
               <X aria-hidden="true" className="size-5" />
             </Drawer.Close>
@@ -111,7 +111,7 @@ const SheetRow = React.forwardRef<
       ref={ref}
       type={type ?? "button"}
       className={cn(
-        "flex min-h-12 w-full items-center gap-3 rounded-[8px] px-2.5 text-left text-[15px] font-normal text-text-primary transition-colors active:bg-bg-selected hover:bg-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-45 [&>svg]:size-5 [&>svg]:shrink-0 [&>svg]:text-text-subtle",
+        "flex min-h-12 w-full items-center gap-3 rounded-control px-2.5 text-left text-[15px] font-normal text-text-primary transition-colors active:bg-bg-selected hover:bg-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-45 [&>svg]:size-5 [&>svg]:shrink-0 [&>svg]:text-text-subtle",
         className,
       )}
     >

@@ -2,6 +2,7 @@ import { resetPasswordWithCode } from "@/utils/auth";
 import { Alert, Button, Form, Input, message } from "antd";
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { AuthCardHeader } from "../login/AuthCardHeader";
 
 interface ResetPasswordFormData {
   email: string;
@@ -57,16 +58,11 @@ export const ResetPasswordPage = () => {
   };
 
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-canvas px-4 py-[max(24px,env(safe-area-inset-top))]">
-      <div className="w-full max-w-[420px] rounded-[12px] border border-border-row bg-surface p-6 shadow-[0_8px_30px_rgba(55,53,47,0.06)] sm:p-8">
-        <div className="mb-6 text-center">
-          <h1 className="text-[22px] font-semibold leading-7 tracking-[-0.015em] text-text-primary">
-            输入验证码重置密码
-          </h1>
-          <p className="mt-2 text-[13px] leading-5 text-text-muted">
-            请输入注册邮箱、邮件里的 6 位数字验证码，以及你的新密码。
-          </p>
-        </div>
+    <div className="auth-form">
+        <AuthCardHeader
+          title={resetDone ? "密码已更新" : "设置新的密码"}
+          description={resetDone ? "现在可以使用新密码登录，继续收好你的灵感。" : "请输入注册邮箱、邮件里的 6 位数字验证码，以及你的新密码。"}
+        />
 
         {resetDone ? (
           <div className="space-y-4">
@@ -76,7 +72,7 @@ export const ResetPasswordPage = () => {
               message="密码已更新"
               description="现在可以返回登录页，使用新密码重新登录。"
             />
-            <Button className="h-11 rounded-[8px]" type="primary" block onClick={() => navigate("/login")}>
+            <Button className="h-11 rounded-control" type="primary" block onClick={() => navigate("/login")}>
               返回登录
             </Button>
           </div>
@@ -95,7 +91,7 @@ export const ResetPasswordPage = () => {
                 { type: "email", message: "请输入有效的邮箱地址" },
               ]}
             >
-              <Input className="rounded-[8px]" placeholder="请输入注册邮箱" />
+              <Input className="rounded-control" placeholder="请输入注册邮箱" />
             </Form.Item>
 
             <Form.Item
@@ -110,7 +106,7 @@ export const ResetPasswordPage = () => {
               ]}
             >
               <Input
-                className="rounded-[8px] text-center tracking-[0.22em]"
+                className="rounded-control text-center tracking-[0.22em]"
                 maxLength={6}
                 inputMode="numeric"
                 placeholder="请输入 6 位数字验证码"
@@ -125,7 +121,7 @@ export const ResetPasswordPage = () => {
                 { min: 8, message: "密码至少 8 位" },
               ]}
             >
-              <Input.Password className="rounded-[8px]" placeholder="请输入新密码" />
+              <Input.Password className="rounded-control" placeholder="请输入新密码" />
             </Form.Item>
 
             <Form.Item
@@ -136,12 +132,12 @@ export const ResetPasswordPage = () => {
                 { min: 8, message: "密码至少 8 位" },
               ]}
             >
-              <Input.Password className="rounded-[8px]" placeholder="请再次输入新密码" />
+              <Input.Password className="rounded-control" placeholder="请再次输入新密码" />
             </Form.Item>
 
             <Form.Item style={{ marginBottom: 0 }}>
               <Button
-                className="h-11 rounded-[8px]"
+                className="h-11 rounded-control"
                 type="primary"
                 htmlType="submit"
                 block
@@ -152,7 +148,6 @@ export const ResetPasswordPage = () => {
             </Form.Item>
           </Form>
         )}
-      </div>
     </div>
   );
 };

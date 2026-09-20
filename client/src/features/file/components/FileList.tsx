@@ -410,7 +410,7 @@ export function FileList(props: FileListProps): ReactElement {
       ) : null}
       </fieldset>
       {uploadHover ? (
-        <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center rounded-md border-2 border-dashed border-accent-border bg-accent-bg/80 text-sm font-medium text-accent-text">
+        <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center rounded-control border-2 border-dashed border-accent-border bg-accent-bg/80 text-sm font-medium text-accent-text">
           松开后上传到「{props.folderName}」
         </div>
       ) : null}

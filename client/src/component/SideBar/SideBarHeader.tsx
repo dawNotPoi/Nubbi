@@ -22,7 +22,7 @@ import Popover from "../UI/Popover";
 import { IconButton } from "./components";
 
 const menuItemClass =
-  "flex h-11 w-full items-center gap-2 rounded-[8px] px-2.5 text-left text-[15px] font-normal text-text-muted transition-[background-color,color,transform] active:scale-[0.99] active:bg-bg-selected hover:bg-bg-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring md:h-8 md:rounded-[6px] md:px-2 md:text-sm";
+  "flex h-11 w-full items-center gap-2 rounded-control px-2.5 text-left text-[15px] font-normal text-text-muted transition-[background-color,color,transform] active:scale-[0.99] active:bg-bg-selected hover:bg-bg-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring md:h-8 md:rounded-compact md:px-2 md:text-sm";
 
 const SideBarHeader: React.FC = () => {
   const { user, logout, updateAvatar } = useAuth();
@@ -57,9 +57,9 @@ const SideBarHeader: React.FC = () => {
       <div className="relative flex min-h-11 items-center justify-between gap-2 md:min-h-0">
         <Popover
           trigger={
-            <div className="flex min-h-11 min-w-0 cursor-pointer items-center gap-2 rounded-[8px] px-1.5 py-1 transition-[background-color,transform] active:scale-[0.99] active:bg-bg-selected hover:bg-bg-hover md:min-h-0 md:rounded-[6px]">
+            <div className="flex min-h-11 min-w-0 cursor-pointer items-center gap-2 rounded-control px-1.5 py-1 transition-[background-color,transform] active:scale-[0.99] active:bg-bg-selected hover:bg-bg-hover md:min-h-0 md:rounded-compact">
               <Image
-                className="size-8 rounded-[7px] md:size-7 md:rounded-[6px]"
+                className="size-8 rounded-full md:size-7"
                 src={user?.image || ""}
                 defaultLink="/default.jpg"
                 alt={user?.name}

@@ -23,7 +23,7 @@ const Meetingmanage = ({
     <MeetingManageContent
       className={clsx(
         isPage &&
-          "bg-surface md:rounded-[10px] md:border md:border-border-row md:p-6 md:shadow-[0_3px_16px_rgba(55,53,47,0.04)]",
+          "bg-surface md:rounded-panel md:border md:border-border-row md:p-6 md:shadow-[0_3px_16px_rgba(55,53,47,0.04)]",
         className,
       )}
       meetings={meetingManage.meetings}

@@ -21,7 +21,7 @@ function NavItem({ active, activeIconClass, icon, label, onClick }: NavItemProps
     <button
       aria-current={active ? "page" : undefined}
       className={clsx(
-        "flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-[8px] px-1 py-1 text-[12px] transition-colors active:bg-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
+        "flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-control px-1 py-1 text-[12px] transition-colors active:bg-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
         active ? "font-medium text-text-primary" : "font-normal text-text-muted",
       )}
       onClick={onClick}
@@ -29,7 +29,7 @@ function NavItem({ active, activeIconClass, icon, label, onClick }: NavItemProps
     >
       <span
         className={clsx(
-          "grid size-8 place-items-center rounded-[8px] transition-colors [&>svg]:size-[21px]",
+          "grid size-8 place-items-center rounded-control transition-colors [&>svg]:size-[21px]",
           active && (activeIconClass || "bg-bg-selected text-text-primary"),
         )}
       >

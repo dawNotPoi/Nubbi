@@ -52,7 +52,7 @@ const MeetingStatusTag = ({ meeting }: { meeting: MeetingType }): ReactElement =
 };
 
 export const MeetingCardSkeleton = (): ReactElement => (
-  <div className="rounded-[10px] border border-border-row bg-surface p-4 md:p-5">
+  <div className="rounded-panel border border-border-row bg-surface p-4 md:p-5">
     <Skeleton active paragraph={{ rows: 3 }} title={{ width: "48%" }} />
   </div>
 );
@@ -68,7 +68,7 @@ export const MeetingCard = ({
   const isHost = Boolean(currentUserId && meeting.hostId === currentUserId);
 
   return (
-    <article className="rounded-[10px] border border-border-row bg-surface p-4 transition-colors hover:bg-bg-hover md:p-5">
+    <article className="rounded-panel border border-border-row bg-surface p-4 transition-colors hover:bg-bg-hover md:p-5">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0 flex-1">
           <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2">
@@ -91,7 +91,7 @@ export const MeetingCard = ({
           </div>
         </div>
 
-        <div className="grid w-full grid-cols-2 gap-2 [&_.ant-btn]:min-h-10 [&_.ant-btn]:rounded-[7px] md:flex md:w-auto md:flex-wrap md:items-center md:[&_.ant-btn]:min-h-8">
+        <div className="grid w-full grid-cols-2 gap-2 [&_.ant-btn]:min-h-10 [&_.ant-btn]:rounded-control md:flex md:w-auto md:flex-wrap md:items-center md:[&_.ant-btn]:min-h-8">
           {isHost && meeting.status === "unreviewd" ? (
             <>
               <Button type="primary" onClick={() => void onVet(meeting._id, "approved")}>

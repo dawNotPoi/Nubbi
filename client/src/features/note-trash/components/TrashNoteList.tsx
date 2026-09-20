@@ -28,12 +28,12 @@ function TrashSkeleton() {
           className="grid min-h-[68px] grid-cols-[44px_minmax(0,1fr)_88px] items-center gap-2 border-b border-border-row md:h-14 md:min-h-0 md:grid-cols-[32px_minmax(0,1fr)_72px] md:px-2"
           key={index}
         >
-          <div className="mx-auto size-4 rounded bg-skeleton" />
+          <div className="mx-auto size-4 rounded-compact bg-skeleton" />
           <div className="space-y-2">
-            <div className="h-4 w-2/5 rounded bg-skeleton" />
-            <div className="h-3 w-1/3 rounded bg-skeleton md:hidden" />
+            <div className="h-4 w-2/5 rounded-compact bg-skeleton" />
+            <div className="h-3 w-1/3 rounded-compact bg-skeleton md:hidden" />
           </div>
-          <div className="mx-auto h-9 w-16 rounded-[8px] bg-skeleton md:h-7" />
+          <div className="mx-auto h-9 w-16 rounded-control bg-skeleton md:h-7" />
         </div>
       ))}
     </div>
@@ -78,7 +78,7 @@ export function TrashNoteList({
       ) : isError ? (
         <div className="flex flex-col items-center gap-3 py-16">
           <Empty description="回收站加载失败" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-          <Button className="h-10 rounded-[8px]" onClick={onRetry}>重试</Button>
+          <Button className="h-10 rounded-control" onClick={onRetry}>重试</Button>
         </div>
       ) : rows.length === 0 ? (
         <div className="flex flex-col items-center gap-3 py-16">

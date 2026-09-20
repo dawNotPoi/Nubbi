@@ -19,7 +19,7 @@ export function FileUploadButton({
       <Button
         className={
           className ??
-          "h-9 w-full rounded-md px-4 font-medium min-[430px]:w-auto"
+          "h-9 w-full rounded-control px-4 font-medium min-[430px]:w-auto"
         }
         icon={<Upload />}
         onClick={() => inputRef.current?.click()}

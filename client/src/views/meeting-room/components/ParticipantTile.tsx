@@ -15,7 +15,7 @@ type ParticipantTileProps = {
  * @returns 包含独立固定按钮的成员卡片；无摄像头成员也可固定。
  */
 export default function ParticipantTile({ participant, isPinned, onTogglePin }: ParticipantTileProps): ReactElement {
-  return <li className={`relative flex h-fit min-w-0 shrink-0 flex-col overflow-hidden rounded-xl border bg-white ${isPinned ? "border-accent-border ring-2 ring-accent-border" : "border-border-row"}`}>
+  return <li className={`relative flex h-fit min-w-0 shrink-0 flex-col overflow-hidden rounded-panel border bg-white ${isPinned ? "border-accent-border ring-2 ring-accent-border" : "border-border-row"}`}>
     <div className="aspect-video shrink-0"><ParticipantMedia participant={participant} /></div>
     <button type="button" aria-pressed={isPinned} aria-label={`${isPinned ? "取消固定" : "固定"} ${participant.name}`}
       onClick={() => onTogglePin(participant.id)}

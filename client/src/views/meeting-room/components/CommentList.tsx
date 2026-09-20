@@ -25,8 +25,8 @@ const renderCommentContent = (
         key={`${part}-${index}`}
         className={
           isSelf
-            ? "mx-0.5 rounded-md bg-white/15 px-1.5 py-0.5 font-medium text-blue-100"
-            : "mx-0.5 rounded-md bg-accent-bg px-1.5 py-0.5 font-medium text-accent-text"
+            ? "mx-0.5 rounded-control bg-white/15 px-1.5 py-0.5 font-medium text-blue-100"
+            : "mx-0.5 rounded-control bg-accent-bg px-1.5 py-0.5 font-medium text-accent-text"
         }
       >
         @{part}
@@ -41,7 +41,7 @@ export default function CommentList({
 }: CommentListProps): ReactElement {
   if (comments.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-border-toolbar bg-white/70 px-4 py-6 text-center text-sm text-text-subtle">
+      <div className="rounded-panel border border-dashed border-border-toolbar bg-white/70 px-4 py-6 text-center text-sm text-text-subtle">
         暂无评论，开始记录本次会议内容吧。
       </div>
     );
@@ -73,7 +73,7 @@ export default function CommentList({
                 <span>{formatCommentTime(comment.createdAt)}</span>
               </div>
               <div
-                className={`rounded-2xl px-4 py-3 text-sm leading-6 shadow-sm ${isSelf ? "bg-text-primary text-white" : "border border-border-row bg-white text-text-primary"}`}
+                className={`rounded-panel px-4 py-3 text-sm leading-6 shadow-sm ${isSelf ? "bg-text-primary text-white" : "border border-border-row bg-white text-text-primary"}`}
               >
                 {renderCommentContent(comment.content, isSelf)}
               </div>

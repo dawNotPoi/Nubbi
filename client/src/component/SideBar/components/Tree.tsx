@@ -51,10 +51,10 @@ const stopActionEvent = (event: MouseEvent) => {
 
 function SidebarActionButton({ action }: { action: SidebarTreeAction }) {
   const className = clsx(
-    "flex size-9 shrink-0 items-center justify-center rounded-[7px] text-text-subtle",
+    "flex size-9 shrink-0 items-center justify-center rounded-control text-text-subtle",
     "opacity-100 transition-[background-color,color,opacity,transform] active:scale-[0.96] active:bg-bg-selected hover:bg-bg-icon-hover hover:text-text-primary",
     "focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
-    "md:size-6 md:rounded-[5px] md:opacity-0 md:group-hover/tree-item:opacity-100",
+    "md:size-6 md:rounded-compact md:opacity-0 md:group-hover/tree-item:opacity-100",
     action.danger && "hover:text-[var(--danger-text)]",
   );
 
@@ -106,7 +106,7 @@ export function SidebarTreeItem({
   return (
     <div
       className={clsx(
-        "group/tree-item mt-0.5 flex min-h-11 items-center rounded-[8px] pr-1 transition-[background-color,color,transform] active:scale-[0.995] md:min-h-7 md:rounded-[6px]",
+        "group/tree-item mt-0.5 flex min-h-11 items-center rounded-control pr-1 transition-[background-color,color,transform] active:scale-[0.995] md:min-h-7 md:rounded-compact",
         "font-normal text-text-muted hover:bg-bg-hover hover:text-text-primary",
         active && "bg-bg-selected font-medium text-text-primary",
         loading && "pointer-events-none opacity-70",
@@ -126,9 +126,9 @@ export function SidebarTreeItem({
             aria-expanded={expanded}
             aria-label={expanded ? "收起笔记" : "展开笔记"}
             className={clsx(
-              "absolute inset-0 flex items-center justify-center rounded-[7px] text-text-subtle transition-[background-color,color,opacity,transform] active:scale-[0.94] active:bg-bg-selected hover:bg-bg-icon-hover hover:text-text-primary",
+              "absolute inset-0 flex items-center justify-center rounded-control text-text-subtle transition-[background-color,color,opacity,transform] active:scale-[0.94] active:bg-bg-selected hover:bg-bg-icon-hover hover:text-text-primary",
               "pointer-events-auto opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
-              "md:pointer-events-none md:rounded-[5px] md:opacity-0",
+              "md:pointer-events-none md:rounded-compact md:opacity-0",
               "md:group-hover/tree-item:pointer-events-auto md:group-hover/tree-item:opacity-100",
               "md:group-focus-within/tree-item:pointer-events-auto md:group-focus-within/tree-item:opacity-100",
             )}
@@ -153,14 +153,14 @@ export function SidebarTreeItem({
       )}
       {to ? (
         <NavLink
-          className="min-w-0 flex-1 rounded-[6px] py-2 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring md:rounded-[4px] md:py-1"
+          className="min-w-0 flex-1 rounded-compact py-2 outline-none focus-visible:ring-2 focus-visible:ring-focus-ring md:rounded-compact md:py-1"
           to={to}
         >
           {content}
         </NavLink>
       ) : (
         <button
-          className="min-w-0 flex-1 rounded-[6px] py-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-focus-ring md:rounded-[4px] md:py-1"
+          className="min-w-0 flex-1 rounded-compact py-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-focus-ring md:rounded-compact md:py-1"
           onClick={onSelect}
           type="button"
         >
@@ -194,10 +194,10 @@ export function SidebarTreeState({
             key={index}
             style={{ paddingLeft: depthPadding(depth) + 6 }}
           >
-            <div className="size-4 shrink-0 animate-pulse rounded bg-skeleton" />
+            <div className="size-4 shrink-0 animate-pulse rounded-compact bg-skeleton" />
             <div
               className={clsx(
-                "h-3 animate-pulse rounded bg-skeleton",
+                "h-3 animate-pulse rounded-compact bg-skeleton",
                 index % 3 === 0 && "w-28",
                 index % 3 === 1 && "w-20",
                 index % 3 === 2 && "w-24",
@@ -217,7 +217,7 @@ export function SidebarTreeState({
       <span>{message ?? (type === "error" ? "Failed to load" : "No notes")}</span>
       {type === "error" && onRetry ? (
         <button
-          className="ml-2 min-h-9 rounded-[6px] px-2 text-text-muted active:bg-bg-selected hover:bg-bg-hover hover:text-text-primary md:min-h-0 md:px-1"
+          className="ml-2 min-h-9 rounded-compact px-2 text-text-muted active:bg-bg-selected hover:bg-bg-hover hover:text-text-primary md:min-h-0 md:px-1"
           onClick={onRetry}
           type="button"
         >
@@ -237,7 +237,7 @@ export function SidebarSectionHeader({
   return (
     <div
       className={clsx(
-        "group/sidebar-section flex min-h-11 items-center rounded-[8px] px-2 py-1 text-[15px] md:min-h-0 md:rounded-[6px] md:text-sm",
+        "group/sidebar-section flex min-h-11 items-center rounded-control px-2 py-1 text-[15px] md:min-h-0 md:rounded-compact md:text-sm",
         "cursor-pointer",
         "font-normal text-text-muted transition-colors hover:bg-bg-hover hover:text-text-primary",
       )}
@@ -261,7 +261,7 @@ export function SidebarSectionHeader({
         <div className="ml-1 flex shrink-0 items-center gap-0.5">
           {actions.map((action) => {
             const className = clsx(
-              "flex size-9 items-center justify-center rounded-[7px] text-text-subtle md:size-6 md:rounded-[5px]",
+              "flex size-9 items-center justify-center rounded-control text-text-subtle md:size-6 md:rounded-compact",
               "opacity-100 transition hover:bg-bg-icon-hover hover:text-text-primary md:opacity-0",
               "focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
               "md:group-hover/sidebar-section:opacity-100",

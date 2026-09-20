@@ -79,11 +79,11 @@ export function FileMoveDialog({
       title={targets.length > 1 ? `移动 ${targets.length} 个项目` : "移动到"}
       width={620}
     >
-      <div className="mb-3 rounded-md bg-bg-panel px-3 py-2 text-xs text-text-muted">
+      <div className="mb-3 rounded-control bg-bg-panel px-3 py-2 text-xs text-text-muted">
         当前路径：{breadcrumbs.map((item) => item.name).join(" / ")}
       </div>
       <button
-        className={`mb-1 flex h-9 w-full items-center justify-between rounded-md px-3 text-left text-sm hover:bg-bg-hover${selectedTarget === null ? " bg-bg-selected" : ""}`}
+        className={`mb-1 flex h-9 w-full items-center justify-between rounded-control px-3 text-left text-sm hover:bg-bg-hover${selectedTarget === null ? " bg-bg-selected" : ""}`}
         onClick={() => setSelectedTarget(null)}
         type="button"
       >
@@ -110,7 +110,7 @@ export function FileMoveDialog({
               const node = rawNode as FolderTreeNode;
               const selected = selectedTarget === String(node.key);
               return (
-                <span className="flex h-8 w-full items-center justify-between rounded px-2 text-sm">
+                <span className="flex h-8 w-full items-center justify-between rounded-compact px-2 text-sm">
                   <span className="truncate">{String(node.title)}</span>
                   {selected ? <Check className="size-4" /> : null}
                 </span>

@@ -90,7 +90,7 @@ const CodeBlockComponent: React.FC<NodeViewProps> = ({
 
   return (
     <NodeViewWrapper
-      className="blockCodeWrapper group rounded-xl pb-3"
+      className="blockCodeWrapper group rounded-panel pb-3"
       data-language={selectedLanguage}
       data-expanded={isSourceVisible ? "true" : "false"}
     >
@@ -100,7 +100,7 @@ const CodeBlockComponent: React.FC<NodeViewProps> = ({
             type="button"
             aria-expanded={isExpanded}
             aria-label={isExpanded ? "收起代码" : "展开代码"}
-            className="codeToolbarButton flex size-[28px] shrink-0 items-center justify-center overflow-hidden rounded-md p-1"
+            className="codeToolbarButton flex size-[28px] shrink-0 items-center justify-center overflow-hidden rounded-compact p-1"
             onMouseDown={(event) => event.preventDefault()}
             onClick={handleToggleExpanded}
             title={isExpanded ? "收起代码" : "展开代码"}
@@ -112,11 +112,11 @@ const CodeBlockComponent: React.FC<NodeViewProps> = ({
           </button>
         ) : null}
         <div className="flex-1"></div>
-        <div className="codeToolbar flex h-[32px] items-center gap-1 overflow-hidden rounded-md p-0.5">
+        <div className="codeToolbar flex h-[32px] items-center gap-1 overflow-hidden rounded-control p-0.5">
           {isEditable ? (
             <Select
               variant="borderless"
-              className="codeToolbarSelect h-[28px] overflow-hidden rounded-md text-[13px]"
+              className="codeToolbarSelect h-[28px] overflow-hidden rounded-compact text-[13px]"
               value={selectedLanguage}
               onChange={(value) => {
                 handleLanguageChange(value);
@@ -136,7 +136,7 @@ const CodeBlockComponent: React.FC<NodeViewProps> = ({
           <button
             type="button"
             aria-label="复制代码"
-            className="codeToolbarButton flex size-[28px] items-center justify-center overflow-hidden rounded-md p-1"
+            className="codeToolbarButton flex size-[28px] items-center justify-center overflow-hidden rounded-compact p-1"
             onMouseDown={(event) => event.preventDefault()}
             onClick={handleCopy}
           >

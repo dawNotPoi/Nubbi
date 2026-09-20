@@ -78,7 +78,7 @@ export function MobileNoteRow({
               aria-label={`${selected ? "取消选择" : "选择"}：${title}`}
               aria-pressed={selected}
               className={clsx(
-                "grid size-10 place-items-center rounded-[8px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
+                "grid size-10 place-items-center rounded-control focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
                 selected ? "text-[var(--brand)]" : "text-text-subtle active:bg-bg-hover",
               )}
               onClick={() => onToggleSelection(note, !selected)}
@@ -99,7 +99,7 @@ export function MobileNoteRow({
             <button
               aria-label={expanded ? "收起子笔记" : "展开子笔记"}
               aria-expanded={expanded}
-              className="grid size-10 place-items-center rounded-[8px] text-text-subtle transition-colors active:bg-bg-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              className="grid size-10 place-items-center rounded-control text-text-subtle transition-colors active:bg-bg-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               onClick={() => onToggleExpand?.(note._id)}
               type="button"
             >
@@ -108,7 +108,7 @@ export function MobileNoteRow({
               />
             </button>
           ) : (
-            <span className="grid size-8 place-items-center rounded-[7px] bg-[var(--entity-note-soft)] text-[var(--entity-note)]">
+            <span className="grid size-8 place-items-center rounded-control bg-[var(--entity-note-soft)] text-[var(--entity-note)]">
               <FileText className="size-[18px]" strokeWidth={1.9} />
             </span>
           )}
@@ -125,7 +125,7 @@ export function MobileNoteRow({
           <div className="mt-1 flex min-w-0 items-center gap-1.5 overflow-hidden text-[12px] leading-4 text-text-muted">
             <span className="shrink-0">{formatNoteEditedTime(note)}</span>
             <span aria-hidden="true">·</span>
-            <span className={clsx("shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium", statusClass[note.status])}>
+            <span className={clsx("shrink-0 rounded-compact px-1.5 py-0.5 text-[11px] font-medium", statusClass[note.status])}>
               {note.status}
             </span>
             {pathLabel ? (
@@ -134,7 +134,7 @@ export function MobileNoteRow({
                 <span className="truncate">{pathLabel}</span>
               </>
             ) : note.tags[0] ? (
-              <span className="truncate rounded bg-bg-hover px-1.5 py-0.5">{note.tags[0]}</span>
+              <span className="truncate rounded-compact bg-bg-hover px-1.5 py-0.5">{note.tags[0]}</span>
             ) : null}
           </div>
         </button>
@@ -143,7 +143,7 @@ export function MobileNoteRow({
           {!selecting ? (
             <button
               aria-label={`更多操作：${title}`}
-              className="grid size-10 place-items-center rounded-[8px] text-text-subtle transition-colors active:bg-bg-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              className="grid size-10 place-items-center rounded-control text-text-subtle transition-colors active:bg-bg-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               onClick={() => setActionsOpen(true)}
               type="button"
             >

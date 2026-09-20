@@ -211,7 +211,7 @@ export default function HeadingTOC({
           <button
             aria-expanded={open}
             aria-label={open ? "收起目录" : "展开目录"}
-            className="flex size-9 items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-500 shadow-sm transition hover:bg-neutral-50 hover:text-neutral-800 md:hidden"
+            className="flex size-9 items-center justify-center rounded-control border border-neutral-200 bg-white text-neutral-500 shadow-sm transition hover:bg-neutral-50 hover:text-neutral-800 md:hidden"
             onClick={() => setOpen((current) => !current)}
             title={open ? "收起目录" : "展开目录"}
             type="button"
@@ -252,7 +252,7 @@ export default function HeadingTOC({
           <div
             className={`absolute right-0 top-11 z-10 transition-opacity duration-150 md:right-full md:-top-3 md:mr-2 ${open ? "opacity-100" : "pointer-events-none opacity-0"}`}
           >
-            <div className="w-[min(18rem,calc(100vw-1rem))] rounded-lg border border-neutral-200/80 bg-white shadow-lg backdrop-blur md:w-52">
+            <div className="w-[min(18rem,calc(100vw-1rem))] rounded-panel border border-neutral-200/80 bg-white shadow-lg backdrop-blur md:w-52">
               <div className="px-3 pb-2 pt-3 text-xs font-medium text-neutral-400">
                 目录
               </div>
@@ -261,7 +261,7 @@ export default function HeadingTOC({
                   <button
                     key={i}
                     ref={activeId === i ? activeRef : undefined}
-                    className={`block w-full truncate rounded-md px-2 py-1 text-left text-[13px] leading-relaxed transition hover:bg-neutral-100 ${
+                    className={`block w-full truncate rounded-compact px-2 py-1 text-left text-[13px] leading-relaxed transition hover:bg-neutral-100 ${
                       activeId === i
                         ? "font-medium text-neutral-800"
                         : "text-neutral-400"

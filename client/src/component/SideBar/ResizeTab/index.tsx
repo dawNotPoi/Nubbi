@@ -84,10 +84,10 @@ export default function ResizeTab({
       className={clsx(
         "h-full overflow-hidden bg-sidebar",
         isMobile
-          ? "fixed inset-y-0 left-0 z-50 w-[min(92vw,360px)] max-w-[360px] overscroll-contain rounded-r-[14px] shadow-2xl transition-transform duration-200 ease-out"
+          ? "fixed inset-y-0 left-0 z-50 w-[min(92vw,360px)] max-w-[360px] overscroll-contain rounded-r-panel shadow-2xl transition-transform duration-200 ease-out"
           : "relative",
         desktopCollapsed &&
-          "rounded-xl border border-border-toolbar shadow-2xl",
+          "rounded-panel border border-border-toolbar shadow-2xl",
         isMobile && !opened && "pointer-events-none -translate-x-full",
       )}
       style={isMobile ? undefined : { width: "100%" }}

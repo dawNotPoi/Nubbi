@@ -47,7 +47,7 @@ export default function NoteLibrary(): ReactElement {
         <section className="mb-5">
           <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
             <div className="flex min-w-0 items-center gap-3">
-              <span className="grid size-9 shrink-0 place-items-center rounded-[8px] bg-[var(--entity-note-soft)] text-[var(--entity-note)]">
+              <span className="grid size-9 shrink-0 place-items-center rounded-control bg-[var(--entity-note-soft)] text-[var(--entity-note)]">
                 <NotebookPen className="size-[18px]" strokeWidth={1.9} />
               </span>
               <div className="min-w-0">
@@ -66,7 +66,7 @@ export default function NoteLibrary(): ReactElement {
                 onImport={(files) => void library.importMarkdownFiles(files)}
               />
               <Button
-                className="h-9 rounded-md px-4 font-medium"
+                className="h-9 rounded-control px-4 font-medium"
                 onClick={() => void library.createRootNote()}
                 variant="primary"
                 size="sm"

@@ -16,7 +16,7 @@ export const MenuItemContainer: FC<NavLinkProps> = ({
       to={to}
       className={({ isActive }) =>
         clsx(
-          "flex min-h-11 cursor-pointer items-center gap-2 rounded-[8px] px-2.5 py-2 text-[15px] font-normal text-text-muted transition-[background-color,color,transform] active:scale-[0.99] active:bg-bg-selected hover:bg-bg-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring md:min-h-8 md:rounded-[6px] md:px-2 md:py-1.5 md:text-sm",
+          "flex min-h-11 cursor-pointer items-center gap-2 rounded-control px-2.5 py-2 text-[15px] font-normal text-text-muted transition-[background-color,color,transform] active:scale-[0.99] active:bg-bg-selected hover:bg-bg-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring md:min-h-8 md:rounded-compact md:px-2 md:py-1.5 md:text-sm",
           className,
           isActive && "bg-bg-selected font-medium text-text-primary",
         )
@@ -40,7 +40,7 @@ export const IconButton: FC<
         onClick?.(event);
       }}
       className={clsx(
-        "flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-[8px] p-1 text-center text-text-subtle transition-[background-color,color,transform] active:scale-[0.97] active:bg-bg-selected hover:bg-bg-icon-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring md:min-h-7 md:min-w-7 md:rounded-[5px]",
+        "flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-control p-1 text-center text-text-subtle transition-[background-color,color,transform] active:scale-[0.97] active:bg-bg-selected hover:bg-bg-icon-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring md:min-h-7 md:min-w-7 md:rounded-compact",
         className,
       )}
       {...props}

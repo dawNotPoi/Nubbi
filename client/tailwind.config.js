@@ -92,9 +92,18 @@ export default {
         ring: "var(--focus-ring)",
       },
       borderRadius: {
-        lg: "9px",
-        md: "7px",
-        sm: "6px",
+        compact: "var(--radius-compact)",
+        control: "var(--radius-control)",
+        panel: "var(--radius-panel)",
+        sheet: "var(--radius-sheet)",
+        full: "var(--radius-full)",
+        // 旧工具类保持兼容，业务组件统一使用上面的角色名称。
+        sm: "var(--radius-compact)",
+        md: "var(--radius-control)",
+        lg: "var(--radius-panel)",
+        xl: "var(--radius-panel)",
+        "2xl": "var(--radius-panel)",
+        "3xl": "var(--radius-panel)",
       },
       boxShadow: {
         "focus-input": "0 0 0 3px var(--focus-ring)",

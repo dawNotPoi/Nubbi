@@ -28,7 +28,7 @@ type MobileNoteLibraryProps = {
 };
 
 const headerActionClass =
-  "grid size-11 shrink-0 place-items-center rounded-[8px] text-text-subtle transition-colors active:bg-bg-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring [&>svg]:size-5";
+  "grid size-11 shrink-0 place-items-center rounded-control text-text-subtle transition-colors active:bg-bg-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring [&>svg]:size-5";
 
 export function MobileNoteLibrary({ library }: MobileNoteLibraryProps) {
   const [tab, setTab] = useState<"recent" | "directory">("recent");
@@ -130,7 +130,7 @@ export function MobileNoteLibrary({ library }: MobileNoteLibraryProps) {
         <Header className="border-b border-border-row bg-surface/96">
           <div className="flex h-full items-center justify-between">
             <button
-              className="min-h-11 rounded-[8px] px-2 text-[15px] text-text-muted active:bg-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              className="min-h-11 rounded-control px-2 text-[15px] text-text-muted active:bg-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               onClick={leaveSelection}
               type="button"
             >
@@ -150,7 +150,7 @@ export function MobileNoteLibrary({ library }: MobileNoteLibraryProps) {
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border-row bg-surface/98 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-2 backdrop-blur-lg">
           <div className="mx-auto grid max-w-sm grid-cols-2 gap-2">
             <Button
-              className="h-11 rounded-[8px]"
+              className="h-11 rounded-control"
               disabled={library.selectedNotes.length === 0}
               icon={<FolderInput />}
               variant="outline"
@@ -162,7 +162,7 @@ export function MobileNoteLibrary({ library }: MobileNoteLibraryProps) {
               移动
             </Button>
             <Button
-              className="h-11 rounded-[8px] text-[var(--danger-text)] hover:bg-[var(--danger-bg)] hover:text-[var(--danger-text)]"
+              className="h-11 rounded-control text-[var(--danger-text)] hover:bg-[var(--danger-bg)] hover:text-[var(--danger-text)]"
               disabled={library.selectedNotes.length === 0}
               icon={<Trash2 />}
               variant="ghost"
@@ -199,7 +199,7 @@ export function MobileNoteLibrary({ library }: MobileNoteLibraryProps) {
               <Input
                 autoFocus
                 aria-label="搜索笔记"
-                className="h-10 rounded-[8px] border-transparent bg-bg-hover px-3 pl-3 pr-10 text-[16px] focus-visible:bg-surface"
+                className="h-10 rounded-control border-transparent bg-bg-hover px-3 pl-3 pr-10 text-[16px] focus-visible:bg-surface"
                 placeholder="搜索笔记"
                 value={library.filterText}
                 onChange={(event) => library.setFilterText(event.target.value)}
@@ -207,7 +207,7 @@ export function MobileNoteLibrary({ library }: MobileNoteLibraryProps) {
               {library.filterText ? (
                 <button
                   aria-label="清除搜索"
-                  className="absolute right-0 top-0 grid size-10 place-items-center rounded-[8px] text-text-subtle active:bg-bg-selected"
+                  className="absolute right-0 top-0 grid size-10 place-items-center rounded-control text-text-subtle active:bg-bg-selected"
                   onClick={() => library.setFilterText("")}
                   type="button"
                 >
@@ -275,13 +275,13 @@ export function MobileNoteLibrary({ library }: MobileNoteLibraryProps) {
       </Header>
 
       <main className="px-3 pb-4 pt-2">
-        <div className="mb-2 grid grid-cols-2 rounded-[8px] bg-bg-hover p-1">
+        <div className="mb-2 grid grid-cols-2 rounded-control bg-bg-hover p-1">
           {(["recent", "directory"] as const).map((value) => (
             <button
               key={value}
               aria-pressed={tab === value}
               className={clsx(
-                "h-9 rounded-[6px] text-[14px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
+                "h-9 rounded-compact text-[14px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
                 tab === value
                   ? "bg-surface font-medium text-text-primary shadow-[0_1px_2px_rgba(55,53,47,0.08)]"
                   : "font-normal text-text-muted active:bg-bg-selected",
@@ -298,10 +298,10 @@ export function MobileNoteLibrary({ library }: MobileNoteLibraryProps) {
           <div className="space-y-1 py-2">
             {Array.from({ length: 6 }).map((_, index) => (
               <div key={index} className="flex min-h-[68px] items-center gap-3 border-b border-border-row px-2">
-                <div className="size-9 animate-pulse rounded-[8px] bg-[var(--entity-note-soft)]" />
+                <div className="size-9 animate-pulse rounded-control bg-[var(--entity-note-soft)]" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-4 w-1/2 animate-pulse rounded bg-bg-hover" />
-                  <div className="h-3 w-1/3 animate-pulse rounded bg-bg-hover" />
+                  <div className="h-4 w-1/2 animate-pulse rounded-compact bg-bg-hover" />
+                  <div className="h-3 w-1/3 animate-pulse rounded-compact bg-bg-hover" />
                 </div>
               </div>
             ))}
@@ -310,7 +310,7 @@ export function MobileNoteLibrary({ library }: MobileNoteLibraryProps) {
           <div className="grid min-h-[260px] place-items-center text-center">
             <div>
               <p className="text-[14px] text-text-muted">笔记加载失败</p>
-              <Button className="mt-3 h-10 rounded-[8px]" variant="outline" onClick={() => void library.refetch()}>
+              <Button className="mt-3 h-10 rounded-control" variant="outline" onClick={() => void library.refetch()}>
                 重试
               </Button>
             </div>
@@ -321,7 +321,7 @@ export function MobileNoteLibrary({ library }: MobileNoteLibraryProps) {
           ) : (
             <div className="grid min-h-[260px] place-items-center text-center">
               <div className="flex flex-col items-center">
-                <span className="grid size-12 place-items-center rounded-[10px] bg-[var(--entity-note-soft)] text-[var(--entity-note)]">
+                <span className="grid size-12 place-items-center rounded-control bg-[var(--entity-note-soft)] text-[var(--entity-note)]">
                   <FileText className="size-6" />
                 </span>
                 <p className="mt-3 text-[14px] text-text-muted">暂无最近笔记</p>
@@ -341,7 +341,7 @@ export function MobileNoteLibrary({ library }: MobileNoteLibraryProps) {
         ) : (
           <div className="grid min-h-[260px] place-items-center text-center">
             <div className="flex flex-col items-center">
-              <span className="grid size-12 place-items-center rounded-[10px] bg-[var(--entity-note-soft)] text-[var(--entity-note)]">
+              <span className="grid size-12 place-items-center rounded-control bg-[var(--entity-note-soft)] text-[var(--entity-note)]">
                 <FileText className="size-6" />
               </span>
               <p className="mt-3 text-[14px] text-text-muted">暂无笔记</p>

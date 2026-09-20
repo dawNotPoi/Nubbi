@@ -10,16 +10,15 @@ import {
 import { resolveReturnTo, routes } from "@/utils/routes";
 import { message } from "antd";
 import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
-import { Loader2 } from "lucide-react";
+import { ArrowRight, Loader2, X } from "lucide-react";
+import { AuthCardHeader } from "./AuthCardHeader";
 import { SocialLoginButtons, type SocialLoginProvider } from "./SocialLoginButtons";
 import { useLocation, useNavigate } from "react-router-dom";
-import faviconSvg from "/favicon.svg";
 import { Button } from "@/component/UI/button";
 import { Input } from "@/component/UI/input";
 import { PasswordInput } from "@/component/UI/password-input";
 import { Label } from "@/component/UI/label";
 import { Separator } from "@/component/UI/separator";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/component/UI/card";
 
 type AuthView = "login" | "register" | "verifyEmail" | "forgotPassword";
 type VerificationIntent = "login" | "registration" | null;
@@ -350,8 +349,8 @@ export const LoginPage = (): ReactElement => {
   };
 
   const header = {
-    title: view === "register" ? "创建账号" : view === "verifyEmail" ? "验证邮箱" : view === "forgotPassword" ? "重置密码" : "登录 Nubbi",
-    desc: view === "register" ? "加入 Nubbi，开启结构化学习之旅" : view === "verifyEmail" ? (verificationCodeSent ? `验证码已发送至 ${verificationEmail}` : `请获取验证码以验证 ${verificationEmail}`) : view === "forgotPassword" ? "通过邮箱验证设置新密码" : "欢迎回来，继续你的知识旅程",
+    title: view === "register" ? "给灵感一个家" : view === "verifyEmail" ? "验证你的邮箱" : view === "forgotPassword" ? "找回你的账号" : "欢迎回来",
+    desc: view === "register" ? "创建账号，开始收藏你的好想法。" : view === "verifyEmail" ? (verificationCodeSent ? `验证码已发送至 ${verificationEmail}` : `请获取验证码以验证 ${verificationEmail}`) : view === "forgotPassword" ? "通过邮箱验证，设置新的登录密码。" : "你的灵感小站，一直在这里。",
   };
 
   /**
@@ -380,19 +379,22 @@ export const LoginPage = (): ReactElement => {
   };
 
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-[#fbfbfa] px-4 py-6 sm:px-5 sm:py-10">
-      <Card className="w-full max-w-[420px]">
-        <CardHeader className="mb-6">
-          <img className="size-12 rounded-xl border border-[#ededeb] bg-white" src={faviconSvg} alt="Nubbi" />
-          <CardTitle>{header.title}</CardTitle>
-          <CardDescription>{header.desc}</CardDescription>
-        </CardHeader>
-
-        <CardContent>
+    <div className="auth-form">
+        <AuthCardHeader title={header.title} description={header.desc} />
+        <div className="auth-card-body">
+          {socialLoginError ? (
+            <div role="alert" className="auth-login-error">
+              <div className="min-w-0 flex-1">
+                <p className="font-medium">登录未完成</p>
+                <p className="mt-1 break-words">{socialLoginError}</p>
+              </div>
+              <Button variant="ghost" size="icon" type="button" aria-label="关闭错误提示" className="shrink-0 text-destructive-foreground" onClick={() => setSocialLoginError(null)}><X aria-hidden="true" /></Button>
+            </div>
+          ) : null}
           {/* ═══ verifyEmail ═══ */}
           {view === "verifyEmail" ? (
             <form onSubmit={handleVerifyEmail} className="flex flex-col gap-4">
-              <div className="flex items-start gap-2.5 rounded-[10px] bg-accent p-3.5 text-[13px] leading-relaxed text-accent-foreground">
+              <div className="flex items-start gap-2.5 rounded-control bg-accent p-3.5 text-[13px] leading-relaxed text-accent-foreground">
                 <span className="text-[17px] shrink-0">💡</span>
                 <span>如果没有收到邮件，请检查垃圾箱，或点击下方按钮重新发送。</span>
               </div>
@@ -432,9 +434,9 @@ export const LoginPage = (): ReactElement => {
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="reset-email">账号邮箱</Label>
                 <Input id="reset-email" name="email" type="email" autoComplete="email" value={resetEmail} placeholder="请输入注册邮箱"
-                  className={resetEmailError ? "!border-red-500" : ""} aria-invalid={!!resetEmailError}
+                  className={resetEmailError ? "!border-[var(--danger-text)]" : ""} aria-invalid={!!resetEmailError}
                   onChange={e => { setResetEmail(e.target.value); if (resetEmailError) setResetEmailError(""); }} />
-                {resetEmailError ? <p className="text-xs text-red-500" role="alert">{resetEmailError}</p> : null}
+                {resetEmailError ? <p className="text-xs text-[var(--danger-text)]" role="alert">{resetEmailError}</p> : null}
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="reset-code">验证码</Label>
@@ -457,15 +459,15 @@ export const LoginPage = (): ReactElement => {
                 <PasswordInput id="reset-confirm-password" name="confirm-password" autoComplete="new-password" value={resetConfirmPassword} placeholder="请再次输入新密码" onChange={e => setResetConfirmPassword(e.target.value)} />
               </div>
               {resetCodeSent ? (
-                <div className="rounded-[10px] bg-[#ecfdf5] p-3.5 text-[13px] leading-relaxed text-[#059669]">
+                <div className="rounded-control bg-[var(--status-active-bg)] p-3.5 text-[13px] leading-relaxed text-[var(--status-active-text)]">
                   ✅ 验证码已发送，请输入邮箱收到的 6 位数字验证码并设置新密码。
                 </div>
               ) : (
-                <div className="rounded-[10px] bg-accent p-3.5 text-[13px] leading-relaxed text-accent-foreground">
+                <div className="rounded-control bg-accent p-3.5 text-[13px] leading-relaxed text-accent-foreground">
                   💡 先输入邮箱获取验证码，收到邮件后在此处完成密码重置。
                 </div>
               )}
-              <Button variant="primary" className="w-full !bg-[linear-gradient(135deg,#f59e0b,#f97316)]" size="lg" type="submit" disabled={submittingReset}>
+              <Button variant="primary" className="w-full" size="lg" type="submit" disabled={submittingReset}>
                 {submittingReset ? "重置中..." : "重置密码"}
               </Button>
               <Button variant="link" className="w-full" type="button" onClick={() => goView("login")}>返回登录</Button>
@@ -486,9 +488,9 @@ export const LoginPage = (): ReactElement => {
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="reg-email">邮箱</Label>
                   <Input id="reg-email" name="email" type="email" autoComplete="email" value={regEmail} placeholder="请输入邮箱"
-                    className={registerEmailError ? "!border-red-500" : ""} aria-invalid={!!registerEmailError}
+                    className={registerEmailError ? "!border-[var(--danger-text)]" : ""} aria-invalid={!!registerEmailError}
                     onChange={e => { setRegEmail(e.target.value); if (registerEmailError) setRegisterEmailError(""); }} />
-                  {registerEmailError ? <p className="text-xs text-red-500" role="alert">{registerEmailError}</p> : null}
+                  {registerEmailError ? <p className="text-xs text-[var(--danger-text)]" role="alert">{registerEmailError}</p> : null}
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="reg-code">验证码</Label>
@@ -518,56 +520,47 @@ export const LoginPage = (): ReactElement => {
             </form>
           ) : (
             /* ═══ login ═══ */
-            <form onSubmit={handleLogin}>
+            <form onSubmit={handleLogin} className="auth-login-form">
               <SocialLoginButtons
                 disabled={loading}
                 pendingProvider={pendingProvider}
                 onLogin={handleSocialLogin}
               />
-              <div className="flex items-center gap-3.5 my-6">
+              <div className="auth-login-divider">
                 <Separator className="flex-1" />
-                <span className="text-[13px] text-text-subtle">或使用邮箱</span>
+                <span>或使用邮箱登录</span>
                 <Separator className="flex-1" />
               </div>
-              <div className="flex flex-col gap-4">
-                <div className="flex flex-col gap-1.5">
+              <div className="auth-login-fields">
+                <div className="auth-login-field">
                   <Label htmlFor="login-email">邮箱</Label>
-                  <Input id="login-email" name="email" type="email" value={loginEmail} placeholder="请输入邮箱" autoComplete="email" required onChange={e => setLoginEmail(e.target.value)} />
+                  <Input id="login-email" name="email" type="email" value={loginEmail} placeholder="你的邮箱地址" autoComplete="email" required onChange={e => setLoginEmail(e.target.value)} />
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="login-password">密码</Label>
+                <div className="auth-login-field">
+                  <div className="auth-password-label">
+                    <Label htmlFor="login-password">密码</Label>
+                    <Button variant="link" className="auth-forgot-link" type="button" disabled={loginBusy} onClick={() => goView("forgotPassword")}>忘记密码？</Button>
+                  </div>
                   <PasswordInput id="login-password" name="password" value={loginPassword} placeholder="请输入密码" autoComplete="current-password" required onChange={e => setLoginPassword(e.target.value)} />
                 </div>
-                <div className="flex justify-end -mt-2">
-                  <Button variant="link" type="button" disabled={loginBusy} onClick={() => goView("forgotPassword")}>忘记密码？</Button>
-                </div>
-                <Button variant="primary" size="lg" type="submit" disabled={loginBusy}>
-                  {loading && pendingProvider === null && <Loader2 className="animate-spin" />}
-                  登录
+                <Button variant="primary" className="auth-login-submit" size="lg" type="submit" disabled={loginBusy} aria-busy={loading && pendingProvider === null}>
+                  {loading && pendingProvider === null ? <Loader2 aria-hidden="true" className="animate-spin motion-reduce:animate-none" /> : null}
+                  {loading && pendingProvider === null ? "正在登录…" : "登录并继续"}
+                  {!loading && <ArrowRight aria-hidden="true" />}
                 </Button>
               </div>
             </form>
           )}
 
-          {socialLoginError ? (
-            <div role="alert" className="flex items-start gap-2.5 rounded-[10px] bg-destructive p-3 text-[13px] leading-relaxed text-destructive-foreground">
-              <span>第三方登录失败：{socialLoginError}</span>
-              <button type="button" aria-label="关闭" className="ml-auto shrink-0 text-destructive-foreground text-base" onClick={() => setSocialLoginError(null)}>&times;</button>
-            </div>
-          ) : null}
-
           {view === "login" || view === "register" ? (
-            <div className="flex items-center justify-center gap-1 text-sm text-text-muted">
-              {view === "register" ? "已有账号？" : "还没有账号？"}
-              <Button variant="link" className="p-0 h-auto font-bold" disabled={loginBusy} onClick={() => goView(view === "register" ? "login" : "register")}>
-                {view === "register" ? "返回登录" : "立即注册"}
+            <div className="auth-card-footer flex items-center justify-center gap-1 text-sm text-text-muted">
+              {view === "register" ? "已有账号？" : "第一次来？"}
+              <Button variant="link" className="px-1 font-medium" disabled={loginBusy} onClick={() => goView(view === "register" ? "login" : "register")}>
+                {view === "register" ? "返回登录" : "创建账号"}
               </Button>
             </div>
           ) : null}
-        </CardContent>
-
-        <CardFooter />
-      </Card>
+        </div>
     </div>
   );
 };

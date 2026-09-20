@@ -85,13 +85,13 @@ function NoteSkeleton() {
     <div className="min-w-0 animate-pulse">
       <main className="w-full items-center pt-10">
         <div className="mx-auto w-full max-w-[780px] px-4 sm:px-8">
-          <div className="h-9 w-2/3 rounded-lg bg-bg-hover md:h-11" />
+          <div className="h-9 w-2/3 rounded-panel bg-bg-hover md:h-11" />
           <div className="mt-8 space-y-4">
-            <div className="h-4 w-full rounded bg-bg-hover" />
-            <div className="h-4 w-[92%] rounded bg-bg-hover" />
-            <div className="h-4 w-[96%] rounded bg-bg-hover" />
-            <div className="h-4 w-[78%] rounded bg-bg-hover" />
-            <div className="h-4 w-[88%] rounded bg-bg-hover" />
+            <div className="h-4 w-full rounded-compact bg-bg-hover" />
+            <div className="h-4 w-[92%] rounded-compact bg-bg-hover" />
+            <div className="h-4 w-[96%] rounded-compact bg-bg-hover" />
+            <div className="h-4 w-[78%] rounded-compact bg-bg-hover" />
+            <div className="h-4 w-[88%] rounded-compact bg-bg-hover" />
           </div>
         </div>
       </main>
@@ -212,9 +212,9 @@ export default function Note() {
     if (displayMode === "split" && isMobile) {
       return (
         <div className="mt-5">
-          <div className="mb-3 grid grid-cols-2 rounded-[8px] bg-bg-hover p-1 text-[14px]">
+          <div className="mb-3 grid grid-cols-2 rounded-control bg-bg-hover p-1 text-[14px]">
             <button
-              className={`min-h-9 rounded-[6px] ${
+              className={`min-h-9 rounded-compact ${
                 mobileSplitPane === "source" ? "bg-surface font-medium shadow-[0_1px_2px_rgba(55,53,47,0.08)]" : "text-text-muted"
               }`}
               onClick={() => setMobileSplitPane("source")}
@@ -223,7 +223,7 @@ export default function Note() {
               Markdown
             </button>
             <button
-              className={`min-h-9 rounded-[6px] ${
+              className={`min-h-9 rounded-compact ${
                 mobileSplitPane === "preview" ? "bg-surface font-medium shadow-[0_1px_2px_rgba(55,53,47,0.08)]" : "text-text-muted"
               }`}
               onClick={() => setMobileSplitPane("preview")}
@@ -296,7 +296,7 @@ export default function Note() {
           <div className="grid h-full grid-cols-[44px_minmax(0,1fr)_76px] items-center gap-1">
             <button
               aria-label="返回笔记"
-              className="grid size-11 place-items-center rounded-[8px] text-text-subtle transition-colors active:bg-bg-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              className="grid size-11 place-items-center rounded-control text-text-subtle transition-colors active:bg-bg-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               onClick={() => navigate(routes.noteLib)}
               type="button"
             >
@@ -307,7 +307,7 @@ export default function Note() {
               <SaveIndicator compact status={saveStatus} />
               <button
                 aria-label="笔记更多操作"
-                className="grid size-11 place-items-center rounded-[8px] text-text-subtle transition-colors active:bg-bg-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                className="grid size-11 place-items-center rounded-control text-text-subtle transition-colors active:bg-bg-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                 onClick={() => setMobileActionsOpen(true)}
                 type="button"
               >

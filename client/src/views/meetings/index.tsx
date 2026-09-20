@@ -21,7 +21,7 @@ export default function Meetings(): ReactElement {
           action={
             <button
               aria-label="创建会议"
-              className="grid size-11 place-items-center rounded-[8px] text-[var(--brand)] transition-colors active:bg-bg-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              className="grid size-11 place-items-center rounded-control text-[var(--brand)] transition-colors active:bg-bg-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               onClick={() => setCreateOpen(true)}
               type="button"
             >
@@ -38,7 +38,7 @@ export default function Meetings(): ReactElement {
           {!isMobile ? (
             <div className="flex flex-wrap items-start justify-between gap-5">
               <div className="flex min-w-0 items-center gap-3">
-                <span className="grid size-9 shrink-0 place-items-center rounded-[8px] bg-[var(--entity-meeting-soft)] text-[var(--entity-meeting)]">
+                <span className="grid size-9 shrink-0 place-items-center rounded-control bg-[var(--entity-meeting-soft)] text-[var(--entity-meeting)]">
                   <Presentation className="size-[18px]" strokeWidth={1.9} />
                 </span>
                 <div className="min-w-0">
@@ -51,7 +51,7 @@ export default function Meetings(): ReactElement {
                 </div>
               </div>
               <Button
-                className="h-9 rounded-md px-4 font-medium"
+                className="h-9 rounded-control px-4 font-medium"
                 icon={<Plus />}
                 onClick={() => setCreateOpen(true)}
                 size="lg"

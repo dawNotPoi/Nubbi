@@ -103,7 +103,7 @@ const MermaidPreview = ({ onRenderError, source }: MermaidPreviewProps) => {
   if (status === "error") {
     return (
       <div
-        className="mermaidPreviewStatus rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+        className="mermaidPreviewStatus rounded-panel border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
         role="alert"
       >
         Mermaid 图形无法渲染，请检查源码语法。
@@ -115,7 +115,7 @@ const MermaidPreview = ({ onRenderError, source }: MermaidPreviewProps) => {
     return (
       <div
         aria-label="Mermaid 图形正在渲染"
-        className="mermaidPreviewStatus h-24 animate-pulse rounded-lg border border-stone-200 bg-stone-50"
+        className="mermaidPreviewStatus h-24 animate-pulse rounded-panel border border-stone-200 bg-stone-50"
         role="status"
       />
     );
@@ -124,7 +124,7 @@ const MermaidPreview = ({ onRenderError, source }: MermaidPreviewProps) => {
   return (
     <div
       aria-busy={status === "loading"}
-      className="mermaidPreview rounded-lg border border-stone-200 bg-stone-50 p-4"
+      className="mermaidPreview rounded-panel border border-stone-200 bg-stone-50 p-4"
       dangerouslySetInnerHTML={{ __html: svg }}
     />
   );

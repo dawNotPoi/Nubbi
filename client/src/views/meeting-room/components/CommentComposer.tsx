@@ -36,9 +36,9 @@ export default function CommentComposer({
       <div className="mb-2 text-xs font-medium text-text-muted">
         {audienceLabel}
       </div>
-      <div className="relative rounded-2xl border border-border-toolbar bg-white p-3 shadow-sm transition-shadow focus-within:shadow-md">
+      <div className="relative rounded-control border border-border-toolbar bg-white p-3 shadow-sm transition-shadow focus-within:shadow-md">
         {composer.showMentionSuggestions && (
-          <div className="absolute bottom-[calc(100%+12px)] left-0 right-0 z-10 overflow-hidden rounded-2xl border border-border-row bg-white shadow-xl">
+          <div className="absolute bottom-[calc(100%+12px)] left-0 right-0 z-10 overflow-hidden rounded-panel border border-border-row bg-white shadow-xl">
             <div className="border-b border-bg-selected px-3 py-2 text-xs text-text-muted">
               选择要提及的成员
             </div>
@@ -52,7 +52,7 @@ export default function CommentComposer({
                       event.preventDefault();
                       composer.applyMention(user);
                     }}
-                    className={`mx-2 flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 transition ${active ? "bg-bg-selected" : "hover:bg-bg-hover"}`}
+                    className={`mx-2 flex cursor-pointer items-center gap-3 rounded-compact px-3 py-2 transition ${active ? "bg-bg-selected" : "hover:bg-bg-hover"}`}
                   >
                     <Image
                       src={user.image || ""}
@@ -102,7 +102,7 @@ export default function CommentComposer({
             type="button"
             disabled={composer.sending || !composer.draft.trim() || chat.needsResendConfirmation}
             onClick={() => void composer.send()}
-            className="inline-flex items-center gap-2 rounded-xl bg-text-primary px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:bg-text-subtle"
+            className="inline-flex items-center gap-2 rounded-control bg-text-primary px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:bg-text-subtle"
           >
             <SendHorizontal className="text-sm" />
             {composer.sending ? "发送中" : chat.needsResendConfirmation ? "请核对记录" : "发送"}

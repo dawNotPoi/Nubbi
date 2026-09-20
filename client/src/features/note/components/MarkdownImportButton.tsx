@@ -62,7 +62,7 @@ export function MarkdownImportButton({
         loading={importing}
         icon={<Upload aria-hidden="true" className="size-[18px] md:size-4" />}
         className={clsx(
-          "h-11 w-full rounded-[8px] px-4 font-medium sm:w-auto md:h-9 md:rounded-md",
+          "h-11 w-full rounded-control px-4 font-medium sm:w-auto md:h-9 md:rounded-control",
           dragging && "border-accent-border bg-accent-bg text-accent-text",
         )}
         disabled={unavailable}

@@ -87,7 +87,7 @@
     background-clip: content-box;
     background-color: var(--app-scrollbar-thumb);
     border: var(--app-scrollbar-thumb-inset) solid transparent;
-    border-radius: 999px;
+    border-radius: var(--radius-full);
     min-height: 48px;
   }
 
@@ -133,7 +133,7 @@
   .ant-modal-content {
     max-height: calc(100dvh - 24px);
     overflow: auto;
-    border-radius: 12px !important;
+    border-radius: var(--radius-panel) !important;
   }
 
   .ant-dropdown-menu-item,

@@ -14,7 +14,7 @@ import {
 
 export function NoteDragPreview({ note }: { note: Note }) {
   return (
-    <div className="flex max-w-56 items-center gap-1.5 rounded-[7px] border border-border-row bg-surface px-2 py-1 text-[13px] text-text-primary shadow-popover">
+    <div className="flex max-w-56 items-center gap-1.5 rounded-control border border-border-row bg-surface px-2 py-1 text-[13px] text-text-primary shadow-popover">
       <FileText className="size-4 shrink-0 text-text-subtle" />
       <span className="truncate">{normalizeNoteTitle(note.title)}</span>
     </div>
@@ -33,7 +33,7 @@ export function RootHeaderDropZone({ children }: PropsWithChildren) {
   return (
     <div
       className={clsx(
-        "rounded-[6px]",
+        "rounded-compact",
         isOver && canDropToRoot && "bg-brand-soft ring-1 ring-inset ring-[var(--focus-border)]",
       )}
       ref={setNodeRef}
@@ -56,7 +56,7 @@ export function RootDropIndicator() {
   return (
     <div
       className={clsx(
-        "mt-1 rounded-[6px] border border-dashed border-border-button px-2 py-1.5 text-center text-[12px] text-text-subtle",
+        "mt-1 rounded-compact border border-dashed border-border-button px-2 py-1.5 text-center text-[12px] text-text-subtle",
         isOver && "border-[var(--brand)] bg-brand-soft text-[var(--brand)]",
       )}
       ref={setNodeRef}
@@ -80,7 +80,7 @@ export function TrashDropTarget({
   return (
     <div
       className={clsx(
-        "rounded-[5px]",
+        "rounded-compact",
         className,
         isOver && "bg-[var(--danger-bg)] text-[var(--danger-text)] ring-1 ring-inset ring-[var(--danger-text)]/20",
       )}

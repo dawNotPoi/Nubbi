@@ -88,7 +88,7 @@ export function MobileFileActionsSheet({
             <Input
               ref={inputRef}
               aria-label="名称"
-              className="h-11 rounded-[8px] px-3 pl-3 text-[16px]"
+              className="h-11 rounded-control px-3 pl-3 text-[16px]"
               value={name}
               onChange={(event) => setName(event.target.value)}
               onKeyDown={(event) => {
@@ -100,10 +100,10 @@ export function MobileFileActionsSheet({
               }}
             />
             <div className="mt-4 flex gap-2">
-              <Button className="h-11 flex-1 rounded-[8px]" variant="ghost" onClick={() => setMode("actions")}>
+              <Button className="h-11 flex-1 rounded-control" variant="ghost" onClick={() => setMode("actions")}>
                 返回
               </Button>
-              <Button className="h-11 flex-1 rounded-[8px]" variant="primary" onClick={() => void saveRename()}>
+              <Button className="h-11 flex-1 rounded-control" variant="primary" onClick={() => void saveRename()}>
                 保存
               </Button>
             </div>

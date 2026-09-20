@@ -216,7 +216,7 @@ export const Modal = ({
                   tabIndex={-1}
                   ref={contentRef}
                   className={clsx(
-                    "absolute bottom-0 left-0 right-0 max-h-[90dvh] w-full overflow-y-auto rounded-t-2xl bg-white pb-[env(safe-area-inset-bottom)] shadow-lg outline-none md:relative md:mx-auto md:mt-[10vh] md:w-[min(90vw,320px)] md:rounded-md md:pb-0",
+                    "absolute bottom-0 left-0 right-0 max-h-[90dvh] w-full overflow-y-auto rounded-t-sheet bg-white pb-[env(safe-area-inset-bottom)] shadow-lg outline-none md:relative md:mx-auto md:mt-[10vh] md:w-[min(90vw,320px)] md:rounded-panel md:pb-0",
                     className
                   )}
                   style={{ zIndex: z + 1 }}
@@ -226,7 +226,7 @@ export const Modal = ({
                     {showClose && (
                       <button
                         aria-label="Close"
-                        className="grid size-10 place-items-center rounded text-gray-500 hover:bg-gray-100 md:size-8"
+                        className="grid size-10 place-items-center rounded-compact text-gray-500 hover:bg-gray-100 md:size-8"
                         onClick={() => {
                           if (isTop) {
                             setOpen(false);
@@ -242,7 +242,7 @@ export const Modal = ({
                   <div className="flex justify-end gap-2  px-4 py-3">
                     {cancelText && (
                       <button
-                        className="rounded px-3 bg-sky-500 py-1.5 hover:bg-gray-100"
+                        className="rounded-compact px-3 bg-sky-500 py-1.5 hover:bg-gray-100"
                         onClick={() => {
                           if (!isTop) return;
                           onCancel?.();
@@ -254,7 +254,7 @@ export const Modal = ({
                     )}
                     {okText && (
                       <button
-                        className="rounded  px-3 py-1.5 bg-sky-600 text-white hover:opacity-90"
+                        className="rounded-compact  px-3 py-1.5 bg-sky-600 text-white hover:opacity-90"
                         onClick={async () => {
                           if (!isTop) return;
                           await onOk?.();

@@ -22,7 +22,7 @@ export const Header = ({
       {!isMobile && !sideBarOpened ? (
         <button
           aria-label="展开侧边栏"
-          className="flex size-7 shrink-0 items-center justify-center rounded-md text-text-subtle transition-colors duration-150 hover:bg-bg-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          className="flex size-7 shrink-0 items-center justify-center rounded-control text-text-subtle transition-colors duration-150 hover:bg-bg-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           onClick={() => setSideBarOpened(true)}
           title="展开侧边栏"
           type="button"

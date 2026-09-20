@@ -106,7 +106,7 @@ export function MobileFileRow({
             <button
               aria-label={`${selected ? "取消选择" : "选择"}：${item.name}`}
               aria-pressed={selected}
-              className="grid size-10 place-items-center rounded-[8px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              className="grid size-10 place-items-center rounded-control focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               onClick={() => onToggleSelection(item, !selected)}
               type="button"
             >
@@ -122,7 +122,7 @@ export function MobileFileRow({
               </span>
             </button>
           ) : (
-            <span className={clsx("grid size-8 place-items-center rounded-[7px]", iconTone)}>
+            <span className={clsx("grid size-8 place-items-center rounded-control", iconTone)}>
               <LeadingIcon className="size-[19px]" strokeWidth={1.9} />
             </span>
           )}
@@ -133,7 +133,7 @@ export function MobileFileRow({
             <Input
               ref={inputRef}
               aria-label="重命名"
-              className="h-10 rounded-[8px] px-3 pl-3 text-[15px]"
+              className="h-10 rounded-control px-3 pl-3 text-[15px]"
               value={draftName}
               onBlur={() => {
                 if (skipBlurCommitRef.current) {
@@ -176,7 +176,7 @@ export function MobileFileRow({
           {!selecting && !editing ? (
             <button
               aria-label={`更多操作：${item.name}`}
-              className="grid size-10 place-items-center rounded-[8px] text-text-subtle transition-colors active:bg-bg-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              className="grid size-10 place-items-center rounded-control text-text-subtle transition-colors active:bg-bg-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               onClick={() => setActionsOpen(true)}
               type="button"
             >

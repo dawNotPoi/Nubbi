@@ -77,22 +77,22 @@ const AuthRouteFallback = () => (
     <div className="hidden w-52 shrink-0 animate-pulse bg-sidebar px-3 py-2 md:block">
       <div className="flex flex-col gap-3">
         <div className="mb-1 flex items-center gap-2">
-          <div className="size-7 rounded bg-bg-selected" />
-          <div className="h-4 w-24 rounded bg-bg-selected" />
+          <div className="size-7 rounded-compact bg-bg-selected" />
+          <div className="h-4 w-24 rounded-compact bg-bg-selected" />
         </div>
-        <div className="h-7 w-full rounded-md bg-bg-selected" />
-        <div className="h-7 w-4/5 rounded-md bg-bg-selected" />
-        <div className="h-7 w-full rounded-md bg-bg-selected" />
-        <div className="h-7 w-3/5 rounded-md bg-bg-selected" />
+        <div className="h-7 w-full rounded-control bg-bg-selected" />
+        <div className="h-7 w-4/5 rounded-control bg-bg-selected" />
+        <div className="h-7 w-full rounded-control bg-bg-selected" />
+        <div className="h-7 w-3/5 rounded-control bg-bg-selected" />
       </div>
     </div>
     <div className="flex-1 animate-pulse space-y-4 bg-surface px-4 py-6 md:px-8">
-      <div className="h-7 w-36 rounded-md bg-bg-hover" />
-      <div className="h-4 w-2/3 rounded bg-bg-hover" />
-      <div className="h-4 w-1/2 rounded bg-bg-hover" />
+      <div className="h-7 w-36 rounded-control bg-bg-hover" />
+      <div className="h-4 w-2/3 rounded-compact bg-bg-hover" />
+      <div className="h-4 w-1/2 rounded-compact bg-bg-hover" />
       <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="h-28 rounded-xl bg-bg-hover" />
-        <div className="h-28 rounded-xl bg-bg-hover" />
+        <div className="h-28 rounded-panel bg-bg-hover" />
+        <div className="h-28 rounded-panel bg-bg-hover" />
       </div>
     </div>
   </div>

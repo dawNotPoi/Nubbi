@@ -155,7 +155,7 @@ export function NoteLibraryRow({
             <button
               aria-label={row.expanded ? "收起子笔记" : "展开子笔记"}
               className={clsx(
-                "flex size-9 shrink-0 items-center justify-center rounded-[7px] text-text-subtle transition-[background-color,color,transform] active:scale-[0.95] active:bg-bg-selected hover:bg-bg-icon-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring md:size-5 md:rounded",
+                "flex size-9 shrink-0 items-center justify-center rounded-control text-text-subtle transition-[background-color,color,transform] active:scale-[0.95] active:bg-bg-selected hover:bg-bg-icon-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring md:size-5 md:rounded-compact",
                 !canExpand && "invisible",
               )}
               onClick={(event) => {
@@ -180,7 +180,7 @@ export function NoteLibraryRow({
               <Input
                 ref={inputRef}
                 aria-label="重命名笔记"
-                className="h-10 min-w-0 rounded-md border border-border-button bg-surface px-2 pl-2 font-medium outline-none shadow-focus-input md:h-8"
+                className="h-10 min-w-0 rounded-control border border-border-button bg-surface px-2 pl-2 font-medium outline-none shadow-focus-input md:h-8"
                 onBlur={() => {
                   if (skipBlurCommitRef.current) {
                     skipBlurCommitRef.current = false;
@@ -205,7 +205,7 @@ export function NoteLibraryRow({
               />
             ) : (
               <button
-                className="min-w-0 truncate rounded-[6px] px-1 py-2 text-left font-medium outline-none active:bg-bg-hover hover:bg-bg-hover focus-visible:ring-2 focus-visible:ring-focus-ring md:rounded md:py-1"
+                className="min-w-0 truncate rounded-compact px-1 py-2 text-left font-medium outline-none active:bg-bg-hover hover:bg-bg-hover focus-visible:ring-2 focus-visible:ring-focus-ring md:rounded-compact md:py-1"
                 onClick={(event) => {
                   if (isMobile) {
                     event.stopPropagation();
@@ -230,7 +230,7 @@ export function NoteLibraryRow({
               <span aria-hidden="true">·</span>
               <span className="shrink-0">{note.status}</span>
               {note.tags[0] ? (
-                <span className="truncate rounded bg-bg-selected px-1.5 py-0.5">
+                <span className="truncate rounded-compact bg-bg-selected px-1.5 py-0.5">
                   {note.tags[0]}
                 </span>
               ) : null}
@@ -244,7 +244,7 @@ export function NoteLibraryRow({
       <div className="hidden min-w-0 flex-wrap items-center gap-1 pr-2 md:flex">
         <span
           className={clsx(
-            "rounded px-1.5 py-0.5 text-xs font-medium",
+            "rounded-compact px-1.5 py-0.5 text-xs font-medium",
             note.status === "inbox" &&
               "bg-[var(--status-inbox-bg)] text-[var(--status-inbox-text)]",
             note.status === "active" &&
@@ -256,13 +256,13 @@ export function NoteLibraryRow({
           {note.status}
         </span>
         {note.published ? (
-          <span className="rounded bg-[var(--status-published-bg)] px-1.5 py-0.5 text-xs font-medium text-[var(--status-published-text)]">
+          <span className="rounded-compact bg-[var(--status-published-bg)] px-1.5 py-0.5 text-xs font-medium text-[var(--status-published-text)]">
             published
           </span>
         ) : null}
         {note.tags.slice(0, 2).map((tag) => (
           <span
-            className="max-w-[86px] truncate rounded bg-bg-selected px-1.5 py-0.5 text-xs text-text-muted"
+            className="max-w-[86px] truncate rounded-compact bg-bg-selected px-1.5 py-0.5 text-xs text-text-muted"
             key={tag}
             title={tag}
           >
@@ -274,7 +274,7 @@ export function NoteLibraryRow({
         {viewMode === "search" ? (
           <button
             aria-label="在树中定位"
-            className="flex size-10 items-center justify-center rounded-[8px] text-text-subtle transition-[background-color,color,transform] active:scale-[0.95] active:bg-bg-selected hover:bg-bg-icon-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring md:size-7 md:rounded"
+            className="flex size-10 items-center justify-center rounded-control text-text-subtle transition-[background-color,color,transform] active:scale-[0.95] active:bg-bg-selected hover:bg-bg-icon-hover hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring md:size-7 md:rounded-compact"
             onClick={(event) => {
               event.stopPropagation();
               onRevealInTree(note._id);
@@ -288,7 +288,7 @@ export function NoteLibraryRow({
         <Button
           variant="outline"
           size="xs"
-          className="hidden rounded-md px-3 font-medium md:inline-flex"
+          className="hidden rounded-control px-3 font-medium md:inline-flex"
           onClick={(event) => {
             event.stopPropagation();
             onOpen(note);
@@ -303,7 +303,7 @@ export function NoteLibraryRow({
               <Button
                 variant="ghost"
                 size="icon-xs"
-                className="size-10 rounded-[8px] md:size-7 md:rounded-[5px]"
+                className="size-10 rounded-control md:size-7 md:rounded-compact"
                 aria-label={`更多操作：${noteTitle}`}
                 onClick={(event) => event.stopPropagation()}
                 title="更多"

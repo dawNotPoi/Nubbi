@@ -17,7 +17,7 @@ type MainVideoStageProps = {
 export default function MainVideoStage({ videoRef, stage }: MainVideoStageProps): ReactElement {
   const activeParticipant = stage.visibleParticipants.find((member) => member.id === stage.activeParticipantId);
   const gridColumns = stage.visibleParticipants.length <= 1 ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3";
-  const buttonClass = "flex min-h-10 items-center gap-1 rounded-lg border px-3 py-1 text-xs focus-visible:ring-2 focus-visible:ring-focus-ring";
+  const buttonClass = "flex min-h-10 items-center gap-1 rounded-control border px-3 py-1 text-xs focus-visible:ring-2 focus-visible:ring-focus-ring";
 
   return <section className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-hidden bg-bg-panel p-2 sm:p-4">
     <div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
@@ -50,7 +50,7 @@ export default function MainVideoStage({ videoRef, stage }: MainVideoStageProps)
         <ParticipantMedia participant={activeParticipant} localVideoRef={videoRef} />
         <button type="button" aria-pressed={activeParticipant.id === stage.pinnedParticipantId}
           onClick={() => stage.togglePin(activeParticipant.id)}
-          className="absolute right-2 top-2 flex min-h-10 items-center gap-1 rounded-lg border border-border-button bg-white px-3 text-xs text-text-primary">
+          className="absolute right-2 top-2 flex min-h-10 items-center gap-1 rounded-control border border-border-button bg-white px-3 text-xs text-text-primary">
           {activeParticipant.id === stage.pinnedParticipantId ? <PinOff size={14} /> : <Pin size={14} />}
           {activeParticipant.id === stage.pinnedParticipantId ? "取消固定" : "固定此成员"}
         </button>

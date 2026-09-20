@@ -89,7 +89,7 @@ const ChangeAvatarModal = ({
           return false;
         }}
       >
-        <div className="flex flex-col items-center gap-2 cursor-pointer p-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 transition-colors">
+        <div className="flex flex-col items-center gap-2 cursor-pointer p-6 border-2 border-dashed border-gray-300 rounded-panel hover:border-blue-400 transition-colors">
           {previewUrl && file ? (
             <img
               src={previewUrl}

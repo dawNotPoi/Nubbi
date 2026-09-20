@@ -27,7 +27,7 @@ export function TrashToolbar({
     <div className="flex flex-col gap-2 border-y border-border-toolbar py-3 md:flex-row md:items-center">
       <Input
         allowClear
-        className="h-11 min-w-0 flex-1 rounded-[8px] md:h-8 md:max-w-sm md:rounded-[6px]"
+        className="h-11 min-w-0 flex-1 rounded-control md:h-8 md:max-w-sm md:rounded-compact"
         disabled={disabled}
         onChange={(event) => onFilterTextChange(event.target.value)}
         placeholder="搜索回收站标题"
@@ -47,7 +47,7 @@ export function TrashToolbar({
           value={sourceFilter}
         />
         <Button
-          className="h-11 rounded-[8px] md:h-8 md:rounded-[6px]"
+          className="h-11 rounded-control md:h-8 md:rounded-compact"
           disabled={disabled}
           icon={<RefreshCw className="size-4" />}
           loading={refreshing}

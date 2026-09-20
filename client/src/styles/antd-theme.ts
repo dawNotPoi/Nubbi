@@ -16,6 +16,16 @@ export function getNubbiAntdTheme(): ThemeConfig {
   const read = (name: string): string | undefined =>
     styles.getPropertyValue(name).trim() || undefined;
 
+  /**
+   * AntD 几何 Token 要求数字，从共享的像素变量读取，避免维护第二套圆角。
+   * @param name 以 px 定义的主题变量名。
+   * @returns 有效的非负像素值，缺失时使用 AntD 默认值。
+   */
+  const readPixels = (name: string): number | undefined => {
+    const value = Number.parseFloat(read(name) ?? "");
+    return Number.isFinite(value) && value >= 0 ? value : undefined;
+  };
+
   return {
     token: {
       colorPrimary: read("--primary"),
@@ -31,15 +41,19 @@ export function getNubbiAntdTheme(): ThemeConfig {
       colorFillTertiary: read("--sidebar"),
       fontFamily: read("--font-ui"),
       fontSize: 14,
-      borderRadius: 7,
+      borderRadius: readPixels("--radius-control"),
+      borderRadiusSM: readPixels("--radius-compact"),
+      borderRadiusXS: readPixels("--radius-compact"),
+      borderRadiusLG: readPixels("--radius-panel"),
       controlHeight: 34,
       controlHeightSM: 30,
       boxShadowSecondary: read("--shadow-popover"),
     },
     components: {
-      Button: { primaryShadow: "none", defaultShadow: "none", fontWeight: 500 },
+      Button: { primaryShadow: "none", defaultShadow: "none", fontWeight: 500, borderRadiusLG: readPixels("--radius-control") },
+      Input: { activeShadow: "0 0 0 3px var(--focus-ring)", borderRadiusLG: readPixels("--radius-control") },
+      Checkbox: { borderRadiusSM: readPixels("--radius-checkbox") },
       Dropdown: { paddingBlock: 4 },
-      Input: { activeShadow: "0 0 0 3px var(--focus-ring)" },
       Select: { activeOutlineColor: read("--focus-ring") },
     },
   };

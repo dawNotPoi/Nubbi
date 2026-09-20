@@ -74,7 +74,7 @@ function OptionTag({
   return (
     <span
       className={clsx(
-        "inline-flex max-w-full items-center gap-1 rounded-md px-2 py-1 text-base font-medium",
+        "inline-flex max-w-full items-center gap-1 rounded-control px-2 py-1 text-base font-medium",
         option.className,
       )}
     >
@@ -86,7 +86,7 @@ function OptionTag({
             event.stopPropagation();
             onRemove?.();
           }}
-          className="flex size-4 items-center justify-center rounded-sm hover:bg-black/5"
+          className="flex size-4 items-center justify-center rounded-compact hover:bg-black/5"
         >
           <X className="size-3" />
         </button>
@@ -350,7 +350,7 @@ export function Select({
         <div
           onClick={() => setOpen(true)}
           className={clsx(
-            "rounded-lg border border-transparent transition",
+            "rounded-control border border-transparent transition",
             isInline ? "inline-flex max-w-full" : "w-full px-2 py-1.5",
             open
               ? "border-stone-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
@@ -364,7 +364,7 @@ export function Select({
         </div>
       }
     >
-      <div className="flex max-h-[var(--popover-available-height)] w-full flex-col rounded-xl border border-stone-200 bg-white p-2 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+      <div className="flex max-h-[var(--popover-available-height)] w-full flex-col rounded-panel border border-stone-200 bg-white p-2 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
         {mode === "multiple" && selectedValues.length > 0 ? (
           <div className="mb-2 flex shrink-0 justify-end">
             <button
@@ -373,7 +373,7 @@ export function Select({
                 emitChange([]);
                 setOpen(false);
               }}
-              className="rounded px-2 py-1 text-sm text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700"
+              className="rounded-compact px-2 py-1 text-sm text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700"
             >
               移除
             </button>
@@ -395,7 +395,7 @@ export function Select({
                     setHighlightedIndex(index);
                   }}
                   className={clsx(
-                    "group flex w-full items-center justify-between gap-2 rounded-lg px-2 py-2 text-left text-sm text-stone-700 transition",
+                    "group flex w-full items-center justify-between gap-2 rounded-compact px-2 py-2 text-left text-sm text-stone-700 transition",
                     highlightedIndex === index
                       ? "bg-stone-100"
                       : "hover:bg-stone-50",
@@ -410,7 +410,7 @@ export function Select({
                         event.stopPropagation();
                         onDeleteOption(option.value);
                       }}
-                      className="flex size-5 shrink-0 items-center justify-center rounded-sm text-stone-400 opacity-0 hover:bg-black/5 hover:text-stone-600 group-hover:opacity-100"
+                      className="flex size-5 shrink-0 items-center justify-center rounded-compact text-stone-400 opacity-0 hover:bg-black/5 hover:text-stone-600 group-hover:opacity-100"
                     >
                       <X className="size-3.5" />
                     </span>
@@ -419,7 +419,7 @@ export function Select({
               );
             })
           ) : (
-            <div className="rounded-lg px-3 py-4 text-sm text-stone-400">
+            <div className="rounded-compact px-3 py-4 text-sm text-stone-400">
               No matching options
             </div>
           )}
@@ -435,11 +435,11 @@ export function Select({
                 setHighlightedIndex(filteredOptions.length);
               }}
               className={clsx(
-                "flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm text-stone-700 transition hover:bg-sky-50",
+                "flex w-full items-center gap-2 rounded-compact px-2 py-2 text-left text-sm text-stone-700 transition hover:bg-sky-50",
                 highlightedIndex === filteredOptions.length && "bg-sky-50",
               )}
             >
-              <span className="rounded-md bg-sky-100 px-2 py-1 text-[12px] font-medium text-sky-700">
+              <span className="rounded-control bg-sky-100 px-2 py-1 text-[12px] font-medium text-sky-700">
                 Create
               </span>
               <span className="truncate">{`'${createValue}'`}</span>

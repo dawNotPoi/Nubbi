@@ -9,7 +9,7 @@ type Props = { label: string; icon: ReactNode; status: DeviceStatus; devices: Me
 /** @param props 设备开关、选择及申请状态。@returns 键盘可操作且不被控制栏裁剪的设备菜单。 */
 export function MediaDeviceControl({ label, icon, status, devices, busy, onToggle, onSelect }: Props): ReactElement {
   const available = devices.filter((device) => device.deviceId);
-  return <div className="flex shrink-0 items-stretch rounded-lg border border-border-button bg-white">
+  return <div className="flex shrink-0 items-stretch rounded-control border border-border-button bg-white">
     <button type="button" aria-pressed={status.open} disabled={busy} onClick={onToggle}
       className="flex min-h-11 min-w-16 flex-col items-center justify-center gap-1 px-2 py-1 text-xs text-text-primary hover:bg-bg-hover disabled:opacity-50">
       {icon}<span>{busy ? "等待权限…" : label}</span>

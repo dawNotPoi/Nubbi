@@ -28,7 +28,7 @@ export default function MeetingSchedule() {
           return (
             <li
               key={item._id}
-              className="flex cursor-pointer flex-col gap-3 rounded-md p-2 hover:bg-gray-500/10 sm:flex-row sm:items-center"
+              className="flex cursor-pointer flex-col gap-3 rounded-control p-2 hover:bg-gray-500/10 sm:flex-row sm:items-center"
             >
               <div className="flex-1">
                 <h3>{item.title}</h3>

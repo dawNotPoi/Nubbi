@@ -182,11 +182,11 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
             ))
           ) : (
             <li
-              className="flex min-h-[164px] w-[76vw] min-w-[76vw] snap-start cursor-pointer flex-col overflow-hidden rounded-xl border border-border-row bg-white shadow-soft transition-colors hover:bg-bg-hover sm:w-[168px] sm:min-w-[168px] sm:max-w-[168px]"
+              className="flex min-h-[164px] w-[76vw] min-w-[76vw] snap-start cursor-pointer flex-col overflow-hidden rounded-panel border border-border-row bg-white shadow-soft transition-colors hover:bg-bg-hover sm:w-[168px] sm:min-w-[168px] sm:max-w-[168px]"
               onClick={handleCreateNote}
             >
               <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 py-6 text-center">
-                <div className="grid size-12 place-items-center rounded-[10px] bg-[var(--entity-note-soft)] text-[var(--entity-note)]">
+                <div className="grid size-12 place-items-center rounded-control bg-[var(--entity-note-soft)] text-[var(--entity-note)]">
                   <Plus className="size-6" />
                 </div>
                 <p className="text-sm font-medium text-text-primary">还没有笔记</p>

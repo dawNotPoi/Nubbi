@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils"
  * 此处只保留旧调用 API，并与当前 Nubbi Token / 几何对齐。
  */
 const buttonVariants = cva(
-  "inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-[8px] text-sm font-medium leading-none transition-[background-color,border-color,color,box-shadow] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+  "inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-control text-sm font-medium leading-none transition-[background-color,border-color,color,box-shadow] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
   {
     variants: {
       variant: {
@@ -22,8 +22,8 @@ const buttonVariants = cva(
       },
       size: {
         default: "h-11 px-4 [&_svg]:size-4",
-        sm: "h-10 rounded-[7px] px-3 [&_svg]:size-4",
-        lg: "h-11 rounded-[8px] px-5 text-[15px] [&_svg]:size-[18px]",
+        sm: "h-10 rounded-control px-3 [&_svg]:size-4",
+        lg: "h-11 rounded-control px-5 text-[15px] [&_svg]:size-[18px]",
         icon: "size-11 [&_svg]:size-[18px]",
       },
     },

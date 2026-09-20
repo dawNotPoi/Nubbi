@@ -105,7 +105,7 @@ export default function NoteBreadcrumb({
           {index > 0 ? <BreadcrumbSeparator /> : null}
           {displayItem.type === "ellipsis" ? (
             <span
-              className="shrink-0 rounded-md px-1.5 py-1 text-neutral-400"
+              className="shrink-0 rounded-control px-1.5 py-1 text-neutral-400"
               title={displayItem.hiddenItems
                 .map((item) => normalizeNoteTitle(item.title))
                 .join(" / ")}
@@ -114,14 +114,14 @@ export default function NoteBreadcrumb({
             </span>
           ) : displayItem.current ? (
             <span
-              className="min-w-0 truncate rounded-md px-1.5 py-1 text-neutral-600"
+              className="min-w-0 truncate rounded-control px-1.5 py-1 text-neutral-600"
               title={normalizeNoteTitle(displayItem.item.title)}
             >
               {normalizeNoteTitle(displayItem.item.title)}
             </span>
           ) : (
             <button
-              className="max-w-[160px] shrink min-w-0 truncate rounded-md px-1.5 py-1 text-left transition-colors hover:bg-neutral-100 hover:text-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300"
+              className="max-w-[160px] shrink min-w-0 truncate rounded-control px-1.5 py-1 text-left transition-colors hover:bg-neutral-100 hover:text-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300"
               onClick={() => {
                 selectItem(displayItem.item);
               }}

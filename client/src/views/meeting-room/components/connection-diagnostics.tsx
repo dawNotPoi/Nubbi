@@ -43,7 +43,7 @@ export function ConnectionDiagnostics({ statuses, users, localPeerId, onRetry, o
           </span>
           {failed && <button type="button" aria-label={`重试与 ${member.name || "该成员"} 的连接`}
             onClick={() => onRetry(member.peerId)}
-            className="min-h-9 rounded-lg border border-border-button px-3 text-accent-text focus-visible:ring-2 focus-visible:ring-focus-ring">
+            className="min-h-9 rounded-control border border-border-button px-3 text-accent-text focus-visible:ring-2 focus-visible:ring-focus-ring">
             重试
           </button>}
         </li>;

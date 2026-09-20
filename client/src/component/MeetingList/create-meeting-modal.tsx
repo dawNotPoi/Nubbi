@@ -73,7 +73,7 @@ export const CreateMeetingModal = ({
 
   return (
     <><Modal
-      className="md:!mt-[50vh] md:!w-[440px] md:!-translate-y-1/2 md:!rounded-xl"
+      className="md:!mt-[50vh] md:!w-[440px] md:!-translate-y-1/2 md:!rounded-panel"
       onCancel={() => { if (!creating) onClose(); }}
       maskClosable={!creating}
       open={open}

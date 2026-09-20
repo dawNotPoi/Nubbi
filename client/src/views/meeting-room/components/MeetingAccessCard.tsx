@@ -31,9 +31,9 @@ export default function MeetingAccessCard({
   onReturnHome,
 }: MeetingAccessCardProps): ReactElement {
   return (
-    <div className="w-full max-w-md space-y-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+    <div className="w-full max-w-md space-y-5 rounded-panel border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
       <div className="flex items-center gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-sky-50 text-sky-600">
+        <div className="flex h-12 w-12 items-center justify-center rounded-panel bg-sky-50 text-sky-600">
           <Video className="size-6" />
         </div>
         <div>
@@ -49,12 +49,12 @@ export default function MeetingAccessCard({
           <Spin />
         </div>
       ) : !meeting ? (
-        <div className="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-600">
+        <div className="rounded-control bg-rose-50 px-4 py-3 text-sm text-rose-600">
           未找到对应的会议房间。
         </div>
       ) : isMeetingEnded(meeting) ? (
         <div className="space-y-4">
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-amber-900">
+          <div className="rounded-control border border-amber-200 bg-amber-50 px-4 py-4 text-amber-900">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-amber-700">
                 <Clock3 className="size-5" />
@@ -68,7 +68,7 @@ export default function MeetingAccessCard({
             </div>
           </div>
 
-          <div className="rounded-xl bg-slate-50 px-4 py-3">
+          <div className="rounded-control bg-slate-50 px-4 py-3">
             <div className="text-sm text-slate-500">会议主题</div>
             <div className="mt-1 font-medium text-slate-900">
               {meeting.title}
@@ -81,7 +81,7 @@ export default function MeetingAccessCard({
         </div>
       ) : (
         <>
-          <div className="rounded-xl bg-slate-50 px-4 py-3">
+          <div className="rounded-control bg-slate-50 px-4 py-3">
             <div className="text-sm text-slate-500">会议主题</div>
             <div className="mt-1 font-medium text-slate-900">
               {meeting.title}

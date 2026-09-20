@@ -37,26 +37,28 @@ export function SocialLoginButtons({
   onLogin,
 }: SocialLoginButtonsProps): ReactElement {
   return (
-    <div role="group" aria-label="第三方登录" className="flex flex-col gap-2.5">
+    <div role="group" aria-label="第三方登录" className="grid grid-cols-2 gap-3">
       <Button
         variant="outline"
-        className="min-h-11 w-full"
+        className="min-h-12 w-full rounded-control"
+        aria-label={pendingProvider === "google" ? "正在前往 Google" : "使用 Google 登录"}
         disabled={disabled || pendingProvider !== null}
         loading={pendingProvider === "google"}
         icon={<GoogleMark />}
         onClick={() => void onLogin("google")}
       >
-        {pendingProvider === "google" ? "正在前往 Google…" : "使用 Google 登录"}
+        {pendingProvider === "google" ? "连接中…" : "Google"}
       </Button>
       <Button
         variant="outline"
-        className="min-h-11 w-full"
+        className="min-h-12 w-full rounded-control"
+        aria-label={pendingProvider === "github" ? "正在前往 GitHub" : "使用 GitHub 登录"}
         disabled={disabled || pendingProvider !== null}
         loading={pendingProvider === "github"}
         icon={<Github aria-hidden="true" />}
         onClick={() => void onLogin("github")}
       >
-        {pendingProvider === "github" ? "正在前往 GitHub…" : "使用 GitHub 登录"}
+        {pendingProvider === "github" ? "连接中…" : "GitHub"}
       </Button>
     </div>
   );
