@@ -2,9 +2,9 @@ import {
   createFloder,
   deleteFile,
   deleteTargetsBatch,
-  FILE_LIST_QUERY_KEY,
-  FILE_STATS_QUERY_KEY,
   fileDirectoryQueryKey,
+  fileListQueryRoot,
+  fileStatsQueryKey,
   moveFileItemsBatch,
   renameFile,
   type FileListItem,
@@ -13,6 +13,10 @@ import { FILE_PAGE_SIZE, getErrorMessage } from "@/features/file/model";
 import { useQueryClient } from "@tanstack/react-query";
 import { Modal, message } from "antd";
 import { useState, type Dispatch, type SetStateAction } from "react";
+import {
+  isAccountScopeCurrent,
+  requireAccountScope,
+} from "@/features/auth/model/account-scope";
 
 type MessageApi = ReturnType<typeof message.useMessage>[0];
 type ModalApi = ReturnType<typeof Modal.useModal>[0];
@@ -23,6 +27,7 @@ interface UseFileManagerActionsOptions {
   modalApi: ModalApi;
   moveTargets: FileListItem[];
   offset: number;
+  ownerId: string;
   parentId?: string;
   selectedItems: FileListItem[];
   setEditingId: Dispatch<SetStateAction<string | null>>;
@@ -37,16 +42,19 @@ export function useFileManagerActions(options: UseFileManagerActionsOptions) {
   const queryClient = useQueryClient();
   const [creating, setCreating] = useState(false);
   const refreshDirectory = (parentId: string | null | undefined) =>
-    queryClient.invalidateQueries({ queryKey: fileDirectoryQueryKey(parentId) });
+    queryClient.invalidateQueries({
+      queryKey: fileDirectoryQueryKey(options.ownerId, parentId),
+    });
   const refreshSourceDirectory = () => refreshDirectory(options.parentId);
   const refreshStats = () =>
-    queryClient.invalidateQueries({ queryKey: [FILE_STATS_QUERY_KEY] });
+    queryClient.invalidateQueries({ queryKey: fileStatsQueryKey(options.ownerId) });
   const removeDescendantCaches = (folderIds: string[]) => {
     const affected = new Set(folderIds);
     if (affected.size === 0) return;
     queryClient.removeQueries({
       predicate: (query) => {
-        if (query.queryKey[0] !== FILE_LIST_QUERY_KEY) return false;
+        const root = fileListQueryRoot(options.ownerId);
+        if (!root.every((part, index) => query.queryKey[index] === part)) return false;
         const response = query.state.data as {
           data?: { breadcrumbs?: Array<{ _id: string | null }> };
         } | undefined;
@@ -58,10 +66,12 @@ export function useFileManagerActions(options: UseFileManagerActionsOptions) {
   };
 
   const createFolder = async () => {
+    const scope = requireAccountScope();
     options.resetForCreate();
     setCreating(true);
     try {
       const response = await createFloder("新建文件夹", options.parentId);
+      if (!isAccountScopeCurrent(scope)) return;
       if (response.code !== 1 || !response.data?._id) {
         options.messageApi.error(response.message || "新建文件夹失败");
         return;
@@ -69,15 +79,18 @@ export function useFileManagerActions(options: UseFileManagerActionsOptions) {
       await refreshSourceDirectory();
       options.setEditingId(String(response.data._id));
     } catch (error) {
+      if (!isAccountScopeCurrent(scope)) return;
       options.messageApi.error(getErrorMessage(error, "新建文件夹失败"));
     } finally {
-      setCreating(false);
+      if (isAccountScopeCurrent(scope)) setCreating(false);
     }
   };
 
   const rename = async (item: FileListItem, name: string) => {
+    const scope = requireAccountScope();
     try {
       const response = await renameFile(item._id, name, item.kind);
+      if (!isAccountScopeCurrent(scope)) return false;
       if (response.code !== 1) {
         options.messageApi.error(response.message || "重命名失败");
         return false;
@@ -87,6 +100,7 @@ export function useFileManagerActions(options: UseFileManagerActionsOptions) {
       await refreshSourceDirectory();
       return true;
     } catch (error) {
+      if (!isAccountScopeCurrent(scope)) return false;
       options.messageApi.error(getErrorMessage(error, "重命名失败"));
       return false;
     }
@@ -116,12 +130,15 @@ export function useFileManagerActions(options: UseFileManagerActionsOptions) {
       okButtonProps: { danger: true },
       cancelText: "取消",
       onOk: async () => {
+        const scope = requireAccountScope();
         try {
           const response = await deleteFile(item._id, item.kind);
+          if (!isAccountScopeCurrent(scope)) return;
           if (response.code !== 1) throw new Error(response.message || "删除失败");
           options.messageApi.success("删除成功");
           await afterDelete(1, item.kind === "folder" ? [item._id] : []);
         } catch (error) {
+          if (!isAccountScopeCurrent(scope)) return;
           options.messageApi.error(getErrorMessage(error, "删除失败"));
         }
       },
@@ -138,8 +155,10 @@ export function useFileManagerActions(options: UseFileManagerActionsOptions) {
       okButtonProps: { danger: true },
       cancelText: "取消",
       onOk: async () => {
+        const scope = requireAccountScope();
         try {
           const response = await deleteTargetsBatch(targets);
+          if (!isAccountScopeCurrent(scope)) return;
           if (response.code !== 1) throw new Error(response.message || "批量删除失败");
           const missing = response.data.missingFileIds.length + response.data.missingFolderIds.length;
           if (missing > 0) options.messageApi.warning(`已删除 ${response.data.deletedCount} 项，${missing} 项未处理`);
@@ -151,6 +170,7 @@ export function useFileManagerActions(options: UseFileManagerActionsOptions) {
             removedTargets.filter(({ kind }) => kind === "folder").map(({ id }) => id),
           );
         } catch (error) {
+          if (!isAccountScopeCurrent(scope)) return;
           options.messageApi.error(getErrorMessage(error, "批量删除失败"));
         }
       },
@@ -174,9 +194,11 @@ export function useFileManagerActions(options: UseFileManagerActionsOptions) {
     targetFolderId: string | null,
   ) => {
     if (targets.length === 0) return false;
+    const scope = requireAccountScope();
     try {
       const payload = targets.map(({ _id, kind }) => ({ id: _id, kind }));
       const response = await moveFileItemsBatch(payload, targetFolderId);
+      if (!isAccountScopeCurrent(scope)) return false;
       if (response.code !== 1) throw new Error(response.message || "移动失败");
       const { moved, skipped, failed } = response.data;
       if (failed.length || skipped.length) {
@@ -192,6 +214,7 @@ export function useFileManagerActions(options: UseFileManagerActionsOptions) {
       ]);
       return true;
     } catch (error) {
+      if (!isAccountScopeCurrent(scope)) return false;
       options.messageApi.error(getErrorMessage(error, "移动失败"));
       return false;
     }

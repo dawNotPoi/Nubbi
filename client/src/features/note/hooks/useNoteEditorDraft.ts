@@ -3,6 +3,11 @@ import { updateNotePropertiesAtom } from "@/store/atom/note/noteMutationAtom";
 import { patchNoteAcrossCaches } from "@/features/note/model/cache";
 import { queryClient } from "@/utils/queryClient";
 import { debounceWithControls } from "@/utils/common";
+import {
+  isAccountScopeCurrent,
+  requireAccountScope,
+  type AccountScope,
+} from "@/features/auth/model/account-scope";
 import { useAtomValue } from "jotai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { NotePropertiesInput, NoteSaveStatus } from "../model/types";
@@ -58,7 +63,9 @@ export const useNoteEditorDraft = ({
           nextNoteId: string,
           parentId: string | null | undefined,
           nextTitle: string,
+          scope: AccountScope,
         ) => {
+          if (!isAccountScopeCurrent(scope)) return;
           setTitleDebouncing(false);
           updatePropertiesRef.current({
             noteId: nextNoteId,
@@ -132,12 +139,13 @@ export const useNoteEditorDraft = ({
       setTitleState(nextTitle);
 
       if (!noteId) return;
+      const scope = requireAccountScope();
 
       setTitleDebouncing(true);
-      patchNoteAcrossCaches(queryClient, data?.parentId, noteId, {
+      patchNoteAcrossCaches(queryClient, scope.ownerId, data?.parentId, noteId, {
         title: nextTitle,
       });
-      debouncedUpdateTitle(noteId, data?.parentId, nextTitle);
+      debouncedUpdateTitle(noteId, data?.parentId, nextTitle, scope);
     },
     [data?.parentId, debouncedUpdateTitle, noteId],
   );
@@ -145,7 +153,6 @@ export const useNoteEditorDraft = ({
   const updateProperties = useCallback(
     (properties: NotePropertiesInput) => {
       if (!noteId) return;
-
       updatePropertiesRef.current({
         noteId,
         parentId: data?.parentId,

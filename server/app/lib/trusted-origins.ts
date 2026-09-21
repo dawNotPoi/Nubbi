@@ -34,10 +34,10 @@ export const isTrustedOrigin = (origin?: string): boolean => {
 };
 
 /** 解析 Better Auth 所需的受信任来源列表，动态包含当前请求的 origin */
-export const resolveAuthTrustedOrigins = (request: Request): string[] => {
+export const resolveAuthTrustedOrigins = (request?: Request): string[] => {
   const trustedOrigins = new Set(configuredTrustedOrigins);
   const requestOrigin =
-    request.headers.get("origin") || request.headers.get("referer");
+    request?.headers.get("origin") || request?.headers.get("referer");
 
   if (!requestOrigin || !isTrustedOrigin(requestOrigin)) {
     return [...trustedOrigins];

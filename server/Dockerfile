@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:24-alpine
 
 WORKDIR /app
 
@@ -11,6 +11,7 @@ RUN pnpm install --frozen-lockfile --prod --filter nubbi-server... --ignore-scri
 
 COPY server/tsconfig.json ./server/tsconfig.json
 COPY server/app ./server/app
+COPY server/scripts ./server/scripts
 
 WORKDIR /app/server
 RUN mkdir -p storage

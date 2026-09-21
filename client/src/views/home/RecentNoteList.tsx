@@ -1,4 +1,8 @@
 import { newNote } from "@/api/note";
+import {
+  isAccountScopeCurrent,
+  requireAccountScope,
+} from "@/features/auth/model/account-scope";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { recentNoteAtom } from "@/store/atom/note/noteAtom";
@@ -11,8 +15,6 @@ import { useNavigate } from "react-router-dom";
 import CardWrapper from "./CardWrapper";
 import { RecentNoteCard, RecentNoteCardSkeleton } from "./RecentNoteCard";
 
-const AVATAR_CACHE_KEY = "home_recent_note_user_avatar";
-const NAME_CACHE_KEY = "home_recent_note_user_name";
 const EDGE_FADE_MIN_WIDTH = 64;
 const FALLBACK_CARD_STEP = 184;
 
@@ -28,7 +30,6 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
   const isMobile = useIsMobile();
   const [offset, setOffset] = useState(0);
   const [maxOffset, setMaxOffset] = useState(0);
-  const [cachedAvatar, setCachedAvatar] = useState("");
   const [rightFadeWidth, setRightFadeWidth] = useState(EDGE_FADE_MIN_WIDTH);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
@@ -36,11 +37,13 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
 
   const handleCreateNote = () => {
     if (!user?.id) return;
+    const scope = requireAccountScope();
     const note = newNote();
     createNote(
       { note },
       {
         onSuccess: () => {
+          if (!isAccountScopeCurrent(scope)) return;
           navigate(routes.note(note._id));
         },
       },
@@ -83,21 +86,6 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
       visibleCardCount,
     };
   }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const avatar = user?.image || localStorage.getItem(AVATAR_CACHE_KEY) || "";
-    setCachedAvatar(avatar);
-
-    if (user?.image) {
-      localStorage.setItem(AVATAR_CACHE_KEY, user.image);
-    }
-
-    if (user?.name) {
-      localStorage.setItem(NAME_CACHE_KEY, user.name);
-    }
-  }, [user?.image, user?.name]);
 
   useEffect(() => {
     const updateMax = () => {
@@ -175,7 +163,7 @@ const RecentNoteList: React.FC<{ className?: string }> = ({ className }) => {
           ) : hasNotes ? (
             data.map((note) => (
               <RecentNoteCard
-                avatarSrc={cachedAvatar || user?.image || ""}
+                avatarSrc={user?.image || ""}
                 key={note._id}
                 note={note}
               />

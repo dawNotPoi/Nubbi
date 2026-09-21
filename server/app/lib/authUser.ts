@@ -1,12 +1,17 @@
 import { httpError } from "@/common/http-error";
-import type { AuthRequest } from "@/middleware/common";
-import { auth } from "./auth";
-import { toWebHeaders } from "./requestHeaders";
+import type {
+  AuthenticatedActor,
+  AuthRequest,
+} from "@/services/auth/types";
 
-/** 已认证用户类型，从 AuthRequest 的 user 字段推导 */
-export type AuthenticatedUser = NonNullable<AuthRequest["user"]>;
+/** 兼容旧业务调用方的已认证用户别名。 */
+export type AuthenticatedUser = AuthenticatedActor;
 
-/** 从请求中提取已认证用户，未认证时抛出 401 */
+/**
+ * 从已由中间件认证的请求中提取用户。
+ * @param req 已经过认证中间件的请求。
+ * @returns 当前请求附加的认证用户。
+ */
 export function requireAuthenticatedUser(
   req: AuthRequest,
 ): AuthenticatedUser {
@@ -14,23 +19,13 @@ export function requireAuthenticatedUser(
   return req.user;
 }
 
-/** 延迟获取已认证用户（先检查 req.user，缺失时通过 session token 解析） */
+/**
+ * 兼容旧异步调用形状，只读取统一 resolver 已附加的用户。
+ * @param req 已经过认证中间件的请求。
+ * @returns 当前请求附加的认证用户。
+ */
 export async function getUser(
   req: AuthRequest,
 ): Promise<AuthenticatedUser> {
-  if (req.user) return req.user;
-  const session = await auth.api.getSession({
-    headers: toWebHeaders(req.headers),
-  });
-  if (!session?.user) {
-    throw httpError(401, "Unauthorized");
-  }
-  const user = {
-    id: session.user.id,
-    email: session.user.email,
-    name: session.user.name,
-    image: session.user.image ?? undefined,
-  };
-  req.user = user;
-  return user;
+  return requireAuthenticatedUser(req);
 }

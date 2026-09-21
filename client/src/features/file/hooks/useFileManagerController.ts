@@ -1,7 +1,7 @@
 import {
-  FILE_STATS_QUERY_KEY,
   fetchFileStats,
   fileDirectoryQueryKey,
+  fileStatsQueryKey,
   listFiles,
   type FileBreadcrumb,
   type FileCategory,
@@ -33,10 +33,14 @@ import { createElement, Fragment, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useFileAccessActions } from "./useFileAccessActions";
 import { useFileManagerActions } from "./useFileManagerActions";
+import { useAuth } from "@/hooks/useAuth";
+import { requireOwnerId } from "@/features/auth/model/account-scope";
 
 const EMPTY_ITEMS: FileListItem[] = [];
 
 export function useFileManagerController() {
+  const { user } = useAuth();
+  const ownerId = requireOwnerId(user?.id);
   const params = useParams();
   const splat = params["*"] ?? "";
   const parentId = getFolderIdFromSplat(splat);
@@ -80,7 +84,7 @@ export function useFileManagerController() {
 
   const query = useQuery({
     queryKey: [
-      ...fileDirectoryQueryKey(parentId),
+      ...fileDirectoryQueryKey(ownerId, parentId),
       { limit: FILE_PAGE_SIZE, offset, query: debouncedQuery, category, ...sort },
     ],
     queryFn: () =>
@@ -93,13 +97,13 @@ export function useFileManagerController() {
         ...sort,
       }),
     placeholderData: (previous, previousQuery) =>
-      previousQuery?.queryKey[1] === (parentId ?? "root") ? previous : undefined,
+      previousQuery?.queryKey[3] === (parentId ?? "root") ? previous : undefined,
     staleTime: 30_000,
     refetchOnWindowFocus: false,
   });
 
   const statsQuery = useQuery({
-    queryKey: [FILE_STATS_QUERY_KEY],
+    queryKey: fileStatsQueryKey(ownerId),
     queryFn: fetchFileStats,
     staleTime: 30_000,
     refetchOnWindowFocus: false,
@@ -160,6 +164,7 @@ export function useFileManagerController() {
     modalApi,
     moveTargets,
     offset,
+    ownerId,
     parentId,
     selectedItems,
     setEditingId,

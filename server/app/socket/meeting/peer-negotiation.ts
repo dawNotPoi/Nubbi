@@ -1,5 +1,5 @@
 import type { Server, Socket } from "socket.io";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { getSocketActor } from "../authentication";
 import { acknowledge } from "./acknowledgement";
 import { ensureMeetingRoomActive } from "./room-access";

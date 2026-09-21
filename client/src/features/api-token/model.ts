@@ -42,9 +42,13 @@ const optionalDate = (value: unknown) =>
   typeof value === "string" || value instanceof Date ? value : null;
 
 export const normalizeApiTokens = (value: unknown): ApiTokenItem[] => {
-  if (!Array.isArray(value)) return [];
+  const items = Array.isArray(value)
+    ? value
+    : isRecord(value) && Array.isArray(value.apiKeys)
+      ? value.apiKeys
+      : [];
 
-  return value.flatMap((item) => {
+  return items.flatMap((item) => {
     if (!isRecord(item) || typeof item.id !== "string") return [];
 
     return [{

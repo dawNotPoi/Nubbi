@@ -1,218 +1,116 @@
 import {
-  clearAuthState,
+  authSessionCoordinator,
+  useAuthSessionSnapshot,
+} from "@/features/auth/model/session-coordinator";
+import {
   deleteAccountWithCode,
-  getCurrentSession,
   registerWithCode,
   sendAccountDeletionCode,
   signInWithEmail,
   signInWithGitHub,
   signInWithGoogle,
   signOut,
-  useAuthRuntime,
-  useSession,
-} from "@/utils/auth";
-import { updateUserAvatar } from "@/api/file";
-import { routes } from "@/utils/routes";
-import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+  updateAuthAvatar,
+} from "@/features/auth/model/auth-actions";
+import { useCallback } from "react";
+import type {
+  AuthOperation,
+  AuthSessionSnapshot,
+  AuthSessionStatus,
+  AuthUser,
+} from "@/features/auth/model/types";
 
-type AuthUser = {
-  id: string;
-  email?: string;
-  name?: string;
-  image?: string | null;
-};
+/** 认证组件可消费的统一状态与动作门面。 */
+export interface UseAuthResult {
+  user: AuthUser | undefined;
+  loading: boolean;
+  error: string | null;
+  initialized: boolean;
+  sessionPending: boolean;
+  hasAccessToken: boolean;
+  status: AuthSessionStatus;
+  operation: AuthOperation;
+  generation: number;
+  login(email: string, password: string): ReturnType<typeof signInWithEmail>;
+  register(
+    email: string,
+    password: string,
+    username: string,
+    code: string,
+  ): ReturnType<typeof registerWithCode>;
+  loginWithGitHub(callbackURL?: string): ReturnType<typeof signInWithGitHub>;
+  loginWithGoogle(callbackURL?: string): ReturnType<typeof signInWithGoogle>;
+  logout(): ReturnType<typeof signOut>;
+  requestAccountDeletionCode(): ReturnType<typeof sendAccountDeletionCode>;
+  deleteAccount(code: string): ReturnType<typeof deleteAccountWithCode>;
+  updateAvatar(imageUrl: string): ReturnType<typeof updateAuthAvatar>;
+  retrySession(): Promise<AuthSessionSnapshot>;
+  isAuthenticated: boolean;
+}
 
-export const useAuth = () => {
-  const { data: session, refetch: refetchSession, isPending } = useSession();
-  const { accessToken, initialized } = useAuthRuntime();
-  const recoveringSessionRef = useRef(false);
-
-  const [loading, setLoading] = useState(false);
-  const [sessionRecovering, setSessionRecovering] = useState(false);
-  const [recoveredUser, setRecoveredUser] = useState<AuthUser | undefined>();
-  const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const user = session?.user ?? recoveredUser;
-  const isAuthenticated = !!user && !!accessToken;
-
-  useEffect(() => {
-    if (session?.user) {
-      setRecoveredUser(session.user);
-    }
-  }, [session?.user]);
-
-  useEffect(() => {
-    if (!accessToken) {
-      setRecoveredUser(undefined);
-    }
-  }, [accessToken]);
-
-  useEffect(() => {
-    if (!initialized || !accessToken || session?.user) {
-      return;
-    }
-
-    if (recoveringSessionRef.current) {
-      return;
-    }
-
-    recoveringSessionRef.current = true;
-    setSessionRecovering(true);
-    getCurrentSession()
-      .then((result) => {
-        const nextUser = result.session?.data?.user;
-        if (result.success && nextUser) {
-          setRecoveredUser(nextUser);
-          refetchSession();
-          return;
-        }
-
-          clearAuthState();
-      })
-      .finally(() => {
-        recoveringSessionRef.current = false;
-        setSessionRecovering(false);
-      });
-  }, [accessToken, initialized, refetchSession, session?.user]);
+/**
+ * 订阅唯一认证协调器，并为现有组件保留认证动作门面。
+ * @returns 由共享快照派生的用户、状态和认证动作。
+ */
+export const useAuth = (): UseAuthResult => {
+  const snapshot = useAuthSessionSnapshot();
 
   const login = useCallback(
-    async (email: string, password: string) => {
-      setLoading(true);
-      setError(null);
-      const result = await signInWithEmail(email, password);
-      if (result.success) {
-        const immediateUser = (
-          result.data as { data?: { user?: AuthUser } } | undefined
-        )?.data?.user;
-        if (immediateUser) {
-          setRecoveredUser(immediateUser);
-        }
-        void refetchSession();
-      } else {
-        setError(result.error?.message || "登录失败");
-      }
-      setLoading(false);
-      return result;
-    },
-    [refetchSession],
-  );
-
-  const register = useCallback(
-    async (
-      email: string,
-      password: string,
-      username: string,
-      code: string,
-    ) => {
-      setLoading(true);
-      setError(null);
-      const result = await registerWithCode({
-        email,
-        password,
-        username,
-        code,
-      });
-      if (!result.success) {
-        setError(result.error?.message || "注册失败");
-      }
-      setLoading(false);
-      return result;
-    },
+    (email: string, password: string) => signInWithEmail(email, password),
     [],
   );
 
-  const loginWithGitHub = useCallback(async (callbackURL?: string) => {
-    setLoading(true);
-    setError(null);
-    const result = await signInWithGitHub(callbackURL);
-    if (!result.success) {
-      setError(result.error?.message || "GitHub 登录失败");
-      setLoading(false);
-      return result;
-    }
+  const register = useCallback(
+    (email: string, password: string, username: string, code: string) =>
+      registerWithCode({ email, password, username, code }),
+    [],
+  );
 
-    setLoading(false);
-    return result;
-  }, []);
+  const loginWithGitHub = useCallback(
+    (callbackURL?: string) => signInWithGitHub(callbackURL),
+    [],
+  );
 
-  const loginWithGoogle = useCallback(async (callbackURL?: string) => {
-    setLoading(true);
-    setError(null);
-    const result = await signInWithGoogle(callbackURL);
-    if (!result.success) {
-      setError(result.error?.message || "Google 登录失败");
-      setLoading(false);
-      return result;
-    }
-
-    setLoading(false);
-    return result;
-  }, []);
+  const loginWithGoogle = useCallback(
+    (callbackURL?: string) => signInWithGoogle(callbackURL),
+    [],
+  );
 
   const logout = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    const result = await signOut();
-    queryClient.clear();
-    setLoading(false);
-    navigate(routes.login);
-    return result;
-  }, [navigate, queryClient]);
-
-  const requestAccountDeletionCode = useCallback(async () => {
-    setError(null);
-    const result = await sendAccountDeletionCode();
-    if (!result.success) {
-      setError(result.error?.message || "注销验证码发送失败");
-    }
-    return result;
+    return signOut();
   }, []);
 
+  const requestAccountDeletionCode = useCallback(
+    () => sendAccountDeletionCode(),
+    [],
+  );
+
   const deleteAccount = useCallback(
-    async (code: string) => {
-      setLoading(true);
-      setError(null);
-      const result = await deleteAccountWithCode(code);
-      setLoading(false);
-
-      if (!result.success) {
-        setError(result.error?.message || "账号注销失败");
-        return result;
-      }
-
-      setRecoveredUser(undefined);
-      queryClient.clear();
-      navigate(routes.login, { replace: true });
-      return result;
-    },
-    [navigate, queryClient],
+    (code: string) => deleteAccountWithCode(code),
+    [],
   );
 
   const updateAvatar = useCallback(
-    async (imageUrl: string) => {
-      setError(null);
-      const result = await updateUserAvatar(imageUrl);
-      if (result.code === 1) {
-        await refetchSession();
-        return { success: true, data: result.data };
-      }
-      const message = result.message || "头像更新失败";
-      setError(message);
-      return { success: false, error: { message } };
-    },
-    [refetchSession],
+    (imageUrl: string) => updateAuthAvatar(imageUrl),
+    [],
   );
 
+  const retrySession = useCallback(
+    () => authSessionCoordinator.refresh(),
+    [],
+  );
+
+  const isAuthenticated = snapshot.status === "authenticated";
   return {
-    user,
-    loading,
-    error,
-    initialized,
-    sessionPending: isPending || sessionRecovering,
-    hasAccessToken: !!accessToken,
+    user: snapshot.user ?? undefined,
+    loading: snapshot.operation !== "idle",
+    error: snapshot.error,
+    initialized: snapshot.initialized,
+    sessionPending: snapshot.status === "checking",
+    hasAccessToken: isAuthenticated,
+    status: snapshot.status,
+    operation: snapshot.operation,
+    generation: snapshot.generation,
     login,
     register,
     loginWithGitHub,
@@ -221,6 +119,7 @@ export const useAuth = () => {
     requestAccountDeletionCode,
     deleteAccount,
     updateAvatar,
+    retrySession,
     isAuthenticated,
   };
 };

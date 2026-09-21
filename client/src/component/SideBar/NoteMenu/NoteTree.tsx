@@ -19,26 +19,29 @@ import { WrittingModal } from "./WritingModal";
 
 type NoteTreeProps = {
   notes: Note[];
+  ownerId: string;
   depth?: number;
 };
 
 type NoteTreeNodeProps = {
   note: Note;
+  ownerId: string;
   depth: number;
 };
 
 type NoteChildrenProps = {
   noteId: string;
+  ownerId: string;
   depth: number;
 };
 
-function NoteChildren({ noteId, depth }: NoteChildrenProps) {
+function NoteChildren({ noteId, ownerId, depth }: NoteChildrenProps) {
   const {
     data: children,
     isError,
     isLoading,
     refetch,
-  } = useNoteTreeQuery(noteId);
+  } = useNoteTreeQuery(ownerId, noteId);
   const hasChildrenData = children !== undefined;
 
   if (isLoading && !hasChildrenData) {
@@ -68,10 +71,10 @@ function NoteChildren({ noteId, depth }: NoteChildrenProps) {
     );
   }
 
-  return <NoteTree depth={depth} notes={children} />;
+  return <NoteTree depth={depth} notes={children} ownerId={ownerId} />;
 }
 
-function NoteTreeNode({ note, depth }: NoteTreeNodeProps) {
+function NoteTreeNode({ note, ownerId, depth }: NoteTreeNodeProps) {
   const { Id } = useParams();
   const [expandedNodes, setExpandedNodes] = useAtom(expandedNodesAtom);
   const deleteNote = useDeleteNote();
@@ -170,7 +173,7 @@ function NoteTreeNode({ note, depth }: NoteTreeNodeProps) {
         />
       </div>
       {open && note.hasChildren ? (
-        <NoteChildren depth={depth + 1} noteId={note._id} />
+        <NoteChildren depth={depth + 1} noteId={note._id} ownerId={ownerId} />
       ) : null}
     </>
   );
@@ -178,6 +181,7 @@ function NoteTreeNode({ note, depth }: NoteTreeNodeProps) {
 
 export default function NoteTree({
   notes,
+  ownerId,
   depth = 1,
 }: NoteTreeProps) {
   return (
@@ -187,6 +191,7 @@ export default function NoteTree({
           depth={depth}
           key={note._id}
           note={note}
+          ownerId={ownerId}
         />
       ))}
     </div>

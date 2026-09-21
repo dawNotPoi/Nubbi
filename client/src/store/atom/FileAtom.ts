@@ -8,6 +8,8 @@ import {
 
 /** 文件上传任务状态描述 */
 export interface UploadTask {
+  ownerId: string;
+  generation: number;
   id: string;
   name: string;
   size: number;

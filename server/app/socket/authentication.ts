@@ -1,13 +1,13 @@
 import logger from "@/common/logger";
-import type { AuthenticatedUser } from "@/lib/authUser";
-import { getSessionAuthContextFromHeaders } from "@/middleware/authentication";
 import { isAccountDeletionInProgress } from "@/services/auth/account-mutation-guard";
+import { resolveAuthContext } from "@/services/auth/credential-resolver";
+import type { AuthenticatedActor } from "@/services/auth/types";
 import type { IncomingHttpHeaders } from "node:http";
 import type { Server, Socket } from "socket.io";
 
 /** Socket 数据中存放的认证用户 */
 type SocketData = {
-  actor?: AuthenticatedUser;
+  actor?: AuthenticatedActor;
 };
 
 /** 握手 token 的最大长度，防止超长 token 占满内存 */
@@ -23,7 +23,7 @@ function getHandshakeToken(socket: Socket): string | null {
 }
 
 /** 获取 Socket 的认证用户，账号注销中返回 null */
-export function getSocketActor(socket: Socket): AuthenticatedUser | null {
+export function getSocketActor(socket: Socket): AuthenticatedActor | null {
   const data = socket.data as SocketData;
   const actor = data.actor;
   return actor && !isAccountDeletionInProgress(actor.id) ? actor : null;
@@ -52,7 +52,10 @@ export function authenticateSocket(
     const headers: IncomingHttpHeaders = { ...socket.request.headers };
     if (token) headers.authorization = `Bearer ${token}`;
 
-    const context = await getSessionAuthContextFromHeaders(headers);
+    const context = await resolveAuthContext({
+      headers,
+      allowApiKey: false,
+    });
     if (!context || isAccountDeletionInProgress(context.user.id)) {
       next(new Error("Unauthorized"));
       return;

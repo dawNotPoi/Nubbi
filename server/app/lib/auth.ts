@@ -1,6 +1,5 @@
 import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
-import { apiKey, bearer, jwt } from "better-auth/plugins";
 import logger from "@/common/logger";
 import { db } from "./db";
 import { createEmailVerificationCode } from "./emailVerification";
@@ -18,16 +17,28 @@ import {
   serializeAuthLogArg,
 } from "./auth-logging";
 import { resolveAuthTrustedOrigins } from "./trusted-origins";
+import {
+  createAuthPlugins,
+  normalizeAuthJwtAuthority,
+} from "./auth-plugins";
+import { assertAuthDatabaseReady } from "@/services/auth/auth-database-readiness";
 
 const authDb = await db;
 if (!authDb) {
   throw new Error("Database connection is not ready");
 }
 
+/** JWT 签发与校验共享的标准化 issuer/audience。 */
+export const authJwtAuthority = normalizeAuthJwtAuthority(
+  env.BETTER_AUTH_URL,
+);
+const authPlugins = createAuthPlugins(authJwtAuthority);
+await assertAuthDatabaseReady(authDb, { plugins: authPlugins });
+
 export const auth = betterAuth({
   database: mongodbAdapter(authDb),
   secret: env.BETTER_AUTH_SECRET,
-  baseURL: env.BETTER_AUTH_URL,
+  baseURL: authJwtAuthority,
   basePath: "/api/auth",
   trustedOrigins: resolveAuthTrustedOrigins,
   logger: {
@@ -57,7 +68,7 @@ export const auth = betterAuth({
     revokeSessionsOnPasswordReset: true,
     // better-auth 默认即 8，显式声明以与路由层校验（注册/重置"至少 8 位"）保持同步
     minPasswordLength: 8,
-    passwordResetTokenExpiresIn: 60 * 60,
+    resetPasswordTokenExpiresIn: 60 * 60,
     sendResetPassword: async ({ user, token }) => {
       const resetCode = await createPasswordResetCode(
         user.email,
@@ -110,32 +121,7 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24 * 30,
     updateAge: 60 * 60 * 24 * 7,
   },
-  plugins: [
-    bearer(),
-    jwt({
-      jwt: {
-        expirationTime: "15m",
-      },
-    }),
-    apiKey({
-      defaultPrefix: "nb_",
-      enableMetadata: true,
-      maximumNameLength: 100,
-      // 必须关闭：默认行为会让带 x-api-key 的请求在所有 better-auth 端点伪造 session
-      //（包括用 key 创建新 key、getSession 等），token 校验统一走 requireAuthWithApiKey
-      disableSessionForAPIKeys: true,
-      keyExpiration: {
-        // 不传 expiresIn 时永不过期（"长期 token"语义）
-        defaultExpiresIn: null,
-      },
-      rateLimit: {
-        enabled: true,
-        // 插件默认 10 次/天，对博客/MCP 场景远远不够，放宽为 300 次/分钟
-        timeWindow: 60 * 1000,
-        maxRequests: 300,
-      },
-    }),
-  ],
+  plugins: authPlugins,
 });
 
 export const signUpVerifiedEmailWithPassword = async ({

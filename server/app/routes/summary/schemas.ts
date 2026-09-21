@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v3";
 
 const noteIdSchema = z.string().regex(/^[a-fA-F0-9]{24}$/, "Invalid ObjectId");
 

@@ -1,5 +1,9 @@
 import type { Note, NoteWithContent } from "@/api/note";
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
+import {
+  assertAccountScopeCurrent,
+  type AccountScope,
+} from "@/features/auth/model/account-scope";
 import { patchNoteDetailCache, patchNoteTreeCache } from "./cache";
 import { noteKeys } from "./keys";
 import type { UpdateNotePropertiesVariables } from "./types";
@@ -27,9 +31,10 @@ const upsertNoteByCreatedAt = (notes: Note[], note: Note) =>
 
 const snapshotTreeList = (
   queryClient: QueryClient,
+  ownerId: string,
   parentId: string | null | undefined,
 ): TreeListSnapshot => {
-  const queryKey = noteKeys.tree(parentId ?? null);
+  const queryKey = noteKeys.tree(ownerId, parentId ?? null);
   return {
     previousNotes: queryClient.getQueryData<Note[]>(queryKey),
     queryKey,
@@ -49,12 +54,15 @@ const rollbackTreeLists = (
 
 export const optimisticPrependNoteToList = async (
   queryClient: QueryClient,
+  scope: AccountScope,
   note: NoteWithContent,
 ): Promise<NoteListSnapshot> => {
+  const { ownerId } = scope;
   const parentId = note.parentId ?? null;
-  const queryKey = noteKeys.tree(parentId);
+  const queryKey = noteKeys.tree(ownerId, parentId);
   await queryClient.cancelQueries({ queryKey });
-  const snapshot = snapshotTreeList(queryClient, parentId);
+  assertAccountScopeCurrent(scope);
+  const snapshot = snapshotTreeList(queryClient, ownerId, parentId);
 
   queryClient.setQueryData<Note[]>(queryKey, (old) =>
     old ? upsertNoteByCreatedAt(old, note) : old,
@@ -64,12 +72,15 @@ export const optimisticPrependNoteToList = async (
 
 export const optimisticRemoveNoteFromList = async (
   queryClient: QueryClient,
+  scope: AccountScope,
   parentId: string | null | undefined,
   noteId: string,
 ): Promise<NoteListSnapshot> => {
-  const queryKey = noteKeys.tree(parentId ?? null);
+  const { ownerId } = scope;
+  const queryKey = noteKeys.tree(ownerId, parentId ?? null);
   await queryClient.cancelQueries({ queryKey });
-  const snapshot = snapshotTreeList(queryClient, parentId);
+  assertAccountScopeCurrent(scope);
+  const snapshot = snapshotTreeList(queryClient, ownerId, parentId);
 
   queryClient.setQueryData<Note[]>(queryKey, (old) =>
     old?.filter((note) => note._id !== noteId),
@@ -86,8 +97,10 @@ export const rollbackNoteListSnapshot = (
 
 export const applyOptimisticNotePropertiesUpdate = async (
   queryClient: QueryClient,
+  scope: AccountScope,
   { noteId, parentId, properties }: UpdateNotePropertiesVariables,
 ): Promise<NotePropertiesSnapshot> => {
+  const { ownerId } = scope;
   const currentParentId = parentId ?? null;
   const nextParentId = Object.prototype.hasOwnProperty.call(
     properties,
@@ -95,9 +108,9 @@ export const applyOptimisticNotePropertiesUpdate = async (
   )
     ? properties.parentId ?? null
     : currentParentId;
-  const currentKey = noteKeys.tree(currentParentId);
-  const nextKey = noteKeys.tree(nextParentId);
-  const detailKey = noteKeys.detail(noteId);
+  const currentKey = noteKeys.tree(ownerId, currentParentId);
+  const nextKey = noteKeys.tree(ownerId, nextParentId);
+  const detailKey = noteKeys.detail(ownerId, noteId);
   const moved = currentParentId !== nextParentId;
 
   await Promise.all([
@@ -105,9 +118,10 @@ export const applyOptimisticNotePropertiesUpdate = async (
     ...(moved ? [queryClient.cancelQueries({ queryKey: nextKey })] : []),
     queryClient.cancelQueries({ queryKey: detailKey }),
   ]);
+  assertAccountScopeCurrent(scope);
 
-  const lists = [snapshotTreeList(queryClient, currentParentId)];
-  if (moved) lists.push(snapshotTreeList(queryClient, nextParentId));
+  const lists = [snapshotTreeList(queryClient, ownerId, currentParentId)];
+  if (moved) lists.push(snapshotTreeList(queryClient, ownerId, nextParentId));
   const previousDetail =
     queryClient.getQueryData<NoteWithContent>(detailKey);
   const currentNote =
@@ -129,9 +143,9 @@ export const applyOptimisticNotePropertiesUpdate = async (
       );
     }
   } else {
-    patchNoteTreeCache(queryClient, currentParentId, noteId, properties);
+    patchNoteTreeCache(queryClient, ownerId, currentParentId, noteId, properties);
   }
-  patchNoteDetailCache(queryClient, noteId, {
+  patchNoteDetailCache(queryClient, ownerId, noteId, {
     ...properties,
     parentId: nextParentId,
   });
@@ -141,6 +155,7 @@ export const applyOptimisticNotePropertiesUpdate = async (
 
 export const rollbackOptimisticNotePropertiesUpdate = (
   queryClient: QueryClient,
+  ownerId: string,
   noteId: string,
   snapshot?: NotePropertiesSnapshot,
 ) => {
@@ -148,7 +163,7 @@ export const rollbackOptimisticNotePropertiesUpdate = (
   rollbackTreeLists(queryClient, snapshot.lists);
   if (snapshot.previousDetail !== undefined) {
     queryClient.setQueryData(
-      noteKeys.detail(noteId),
+      noteKeys.detail(ownerId, noteId),
       snapshot.previousDetail,
     );
   }

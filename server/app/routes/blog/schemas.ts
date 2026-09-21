@@ -1,5 +1,5 @@
 import { paginationQuerySchema } from "@/common/pagination";
-import { z } from "zod";
+import { z } from "zod/v3";
 
 /** 博客列表只接受有界的分页和字面搜索，避免访客传入任意数据库条件。 */
 export const blogListQuerySchema = paginationQuerySchema.extend({

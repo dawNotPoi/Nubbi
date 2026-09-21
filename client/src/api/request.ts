@@ -1,5 +1,6 @@
-import { authorizedFetch } from "@/utils/auth";
+import { authorizedFetch } from "@/features/auth/model/authorized-fetch";
 
+/** Nubbi JSON API 的统一响应结构。 */
 export type ApiResponse<T> = {
   code: 0 | 1;
   data: T;
@@ -11,10 +12,17 @@ type ApiErrorPayload = {
   errorCode?: unknown;
 };
 
+/** 保留 HTTP 状态与业务错误码的请求错误。 */
 export class ApiRequestError extends Error {
   status: number;
   errorCode?: string;
 
+  /**
+   * 创建可分类的 API 错误。
+   * @param message 用户可读错误消息。
+   * @param status HTTP 状态码。
+   * @param errorCode 可选业务错误码。
+   */
   constructor(message: string, status: number, errorCode?: string) {
     super(message);
     this.name = "ApiRequestError";
@@ -47,6 +55,14 @@ const parseJsonResponse = async <T>(response: Response): Promise<T> => {
 
 export { authorizedFetch };
 
+/**
+ * 发送 JSON 请求并解析统一响应。
+ * @param url API 相对或绝对地址。
+ * @param body 待序列化的请求体。
+ * @param method HTTP 方法。
+ * @param init 额外 fetch 参数。
+ * @returns 统一 API 响应。
+ */
 export default async function request<T>(
   url: string,
   body?: unknown,
@@ -69,6 +85,14 @@ export default async function request<T>(
   return parseJsonResponse<ApiResponse<T>>(response);
 }
 
+/**
+ * 发送无需 JSON 序列化的请求。
+ * @param url API 相对或绝对地址。
+ * @param body 原始可重放请求体。
+ * @param method HTTP 方法。
+ * @param init 额外 fetch 参数。
+ * @returns 统一 API 响应。
+ */
 export async function requestWithNoJson<T>(
   url: string,
   body?: BodyInit | null,
@@ -84,6 +108,13 @@ export async function requestWithNoJson<T>(
   return parseJsonResponse<ApiResponse<T>>(response);
 }
 
+/**
+ * 发送带查询参数的 GET 请求。
+ * @param url API 相对或绝对地址。
+ * @param params 查询参数。
+ * @param options 额外 fetch 参数。
+ * @returns 统一 API 响应。
+ */
 export function Get<T = unknown>(
   url: string,
   params?: Record<string, unknown>,
@@ -112,5 +143,5 @@ export function Get<T = unknown>(
   return authorizedFetch(requestUrl, {
     ...options,
     method: "GET",
-  }).then((response) => response.json());
+  }).then((response) => response.json() as Promise<ApiResponse<T>>);
 }

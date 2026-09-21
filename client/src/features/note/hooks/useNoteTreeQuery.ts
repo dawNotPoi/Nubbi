@@ -7,11 +7,12 @@ type UseNoteTreeQueryOptions = {
 };
 
 export const useNoteTreeQuery = (
+  ownerId: string,
   parentId: string | null,
   { enabled = true }: UseNoteTreeQueryOptions = {},
 ) =>
   useQuery({
-    queryKey: noteKeys.tree(parentId),
+    queryKey: noteKeys.tree(ownerId, parentId),
     queryFn: async () => {
       const response = parentId
         ? await getDirectChildren(parentId)

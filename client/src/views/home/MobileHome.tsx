@@ -1,4 +1,8 @@
 import { newNote } from "@/api/note";
+import {
+  isAccountScopeCurrent,
+  requireAccountScope,
+} from "@/features/auth/model/account-scope";
 import { Header } from "@/component/Header";
 import { CreateMeetingModal } from "@/component/MeetingList/create-meeting-modal";
 import {
@@ -49,11 +53,17 @@ export default function MobileHome() {
 
   const createNote = () => {
     if (!owner || createMutation.isPending) return;
+    const scope = requireAccountScope();
     const note = newNote();
     setCreateOpen(false);
     createMutation.mutate(
       { note },
-      { onSuccess: () => navigate(routes.note(note._id)) },
+      {
+        onSuccess: () => {
+          if (!isAccountScopeCurrent(scope)) return;
+          navigate(routes.note(note._id));
+        },
+      },
     );
   };
 

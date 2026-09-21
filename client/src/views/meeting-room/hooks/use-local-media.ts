@@ -3,6 +3,7 @@ import { DeviceCapture } from "../media/device-capture";
 import { MediaState, type MediaSnapshot } from "../media/media-state";
 import { ScreenCapture } from "../media/screen-capture";
 import type { MediaDevices, MediaToggleKind } from "../types";
+import { authLifecycleRegistry } from "@/features/auth/model/auth-lifecycle";
 
 /** 本地媒体 Hook 的公共接口。 */
 export type LocalMedia = MediaSnapshot & {
@@ -22,8 +23,16 @@ export function useLocalMedia(): LocalMedia {
 
   useEffect(() => {
     state.active = true;
+    const unregisterLifecycle = authLifecycleRegistry.register({
+      id: `meeting-local-media:${crypto.randomUUID()}`,
+      disconnect: state.release,
+    });
     window.addEventListener("pagehide", state.release);
-    return () => { window.removeEventListener("pagehide", state.release); state.release(); };
+    return () => {
+      unregisterLifecycle();
+      window.removeEventListener("pagehide", state.release);
+      state.release();
+    };
   }, [state]);
 
   useEffect(() => {

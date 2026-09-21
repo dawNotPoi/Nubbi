@@ -7,6 +7,19 @@ import {
 import { queryClient } from "@/utils/queryClient";
 
 import { atomWithMutation, atomWithQuery } from "jotai-tanstack-query";
+import {
+  accountQueryKey,
+  isAccountScopeCurrent,
+  requireAccountScope,
+} from "@/features/auth/model/account-scope";
+
+/** @param ownerId 当前账号 ID。@returns 当前账号近期会议 key。 */
+export const recentMeetingQueryKey = (ownerId: string) =>
+  accountQueryKey(ownerId, ["meeting", "recent"] as const);
+
+/** @param ownerId 当前账号 ID。@returns 当前账号全部会议 key。 */
+export const allMeetingQueryKey = (ownerId: string) =>
+  accountQueryKey(ownerId, ["meeting", "all"] as const);
 
 /**
  * 分页拉取全部会议，返回按 _id 去重后的完整列表。
@@ -35,22 +48,28 @@ const getAllMeetingPages = async () => {
 
 /** 近期会议列表查询 atom */
 export const MeetingAtom = atomWithQuery(
-  () => ({
-    queryKey: ["meeting"],
+  () => {
+    const scope = requireAccountScope();
+    return {
+    queryKey: recentMeetingQueryKey(scope.ownerId),
     queryFn: async () => {
       const response = await getMeeting();
       return response.data || [];
     },
-  }),
+    };
+  },
   () => queryClient
 );
 
 /** 全部会议列表查询 atom，分页聚合 */
 export const AllMeetingAtom = atomWithQuery(
-  () => ({
-    queryKey: ["allMeeting"],
+  () => {
+    const scope = requireAccountScope();
+    return {
+    queryKey: allMeetingQueryKey(scope.ownerId),
     queryFn: getAllMeetingPages,
-  }),
+    };
+  },
   () => queryClient
 );
 
@@ -61,8 +80,10 @@ export const createMeetingAtom = atomWithMutation(() => ({
   ) => {
     return createMeeting(meeting);
   },
-  onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ["meeting"] });
-    queryClient.invalidateQueries({ queryKey: ["allMeeting"] });
+  onMutate: () => ({ scope: requireAccountScope() }),
+  onSuccess: (_response, _variables, context) => {
+    if (!context || !isAccountScopeCurrent(context.scope)) return;
+    queryClient.invalidateQueries({ queryKey: recentMeetingQueryKey(context.scope.ownerId) });
+    queryClient.invalidateQueries({ queryKey: allMeetingQueryKey(context.scope.ownerId) });
   },
 }));

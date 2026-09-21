@@ -1,4 +1,9 @@
 import type { NoteWithContent } from "@/api/note";
+import {
+  isAccountScopeCurrent,
+  requireAccountScope,
+  type AccountScope,
+} from "@/features/auth/model/account-scope";
 import { updateNoteContentAtom } from "@/store/atom/note/noteMutationAtom";
 import { debounceWithControls } from "@/utils/common";
 import { useAtomValue } from "jotai";
@@ -28,10 +33,12 @@ export const useNoteContentDraft = ({
   const activeNoteIdRef = useRef<string | undefined>(undefined);
   const activeSavingNoteIdRef = useRef<string | undefined>(undefined);
   const activeRequestIdRef = useRef<string | undefined>(undefined);
+  const activeRequestScopeRef = useRef<AccountScope | undefined>(undefined);
   const baseRevisionByNoteRef = useRef(new Map<string, number>());
   const draftContentByNoteRef = useRef(new Map<string, string>());
   const lastSavedContentByNoteRef = useRef(new Map<string, string>());
   const queuedContentByNoteRef = useRef(new Map<string, string>());
+  const queuedScopeByNoteRef = useRef(new Map<string, AccountScope>());
   const conflictBlockedNoteIdsRef = useRef(new Set<string>());
   const saveOrderRef = useRef<string[]>([]);
   const requestSequenceRef = useRef(0);
@@ -63,14 +70,45 @@ export const useNoteContentDraft = ({
     setContentSaving(activeSavingNoteIdRef.current === nextNoteId);
   }, []);
 
+  /**
+   * 静默丢弃指定旧账号代次的保存队列，不触碰其他代次的局部状态。
+   * @param scope 需要终止的账号作用域。
+   * @returns 无返回值。
+   */
+  const discardQueuedScope = useCallback((scope: AccountScope): void => {
+    const matches = (candidate?: AccountScope) =>
+      candidate?.ownerId === scope.ownerId &&
+      candidate.generation === scope.generation;
+
+    for (const [queuedNoteId, queuedScope] of queuedScopeByNoteRef.current) {
+      if (!matches(queuedScope)) continue;
+      queuedScopeByNoteRef.current.delete(queuedNoteId);
+      queuedContentByNoteRef.current.delete(queuedNoteId);
+      saveOrderRef.current = saveOrderRef.current.filter(
+        (candidate) => candidate !== queuedNoteId,
+      );
+    }
+    if (matches(activeRequestScopeRef.current)) {
+      savingRef.current = false;
+      activeSavingNoteIdRef.current = undefined;
+      activeRequestIdRef.current = undefined;
+      activeRequestScopeRef.current = undefined;
+    }
+  }, []);
+
   const startNextQueuedSaveRef = useRef<() => void>(() => {});
 
   const startSave = useCallback(
-    (saveNoteId: string, content: string) => {
+    (saveNoteId: string, content: string, scope: AccountScope) => {
+      if (!isAccountScopeCurrent(scope)) {
+        discardQueuedScope(scope);
+        return;
+      }
       savingRef.current = true;
       activeSavingNoteIdRef.current = saveNoteId;
       const clientMutationId = `${saveNoteId}:${Date.now()}:${++requestSequenceRef.current}`;
       activeRequestIdRef.current = clientMutationId;
+      activeRequestScopeRef.current = scope;
 
       if (activeNoteIdRef.current === saveNoteId) {
         setContentSaving(true);
@@ -87,15 +125,21 @@ export const useNoteContentDraft = ({
         },
         {
           onError: () => {
+            if (!isAccountScopeCurrent(scope)) {
+              discardQueuedScope(scope);
+              return;
+            }
             if (activeRequestIdRef.current !== clientMutationId) return;
 
             queuedContentByNoteRef.current.delete(saveNoteId);
+            queuedScopeByNoteRef.current.delete(saveNoteId);
             saveOrderRef.current = saveOrderRef.current.filter(
               (queuedNoteId) => queuedNoteId !== saveNoteId,
             );
             savingRef.current = false;
             activeSavingNoteIdRef.current = undefined;
             activeRequestIdRef.current = undefined;
+            activeRequestScopeRef.current = undefined;
 
             if (activeNoteIdRef.current === saveNoteId) {
               setContentError(true);
@@ -106,6 +150,10 @@ export const useNoteContentDraft = ({
             startNextQueuedSaveRef.current();
           },
           onSuccess: (response) => {
+            if (!isAccountScopeCurrent(scope)) {
+              discardQueuedScope(scope);
+              return;
+            }
             if (activeRequestIdRef.current !== clientMutationId) return;
 
             const result = response.data;
@@ -113,6 +161,7 @@ export const useNoteContentDraft = ({
             savingRef.current = false;
             activeSavingNoteIdRef.current = undefined;
             activeRequestIdRef.current = undefined;
+            activeRequestScopeRef.current = undefined;
 
             if (result?.clientMutationId && result.clientMutationId !== clientMutationId) {
               startNextQueuedSaveRef.current();
@@ -131,6 +180,7 @@ export const useNoteContentDraft = ({
               );
             } else {
               queuedContentByNoteRef.current.delete(saveNoteId);
+              queuedScopeByNoteRef.current.delete(saveNoteId);
               saveOrderRef.current = saveOrderRef.current.filter(
                 (queuedNoteId) => queuedNoteId !== saveNoteId,
               );
@@ -151,7 +201,7 @@ export const useNoteContentDraft = ({
         },
       );
     },
-    [refreshActiveState],
+    [discardQueuedScope, refreshActiveState],
   );
 
   const startNextQueuedSave = useCallback(() => {
@@ -167,30 +217,40 @@ export const useNoteContentDraft = ({
       (queuedNoteId) => queuedNoteId !== nextNoteId,
     );
     const nextContent = queuedContentByNoteRef.current.get(nextNoteId);
+    const nextScope = queuedScopeByNoteRef.current.get(nextNoteId);
     queuedContentByNoteRef.current.delete(nextNoteId);
+    queuedScopeByNoteRef.current.delete(nextNoteId);
+
+    if (!nextScope || !isAccountScopeCurrent(nextScope)) {
+      if (nextScope) discardQueuedScope(nextScope);
+      startNextQueuedSaveRef.current();
+      return;
+    }
 
     if (nextContent == null) {
-      startNextQueuedSave();
+      startNextQueuedSaveRef.current();
       return;
     }
 
     const lastSavedContent =
       lastSavedContentByNoteRef.current.get(nextNoteId) ?? "";
     if (nextContent === lastSavedContent) {
-      startNextQueuedSave();
+      startNextQueuedSaveRef.current();
       return;
     }
 
-    startSave(nextNoteId, nextContent);
-  }, [startSave]);
+    startSave(nextNoteId, nextContent, nextScope);
+  }, [discardQueuedScope, startSave]);
 
   useEffect(() => {
     startNextQueuedSaveRef.current = startNextQueuedSave;
   }, [startNextQueuedSave]);
 
   const enqueueSave = useCallback(
-    (saveNoteId: string, content: string) => {
+    (saveNoteId: string, content: string, scope: AccountScope) => {
+      if (!isAccountScopeCurrent(scope)) return;
       queuedContentByNoteRef.current.set(saveNoteId, content);
+      queuedScopeByNoteRef.current.set(saveNoteId, scope);
       if (!saveOrderRef.current.includes(saveNoteId)) {
         saveOrderRef.current.push(saveNoteId);
       }
@@ -201,13 +261,21 @@ export const useNoteContentDraft = ({
 
   const debouncedUpdateContent = useMemo(
     () =>
-      debounceWithControls((nextNoteId: string, nextContent: string) => {
+      debounceWithControls((
+        nextNoteId: string,
+        nextContent: string,
+        scope: AccountScope,
+      ) => {
+        if (!isAccountScopeCurrent(scope)) {
+          discardQueuedScope(scope);
+          return;
+        }
         if (activeNoteIdRef.current === nextNoteId) {
           setContentDebouncing(false);
         }
-        enqueueSave(nextNoteId, nextContent);
+        enqueueSave(nextNoteId, nextContent, scope);
       }, 800),
-    [enqueueSave],
+    [discardQueuedScope, enqueueSave],
   );
 
   useEffect(() => {
@@ -263,6 +331,7 @@ export const useNoteContentDraft = ({
   const setContent = useCallback(
     (nextContent: string) => {
       if (!noteId) return;
+      const scope = requireAccountScope();
 
       draftContentByNoteRef.current.set(noteId, nextContent);
       setActiveContent(nextContent);
@@ -276,6 +345,7 @@ export const useNoteContentDraft = ({
 
       if (isConflictBlocked) {
         queuedContentByNoteRef.current.delete(noteId);
+        queuedScopeByNoteRef.current.delete(noteId);
         saveOrderRef.current = saveOrderRef.current.filter(
           (queuedNoteId) => queuedNoteId !== noteId,
         );
@@ -284,7 +354,7 @@ export const useNoteContentDraft = ({
       }
 
       setContentDebouncing(true);
-      debouncedUpdateContent(noteId, nextContent);
+      debouncedUpdateContent(noteId, nextContent, scope);
     },
     [debouncedUpdateContent, noteId],
   );
@@ -303,6 +373,7 @@ export const useNoteContentDraft = ({
     setActiveContent(serverContent);
     conflictBlockedNoteIdsRef.current.delete(noteId);
     queuedContentByNoteRef.current.delete(noteId);
+    queuedScopeByNoteRef.current.delete(noteId);
     saveOrderRef.current = saveOrderRef.current.filter(
       (queuedNoteId) => queuedNoteId !== noteId,
     );

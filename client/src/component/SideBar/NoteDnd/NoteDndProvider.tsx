@@ -1,6 +1,12 @@
 import { type Note } from "@/api/note";
 import { collectBlockedMoveTargetIds } from "@/features/note/model/hierarchy";
 import { useDeleteNote } from "@/features/note/hooks/useDeleteNote";
+import {
+  isAccountScopeCurrent,
+  requireAccountScope,
+  requireOwnerId,
+} from "@/features/auth/model/account-scope";
+import { useAuth } from "@/hooks/useAuth";
 import { noteKeys } from "@/features/note/model/keys";
 import { expandedNodesAtom } from "@/store/atom/note/noteAtom";
 import { updateNotePropertiesAtom } from "@/store/atom/note/noteMutationAtom";
@@ -44,6 +50,8 @@ const detectDropTarget: CollisionDetection = (args) => {
  */
 export function NoteDndProvider({ children }: PropsWithChildren) {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const ownerId = requireOwnerId(user?.id);
   const { mutate: updateNoteProperties } = useAtomValue(
     updateNotePropertiesAtom,
   );
@@ -64,7 +72,7 @@ export function NoteDndProvider({ children }: PropsWithChildren) {
     if (dragData?.type !== "note") return;
 
     const loadedNotes = queryClient
-      .getQueriesData<Note[]>({ queryKey: noteKeys.treeRoot })
+      .getQueriesData<Note[]>({ queryKey: noteKeys.treeRoot(ownerId) })
       .flatMap(([, notes]) => notes ?? []);
     setState({
       activeNote: dragData.note,
@@ -78,6 +86,7 @@ export function NoteDndProvider({ children }: PropsWithChildren) {
     resetState();
     if (dragData?.type !== "note" || !over) return;
 
+    const scope = requireAccountScope();
     const note = dragData.note;
     const currentParentId = note.parentId ?? null;
 
@@ -86,9 +95,11 @@ export function NoteDndProvider({ children }: PropsWithChildren) {
         { noteId: note._id, parentId: currentParentId },
         {
           onSuccess: () => {
+            if (!isAccountScopeCurrent(scope)) return;
             message.success("已移入回收站");
           },
           onError: () => {
+            if (!isAccountScopeCurrent(scope)) return;
             message.error("删除失败，请稍后重试");
           },
         },
@@ -119,6 +130,7 @@ export function NoteDndProvider({ children }: PropsWithChildren) {
       },
       {
         onError: (error) => {
+          if (!isAccountScopeCurrent(scope)) return;
           message.error(
             error instanceof Error ? error.message : "移动失败，请稍后重试",
           );

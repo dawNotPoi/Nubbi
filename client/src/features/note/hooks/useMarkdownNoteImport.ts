@@ -1,5 +1,9 @@
 import { newNote } from "@/api/note";
 import {
+  isAccountScopeCurrent,
+  requireAccountScope,
+} from "@/features/auth/model/account-scope";
+import {
   isMarkdownFile,
   parseMarkdownImport,
 } from "@/features/note/model/markdownImport";
@@ -26,6 +30,7 @@ export const useMarkdownNoteImport = ({
 
   const importMarkdownFiles = async (files: File[]) => {
     if (!owner) return;
+    const scope = requireAccountScope();
 
     const markdownFiles = files.filter(isMarkdownFile);
     const ignoredCount = files.length - markdownFiles.length;
@@ -43,6 +48,7 @@ export const useMarkdownNoteImport = ({
       const settledResults = await Promise.allSettled(
         markdownFiles.map(async (file) => {
           const text = await file.text();
+          if (!isAccountScopeCurrent(scope)) return;
           const draft = parseMarkdownImport(file.name, text);
           const note = newNote({
             content: draft.content,
@@ -55,6 +61,7 @@ export const useMarkdownNoteImport = ({
           await createNote({ note });
         }),
       );
+      if (!isAccountScopeCurrent(scope)) return;
 
       const importedCount = settledResults.filter(
         (result) => result.status === "fulfilled",
@@ -64,12 +71,13 @@ export const useMarkdownNoteImport = ({
       if (importedCount > 0) {
         messageApi.success(`已导入 ${importedCount} 篇 Markdown`);
         await refetch();
+        if (!isAccountScopeCurrent(scope)) return;
       }
       if (failedCount > 0) {
         messageApi.error(`${failedCount} 篇导入失败，请稍后重试`);
       }
     } finally {
-      setImportingMarkdown(false);
+      if (isAccountScopeCurrent(scope)) setImportingMarkdown(false);
     }
   };
 

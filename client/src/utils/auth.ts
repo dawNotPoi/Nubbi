@@ -1,898 +1,101 @@
-import { createAuthClient } from "better-auth/react";
-import { apiKeyClient } from "better-auth/client/plugins";
-import { useSyncExternalStore } from "react";
-import { getApiBaseUrl, getAuthBaseUrl } from "./env";
+import {
+  authSessionCoordinator,
+  useAuthSessionSnapshot,
+} from "@/features/auth/model/session-coordinator";
 import { isSafeInternalPath, routes } from "./routes";
 
-const baseUrl = getApiBaseUrl();
-const authBaseUrl = getAuthBaseUrl();
+export { authClient } from "@/features/auth/model/auth-client";
+export {
+  authSessionCoordinator,
+  createAuthSessionCoordinator,
+  getAuthSessionSnapshot,
+  subscribeAuthSession,
+  useAuthSessionSnapshot,
+} from "@/features/auth/model/session-coordinator";
+export * from "@/features/auth/model/auth-actions";
+export * from "@/features/auth/model/authorized-fetch";
+export type * from "@/features/auth/model/types";
 
-type AuthRuntimeState = {
-  accessToken: string | null;
-  jwtToken: string | null;
-  jwtExpiresAt: number | null;
-  initialized: boolean;
-};
+const AUTH_ENTRY_PATHS = new Set([routes.login, "/reset-password"]);
 
-type AuthErrorPayload = {
-  code?: string;
-  message: string;
-};
-
-export type AuthActionResult<T = unknown> = {
-  success: boolean;
-  data?: T;
-  error?: AuthErrorPayload;
-};
-
-const runtimeListeners = new Set<() => void>();
-
-let runtimeState: AuthRuntimeState = {
-  accessToken: null,
-  jwtToken: null,
-  jwtExpiresAt: null,
-  initialized: false,
-};
-
-let restorePromise: Promise<boolean> | null = null;
-let redirectingToLogin = false;
-
-const emitRuntimeChange = () => {
-  runtimeListeners.forEach((listener) => listener());
-};
-
-const setRuntimeState = (nextState: Partial<AuthRuntimeState>) => {
-  runtimeState = {
-    ...runtimeState,
-    ...nextState,
-  };
-  emitRuntimeChange();
-};
-
-const subscribeAuthRuntime = (listener: () => void) => {
-  runtimeListeners.add(listener);
-  return () => runtimeListeners.delete(listener);
-};
-
-const getAuthRuntimeSnapshot = () => runtimeState;
-
-export const useAuthRuntime = () =>
-  useSyncExternalStore(
-    subscribeAuthRuntime,
-    getAuthRuntimeSnapshot,
-    getAuthRuntimeSnapshot,
-  );
-
-export const setAccessToken = (token: string | null) => {
-  if (runtimeState.accessToken === token) return;
-  setRuntimeState({ accessToken: token });
-};
-
-export const getAccessToken = () => runtimeState.accessToken;
-
-export const clearAccessToken = () => {
-  setAccessToken(null);
-};
-
-const extractBearerToken = (headers?: Headers) => {
-  const token = headers?.get("set-auth-token");
-  if (!token) return null;
-  return token;
-};
-
-const parseJwtExpiry = (token: string): number | null => {
+/**
+ * 判断认证完成后的返回地址是否为安全且不会自循环的站内页面。
+ * @param path 待检查的相对地址。
+ * @returns 可安全回跳业务页时为 true。
+ */
+export const isSafeAuthReturnPath = (
+  path?: string | null,
+): path is string => {
+  if (!isSafeInternalPath(path) || path.includes("\\")) return false;
   try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return null;
-    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
-    const payload = JSON.parse(atob(padded)) as { exp?: number };
-    return typeof payload.exp === "number" ? payload.exp * 1000 : null;
+    const base = new URL("https://nubbi.invalid");
+    const target = new URL(path, base);
+    const normalizedPath = target.pathname.replace(/\/+$/, "") || "/";
+    return (
+      target.origin === base.origin && !AUTH_ENTRY_PATHS.has(normalizedPath)
+    );
   } catch {
-    return null;
+    return false;
   }
 };
 
-const setJwtToken = (token: string | null) => {
-  const jwtExpiresAt = token ? parseJwtExpiry(token) : null;
-  setRuntimeState({ jwtToken: token, jwtExpiresAt });
-};
+/**
+ * 从候选地址中选择首个安全业务页回跳地址。
+ * @param candidates 查询参数与路由 state 等候选地址。
+ * @param fallback 没有安全候选时的默认页面。
+ * @returns 安全的站内业务地址。
+ */
+export const resolveAuthReturnTo = (
+  candidates: Array<string | null | undefined>,
+  fallback = routes.home,
+): string => candidates.find(isSafeAuthReturnPath) ?? fallback;
 
-const isJwtFresh = (): boolean => {
-  const { jwtToken, jwtExpiresAt } = runtimeState;
-  if (!jwtToken || !jwtExpiresAt) return false;
-  return jwtExpiresAt - Date.now() > 2 * 60 * 1000;
-};
-
-const getErrorCode = (error: unknown) => {
-  if (!error || typeof error !== "object") {
-    return undefined;
-  }
-
-  const candidate = error as {
-    code?: string;
-    error?: {
-      code?: string;
-    };
-  };
-
-  return candidate.error?.code || candidate.code;
-};
-
-const getErrorMessage = (error: unknown, fallback: string) => {
-  if (getErrorCode(error) === "EMAIL_NOT_VERIFIED") {
-    return "邮箱还没有验证，请先输入邮箱验证码完成验证。";
-  }
-
-  if (typeof error === "string" && error.trim()) {
-    return error;
-  }
-
-  if (error && typeof error === "object") {
-    const candidate = error as {
-      message?: string;
-      statusText?: string;
-      error?: {
-        message?: string;
-        code?: string;
-      };
-      code?: string;
-    };
-
-    if (candidate.error?.message) return candidate.error.message;
-    if (candidate.message) return candidate.message;
-    if (candidate.statusText) return candidate.statusText;
-  }
-
-  return fallback;
-};
-
-const toAuthResult = <T extends { error?: unknown }>(
-  result: T,
-  fallbackMessage: string,
-): AuthActionResult<T> => {
-  if (result.error) {
-    const payload =
-      typeof result.error === "object" && result.error
-        ? (result.error as { message?: string; code?: string })
-        : undefined;
-
-    return {
-      success: false,
-      error: {
-        code: payload?.code,
-        message: getErrorMessage(result.error, fallbackMessage),
-      },
-    };
-  }
-
+/**
+ * 为迁移期调用方提供从唯一快照派生的 Better Auth 风格 Hook。
+ * @returns 会话数据、加载状态与统一刷新入口。
+ */
+export const useSession = () => {
+  const snapshot = useAuthSessionSnapshot();
   return {
-    success: true,
-    data: result,
+    data: snapshot.user ? { user: snapshot.user } : null,
+    isPending: snapshot.status === "checking",
+    refetch: async () => {
+      const next = await authSessionCoordinator.refresh();
+      return { data: next.user ? { user: next.user } : null };
+    },
   };
 };
 
-export const authClient = createAuthClient({
-  baseURL: authBaseUrl,
-  plugins: [apiKeyClient()],
-  fetchOptions: {
-    credentials: "include",
-    auth: {
-      type: "Bearer",
-      token: () => getAccessToken() || undefined,
-    },
-    onSuccess(context) {
-      const token = extractBearerToken(context.response.headers);
-      if (token) {
-        setAccessToken(token);
-      }
-      const jwtToken = context.response.headers.get("set-auth-jwt");
-      if (jwtToken) {
-        setJwtToken(jwtToken);
-      }
-    },
-  },
-});
-
-export const { signIn, useSession } = authClient;
-
-export const restoreAuthSession = async (): Promise<boolean> => {
-  if (restorePromise) {
-    return restorePromise;
-  }
-
-  restorePromise = (async () => {
-    try {
-      const session = await authClient.getSession();
-      const tokenFromSession =
-        (session.data?.session as { token?: string } | undefined)?.token ||
-        getAccessToken();
-
-      if (session.data?.user && tokenFromSession) {
-        setAccessToken(tokenFromSession);
-        return true;
-      }
-
-      clearAccessToken();
-      return false;
-    } catch {
-      clearAccessToken();
-      return false;
-    } finally {
-      setRuntimeState({ initialized: true });
-      restorePromise = null;
-    }
-  })();
-
-  return restorePromise;
-};
-
-export const clearAuthState = () => {
-  clearAccessToken();
-  setRuntimeState({ jwtToken: null, jwtExpiresAt: null });
-};
-
-// 获取用于 API 调用的 token：优先返回新鲜的 JWT，若已过期或不存在则先调
-// getSession() 触发 jwt 插件 hook 刷新，最终 fallback 到 session token
-export const ensureJwt = async (): Promise<string | null> => {
-  if (!runtimeState.accessToken) {
-    await restoreAuthSession();
-    return runtimeState.jwtToken ?? runtimeState.accessToken;
-  }
-
-  if (!isJwtFresh()) {
-    await restoreAuthSession();
-  }
-
-  return runtimeState.jwtToken ?? runtimeState.accessToken;
-};
-
-// 有意用整页跳转而非 SPA 导航：登出需要清空所有内存态（runtimeState、各类缓存），
-// 页面刷新也顺带复位 redirectingToLogin 模块标志，该标志只防同一页面生命周期内重复跳转
-export const redirectToLogin = () => {
-  if (redirectingToLogin) return;
-  redirectingToLogin = true;
-
+/**
+ * 跳转登录页并携带当前站内返回地址。
+ * @returns 无返回值。
+ */
+export const redirectToLogin = (): void => {
   const returnTo = encodeURIComponent(
     `${window.location.pathname}${window.location.search}${window.location.hash}`,
   );
-
   window.location.href = `${routes.login}?returnTo=${returnTo}`;
 };
 
-export const handleUnauthorized = async () => {
-  clearAuthState();
-
-  try {
-    await authClient.signOut();
-  } catch (error) {
-    console.error("Sign-out after unauthorized failed:", error);
-  } finally {
-    redirectToLogin();
-  }
-};
-
-const resolveApiUrl = (url: string) => {
-  const pathUrl = url.startsWith("/") ? url : `/${url}`;
-  return `${baseUrl}${pathUrl}`;
-};
-
-// 约束：401 时会刷新会话并原样重试一次，因此 init.body 必须可重复发送
-// （string/FormData/Blob 均可，不支持 ReadableStream）；且 401 需由服务端鉴权
-// 中间件在业务逻辑执行前产生，非幂等请求的重试才安全。
-export const authorizedFetch = async (
-  url: string,
-  init: RequestInit = {},
-): Promise<Response> => {
-  const doFetch = async (): Promise<Response> => {
-    const headers = new Headers(init.headers);
-    const token = await ensureJwt();
-
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
-    }
-
-    return fetch(resolveApiUrl(url), {
-      ...init,
-      credentials: init.credentials ?? "omit",
-      headers,
-    });
-  };
-
-  let response = await doFetch();
-
-  if (response.status === 401) {
-    // 本地"看似新鲜"的 JWT 被服务端拒绝（密钥轮换、会话吊销、时钟偏差）时，
-    // 强制走一次 getSession 刷新 token 再重试；restoreAuthSession 对并发去重。
-    const restored = await restoreAuthSession();
-    if (restored) {
-      response = await doFetch();
-    }
-  }
-
-  if (response.status === 401) {
-    await handleUnauthorized();
-    throw new Error("认证失败，请重新登录");
-  }
-
-  return response;
-};
-
-export const getAuthCallbackErrorMessage = (search: string) => {
+/**
+ * 解析 OAuth 回调错误为用户可读文本。
+ * @param search URL 查询字符串。
+ * @returns 错误文本；不存在错误时为 null。
+ */
+export const getAuthCallbackErrorMessage = (search: string): string | null => {
   const params = new URLSearchParams(search);
   const rawError =
     params.get("error_description") ||
     params.get("error_message") ||
     params.get("message") ||
     params.get("error");
-
   if (!rawError) return null;
-
   const normalized = rawError.toLowerCase();
-
-  if (normalized.includes("access_denied")) {
-    return "第三方登录已取消，请重新尝试。";
-  }
-  if (normalized.includes("state")) {
-    return "第三方登录状态校验失败，请重新发起登录。";
-  }
-  if (normalized.includes("callback")) {
-    return "第三方登录回调失败，请检查回调地址配置。";
-  }
-  if (normalized.includes("account")) {
-    return "账号关联失败，请先使用已绑定方式登录。";
-  }
-  if (normalized.includes("email")) {
-    return "第三方账号未返回可用邮箱，暂时无法登录。";
-  }
-  if (normalized.includes("oauth")) {
-    return "第三方登录失败，请检查 OAuth 配置。";
-  }
-
+  if (normalized.includes("access_denied")) return "第三方登录已取消，请重新尝试。";
+  if (normalized.includes("state")) return "第三方登录状态校验失败，请重新发起登录。";
+  if (normalized.includes("callback")) return "第三方登录回调失败，请检查回调地址配置。";
+  if (normalized.includes("account")) return "账号关联失败，请先使用已绑定方式登录。";
+  if (normalized.includes("email")) return "第三方账号未返回可用邮箱，暂时无法登录。";
+  if (normalized.includes("oauth")) return "第三方登录失败，请检查 OAuth 配置。";
   return rawError;
-};
-
-const buildSocialErrorCallbackURL = (callbackURL: string) => {
-  const loginURL = new URL("/login", window.location.origin);
-
-  try {
-    const targetURL = new URL(callbackURL, window.location.origin);
-
-    if (targetURL.origin === window.location.origin) {
-      const returnTo = `${targetURL.pathname}${targetURL.search}${targetURL.hash}`;
-      if (isSafeInternalPath(returnTo)) {
-        loginURL.searchParams.set("returnTo", returnTo);
-      }
-    }
-  } catch {
-    // Fall back to the plain login page when callbackURL is malformed.
-  }
-
-  return loginURL.toString();
-};
-
-export const signInWithEmail = async (
-  email: string,
-  password: string,
-): Promise<AuthActionResult> => {
-  try {
-    const result = await signIn.email({
-      email,
-      password,
-    });
-
-    if (!result.error) {
-      const data = result.data as
-        | {
-            session?: { token?: string };
-            token?: string;
-          }
-        | undefined;
-      const tokenFromSession =
-        data?.session?.token || data?.token || getAccessToken();
-      if (tokenFromSession) {
-        setAccessToken(tokenFromSession);
-      }
-    }
-
-    return toAuthResult(result, "邮箱登录失败，请检查邮箱和密码。");
-  } catch (error) {
-    return {
-      success: false,
-      error: {
-        message: getErrorMessage(error, "邮箱登录失败，请检查邮箱和密码。"),
-      },
-    };
-  }
-};
-
-export const sendRegisterCode = async (
-  email: string,
-): Promise<
-  AuthActionResult<{
-    cooldownSeconds?: number;
-    emailRegistered?: boolean;
-    emailVerified?: boolean;
-    expiresInSeconds?: number;
-    remainingSeconds?: number;
-  }>
-> => {
-  try {
-    const response = await fetch(`${baseUrl}/auth/register/send-code`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email,
-      }),
-    });
-
-    const payload = (await response.json().catch(() => null)) as
-      | {
-          code?: number;
-          message?: string;
-          data?: {
-            cooldownSeconds?: number;
-            emailRegistered?: boolean;
-            emailVerified?: boolean;
-            expiresInSeconds?: number;
-            remainingSeconds?: number;
-          };
-        }
-      | null;
-
-    if (!response.ok || payload?.code === 0) {
-      return {
-        success: false,
-        error: {
-          message: payload?.message || "验证码发送失败，请稍后重试。",
-        },
-        data: payload?.data,
-      };
-    }
-
-    return {
-      success: true,
-      data: payload?.data,
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: {
-        message: getErrorMessage(error, "验证码发送失败，请稍后重试。"),
-      },
-    };
-  }
-};
-
-export const registerWithCode = async ({
-  username,
-  email,
-  password,
-  code,
-}: {
-  username: string;
-  email: string;
-  password: string;
-  code: string;
-}): Promise<AuthActionResult> => {
-  try {
-    const response = await fetch(`${baseUrl}/auth/register/email`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        username,
-        email,
-        password,
-        code,
-      }),
-    });
-
-    const payload = (await response.json().catch(() => null)) as
-      | { code?: number; message?: string; data?: unknown }
-      | null;
-
-    if (!response.ok || payload?.code === 0) {
-      return {
-        success: false,
-        error: {
-          message: payload?.message || "注册失败，请检查验证码后重试。",
-        },
-      };
-    }
-
-    return {
-      success: true,
-      data: payload?.data ?? payload ?? undefined,
-    };
-  } catch (error) {
-    console.error("Register failed:", error);
-    return {
-      success: false,
-      error: {
-        message: getErrorMessage(error, "注册失败，请检查网络或邮箱配置。"),
-      },
-    };
-  }
-};
-
-export const signInWithGitHub = async (
-  callbackURL = window.location.href,
-): Promise<AuthActionResult> => {
-  try {
-    const errorCallbackURL = buildSocialErrorCallbackURL(callbackURL);
-    const result = await signIn.social({
-      provider: "github",
-      callbackURL,
-      errorCallbackURL,
-    });
-    return toAuthResult(result, "GitHub 登录发起失败，请稍后重试。");
-  } catch (error) {
-    console.error("GitHub sign-in failed:", error);
-    return {
-      success: false,
-      error: {
-        message: getErrorMessage(error, "GitHub 登录发起失败，请检查配置。"),
-      },
-    };
-  }
-};
-
-export const signInWithGoogle = async (
-  callbackURL = window.location.href,
-): Promise<AuthActionResult> => {
-  try {
-    const errorCallbackURL = buildSocialErrorCallbackURL(callbackURL);
-    const result = await signIn.social({
-      provider: "google",
-      callbackURL,
-      errorCallbackURL,
-    });
-    return toAuthResult(result, "Google 登录发起失败，请稍后重试。");
-  } catch (error) {
-    console.error("Google sign-in failed:", error);
-    return {
-      success: false,
-      error: {
-        message: getErrorMessage(error, "Google 登录发起失败，请检查配置。"),
-      },
-    };
-  }
-};
-
-export const signOut = async () => {
-  try {
-    await authClient.signOut();
-    clearAuthState();
-    return { success: true };
-  } catch (error) {
-    console.error("Sign-out failed:", error);
-    clearAuthState();
-    return {
-      success: false,
-      error: {
-        message: getErrorMessage(error, "退出登录失败，请稍后重试。"),
-      },
-    };
-  }
-};
-
-export const requestPasswordReset = async (
-  email: string,
-): Promise<
-  AuthActionResult<{
-    cooldownSeconds?: number;
-    expiresInSeconds?: number;
-    remainingSeconds?: number;
-  }>
-> => {
-  try {
-    const response = await fetch(`${baseUrl}/auth/password/reset/send-code`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email,
-      }),
-    });
-
-    const payload = (await response.json().catch(() => null)) as
-      | {
-          code?: number;
-          message?: string;
-          data?: {
-            cooldownSeconds?: number;
-            expiresInSeconds?: number;
-            remainingSeconds?: number;
-          };
-        }
-      | null;
-
-    if (!response.ok || payload?.code === 0) {
-      return {
-        success: false,
-        error: {
-          message: payload?.message || "密码重置验证码发送失败，请稍后重试。",
-        },
-        data: payload?.data,
-      };
-    }
-
-    return {
-      success: true,
-      data: payload?.data,
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: {
-        message: getErrorMessage(error, "密码重置验证码发送失败，请稍后重试。"),
-      },
-    };
-  }
-};
-
-export const resetPasswordWithCode = async (
-  email: string,
-  code: string,
-  newPassword: string,
-): Promise<AuthActionResult> => {
-  try {
-    const response = await fetch(`${baseUrl}/auth/password/reset-by-code`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email,
-        code,
-        newPassword,
-      }),
-    });
-
-    const payload = (await response.json().catch(() => null)) as
-      | { code?: number; message?: string }
-      | null;
-
-    if (!response.ok || payload?.code === 0) {
-      return {
-        success: false,
-        error: {
-          message: payload?.message || "重置密码失败，请检查验证码后重试。",
-        },
-      };
-    }
-
-    return {
-      success: true,
-      data: payload ?? undefined,
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: {
-        message: getErrorMessage(error, "重置密码失败，请检查验证码后重试。"),
-      },
-    };
-  }
-};
-
-export const resendVerificationCode = async (
-  email: string,
-): Promise<
-  AuthActionResult<{
-    cooldownSeconds?: number;
-    remainingSeconds?: number;
-  }>
-> => {
-  try {
-    const response = await fetch(`${baseUrl}/auth/email/resend-verification-code`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email,
-      }),
-    });
-
-    const payload = (await response.json().catch(() => null)) as
-      | {
-          code?: number;
-          message?: string;
-          data?: {
-            cooldownSeconds?: number;
-            remainingSeconds?: number;
-          };
-        }
-      | null;
-
-    if (!response.ok || payload?.code === 0) {
-      return {
-        success: false,
-        error: {
-          message: payload?.message || "验证码发送失败，请稍后重试。",
-        },
-        data: payload?.data,
-      };
-    }
-
-    return {
-      success: true,
-      data: payload?.data,
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: {
-        message: getErrorMessage(error, "验证码发送失败，请稍后重试。"),
-      },
-    };
-  }
-};
-
-export const verifyEmailWithCode = async (
-  email: string,
-  code: string,
-): Promise<AuthActionResult> => {
-  try {
-    const response = await fetch(`${baseUrl}/auth/email/verify-by-code`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email,
-        code,
-      }),
-    });
-
-    const payload = (await response.json().catch(() => null)) as
-      | { code?: number; message?: string }
-      | null;
-
-    if (!response.ok || payload?.code === 0) {
-      return {
-        success: false,
-        error: {
-          message: payload?.message || "邮箱验证失败，请检查验证码后重试。",
-        },
-      };
-    }
-
-    return {
-      success: true,
-      data: payload ?? undefined,
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: {
-        message: getErrorMessage(error, "邮箱验证失败，请检查验证码后重试。"),
-      },
-    };
-  }
-};
-
-export const sendAccountDeletionCode = async (): Promise<
-  AuthActionResult<{
-    cooldownSeconds?: number;
-    email?: string;
-    expiresInSeconds?: number;
-    remainingSeconds?: number;
-  }>
-> => {
-  try {
-    const response = await authorizedFetch("/auth/account/delete/send-code", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({}),
-    });
-
-    const payload = (await response.json().catch(() => null)) as
-      | {
-          code?: number;
-          message?: string;
-          data?: {
-            cooldownSeconds?: number;
-            email?: string;
-            expiresInSeconds?: number;
-            remainingSeconds?: number;
-          };
-        }
-      | null;
-
-    if (!response.ok || payload?.code === 0) {
-      return {
-        success: false,
-        error: {
-          message: payload?.message || "注销验证码发送失败，请稍后重试。",
-        },
-        data: payload?.data,
-      };
-    }
-
-    return {
-      success: true,
-      data: payload?.data,
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: {
-        message: getErrorMessage(error, "注销验证码发送失败，请稍后重试。"),
-      },
-    };
-  }
-};
-
-export const deleteAccountWithCode = async (
-  code: string,
-): Promise<AuthActionResult> => {
-  try {
-    const response = await authorizedFetch("/auth/account/delete/confirm", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        code,
-        confirmed: true,
-      }),
-    });
-
-    const payload = (await response.json().catch(() => null)) as
-      | { code?: number; message?: string; data?: unknown }
-      | null;
-
-    if (!response.ok || payload?.code === 0) {
-      return {
-        success: false,
-        error: {
-          message: payload?.message || "账号注销失败，请检查验证码后重试。",
-        },
-      };
-    }
-
-    clearAuthState();
-    return {
-      success: true,
-      data: payload?.data ?? payload ?? undefined,
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: {
-        message: getErrorMessage(error, "账号注销失败，请稍后重试。"),
-      },
-    };
-  }
-};
-
-export const getCurrentSession = async () => {
-  try {
-    const session = await authClient.getSession();
-    const tokenFromSession =
-      (session.data?.session as { token?: string } | undefined)?.token || null;
-
-    if (tokenFromSession) {
-      setAccessToken(tokenFromSession);
-    }
-
-    return { success: true, session };
-  } catch (error) {
-    console.error("Get session failed:", error);
-    return {
-      success: false,
-      error: {
-        message: getErrorMessage(error, "获取登录状态失败。"),
-      },
-    };
-  }
 };

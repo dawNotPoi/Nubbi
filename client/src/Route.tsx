@@ -1,10 +1,12 @@
 import SideBar from "@/component/SideBar";
 import MobileErrorBoundary from "@/component/MobileErrorBoundary";
 import MobileNavigation from "@/component/MobileNavigation";
+import { AuthStatusScreen } from "@/features/auth/components/AuthStatusScreen";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { resolveReturnTo, routes } from "@/utils/routes";
-import { PropsWithChildren } from "react";
+import { resolveAuthReturnTo } from "@/utils/auth";
+import { routes } from "@/utils/routes";
+import type { PropsWithChildren, ReactElement, ReactNode } from "react";
 import {
   BrowserRouter,
   Navigate,
@@ -72,42 +74,52 @@ const UserLayout = () => {
   return isMobile ? <MobileUserLayout /> : <DesktopUserLayout />;
 };
 
-const AuthRouteFallback = () => (
-  <div className="flex h-[100dvh] overflow-hidden bg-canvas">
-    <div className="hidden w-52 shrink-0 animate-pulse bg-sidebar px-3 py-2 md:block">
-      <div className="flex flex-col gap-3">
-        <div className="mb-1 flex items-center gap-2">
-          <div className="size-7 rounded-compact bg-bg-selected" />
-          <div className="h-4 w-24 rounded-compact bg-bg-selected" />
-        </div>
-        <div className="h-7 w-full rounded-control bg-bg-selected" />
-        <div className="h-7 w-4/5 rounded-control bg-bg-selected" />
-        <div className="h-7 w-full rounded-control bg-bg-selected" />
-        <div className="h-7 w-3/5 rounded-control bg-bg-selected" />
-      </div>
-    </div>
-    <div className="flex-1 animate-pulse space-y-4 bg-surface px-4 py-6 md:px-8">
-      <div className="h-7 w-36 rounded-control bg-bg-hover" />
-      <div className="h-4 w-2/3 rounded-compact bg-bg-hover" />
-      <div className="h-4 w-1/2 rounded-compact bg-bg-hover" />
-      <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="h-28 rounded-panel bg-bg-hover" />
-        <div className="h-28 rounded-panel bg-bg-hover" />
-      </div>
-    </div>
-  </div>
+/**
+ * 使用认证外壳展示会话确认状态，不提前挂载业务布局。
+ * @param props 状态、错误和重试动作。
+ * @returns 复用固定品牌资产的身份状态页。
+ */
+const AuthRouteStatus = ({
+  state,
+  error,
+  retrying,
+  onRetry,
+}: {
+  state: "checking" | "unavailable";
+  error?: string | null;
+  retrying?: boolean;
+  onRetry?: () => Promise<unknown>;
+}) => (
+  <AuthShell>
+    <AuthStatusScreen
+      error={error}
+      onRetry={onRetry}
+      retrying={retrying}
+      state={state}
+    />
+  </AuthShell>
 );
 
-const ProtectedRoute: React.FC<PropsWithChildren> = ({ children }) => {
-  const { hasAccessToken, initialized, isAuthenticated, sessionPending } =
-    useAuth();
+/**
+ * 在会话明确认证前隔离受保护页面，避免渲染旧账号业务树。
+ * @param props 受保护路由的子节点。
+ * @returns 身份状态页、登录跳转或受保护内容。
+ */
+const ProtectedRoute = ({ children }: PropsWithChildren): ReactNode => {
+  const { error, operation, retrySession, status } = useAuth();
   const location = useLocation();
-  if (!initialized || (!hasAccessToken && sessionPending)) {
-    return <AuthRouteFallback />;
+  if (status === "checking") return <AuthRouteStatus state="checking" />;
+  if (status === "unavailable") {
+    return (
+      <AuthRouteStatus
+        error={error}
+        onRetry={retrySession}
+        retrying={operation === "refreshing"}
+        state="unavailable"
+      />
+    );
   }
-  if (isAuthenticated) {
-    return children;
-  }
+  if (status === "authenticated") return children;
   const returnTo = encodeURIComponent(
     `${location.pathname}${location.search}${location.hash}`,
   );
@@ -120,18 +132,33 @@ const ProtectedRoute: React.FC<PropsWithChildren> = ({ children }) => {
   );
 };
 
-const PublicOnlyRoute: React.FC<PropsWithChildren> = ({ children }) => {
-  const { hasAccessToken, initialized, isAuthenticated, sessionPending } =
-    useAuth();
+/**
+ * 在公共认证页面中等待会话确认，并在认证完成后执行安全站内跳转。
+ * @param props 公共认证路由的子节点。
+ * @returns 身份状态页、认证页面或目标页跳转。
+ */
+const PublicOnlyRoute = ({ children }: PropsWithChildren): ReactNode => {
+  const { error, initialized, operation, retrySession, status } = useAuth();
   const location = useLocation();
 
-  if (!initialized || (!hasAccessToken && sessionPending)) {
-    return <AuthRouteFallback />;
+  if (status === "checking") {
+    const authenticationInProgress =
+      initialized &&
+      (operation === "signingIn" || operation === "redirecting");
+    if (authenticationInProgress) return children;
+    return <AuthRouteStatus state="checking" />;
   }
-
-  if (!isAuthenticated) {
-    return children;
+  if (status === "unavailable") {
+    return (
+      <AuthRouteStatus
+        error={error}
+        onRetry={retrySession}
+        retrying={operation === "refreshing"}
+        state="unavailable"
+      />
+    );
   }
+  if (status === "anonymous") return children;
   const queryReturnTo = new URLSearchParams(location.search).get("returnTo");
   const stateFrom = (
     location.state as
@@ -151,12 +178,13 @@ const PublicOnlyRoute: React.FC<PropsWithChildren> = ({ children }) => {
   return (
     <Navigate
       replace
-      to={resolveReturnTo([queryReturnTo, stateReturnTo], routes.home)}
+      to={resolveAuthReturnTo([queryReturnTo, stateReturnTo], routes.home)}
     />
   );
 };
 
-export const RouteWrapper = () => {
+/** @returns 包含统一认证守卫的客户端路由树。 */
+export const RouteWrapper = (): ReactElement => {
   return (
     <BrowserRouter>
       <div className="App mx-auto overflow-hidden">

@@ -1,4 +1,4 @@
-import { cancelUploadTask, FILE_STATS_QUERY_KEY } from "@/api/file";
+import { cancelUploadTask, fileStatsQueryKey } from "@/api/file";
 import { queryClient } from "@/utils/queryClient";
 import { removeUploadSession } from "@/features/upload/session";
 import {
@@ -9,6 +9,10 @@ import { UploadStatus } from "@/utils/file";
 import { message } from "antd";
 import { useStore } from "jotai";
 import { useCallback } from "react";
+import {
+  isAccountScopeCurrent,
+  requireAccountScope,
+} from "@/features/auth/model/account-scope";
 
 /**
  * 管理上传任务取消和列表清理，取消成功后同步服务端用量。
@@ -34,17 +38,28 @@ export const useUploadTaskActions = () => {
     async (id: string) => {
       const task = store.get(uploadTaskAtomFamily(id));
       if (!task) return;
+      const scope = requireAccountScope();
+      if (
+        task.ownerId !== scope.ownerId ||
+        task.generation !== scope.generation
+      ) {
+        return;
+      }
       try {
         if (task.instance) await task.instance.cancel();
         else if (task.uploadId) {
           await cancelUploadTask(task.uploadId);
-          removeUploadSession(task.uploadId);
+          removeUploadSession(scope.ownerId, task.uploadId);
         }
+        if (!isAccountScopeCurrent(scope)) return;
         removeTask(id);
         // 等取消接口成功后再刷新服务端用量，失败时继续保留原预留值。
-        void queryClient.invalidateQueries({ queryKey: [FILE_STATS_QUERY_KEY] });
+        void queryClient.invalidateQueries({
+          queryKey: fileStatsQueryKey(scope.ownerId),
+        });
         void message.success("上传任务已取消");
       } catch (error) {
+        if (!isAccountScopeCurrent(scope)) return;
         void message.error(
           error instanceof Error ? error.message : "上传任务取消失败",
         );

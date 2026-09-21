@@ -34,7 +34,7 @@ Remote MCP Host --HTTPS/Bearer---->
 
 - `mcp/` 是独立 TypeScript workspace，不直接连接 MongoDB。
 - MCP 所有 Note 操作经主服务 `/mcp-api/*`，复用 Note Controller/Model 业务规则。
-- 旧 `/note/*` 可继续供 MCP Token 只读；所有 MCP 写请求在旧路由返回 403，必须走受约束的 `/mcp-api/*`。
+- 普通 `/note/*` 拒绝 MCP Token 的读写请求；MCP 必须走受约束的 `/mcp-api/*`，不能通过旧路由绕过 Agent 子树与字段策略。
 
 ## Token 权限
 

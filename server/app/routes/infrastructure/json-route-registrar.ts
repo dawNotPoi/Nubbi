@@ -6,7 +6,7 @@ import { withAccountContext } from "@/middleware/common";
 import { successResponse } from "@/routes/utils";
 import type { RequestHandler, Router } from "express";
 import type { IncomingHttpHeaders } from "node:http";
-import { z } from "zod";
+import { z } from "zod/v3";
 
 type HttpMethod = "get" | "post" | "put" | "patch" | "delete";
 /** 请求参数校验位置 */

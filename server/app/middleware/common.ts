@@ -6,7 +6,16 @@ import {
   completeAccountMutationHandler,
   runWithAccountMutationContext,
 } from "@/middleware/account-mutation";
+import type { AuthRequest } from "@/services/auth/types";
 import type { NextFunction, Request, RequestHandler, Response } from "express";
+
+/** 兼容旧调用方的认证请求与上下文类型导出。 */
+export type {
+  ApiKeyContext,
+  AuthMethod,
+  AuthRequest,
+  RequestAuthContext,
+} from "@/services/auth/types";
 
 export interface AppError extends Error {
   status?: unknown;
@@ -79,29 +88,3 @@ export const withAccountContext =
       Promise.resolve(fn(authRequest, res, next)),
     ).finally(() => completeAccountMutationHandler(res));
   };
-
-export interface AuthRequest extends Request {
-  user?: {
-    id: string;
-    email?: string;
-    name?: string;
-    image?: string;
-  };
-  authContext?: RequestAuthContext;
-}
-
-export type AuthMethod = "session" | "jwt" | "apiKey";
-
-export type ApiKeyContext = {
-  id: string;
-  name: string | null;
-  metadata: Record<string, unknown> | null;
-  permissions: Record<string, string[]> | null;
-  expiresAt: Date | null;
-};
-
-export type RequestAuthContext = {
-  method: AuthMethod;
-  user: NonNullable<AuthRequest["user"]>;
-  apiKey?: ApiKeyContext;
-};

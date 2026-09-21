@@ -1,5 +1,5 @@
 import type { Request, RequestHandler } from "express";
-import { z } from "zod";
+import { z } from "zod/v3";
 
 /** 请求校验目标位置 */
 type RequestPart = "body" | "query" | "params";

@@ -149,12 +149,7 @@ trustedRoutes.post("/mcp", {
   action: "api-key",
   body: mcpApiKeyBodySchema,
   message: "MCP Agent API key created",
-  handler: ({ actor, body, headers }) =>
-    createMcpApiKey(
-      actor.id,
-      body,
-      toWebHeaders(headers),
-    ),
+  handler: ({ actor, body }) => createMcpApiKey(actor.id, body),
 });
 
 router.use("/api-key", requireTrustedOrigin, trustedRouter);

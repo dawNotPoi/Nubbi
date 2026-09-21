@@ -1,5 +1,10 @@
-import { ensureJwt } from "@/utils/auth";
 import { getSocketBaseUrl } from "@/utils/env";
+import {
+  authSessionCoordinator,
+  useAuthSessionSnapshot,
+} from "@/features/auth/model/session-coordinator";
+import { isAccountScopeCurrent } from "@/features/auth/model/account-scope";
+import { authLifecycleRegistry } from "@/features/auth/model/auth-lifecycle";
 import type { MeetingComment } from "@/views/meeting-room/types";
 import {
   useCallback,
@@ -23,6 +28,7 @@ const SOCKET_URL = getSocketBaseUrl();
 
 /** @returns 信令会话、独立媒体状态和会议操作；卸载时统一释放连接。 */
 const useP2PConnection = (): UseP2PConnectionResult => {
+  const authSnapshot = useAuthSessionSnapshot();
   const socketRef = useRef<Socket | null>(null);
   const connectedRoomRef = useRef("");
   const [remoteStreams, setRemoteStreams] = useState<RemoteStreamMap>({});
@@ -76,17 +82,29 @@ const useP2PConnection = (): UseP2PConnectionResult => {
   }, []);
 
   useEffect(() => {
+    if (authSnapshot.status !== "authenticated" || !authSnapshot.user) return;
+    const scope = {
+      ownerId: authSnapshot.user.id,
+      generation: authSnapshot.generation,
+    };
     const socket = io(SOCKET_URL, {
       withCredentials: true,
       auth: (callback) => {
-        void ensureJwt()
-          .then((token) => callback(token ? { token } : {}))
+        void authSessionCoordinator.ensureCredential()
+          .then((credential) => {
+            const valid =
+              credential &&
+              isAccountScopeCurrent(scope) &&
+              credential.userId === scope.ownerId &&
+              credential.generation === scope.generation;
+            callback(valid ? { token: credential.token } : {});
+          })
           .catch(() => callback({}));
       },
     });
     socketRef.current = socket;
 
-    return registerMeetingSocketEvents({
+    const cleanupSocket = registerMeetingSocketEvents({
       clientSessionIdRef,
       setTransportConnected,
       socket,
@@ -98,7 +116,23 @@ const useP2PConnection = (): UseP2PConnectionResult => {
       onMeetingEnded: handleMeetingEnded,
       onSocketReconnect: handleSocketReconnect,
     });
-  }, [handleMeetingEnded, handleSocketReconnect, peerManager]);
+    const unregisterLifecycle = authLifecycleRegistry.register({
+      id: `meeting-p2p:${scope.ownerId}:${scope.generation}`,
+      disconnect: cleanupSocket,
+    });
+    return () => {
+      unregisterLifecycle();
+      cleanupSocket();
+      if (socketRef.current === socket) socketRef.current = null;
+    };
+  }, [
+    authSnapshot.generation,
+    authSnapshot.status,
+    authSnapshot.user,
+    handleMeetingEnded,
+    handleSocketReconnect,
+    peerManager,
+  ]);
 
   return {
     transportConnected,

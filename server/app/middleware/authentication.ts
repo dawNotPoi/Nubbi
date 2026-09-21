@@ -1,68 +1,36 @@
-import { auth } from "@/lib/auth";
-import { toWebHeaders } from "@/lib/requestHeaders";
-import logger from "@/common/logger";
-import { getErrorStatusCode, httpError } from "@/common/http-error";
-import type { NextFunction, Request, Response } from "express";
-import { importJWK, jwtVerify, type JWK } from "jose";
-import type { IncomingHttpHeaders } from "node:http";
+import { getErrorStatusCode } from "@/common/http-error";
+import { resolveAuthContext } from "@/services/auth/credential-resolver";
+import { AuthBackendUnavailableError } from "@/services/auth/types";
 import type {
-  ApiKeyContext,
   AuthRequest,
   RequestAuthContext,
-} from "./common";
+} from "@/services/auth/types";
+import type { NextFunction, Request, Response } from "express";
+import type { IncomingHttpHeaders } from "node:http";
 import { trackAuthenticatedMutation } from "./account-mutation";
 
-/** JWK 公钥条目类型 */
-type JwkKey = Record<string, unknown> & { alg?: string };
+/** 客户端据此判断 401 是否发生在业务处理之前。 */
+export const AUTH_REJECTED_HEADER = "X-Auth-Rejected";
+/** 认证入口拒绝标记的稳定值。 */
+export const BEFORE_HANDLER_REJECTION = "before-handler";
 
-let jwksCache: { keys: JwkKey[]; cachedAt: number } | null = null;
-/** JWKS 公钥缓存有效期（1 小时） */
-const JWKS_TTL = 60 * 60 * 1000;
-
-/** 获取 Better Auth 的 JWKS 公钥列表，带缓存 */
-const getPublicKeys = async (): Promise<JwkKey[]> => {
-  const now = Date.now();
-  if (jwksCache && now - jwksCache.cachedAt < JWKS_TTL) {
-    return jwksCache.keys;
-  }
-  const result = await auth.api.getJwks({});
-  const keys = (result?.keys ?? []) as JwkKey[];
-  jwksCache = { keys, cachedAt: now };
-  return keys;
-};
-
-/** 使用 jose 校验 JWT，遍历所有公钥直到匹配成功 */
-const verifyJwt = async (
-  token: string,
-): Promise<Record<string, unknown> | null> => {
-  const keys = await getPublicKeys();
-  for (const keyData of keys) {
-    try {
-      const publicKey = await importJWK(
-        keyData as JWK,
-        keyData.alg ?? "EdDSA",
-      );
-      const { payload } = await jwtVerify(token, publicKey);
-      return payload as Record<string, unknown>;
-    } catch {
-      continue;
-    }
-  }
-  return null;
-};
-
-/** 查找 Better Auth 中已存在的用户记录 */
-const findExistingAuthUser = async (userId: string) => {
-  const authContext = await auth.$context;
-  return authContext.internalAdapter.findUserById(userId);
-};
-
-/** 返回 401 未认证的标准响应 */
+/**
+ * 返回业务处理前的 401，并附加可安全重放判断所需的响应头。
+ * @param res Express 响应。
+ * @returns 无返回值。
+ */
 export const unauthorized = (res: Response): void => {
+  res.setHeader(AUTH_REJECTED_HEADER, BEFORE_HANDLER_REJECTION);
   res.status(401).json({ code: 0, message: "Unauthorized", data: null });
 };
 
-/** 认证错误分发：按状态码决定直接响应或交给统一错误处理 */
+/**
+ * 将认证领域错误映射为稳定的 HTTP 语义。
+ * @param res Express 响应。
+ * @param error 认证解析或账号写锁抛出的错误。
+ * @param next Express 后续错误处理器。
+ * @returns 无返回值。
+ */
 export const sendAuthenticationError = (
   res: Response,
   error: unknown,
@@ -84,11 +52,19 @@ export const sendAuthenticationError = (
     return;
   }
 
-  logger.error("认证服务异常", { error });
-  next(error);
+  next(
+    error instanceof AuthBackendUnavailableError
+      ? error
+      : new AuthBackendUnavailableError(error),
+  );
 };
 
-/** 将认证上下文附加到请求对象，供后续处理器读取 */
+/**
+ * 将认证上下文附加到请求对象，供后续处理器读取。
+ * @param req Express 请求。
+ * @param context 已验证的统一认证上下文。
+ * @returns 无返回值。
+ */
 export const attachAuthContext = (
   req: Request,
   context: RequestAuthContext,
@@ -98,91 +74,61 @@ export const attachAuthContext = (
   authRequest.authContext = context;
 };
 
-/** 从请求头中解析认证上下文（JWT 优先，回退 session） */
+/**
+ * 从请求头解析 Session 或 JWT，不接受 API Key。
+ * @param headers Node.js 请求头。
+ * @returns 已验证的 Session/JWT 上下文；无效凭证返回 null。
+ */
+export const getSessionAuthContextFromHeaders = async (
+  headers: IncomingHttpHeaders,
+): Promise<RequestAuthContext | null> =>
+  resolveAuthContext({ headers, allowApiKey: false });
+
+/**
+ * 从 Express 请求解析 Session 或 JWT。
+ * @param req Express 请求。
+ * @returns 已验证的 Session/JWT 上下文；无效凭证返回 null。
+ */
 export const getSessionAuthContext = async (
   req: Request,
 ): Promise<RequestAuthContext | null> =>
   getSessionAuthContextFromHeaders(req.headers);
 
-/** 从 HTTP 请求头中解析认证上下文：优先 Bearer JWT，其次 Better Auth session */
-export const getSessionAuthContextFromHeaders = async (
-  headers: IncomingHttpHeaders,
-): Promise<RequestAuthContext | null> => {
-  const headerValue = headers.authorization;
-  const authHeader = Array.isArray(headerValue) ? headerValue[0] : headerValue;
-  if (authHeader?.startsWith("Bearer ")) {
-    const token = authHeader.slice(7);
-    if (token.split(".").length === 3) {
-      const payload = await verifyJwt(token);
-      if (!payload?.sub) return null;
-      const owner = await findExistingAuthUser(String(payload.sub));
-      if (!owner) return null;
-      return {
-        method: "jwt",
-        user: {
-          id: owner.id,
-          email: owner.email,
-          name: owner.name,
-          image: owner.image ?? undefined,
-        },
-      };
-    }
-  }
-
-  const session = await auth.api.getSession({
-    headers: toWebHeaders(headers),
-  });
-  if (!session?.user) return null;
-  return {
-    method: "session",
-    user: {
-      id: session.user.id,
-      email: session.user.email,
-      name: session.user.name,
-      image: session.user.image ?? undefined,
-    },
-  };
-};
-
-/** 通过 Better Auth 校验 API Key，返回认证上下文（含限流处理） */
+/**
+ * 通过统一 resolver 校验单个 API Key。
+ * @param key API Key 明文。
+ * @returns API Key 认证上下文；无效凭证返回 null。
+ */
 export const getApiKeyContext = async (
   key: string,
-): Promise<RequestAuthContext | null> => {
-  const result = await auth.api.verifyApiKey({ body: { key } });
-  if (!result?.valid || !result.key?.userId) {
-    if (result?.error?.code === "RATE_LIMITED") {
-      throw httpError(429, "API key rate limit exceeded");
-    }
-    return null;
-  }
-  if (!(await findExistingAuthUser(result.key.userId))) return null;
+): Promise<RequestAuthContext | null> =>
+  resolveAuthContext({
+    headers: { "x-api-key": key },
+    allowApiKey: true,
+  });
 
-  const apiKey: ApiKeyContext = {
-    id: result.key.id,
-    name: result.key.name,
-    metadata: result.key.metadata,
-    permissions: result.key.permissions ?? null,
-    expiresAt: result.key.expiresAt,
-  };
-  return {
-    method: "apiKey",
-    user: { id: result.key.userId },
-    apiKey,
-  };
-};
-
-/** 认证入口：已有上下文直接返回，否则按 API Key → session 顺序尝试 */
+/**
+ * 解析允许 API Key 的请求；已有上下文直接复用。
+ * @param req Express 请求。
+ * @returns 已验证的统一认证上下文；无效凭证返回 null。
+ */
 export const authenticateWithApiKey = async (
   req: Request,
 ): Promise<RequestAuthContext | null> => {
   const existingContext = (req as AuthRequest).authContext;
-  if (existingContext) return existingContext;
-  const headerValue = req.headers["x-api-key"];
-  const key = Array.isArray(headerValue) ? headerValue[0] : headerValue;
-  return key ? getApiKeyContext(key) : getSessionAuthContext(req);
+  return (
+    existingContext ??
+    resolveAuthContext({ headers: req.headers, allowApiKey: true })
+  );
 };
 
-/** 基于 session 的认证中间件：解析用户、附加上下文并登记变更锁 */
+/**
+ * Session/JWT 认证传输适配器：附加上下文并登记账号变更锁。
+ * @param req Express 请求。
+ * @param res Express 响应。
+ * @param next Express 后续处理器。
+ * @returns 无返回值。
+ */
 export const authenticateBySession = async (
   req: Request,
   res: Response,

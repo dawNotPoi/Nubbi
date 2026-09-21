@@ -5,6 +5,10 @@ import {
   type UpdateNoteContentResult,
 } from "@/api/note";
 import type { QueryClient } from "@tanstack/react-query";
+import {
+  assertAccountScopeCurrent,
+  type AccountScope,
+} from "@/features/auth/model/account-scope";
 import { noteKeys } from "./keys";
 
 type NoteCachePatch = Omit<
@@ -45,12 +49,13 @@ const withoutContent = <T extends Partial<NoteWithContent>>(value: T) => {
 
 export const patchNoteTreeCache = (
   queryClient: QueryClient,
+  ownerId: string,
   parentId: string | null | undefined,
   noteId: string,
   patch: NoteCachePatch,
 ) => {
   const listPatch = withoutContent(normalizeNotePatch(patch));
-  queryClient.setQueryData<Note[]>(noteKeys.tree(parentId ?? null), (old) =>
+  queryClient.setQueryData<Note[]>(noteKeys.tree(ownerId, parentId ?? null), (old) =>
     old?.map((note) =>
       note._id === noteId ? ({ ...note, ...listPatch } as Note) : note,
     ),
@@ -59,32 +64,35 @@ export const patchNoteTreeCache = (
 
 export const patchNoteDetailCache = (
   queryClient: QueryClient,
+  ownerId: string,
   noteId: string,
   patch: NoteCachePatch,
 ) => {
   const normalizedPatch = normalizeNotePatch(patch);
-  queryClient.setQueryData<NoteWithContent>(noteKeys.detail(noteId), (old) =>
+  queryClient.setQueryData<NoteWithContent>(noteKeys.detail(ownerId, noteId), (old) =>
     old ? { ...old, ...normalizedPatch } : old,
   );
 };
 
 export const patchNoteAcrossCaches = (
   queryClient: QueryClient,
+  ownerId: string,
   parentId: string | null | undefined,
   noteId: string,
   patch: NoteCachePatch,
 ) => {
-  patchNoteTreeCache(queryClient, parentId, noteId, patch);
-  patchNoteDetailCache(queryClient, noteId, patch);
+  patchNoteTreeCache(queryClient, ownerId, parentId, noteId, patch);
+  patchNoteDetailCache(queryClient, ownerId, noteId, patch);
 };
 
 export const replaceNoteInTreeCache = (
   queryClient: QueryClient,
+  ownerId: string,
   parentId: string | null | undefined,
   note: Note,
 ) => {
   const listNote = withoutContent(note) as Note;
-  queryClient.setQueryData<Note[]>(noteKeys.tree(parentId ?? null), (old) =>
+  queryClient.setQueryData<Note[]>(noteKeys.tree(ownerId, parentId ?? null), (old) =>
     old?.map((cachedNote) =>
       cachedNote._id === note._id ? { ...cachedNote, ...listNote } : cachedNote,
     ),
@@ -93,15 +101,18 @@ export const replaceNoteInTreeCache = (
 
 export const applyOptimisticNoteContentUpdate = async (
   queryClient: QueryClient,
+  scope: AccountScope,
   noteId: string,
 ) => {
-  const detailKey = noteKeys.detail(noteId);
+  const { ownerId } = scope;
+  const detailKey = noteKeys.detail(ownerId, noteId);
   await queryClient.cancelQueries({ queryKey: detailKey });
+  assertAccountScopeCurrent(scope);
   const detail = queryClient.getQueryData<NoteWithContent>(detailKey);
   const statusPatch =
     detail?.status === "inbox" ? { status: "active" as const } : {};
 
-  patchNoteDetailCache(queryClient, noteId, {
+  patchNoteDetailCache(queryClient, ownerId, noteId, {
     updatedAt: new Date().toISOString(),
     ...statusPatch,
   });
@@ -109,12 +120,13 @@ export const applyOptimisticNoteContentUpdate = async (
 
 export const applySuccessfulNoteContentUpdate = (
   queryClient: QueryClient,
+  ownerId: string,
   noteId: string,
   result?: UpdateNoteContentResult,
 ) => {
   if (result?.note) {
-    patchNoteDetailCache(queryClient, noteId, result.note);
+    patchNoteDetailCache(queryClient, ownerId, noteId, result.note);
   }
-  queryClient.invalidateQueries({ queryKey: noteKeys.allLists });
-  queryClient.invalidateQueries({ queryKey: noteKeys.recent() });
+  queryClient.invalidateQueries({ queryKey: noteKeys.allLists(ownerId) });
+  queryClient.invalidateQueries({ queryKey: noteKeys.recent(ownerId) });
 };

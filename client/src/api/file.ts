@@ -1,5 +1,6 @@
 import request, { Get } from "./request";
 import type { PaginatedResult } from "./pagination";
+import { accountQueryKey } from "@/features/auth/model/account-scope";
 
 export type FileItemKind = "file" | "folder";
 export type FileCategory =
@@ -96,8 +97,19 @@ export interface BatchMoveResult {
 
 export const FILE_LIST_QUERY_KEY = "file-list";
 export const FILE_STATS_QUERY_KEY = "file-stats";
-export const fileDirectoryQueryKey = (parentId?: string | null) =>
-  [FILE_LIST_QUERY_KEY, parentId ?? "root"] as const;
+/** @param ownerId 当前账号 ID。@returns 当前账号全部文件列表的 key 前缀。 */
+export const fileListQueryRoot = (ownerId: string) =>
+  accountQueryKey(ownerId, [FILE_LIST_QUERY_KEY] as const);
+
+/** @param ownerId 当前账号 ID。@param parentId 目录 ID。@returns 目录查询 key。 */
+export const fileDirectoryQueryKey = (
+  ownerId: string,
+  parentId?: string | null,
+) => accountQueryKey(ownerId, [FILE_LIST_QUERY_KEY, parentId ?? "root"] as const);
+
+/** @param ownerId 当前账号 ID。@returns 当前账号存储用量 key。 */
+export const fileStatsQueryKey = (ownerId: string) =>
+  accountQueryKey(ownerId, [FILE_STATS_QUERY_KEY] as const);
 
 export const listFiles = async (params: FileListParams = {}) => {
   const response = await Get<FileListData>("/file/list", params);

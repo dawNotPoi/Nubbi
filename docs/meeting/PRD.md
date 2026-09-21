@@ -60,9 +60,9 @@
 
 内部列表接口统一采用 `limit/offset`：`limit` 默认 20、范围 1–50，`offset` 默认 0；响应 `data` 为 `{ items, total, count, limit, offset, hasMore, nextOffset }`。会议读取 DTO 不返回 `password` 或 `passwordHash`，只返回 `hasPassword`；旧 `/meeting/findByPage` 暂保留原分页包裹结构作为兼容入口。
 
-项目当前没有管理员角色模型，因此审核、删除和历史评论不能仅凭“已登录”
-授权。`vetMeeting` 暂按主持人归属保护；未来引入管理员角色后再替换为明确的
-管理员策略。
+项目采用多用户、单一普通用户身份，不设置系统管理员，因此状态变更、删除和
+历史评论不能仅凭“已登录”授权。`vetMeeting` 保留现有主持人归属校验，主持人
+是会议内职责而非系统管理员；认证重构不新增管理员审核流程。
 
 ---
 

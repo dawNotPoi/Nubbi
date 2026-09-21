@@ -1,5 +1,10 @@
 import { queryClient } from "@/utils/queryClient";
-import { FILE_STATS_QUERY_KEY, fileDirectoryQueryKey } from "@/api/file";
+import { fileDirectoryQueryKey, fileStatsQueryKey } from "@/api/file";
+import {
+  isAccountScopeCurrent,
+  requireAccountScope,
+  type AccountScope,
+} from "@/features/auth/model/account-scope";
 import {
   type UploadTask,
   uploadTaskAtomFamily,
@@ -22,7 +27,7 @@ export const useGlobalUpload = () => {
   const setUploadTasks = useSetAtom(uploadTasksAtom);
   const store = useStore();
 
-  const removeRestoredPlaceholder = (file: File) => {
+  const removeRestoredPlaceholder = (file: File, scope: AccountScope) => {
     const ids = store.get(uploadTasksAtom);
     let restoredTarget: { matched: boolean; folderId?: string; folderName?: string } =
       {
@@ -32,6 +37,8 @@ export const useGlobalUpload = () => {
       const task = store.get(uploadTaskAtomFamily(id));
       if (
         task?.status === UploadStatus.needsFile &&
+        task.ownerId === scope.ownerId &&
+        task.generation === scope.generation &&
         task.name === file.name &&
         task.size === file.size
       ) {
@@ -56,6 +63,7 @@ export const useGlobalUpload = () => {
     folderId?: string,
     folderName?: string,
   ) => {
+    const scope = requireAccountScope();
     if (!file || file.size === 0) {
       void message.warning("文件为空，无法上传");
       return;
@@ -65,7 +73,7 @@ export const useGlobalUpload = () => {
       return;
     }
 
-    const restoredTarget = removeRestoredPlaceholder(file);
+    const restoredTarget = removeRestoredPlaceholder(file, scope);
     const targetFolderId = restoredTarget.matched
       ? restoredTarget.folderId
       : folderId;
@@ -88,6 +96,8 @@ export const useGlobalUpload = () => {
 
     const taskId = uuidv4();
     const task: UploadTask = {
+      ownerId: scope.ownerId,
+      generation: scope.generation,
       id: taskId,
       name: file.name,
       size: file.size,
@@ -103,6 +113,7 @@ export const useGlobalUpload = () => {
 
     const instance = new Uploader({
       file,
+      ownerId: scope.ownerId,
       folderId: targetFolderId,
       folderName: targetFolderName,
       /**
@@ -111,6 +122,7 @@ export const useGlobalUpload = () => {
        * @returns 无返回值。
        */
       onChange: (snapshot) => {
+        if (!isAccountScopeCurrent(scope)) return;
         // 只有服务端初始化成功才形成预留；分片进度通知不重复请求用量。
         const previous = store.get(uploadTaskAtomFamily(taskId));
         if (
@@ -118,17 +130,22 @@ export const useGlobalUpload = () => {
           snapshot.status === UploadStatus.uploading &&
           snapshot.uploadId
         ) {
-          void queryClient.invalidateQueries({ queryKey: [FILE_STATS_QUERY_KEY] });
+          void queryClient.invalidateQueries({
+            queryKey: fileStatsQueryKey(scope.ownerId),
+          });
         }
         store.set(uploadTaskAtomFamily(taskId), (previous) =>
           previous ? { ...previous, ...snapshot } : null,
         );
       },
       onFinish: () => {
+        if (!isAccountScopeCurrent(scope)) return;
         void queryClient.invalidateQueries({
-          queryKey: fileDirectoryQueryKey(targetFolderId),
+          queryKey: fileDirectoryQueryKey(scope.ownerId, targetFolderId),
         });
-        void queryClient.invalidateQueries({ queryKey: [FILE_STATS_QUERY_KEY] });
+        void queryClient.invalidateQueries({
+          queryKey: fileStatsQueryKey(scope.ownerId),
+        });
         void message.success(`${file.name} 上传完成`);
       },
     });

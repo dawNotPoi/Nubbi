@@ -1,5 +1,5 @@
 import { validateEmailAddress } from "@/lib/emailAddress";
-import { z } from "zod";
+import { z } from "zod/v3";
 
 const emailSchema = z
   .string({ required_error: "邮箱不能为空" })

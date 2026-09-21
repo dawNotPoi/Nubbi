@@ -4,6 +4,15 @@
 
 用户认证系统，支持邮箱密码登录、第三方 OAuth、验证码机制、密码重置、账号注销。
 
+### 产品身份与资源隔离边界（2026-09-21 已确认）
+
+- 系统支持多个账号，所有账号均为同一种普通用户身份；不设置系统管理员、角色分级或权限配置后台。
+- 每个用户独立使用自己的资源，服务端必须检查资源归属，不能以“不需要角色权限”为由移除跨账号隔离。
+- 会议主持人与参与者是会议内职责，API Key/MCP scope 是凭证访问限制，均继续保留；现有公开发布与签名分享沿用独立访问策略。
+- 本轮将统一登录状态、会话恢复、续期、退出和资源隔离实现，不改变已有账号数据与 UI 品牌风格。
+- Better Auth 1.7.5 的代码适配与隔离阶段 0 验收已完成，旧密码、Session、JWT/JWKS、普通 Key/MCP Key 及验证码桥接均有虚构数据证据。真实数据库迁移、真实 SMTP/OAuth 与生产部署仍未获验收或授权，不能把隔离通过视为生产升级完成。
+- 详细目标见 [认证、会话与资源隔离重构设计](./auth-session-isolation-design.md) 和 [流程图](./auth-session-isolation.excalidraw)。用户已批准执行，阶段 0 升级实施中；下文现有 Hook/API 描述不代表会话协调层已迁移。
+
 **服务端**: `server/app/routes/auth/` + `server/app/controller/auth/` + `server/app/services/auth/` + `server/app/lib/auth.ts`
 **客户端**: `client/src/views/login/` + `client/src/views/reset-password/` + `client/src/hooks/useAuth.ts`
 
@@ -91,6 +100,23 @@
 | `server/app/controller/auth/` | 注册、邮箱、密码、账号、头像和 API Key 用例 |
 | `server/app/services/auth/account-deletion.ts` | 跨领域账号数据清理 |
 
+阶段 0 的迁移命令、隔离证据、回退边界与真实环境授权清单见
+[`better-auth-upgrade-runbook.md`](./better-auth-upgrade-runbook.md)。阶段 A–D 的本地实现与隔离验证结果见 [`auth-refactor-verification.md`](./auth-refactor-verification.md)；真实数据库尚未迁移。
+
+### 客户端统一会话协调层（阶段 A / Task 1）
+
+- `client/src/features/auth/model/session-coordinator.ts` 是浏览器进程内唯一可写会话来源；UI 只读取 `status/user/generation/operation/error/initialized`，token 不进入 UI 快照。
+- Session/access token 与 JWT 仅保存在协调器私有内存。每次 Provider 调用捕获发起代次，`set-auth-token` / `set-auth-jwt` 只有在响应代次仍匹配时才能提交；JWT 只是请求凭证，不构成第二份登录状态。
+- `bootstrap`、刷新与 JWT 续期在同一代次共享一个在途请求，认证读取使用 10 秒超时；新鲜 JWT 不额外读取会话，过期 JWT 通过同一恢复入口刷新。
+- 邮箱登录同步取得操作锁，成功后仍通过协调器做一次受控会话确认；OAuth 发起只发布 `redirecting`。只有用户与可用 Session/access token 同时存在时才发布 `authenticated`。
+- 身份变化先提升 generation 并使旧响应失效。退出开始即暂停受保护操作；远端确认成功后才发布 `anonymous`，失败或超时发布 `unavailable` 和“远端会话未确认退出”，并保留用户用于明确展示和重试。
+- 邮箱登录、OAuth、退出和账号注销共用 Cookie mutation 串行门槛；请求超时会先中止底层 fetch、等待其落定并受控确认 Cookie 会话，确认完成前不允许下一次身份 mutation。OAuth 仅接受 `http:` / `https:` 跳转地址，且只在原 generation 仍有效时导航一次。
+- 业务请求收到响应时先核对捕获的 userId/generation；旧账号的晚到 401 抛出 stale-generation 错误，不刷新或失效当前账号。账号注销在途不提供受保护凭证，明确 4xx 与 transport-indeterminate 分别处理。
+- 路由、登录、`useAuth` 与业务请求已正式接入协调器；`client/src/utils/auth.ts` 只保留实际调用的统一导出和派生 `useSession`，不持有第二份身份。零调用兼容包装与无作用 token setter 已删除。
+- 私有查询按账号生成 key；身份切换先取消旧请求，再清空缓存、上传显示状态并断开 Socket/Peer/media。上传持久记录绑定 owner，跨标签只广播无敏感数据的身份变化通知。
+- 普通后台会话刷新暂时失败时，仍新鲜且未被服务端拒绝的 JWT 保留身份；首次恢复、已拒绝凭证与退出确认失败仍显示不可用及重试。
+- 服务启动只检查认证索引与 API Key 迁移状态；缺失时停止并提示维护命令，不自动迁移真实数据库。
+
 Better Auth 的账号关联配置只声明在 `account.accountLinking`；认证日志同时按
 字段名和字符串内容清理 Cookie、Bearer、JWT、API Key、验证码和密码。
 
@@ -136,7 +162,7 @@ Better Auth 的账号关联配置只声明在 `account.accountLinking`；认证�
 |------|------|------|
 | `ProtectedRoute` | `client/src/Route.tsx` | 未登录 → 重定向到 `/login` |
 | `PublicOnlyRoute` | `client/src/Route.tsx` | 已登录 → 重定向到 `returnTo` 或 `/home` |
-| `AuthRouteFallback` | `client/src/Route.tsx` | 认证状态加载中 → 显示 Spin |
+| `AuthStatusScreen` | `client/src/features/auth/components/AuthStatusScreen.tsx` | 使用认证页外壳显示身份确认或不可用重试，不预渲染首页骨架 |
 
 ---
 

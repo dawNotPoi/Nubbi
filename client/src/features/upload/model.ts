@@ -28,6 +28,7 @@ export interface UploadSnapshot {
 }
 
 export interface UploadSession {
+  ownerId: string;
   uploadId: string;
   hash: string;
   name: string;

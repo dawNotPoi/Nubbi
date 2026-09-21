@@ -8,6 +8,14 @@ import {
 import { queryClient } from "@/utils/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { AllMeetingAtom } from "@/store/atom/meetingAtom";
+import {
+  allMeetingQueryKey,
+  recentMeetingQueryKey,
+} from "@/store/atom/meetingAtom";
+import {
+  isAccountScopeCurrent,
+  requireAccountScope,
+} from "@/features/auth/model/account-scope";
 import { App } from "antd";
 import { useAtomValue } from "jotai";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -62,15 +70,20 @@ export const useMeetingManage = (active: boolean): MeetingManageState => {
   /** 审批会议（同意/拒绝），成功后刷新列表 */
   const vet = useCallback(
     async (id: string, status: MeetingDecision): Promise<void> => {
+      const scope = requireAccountScope();
       try {
         const response = await vetMeeting(id, status);
+        if (!isAccountScopeCurrent(scope)) return;
         if (response.code === 1) {
-          await queryClient.invalidateQueries({ queryKey: ["allMeeting"] });
+          await queryClient.invalidateQueries({
+            queryKey: allMeetingQueryKey(scope.ownerId),
+          });
           message.success("操作成功");
           return;
         }
         message.error(response.message);
       } catch {
+        if (!isAccountScopeCurrent(scope)) return;
         message.error("操作失败，请稍后重试");
       }
     },
@@ -80,16 +93,23 @@ export const useMeetingManage = (active: boolean): MeetingManageState => {
   /** 删除指定会议，同时刷新 allMeeting 和 meeting 缓存 */
   const remove = useCallback(
     async (id: string): Promise<void> => {
+      const scope = requireAccountScope();
       try {
         const response = await deleteMeeting(id);
+        if (!isAccountScopeCurrent(scope)) return;
         if (response.code === 1) {
-          await queryClient.invalidateQueries({ queryKey: ["allMeeting"] });
-          await queryClient.invalidateQueries({ queryKey: ["meeting"] });
+          await queryClient.invalidateQueries({
+            queryKey: allMeetingQueryKey(scope.ownerId),
+          });
+          await queryClient.invalidateQueries({
+            queryKey: recentMeetingQueryKey(scope.ownerId),
+          });
           message.success("会议已删除");
           return;
         }
         message.error(response.message);
       } catch {
+        if (!isAccountScopeCurrent(scope)) return;
         message.error("会议删除失败，请稍后重试");
       }
     },
@@ -110,12 +130,14 @@ export const useMeetingManage = (active: boolean): MeetingManageState => {
    */
   const viewComments = useCallback(
     async (meeting: MeetingType): Promise<void> => {
+      const scope = requireAccountScope();
       setCommentLoading(true);
       setCommentMeetingTitle(meeting.title || "未命名会议");
       setCommentModalOpen(true);
 
       try {
         const response = await getMeetingComments(meeting._id);
+        if (!isAccountScopeCurrent(scope)) return;
         if (response.code === 1) {
           setComments(response.data || []);
           return;
@@ -123,10 +145,11 @@ export const useMeetingManage = (active: boolean): MeetingManageState => {
         setComments([]);
         message.error(response.message);
       } catch {
+        if (!isAccountScopeCurrent(scope)) return;
         setComments([]);
         message.error("评论加载失败，请稍后重试");
       } finally {
-        setCommentLoading(false);
+        if (isAccountScopeCurrent(scope)) setCommentLoading(false);
       }
     },
     [message],

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v3";
 
 /** 分页查询参数：limit 上限 50，offset 从 0 开始 */
 export const paginationQuerySchema = z.object({

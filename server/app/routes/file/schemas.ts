@@ -1,5 +1,5 @@
 import { paginationQuerySchema } from "@/common/pagination";
-import { z } from "zod";
+import { z } from "zod/v3";
 
 export const fileObjectIdSchema = z
   .string()

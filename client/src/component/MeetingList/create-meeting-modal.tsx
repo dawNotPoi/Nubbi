@@ -1,4 +1,8 @@
 import { Modal } from "@/component/UI/Dialog";
+import {
+  isAccountScopeCurrent,
+  requireAccountScope,
+} from "@/features/auth/model/account-scope";
 import { useAuth } from "@/hooks/useAuth";
 import { createMeetingAtom } from "@/store/atom/meetingAtom";
 import { Button, DatePicker, Input, message, Select } from "antd";
@@ -62,13 +66,22 @@ export const CreateMeetingModal = ({
   const handleCreate = async (): Promise<void> => {
     if (submittingRef.current) return;
     if (!formData.title.trim()) { message.warning("请输入会议标题"); return; }
+    const scope = requireAccountScope();
     submittingRef.current = true; setCreating(true);
     try {
       const response = await createMeetingMutation.mutateAsync({ ...formData, title: formData.title.trim() });
+      if (!isAccountScopeCurrent(scope)) return;
       if (response.code !== 1) { message.error(response.message || "创建会议失败"); return; }
       setCreatedMeeting(response.data); message.success("创建会议成功，可以邀请参会了"); onClose();
-    } catch { message.error("创建结果未确认，表单已保留。请先检查会议列表，避免重复创建。"); }
-    finally { submittingRef.current = false; setCreating(false); }
+    } catch {
+      if (!isAccountScopeCurrent(scope)) return;
+      message.error("创建结果未确认，表单已保留。请先检查会议列表，避免重复创建。");
+    } finally {
+      if (isAccountScopeCurrent(scope)) {
+        submittingRef.current = false;
+        setCreating(false);
+      }
+    }
   };
 
   return (

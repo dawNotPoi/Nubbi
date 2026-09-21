@@ -1,5 +1,5 @@
 import { MCP_LIMITS } from "@/lib/mcpPolicy";
-import { z } from "zod";
+import { z } from "zod/v3";
 
 export const objectIdSchema = z
   .string()

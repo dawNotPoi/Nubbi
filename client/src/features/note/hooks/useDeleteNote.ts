@@ -7,6 +7,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAtomValue } from "jotai";
 import { useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  isAccountScopeCurrent,
+  requireAccountScope,
+  requireOwnerId,
+} from "@/features/auth/model/account-scope";
 
 type DeleteNoteCallbacks = {
   onError?: (error: unknown) => void;
@@ -23,12 +29,15 @@ export const useDeleteNote = (): DeleteNoteAction => {
   const { mutate } = useAtomValue(deleteSingleNoteAtom);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const ownerId = requireOwnerId(user?.id);
 
   return useCallback(
     (variables, callbacks) => {
+      const scope = requireAccountScope();
       const ancestors = activeNoteId
         ? queryClient.getQueryData<NotePathItem[]>(
-            noteKeys.ancestors(activeNoteId),
+            noteKeys.ancestors(ownerId, activeNoteId),
           )
         : undefined;
       const shouldReturnHome =
@@ -37,16 +46,19 @@ export const useDeleteNote = (): DeleteNoteAction => {
 
       mutate(variables, {
         onError: (error) => {
+          if (!isAccountScopeCurrent(scope)) return;
           callbacks?.onError?.(error);
         },
         onSuccess: () => {
+          if (!isAccountScopeCurrent(scope)) return;
           callbacks?.onSuccess?.();
+          if (!isAccountScopeCurrent(scope)) return;
           if (shouldReturnHome) {
             navigate(routes.home, { replace: true });
           }
         },
       });
     },
-    [activeNoteId, mutate, navigate, queryClient],
+    [activeNoteId, mutate, navigate, ownerId, queryClient],
   );
 };

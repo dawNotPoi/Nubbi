@@ -20,7 +20,7 @@ import {
   sendAuthenticationError,
   unauthorized,
 } from "./authentication";
-import type { RequestAuthContext } from "./common";
+import type { RequestAuthContext } from "@/services/auth/types";
 
 /** 返回 403 禁止访问的标准响应 */
 const forbidden = (res: Response, message = "Permission denied") =>

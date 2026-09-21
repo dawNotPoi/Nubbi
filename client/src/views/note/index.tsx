@@ -9,6 +9,8 @@ import { noteKeys } from "@/features/note/model/keys";
 import { getNoteAncestors, getNoteDetail } from "@/api/note";
 import { routes } from "@/utils/routes";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
+import { requireOwnerId } from "@/features/auth/model/account-scope";
 import { Switch } from "antd";
 import {
   AlertCircle,
@@ -131,9 +133,11 @@ function SaveIndicator({ compact = false, status }: { compact?: boolean; status:
 
 export default function Note() {
   const { Id } = useParams();
+  const { user } = useAuth();
+  const ownerId = requireOwnerId(user?.id);
   const navigate = useNavigate();
   const { data, isLoading } = useQuery({
-    queryKey: noteKeys.detail(Id!),
+    queryKey: noteKeys.detail(ownerId, Id!),
     queryFn: async () => {
       const response = await getNoteDetail(Id!);
       return response.data;
@@ -142,7 +146,7 @@ export default function Note() {
     gcTime: 5 * 60 * 1000,
   });
   const { data: ancestors = [] } = useQuery({
-    queryKey: noteKeys.ancestors(Id!),
+    queryKey: noteKeys.ancestors(ownerId, Id!),
     queryFn: async () => {
       const response = await getNoteAncestors(Id!);
       return response.data || [];

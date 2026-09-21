@@ -64,6 +64,7 @@ const corsOptions: CorsOptions = {
     "Accept-Ranges",
     "Content-Length",
     "Content-Range",
+    "X-Auth-Rejected",
   ],
 };
 app.use(cors(corsOptions));

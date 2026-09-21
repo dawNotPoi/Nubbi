@@ -41,6 +41,7 @@ export class Uploader {
   constructor(
     private readonly options: UploadCallbacks & {
       file: File;
+      ownerId: string;
       folderId?: string;
       folderName?: string;
     },
@@ -92,7 +93,7 @@ export class Uploader {
     this.setStatus(UploadStatus.merging, { progress: 99, speed: 0 });
     try {
       const response = await mergeChunk(this.uploadId);
-      removeUploadSession(this.uploadId);
+      removeUploadSession(this.options.ownerId, this.uploadId);
       this.setStatus(UploadStatus.success, { progress: 100, error: undefined });
       this.options.onFinish?.(response.data);
     } catch (error) {
@@ -107,6 +108,15 @@ export class Uploader {
     this.abortController.abort();
     this.abortController = new AbortController();
     this.setStatus(UploadStatus.paused, { speed: 0 });
+  }
+
+  /**
+   * 身份变化时只停止本地工作，不向已经变化的账号发送取消请求。
+   * @returns 无返回值。
+   */
+  dispose(): void {
+    this.runner.stop();
+    this.abortController.abort();
   }
 
   resume() {
@@ -131,7 +141,7 @@ export class Uploader {
     try {
       if (this.uploadId) {
         await cancelUploadTask(this.uploadId);
-        removeUploadSession(this.uploadId);
+        removeUploadSession(this.options.ownerId, this.uploadId);
       }
     } catch (error) {
       this.fail(error);
@@ -169,13 +179,18 @@ export class Uploader {
         mimeType: this.options.file.type,
       });
       if (response.data.needUpload === false) {
-        removeUploadSessionsByFingerprint(this.hash, this.options.file.size);
+        removeUploadSessionsByFingerprint(
+          this.options.ownerId,
+          this.hash,
+          this.options.file.size,
+        );
         this.setStatus(UploadStatus.success, { progress: 100 });
         this.options.onFinish?.(response.data.file);
         return;
       }
       this.uploadId = response.data.uploadId;
       saveUploadSession({
+        ownerId: this.options.ownerId,
         uploadId: this.uploadId,
         hash: this.hash,
         name: this.options.file.name,

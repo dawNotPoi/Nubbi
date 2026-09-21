@@ -4,6 +4,10 @@ import {
   SidebarTreeState,
 } from "@/component/SideBar/components";
 import { useNoteTreeQuery } from "@/features/note/hooks/useNoteTreeQuery";
+import {
+  isAccountScopeCurrent,
+  requireAccountScope,
+} from "@/features/auth/model/account-scope";
 import { createNoteAtom } from "@/store/atom/note/noteMutationAtom";
 import { useSession } from "@/utils/auth";
 import { routes } from "@/utils/routes";
@@ -26,7 +30,7 @@ export default function NoteMenu() {
     isError,
     isLoading,
     refetch,
-  } = useNoteTreeQuery(null, { enabled: Boolean(owner) });
+  } = useNoteTreeQuery(owner, null, { enabled: Boolean(owner) });
   const { mutate: createNote } = useAtomValue(createNoteAtom);
   const [open, setOpen] = useState(true);
   const navigate = useNavigate();
@@ -36,11 +40,13 @@ export default function NoteMenu() {
   const createNoteHandler = () => {
     if (!owner) return;
 
+    const scope = requireAccountScope();
     const note = newNote();
     createNote(
       { note },
       {
         onSuccess: () => {
+          if (!isAccountScopeCurrent(scope)) return;
           navigate(routes.note(note._id));
         },
       },
@@ -118,7 +124,7 @@ export default function NoteMenu() {
           />
         ) : rootNotes && rootNotes.length > 0 ? (
           <>
-            <NoteTree notes={rootNotes} />
+            <NoteTree notes={rootNotes} ownerId={owner} />
             <RootDropIndicator />
           </>
         ) : (

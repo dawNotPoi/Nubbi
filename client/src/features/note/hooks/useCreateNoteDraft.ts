@@ -7,6 +7,11 @@ import {
 import { patchNoteAcrossCaches } from "@/features/note/model/cache";
 import { queryClient } from "@/utils/queryClient";
 import { debounceWithControls } from "@/utils/common";
+import {
+  isAccountScopeCurrent,
+  requireAccountScope,
+  type AccountScope,
+} from "@/features/auth/model/account-scope";
 import { useAtomValue } from "jotai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -33,6 +38,7 @@ export const useCreateNoteDraft = ({ parent }: UseCreateNoteDraftOptions) => {
   const titleRef = useRef("");
   const contentRef = useRef("");
   const draftNoteRef = useRef<NoteWithContent | null>(null);
+  const draftScopeRef = useRef<AccountScope | null>(null);
   const createdNoteIdsRef = useRef(new Set<string>());
   const pendingContentSaveRef = useRef(new Map<string, string>());
   const pendingTitleSaveRef = useRef(
@@ -68,7 +74,9 @@ export const useCreateNoteDraft = ({ parent }: UseCreateNoteDraftOptions) => {
           noteId: string,
           parentId: string | null | undefined,
           nextTitle: string,
+          scope: AccountScope,
         ) => {
+          if (!isAccountScopeCurrent(scope)) return;
           if (!createdNoteIdsRef.current.has(noteId)) {
             pendingTitleSaveRef.current.set(noteId, {
               parentId,
@@ -90,7 +98,12 @@ export const useCreateNoteDraft = ({ parent }: UseCreateNoteDraftOptions) => {
 
   const debouncedUpdateContent = useMemo(
     () =>
-      debounceWithControls((noteId: string, nextContent: string) => {
+      debounceWithControls((
+        noteId: string,
+        nextContent: string,
+        scope: AccountScope,
+      ) => {
+        if (!isAccountScopeCurrent(scope)) return;
         if (!createdNoteIdsRef.current.has(noteId)) {
           pendingContentSaveRef.current.set(noteId, nextContent);
           return;
@@ -132,6 +145,7 @@ export const useCreateNoteDraft = ({ parent }: UseCreateNoteDraftOptions) => {
     titleRef.current = "";
     contentRef.current = "";
     draftNoteRef.current = null;
+    draftScopeRef.current = null;
     if (currentDraftNoteId) {
       createdNoteIdsRef.current.delete(currentDraftNoteId);
     }
@@ -145,9 +159,12 @@ export const useCreateNoteDraft = ({ parent }: UseCreateNoteDraftOptions) => {
 
   const createDraftNote = useCallback(() => {
     if (draftNoteRef.current) {
-      return draftNoteRef.current;
+      return draftScopeRef.current && isAccountScopeCurrent(draftScopeRef.current)
+        ? draftNoteRef.current
+        : null;
     }
 
+    const scope = requireAccountScope();
     const note = newNote({
       content: contentRef.current,
       parentId: resolvedTargetNote?._id,
@@ -155,17 +172,20 @@ export const useCreateNoteDraft = ({ parent }: UseCreateNoteDraftOptions) => {
     });
 
     draftNoteRef.current = note;
+    draftScopeRef.current = scope;
     setDraftNote(note);
     createdNoteIdsRef.current.delete(note._id);
     createNoteRef.current(
       { note },
       {
         onError: () => {
+          if (!isAccountScopeCurrent(scope)) return;
           createdNoteIdsRef.current.delete(note._id);
           pendingContentSaveRef.current.delete(note._id);
           pendingTitleSaveRef.current.delete(note._id);
         },
         onSuccess: () => {
+          if (!isAccountScopeCurrent(scope)) return;
           createdNoteIdsRef.current.add(note._id);
 
           const pendingTitle = pendingTitleSaveRef.current.get(note._id);
@@ -198,12 +218,15 @@ export const useCreateNoteDraft = ({ parent }: UseCreateNoteDraftOptions) => {
   }, [resolvedTargetNote]);
 
   const selectParent = (nextParent: Note) => {
+    const currentNote = draftNoteRef.current;
+    const scope = draftScopeRef.current;
+    if (currentNote && (!scope || !isAccountScopeCurrent(scope))) return;
+
     targetChangedByUserRef.current = true;
     setTargetNote(nextParent);
     setTargetPickerOpen(false);
 
-    const currentNote = draftNoteRef.current;
-    if (!currentNote) return;
+    if (!currentNote || !scope) return;
 
     const nextNote = {
       ...currentNote,
@@ -219,42 +242,56 @@ export const useCreateNoteDraft = ({ parent }: UseCreateNoteDraftOptions) => {
   };
 
   const syncTitle = (nextTitle: string) => {
+    const currentNote = draftNoteRef.current;
+    const scope = draftScopeRef.current;
+    if (currentNote && (!scope || !isAccountScopeCurrent(scope))) return;
+
     titleRef.current = nextTitle;
     setTitleState(nextTitle);
 
-    const currentNote = draftNoteRef.current;
-    if (!currentNote) return;
+    if (!currentNote || !scope) return;
 
     const nextDraftTitle = normalizeDraftTitle(nextTitle);
     const nextNote = { ...currentNote, title: nextDraftTitle };
     draftNoteRef.current = nextNote;
     setDraftNote(nextNote);
-    patchNoteAcrossCaches(queryClient, currentNote.parentId, currentNote._id, {
-      title: nextDraftTitle,
-    });
+    patchNoteAcrossCaches(
+      queryClient,
+      scope.ownerId,
+      currentNote.parentId,
+      currentNote._id,
+      { title: nextDraftTitle },
+    );
     debouncedUpdateTitle(
       currentNote._id,
       currentNote.parentId,
       nextDraftTitle,
+      scope,
     );
   };
 
   const syncContent = (nextContent: string) => {
+    const currentNote = draftNoteRef.current;
+    const scope = draftScopeRef.current;
+    if (currentNote && (!scope || !isAccountScopeCurrent(scope))) return;
+
     contentRef.current = nextContent;
     setContentState(nextContent);
 
-    const currentNote = draftNoteRef.current;
-    if (!currentNote) return;
+    if (!currentNote || !scope) return;
 
-    debouncedUpdateContent(currentNote._id, nextContent);
+    debouncedUpdateContent(currentNote._id, nextContent, scope);
   };
 
   const submitDraft = ({ onCreated, onSubmitted }: SubmitDraftOptions = {}) => {
     const note = createDraftNote();
+    const scope = draftScopeRef.current;
+    if (!note || !scope || !isAccountScopeCurrent(scope)) return;
 
     debouncedUpdateTitle.flush();
     debouncedUpdateContent.flush();
     onCreated?.(note);
+    if (!isAccountScopeCurrent(scope)) return;
     resetDraft();
     onSubmitted?.();
   };

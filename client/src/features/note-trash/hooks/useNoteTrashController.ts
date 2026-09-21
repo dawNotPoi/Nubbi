@@ -1,4 +1,9 @@
 import type { Note } from "@/api/note";
+import {
+  isAccountScopeCurrent,
+  requireAccountScope,
+} from "@/features/auth/model/account-scope";
+import { authLifecycleRegistry } from "@/features/auth/model/auth-lifecycle";
 import { normalizeNoteTitle } from "@/features/note/model/hierarchy";
 import {
   canRestoreTrashNotes,
@@ -13,7 +18,7 @@ import {
 } from "@/store/atom/note/noteTrashAtom";
 import { Modal, message } from "antd";
 import { useAtomValue } from "jotai";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type TrashOperation = "restore" | "purge";
 
@@ -26,7 +31,32 @@ export function useNoteTrashController() {
   const [sourceFilter, setSourceFilter] = useState<TrashSourceFilter>("all");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [operation, setOperation] = useState<TrashOperation | null>(null);
+  const purgeConfirmDestroyRef = useRef<
+    ReturnType<typeof Modal.confirm>["destroy"] | null
+  >(null);
   const notes = useMemo(() => trashQuery.data ?? [], [trashQuery.data]);
+
+  /**
+   * 仅销毁本回收站 hook 当前持有的永久删除确认框。
+   * @returns 无返回值。
+   */
+  const destroyPurgeConfirm = useCallback((): void => {
+    const destroy = purgeConfirmDestroyRef.current;
+    if (!destroy) return;
+    purgeConfirmDestroyRef.current = null;
+    destroy();
+  }, []);
+
+  useEffect(() => {
+    const unregister = authLifecycleRegistry.register({
+      id: "note-trash-purge-confirm",
+      clear: destroyPurgeConfirm,
+    });
+    return () => {
+      unregister();
+      destroyPurgeConfirm();
+    };
+  }, [destroyPurgeConfirm]);
 
   const rows = useMemo(
     () => getTrashRows({ filterText, notes, sourceFilter }),
@@ -60,7 +90,12 @@ export function useNoteTrashController() {
       : current.filter((id) => !visibleSet.has(id)));
   };
 
-  const runOperation = async (targets: Note[], nextOperation: TrashOperation) => {
+  const runOperation = async (
+    targets: Note[],
+    nextOperation: TrashOperation,
+    scope = requireAccountScope(),
+  ) => {
+    if (!isAccountScopeCurrent(scope)) return;
     const deduplicated = getTrashActionNotes(notes, targets.map((note) => note._id));
     if (nextOperation === "restore" && !canRestoreTrashNotes(deduplicated, notes)) {
       messageApi.warning("请先选择并恢复仍在回收站中的父级页面");
@@ -74,8 +109,10 @@ export function useNoteTrashController() {
       try {
         const mutation = nextOperation === "restore" ? restoreMutation : purgeMutation;
         await mutation.mutateAsync({ noteId: note._id });
+        if (!isAccountScopeCurrent(scope)) return;
         successCount += 1;
       } catch {
+        if (!isAccountScopeCurrent(scope)) return;
         failedCount += 1;
       }
     }
@@ -87,23 +124,27 @@ export function useNoteTrashController() {
     if (failedCount > 0) messageApi.error(`${failedCount} 个项目处理失败，请重试`);
     setSelectedIds([]);
     await trashQuery.refetch();
+    if (!isAccountScopeCurrent(scope)) return;
     setOperation(null);
   };
 
   const restoreNotes = (targets: Note[]) => runOperation(targets, "restore");
   const confirmPurge = (targets: Note[]) => {
+    const scope = requireAccountScope();
     const deduplicated = getTrashActionNotes(notes, targets.map((note) => note._id));
     const targetDescription = deduplicated.length === 1
       ? `「${normalizeNoteTitle(deduplicated[0].title)}」及其子页面`
       : `${deduplicated.length} 个顶层项目及其子页面`;
-    Modal.confirm({
+    destroyPurgeConfirm();
+    const confirm = Modal.confirm({
       title: "永久删除后无法恢复",
       content: `将彻底删除${targetDescription}。此操作不可撤销。`,
       okText: "永久删除",
       cancelText: "取消",
       okButtonProps: { danger: true },
-      onOk: () => runOperation(deduplicated, "purge"),
+      onOk: () => runOperation(deduplicated, "purge", scope),
     });
+    purgeConfirmDestroyRef.current = confirm.destroy;
   };
 
   return {

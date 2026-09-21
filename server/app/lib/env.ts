@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 import { fileURLToPath } from "node:url";
-import { z } from "zod";
+import { z } from "zod/v3";
 
 // 本地开发与 Compose 使用同一份 TURN 配置；显式进程环境仍具有最高优先级。
 dotenv.config({ path: [fileURLToPath(new URL("../../../turn/.env", import.meta.url)), ".env"] });

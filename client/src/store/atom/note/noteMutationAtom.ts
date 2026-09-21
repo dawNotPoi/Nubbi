@@ -1,5 +1,10 @@
 import { atomWithMutation } from "jotai-tanstack-query";
 import {
+  isAccountScopeCurrent,
+  requireAccountScope,
+  type AccountScope,
+} from "@/features/auth/model/account-scope";
+import {
   applyOptimisticNoteContentUpdate,
   applySuccessfulNoteContentUpdate,
   patchNoteAcrossCaches,
@@ -30,10 +35,10 @@ import {
 import { queryClient } from "../../../utils/queryClient";
 
 /** 统一失效树列表、全部列表和最近编辑三处缓存 */
-const invalidateTreeLists = () => {
-  queryClient.invalidateQueries({ queryKey: noteKeys.treeRoot });
-  queryClient.invalidateQueries({ queryKey: noteKeys.allLists });
-  queryClient.invalidateQueries({ queryKey: noteKeys.recent() });
+const invalidateTreeLists = (scope: AccountScope): void => {
+  queryClient.invalidateQueries({ queryKey: noteKeys.treeRoot(scope.ownerId) });
+  queryClient.invalidateQueries({ queryKey: noteKeys.allLists(scope.ownerId) });
+  queryClient.invalidateQueries({ queryKey: noteKeys.recent(scope.ownerId) });
 };
 
 /**
@@ -42,32 +47,43 @@ const invalidateTreeLists = () => {
  */
 export const createNoteAtom = atomWithMutation(() => ({
   mutationFn: ({ note }: CreateNoteVariables) => createNote(note),
-  onMutate: ({ note }) => optimisticPrependNoteToList(queryClient, note),
+  onMutate: async ({ note }) => {
+    const scope = requireAccountScope();
+    const snapshot = await optimisticPrependNoteToList(
+      queryClient,
+      scope,
+      note,
+    );
+    return { scope, snapshot };
+  },
   onError: (error, variables, context) => {
-    rollbackNoteListSnapshot(queryClient, context);
+    if (!context || !isAccountScopeCurrent(context.scope)) return;
+    rollbackNoteListSnapshot(queryClient, context.snapshot);
     queryClient.removeQueries({
       exact: true,
-      queryKey: noteKeys.detail(variables.note._id),
+      queryKey: noteKeys.detail(context.scope.ownerId, variables.note._id),
     });
     queryClient.removeQueries({
       exact: true,
-      queryKey: noteKeys.ancestors(variables.note._id),
+      queryKey: noteKeys.ancestors(context.scope.ownerId, variables.note._id),
     });
-    invalidateTreeLists();
+    invalidateTreeLists(context.scope);
     console.error("create Note error", error);
   },
-  onSuccess: (response, variables) => {
+  onSuccess: (response, variables, context) => {
+    if (!context || !isAccountScopeCurrent(context.scope)) return;
     const nextNote = response.data || variables.note;
     replaceNoteInTreeCache(
       queryClient,
+      context.scope.ownerId,
       nextNote.parentId ?? null,
       nextNote,
     );
-    queryClient.setQueryData(noteKeys.detail(variables.note._id), {
+    queryClient.setQueryData(noteKeys.detail(context.scope.ownerId, variables.note._id), {
       ...variables.note,
       ...response.data,
     });
-    invalidateTreeLists();
+    invalidateTreeLists(context.scope);
   },
 }));
 
@@ -77,30 +93,41 @@ export const createNoteAtom = atomWithMutation(() => ({
  */
 export const deleteSingleNoteAtom = atomWithMutation(() => ({
   mutationFn: ({ noteId }: DeleteNoteVariables) => deleteNote(noteId),
-  onMutate: ({ noteId, parentId }) =>
-    optimisticRemoveNoteFromList(queryClient, parentId, noteId),
+  onMutate: async ({ noteId, parentId }) => {
+    const scope = requireAccountScope();
+    const snapshot = await optimisticRemoveNoteFromList(
+      queryClient,
+      scope,
+      parentId,
+      noteId,
+    );
+    return { scope, snapshot };
+  },
   onError: (error, _variables, context) => {
-    rollbackNoteListSnapshot(queryClient, context);
-    queryClient.invalidateQueries({ queryKey: noteKeys.treeRoot });
+    if (!context || !isAccountScopeCurrent(context.scope)) return;
+    rollbackNoteListSnapshot(queryClient, context.snapshot);
+    queryClient.invalidateQueries({ queryKey: noteKeys.treeRoot(context.scope.ownerId) });
     console.error("delete Note error", error);
   },
-  onSuccess: (_data, variables) => {
+  onSuccess: (_data, variables, context) => {
+    if (!context || !isAccountScopeCurrent(context.scope)) return;
+    const ownerId = context.scope.ownerId;
     queryClient.removeQueries({
       exact: true,
-      queryKey: noteKeys.detail(variables.noteId),
+      queryKey: noteKeys.detail(ownerId, variables.noteId),
     });
     queryClient.removeQueries({
       exact: true,
-      queryKey: noteKeys.ancestors(variables.noteId),
+      queryKey: noteKeys.ancestors(ownerId, variables.noteId),
     });
     queryClient.removeQueries({
       exact: true,
-      queryKey: noteKeys.tree(variables.noteId),
+      queryKey: noteKeys.tree(ownerId, variables.noteId),
     });
-    invalidateTreeLists();
-    queryClient.invalidateQueries({ queryKey: noteKeys.ancestorsRoot });
+    invalidateTreeLists(context.scope);
+    queryClient.invalidateQueries({ queryKey: noteKeys.ancestorsRoot(ownerId) });
     queryClient.invalidateQueries({
-      queryKey: [...noteKeys.lists, "trash"],
+      queryKey: [...noteKeys.lists(ownerId), "trash"],
     });
   },
 }));
@@ -109,12 +136,19 @@ export const deleteSingleNoteAtom = atomWithMutation(() => ({
 export const publishNoteAtom = atomWithMutation(() => ({
   mutationFn: ({ noteId, published }: { noteId: string; published: boolean }) =>
     publishNote(noteId, published),
-  onSuccess: (response, variables) => {
+  onMutate: () => ({ scope: requireAccountScope() }),
+  onSuccess: (response, variables, context) => {
+    if (!context || !isAccountScopeCurrent(context.scope)) return;
     if (response.data) {
-      patchNoteDetailCache(queryClient, variables.noteId, response.data);
+      patchNoteDetailCache(
+        queryClient,
+        context.scope.ownerId,
+        variables.noteId,
+        response.data,
+      );
     }
-    queryClient.invalidateQueries({ queryKey: noteKeys.allLists });
-    queryClient.invalidateQueries({ queryKey: noteKeys.recent() });
+    queryClient.invalidateQueries({ queryKey: noteKeys.allLists(context.scope.ownerId) });
+    queryClient.invalidateQueries({ queryKey: noteKeys.recent(context.scope.ownerId) });
   },
 }));
 
@@ -134,18 +168,24 @@ export const updateNoteContentAtom = atomWithMutation(() => ({
       clientMutationId,
       content,
     }),
-  onMutate: ({ noteId }) =>
-    applyOptimisticNoteContentUpdate(queryClient, noteId),
-  onError: (error, variables) => {
-    queryClient.invalidateQueries({ queryKey: noteKeys.allLists });
+  onMutate: async ({ noteId }) => {
+    const scope = requireAccountScope();
+    await applyOptimisticNoteContentUpdate(queryClient, scope, noteId);
+    return { scope };
+  },
+  onError: (error, variables, context) => {
+    if (!context || !isAccountScopeCurrent(context.scope)) return;
+    queryClient.invalidateQueries({ queryKey: noteKeys.allLists(context.scope.ownerId) });
     queryClient.invalidateQueries({
-      queryKey: noteKeys.detail(variables.noteId),
+      queryKey: noteKeys.detail(context.scope.ownerId, variables.noteId),
     });
     console.error("update Note content error", error);
   },
-  onSuccess: (response, variables) => {
+  onSuccess: (response, variables, context) => {
+    if (!context || !isAccountScopeCurrent(context.scope)) return;
     applySuccessfulNoteContentUpdate(
       queryClient,
+      context.scope.ownerId,
       variables.noteId,
       response.data,
     );
@@ -159,34 +199,46 @@ export const updateNoteContentAtom = atomWithMutation(() => ({
 export const updateNotePropertiesAtom = atomWithMutation(() => ({
   mutationFn: ({ noteId, properties }: UpdateNotePropertiesVariables) =>
     updateNoteProperties(noteId, properties),
-  onMutate: (variables) =>
-    applyOptimisticNotePropertiesUpdate(queryClient, variables),
+  onMutate: async (variables) => {
+    const scope = requireAccountScope();
+    const snapshot = await applyOptimisticNotePropertiesUpdate(
+      queryClient,
+      scope,
+      variables,
+    );
+    return { scope, snapshot };
+  },
   onError: (error, variables, context) => {
+    if (!context || !isAccountScopeCurrent(context.scope)) return;
     rollbackOptimisticNotePropertiesUpdate(
       queryClient,
+      context.scope.ownerId,
       variables.noteId,
-      context,
+      context.snapshot,
     );
-    queryClient.invalidateQueries({ queryKey: noteKeys.treeRoot });
+    queryClient.invalidateQueries({ queryKey: noteKeys.treeRoot(context.scope.ownerId) });
     queryClient.invalidateQueries({
-      queryKey: noteKeys.detail(variables.noteId),
+      queryKey: noteKeys.detail(context.scope.ownerId, variables.noteId),
     });
     console.error("update Note properties error", error);
   },
   onSuccess: (response, variables, context) => {
+    if (!context || !isAccountScopeCurrent(context.scope)) return;
+    const ownerId = context.scope.ownerId;
     if (response.data) {
       patchNoteAcrossCaches(
         queryClient,
-        context?.nextParentId ?? variables.parentId,
+        ownerId,
+        context.snapshot.nextParentId ?? variables.parentId,
         variables.noteId,
         response.data,
       );
     }
     if (Object.prototype.hasOwnProperty.call(variables.properties, "parentId")) {
-      queryClient.invalidateQueries({ queryKey: noteKeys.treeRoot });
+      queryClient.invalidateQueries({ queryKey: noteKeys.treeRoot(ownerId) });
     }
-    queryClient.invalidateQueries({ queryKey: noteKeys.allLists });
-    queryClient.invalidateQueries({ queryKey: noteKeys.recent() });
-    queryClient.invalidateQueries({ queryKey: noteKeys.ancestorsRoot });
+    queryClient.invalidateQueries({ queryKey: noteKeys.allLists(ownerId) });
+    queryClient.invalidateQueries({ queryKey: noteKeys.recent(ownerId) });
+    queryClient.invalidateQueries({ queryKey: noteKeys.ancestorsRoot(ownerId) });
   },
 }));

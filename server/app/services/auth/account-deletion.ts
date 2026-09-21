@@ -130,6 +130,7 @@ const deleteUserAccountDataUnlocked = async ({
   await Tag.deleteMany({ userId });
 
   const userIdObject = ObjectId.isValid(userId) ? new ObjectId(userId) : null;
+  const legacyApiKeyOwnerIds = userIdObject ? [userId, userIdObject] : [userId];
   const userDeleteFilters: Array<Partial<AuthUserDocument>> = [
     { id: userId },
     { _id: userId },
@@ -143,7 +144,15 @@ const deleteUserAccountDataUnlocked = async ({
 
   await waitForAll(
     [
-      mongoDb.collection("apikey").deleteMany({ userId }),
+      mongoDb.collection("apikey").deleteMany({
+        $or: [
+          { referenceId: userId },
+          {
+            referenceId: { $exists: false },
+            userId: { $in: legacyApiKeyOwnerIds },
+          },
+        ],
+      }),
       mongoDb.collection("session").deleteMany({ userId }),
       mongoDb.collection("account").deleteMany({ userId }),
       mongoDb

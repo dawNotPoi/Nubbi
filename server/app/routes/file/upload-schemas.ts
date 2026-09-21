@@ -2,7 +2,7 @@ import {
   ALLOWED_CHUNK_SIZES,
   fileUploadPolicy,
 } from "@/lib/fileUploadPolicy";
-import { z } from "zod";
+import { z } from "zod/v3";
 
 const uploadIdSchema = z.string().regex(/^[a-f\d]{24}$/i, "无效的 ID");
 

@@ -2,12 +2,13 @@ import { useAuth } from "@/hooks/useAuth";
 import {
   getAuthCallbackErrorMessage,
   requestPasswordReset,
+  resolveAuthReturnTo,
   resendVerificationCode,
   resetPasswordWithCode,
   sendRegisterCode,
   verifyEmailWithCode,
 } from "@/utils/auth";
-import { resolveReturnTo, routes } from "@/utils/routes";
+import { routes } from "@/utils/routes";
 import { message } from "antd";
 import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import { ArrowRight, Loader2, X } from "lucide-react";
@@ -42,13 +43,31 @@ const getEmailDomainCorrection = (email: string) => {
 export const LoginPage = (): ReactElement => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, register, loginWithGitHub, loginWithGoogle, loading } = useAuth();
+  const {
+    error: authError,
+    login,
+    loginWithGitHub,
+    loginWithGoogle,
+    loading,
+    operation,
+    register,
+  } = useAuth();
 
   const [view, setView] = useState<AuthView>("login");
   const [socialLoginError, setSocialLoginError] = useState<string | null>(null);
+  const [dismissedAuthError, setDismissedAuthError] = useState<string | null>(null);
   const [pendingProvider, setPendingProvider] = useState<SocialLoginProvider | null>(null);
   const socialLoginInFlight = useRef(false);
   const loginBusy = loading || pendingProvider !== null;
+  const emailLoginPhase =
+    pendingProvider === null && operation === "signingIn"
+      ? "signingIn"
+      : pendingProvider === null && operation === "redirecting"
+        ? "entering"
+        : "idle";
+  const displayedAuthError =
+    socialLoginError ??
+    (authError && authError !== dismissedAuthError ? authError : null);
 
   /* login */
   const [loginEmail, setLoginEmail] = useState("");
@@ -63,6 +82,7 @@ export const LoginPage = (): ReactElement => {
   const [sendingRegisterCode, setSendingRegisterCode] = useState(false);
   const [registerCodeCooldown, setRegisterCodeCooldown] = useState(0);
   const [registerEmailError, setRegisterEmailError] = useState("");
+  const [registering, setRegistering] = useState(false);
 
   /* verifyEmail */
   const [verificationEmail, setVerificationEmail] = useState("");
@@ -89,7 +109,7 @@ export const LoginPage = (): ReactElement => {
   const stateFrom = (location.state as { from?: { pathname?: string; search?: string; hash?: string } } | undefined)?.from;
   const queryReturnTo = new URLSearchParams(location.search).get("returnTo");
   const stateReturnTo = stateFrom ? `${stateFrom.pathname || ""}${stateFrom.search || ""}${stateFrom.hash || ""}` : "";
-  const returnTo = resolveReturnTo([queryReturnTo, stateReturnTo], routes.home);
+  const returnTo = resolveAuthReturnTo([queryReturnTo, stateReturnTo], routes.home);
   const callbackURL = `${window.location.origin}${returnTo}`;
   const callbackError = useMemo(() => getAuthCallbackErrorMessage(location.search), [location.search]);
 
@@ -170,6 +190,7 @@ export const LoginPage = (): ReactElement => {
     }
 
     setLoginEmail(email);
+    setDismissedAuthError(null);
     const result = await login(email, loginPassword);
     if (!result.success) {
       if (result.error?.code === "EMAIL_NOT_VERIFIED") {
@@ -185,12 +206,13 @@ export const LoginPage = (): ReactElement => {
       }
       message.error(result.error?.message || "登录失败"); return;
     }
-    message.success("登录成功"); navigate(returnTo, { replace: true });
+    message.success("登录成功，正在进入。");
   };
 
   /* ── register ── */
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (registering) return;
     const username = regUsername.trim();
     if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) { message.error("用户名需为 3-20 位字母、数字或下划线"); return; }
     const email = validateRegisterEmail();
@@ -198,10 +220,15 @@ export const LoginPage = (): ReactElement => {
     if (!/^\d{6}$/.test(regCode.trim())) { message.error("请输入 6 位数字验证码"); return; }
     if (regPassword.length < 8) { message.error("密码至少 8 位"); return; }
     if (regPassword !== regConfirmPassword) { message.error("两次输入的密码不一致"); return; }
-    const result = await register(email, regPassword, username, regCode.trim());
-    if (!result.success) { message.error(result.error?.message || "注册失败"); return; }
-    resetRegisterFields();
-    message.success("注册成功，请登录。"); setView("login");
+    setRegistering(true);
+    try {
+      const result = await register(email, regPassword, username, regCode.trim());
+      if (!result.success) { message.error(result.error?.message || "注册失败"); return; }
+      resetRegisterFields();
+      message.success("注册成功，正在进入。");
+    } finally {
+      setRegistering(false);
+    }
   };
 
   const handleSendRegisterCode = async () => {
@@ -252,7 +279,6 @@ export const LoginPage = (): ReactElement => {
 
       if (loginResult.success) {
         message.success("邮箱验证成功，已为你登录。");
-        navigate(returnTo, { replace: true });
         return;
       }
 
@@ -363,6 +389,7 @@ export const LoginPage = (): ReactElement => {
     socialLoginInFlight.current = true;
     setPendingProvider(provider);
     setSocialLoginError(null);
+    setDismissedAuthError(null);
     const providerName = provider === "google" ? "Google" : "GitHub";
     try {
       const startLogin = provider === "google" ? loginWithGoogle : loginWithGitHub;
@@ -382,13 +409,13 @@ export const LoginPage = (): ReactElement => {
     <div className="auth-form">
         <AuthCardHeader title={header.title} description={header.desc} />
         <div className="auth-card-body">
-          {socialLoginError ? (
+          {displayedAuthError ? (
             <div role="alert" className="auth-login-error">
               <div className="min-w-0 flex-1">
                 <p className="font-medium">登录未完成</p>
-                <p className="mt-1 break-words">{socialLoginError}</p>
+                <p className="mt-1 break-words">{displayedAuthError}</p>
               </div>
-              <Button variant="ghost" size="icon" type="button" aria-label="关闭错误提示" className="shrink-0 text-destructive-foreground" onClick={() => setSocialLoginError(null)}><X aria-hidden="true" /></Button>
+              <Button variant="ghost" size="icon" type="button" aria-label="关闭错误提示" className="shrink-0 text-destructive-foreground" onClick={() => { setSocialLoginError(null); setDismissedAuthError(authError); }}><X aria-hidden="true" /></Button>
             </div>
           ) : null}
           {/* ═══ verifyEmail ═══ */}
@@ -512,9 +539,9 @@ export const LoginPage = (): ReactElement => {
                   <Label htmlFor="reg-confirm-password">确认密码</Label>
                   <PasswordInput id="reg-confirm-password" name="confirm-password" autoComplete="new-password" value={regConfirmPassword} placeholder="请再次输入密码" onChange={e => setRegConfirmPassword(e.target.value)} />
                 </div>
-                <Button variant="primary" size="lg" type="submit" disabled={loading || sendingRegisterCode}>
-                  {loading && <Loader2 className="animate-spin" />}
-                  注册
+                <Button variant="primary" size="lg" type="submit" disabled={loading || registering || sendingRegisterCode} aria-busy={registering || loading}>
+                  {(registering || loading) && <Loader2 className="animate-spin motion-reduce:animate-none" />}
+                  {registering || loading ? "注册并登录中…" : "注册"}
                 </Button>
               </div>
             </form>
@@ -543,10 +570,14 @@ export const LoginPage = (): ReactElement => {
                   </div>
                   <PasswordInput id="login-password" name="password" value={loginPassword} placeholder="请输入密码" autoComplete="current-password" required onChange={e => setLoginPassword(e.target.value)} />
                 </div>
-                <Button variant="primary" className="auth-login-submit" size="lg" type="submit" disabled={loginBusy} aria-busy={loading && pendingProvider === null}>
-                  {loading && pendingProvider === null ? <Loader2 aria-hidden="true" className="animate-spin motion-reduce:animate-none" /> : null}
-                  {loading && pendingProvider === null ? "正在登录…" : "登录并继续"}
-                  {!loading && <ArrowRight aria-hidden="true" />}
+                <Button variant="primary" className="auth-login-submit" size="lg" type="submit" disabled={loginBusy} aria-busy={emailLoginPhase !== "idle"}>
+                  {emailLoginPhase !== "idle" ? <Loader2 aria-hidden="true" className="animate-spin motion-reduce:animate-none" /> : null}
+                  {emailLoginPhase === "signingIn"
+                    ? "正在登录…"
+                    : emailLoginPhase === "entering"
+                      ? "正在进入…"
+                      : "登录并继续"}
+                  {emailLoginPhase === "idle" && <ArrowRight aria-hidden="true" />}
                 </Button>
               </div>
             </form>
