@@ -27,7 +27,7 @@
 | `lib/env.ts` | 环境变量 Zod 校验，类型安全 |
 | `lib/auth.ts` | Better-Auth 完整配置 |
 | `lib/email.ts` | 邮件发送服务 |
-| `common/chalk.ts` | 日志颜色格式化 |
+| `common/logger.ts` | 统一日志（winston，含颜色格式化） |
 
 ### 实时通信
 
@@ -70,7 +70,7 @@ payload 都执行运行时校验，遗留的跨 socket 私密转发事件已移�
 | 文件 | 用途 |
 |------|------|
 | `store/atom/common.ts` | `sideBarOpenedAtom` — 侧边栏展开/收起 |
-| `store/atom/noteAtom.ts` | 笔记全局状态（allNotes, rootNotes, children, detail, mutations） |
+| `store/atom/note/noteAtom.ts` | 笔记全局状态（allNotes, rootNotes, children, detail, mutations） |
 | `store/atom/FileAtom.ts` | 文件上传状态 |
 
 使用 **Jotai** + **TanStack Query** 实现全局状态和服务端缓存。
@@ -88,10 +88,10 @@ payload 都执行运行时校验，遗留的跨 socket 私密转发事件已移�
 | Header | `component/Header.tsx` | 页面顶部栏（侧边栏按钮 + 面包屑插槽） |
 | SideBar | `component/SideBar/` | 左侧导航（头像、菜单、笔记树、可拖拽宽度） |
 | Tree | `component/SideBar/components/Tree` | 通用树形组件 |
-| Dialog | `component/UI/Dialog/` | 弹窗 |
-| Popover | `component/UI/Popover/` | 浮层 |
-| Image | `component/UI/Image/` | 图片（含 fallback） |
-| Divider | `component/UI/Divider/` | 分割线 |
+| Dialog | `components/ui/dialog.tsx` | 弹窗（`Modal`，桌面 Dialog / 移动 Sheet） |
+| Popover | `components/ui/popover.tsx` | 非模态浮层 |
+| Image | `component/UI/Image/` | 图片（含 fallback）；待收拢进 `components/ui` |
+| Divider | `component/UI/Divider/` | 分割线；与 `components/ui/separator` 概念重叠，待收拢 |
 
 ### 路由系统
 
@@ -130,12 +130,12 @@ payload 都执行运行时校验，遗留的跨 socket 私密转发事件已移�
 1. 新的无业务基础控件统一放在 `client/src/components/ui/`。
 2. 交互底座使用 `@base-ui/react`，采用 shadcn 风格的项目自有源码封装，适配 Tailwind 4.3。
 3. 业务组件放在对应 `features/<module>/components/`，不把领域逻辑放进 UI 基础目录。
-4. `component/UI/` 是迁移期兼容区，不新增另一套 Button、Input 或菜单。
-5. 复杂 Select、既有 Dialog/Popover、通知和尚未迁移的业务继续使用原实现，不在本阶段删除 Ant Design 或 Radix 依赖。
+4. `component/UI/*` 除 Divider、Image 外均为纯转导出 shim，不得新增实现；新代码直接引用 `components/ui`。
+5. 不得重新引入 Ant Design 或任何第三方组件库；复杂表单、树和表格保留业务控制器，用共享控件重组。
 
 ### 全系统圆角规范（2026-09-20）
 
-- `client/src/theme.css` 是圆角数值的唯一来源；Tailwind、原生 CSS 和 AntD 兼容主题共用这些 Token。
+- `client/src/theme.css` 是圆角数值的唯一来源；Tailwind 与原生 CSS 共用这些 Token。
 - `rounded-compact` / `--radius-compact`：6px，紧凑工具按钮、菜单项、树节点和轻量标签。
 - `rounded-control` / `--radius-control`：8px，常规按钮、输入框、小容器和卡片内提示。
 - `rounded-panel` / `--radius-panel`：10px，卡片、对话框、菜单浮层和内容面板；登录卡片也遵守此档位。
@@ -153,7 +153,7 @@ payload 都执行运行时校验，遗留的跨 socket 私密转发事件已移�
 - Checkbox 使用 `checked: boolean`、`indeterminate: boolean` 和 `onCheckedChange`。每个控件必须有可访问名称；选中的行在鼠标移出后仍显示勾选状态。
 - 菜单通过 `render` 组合现有按钮，不嵌套 button；复用 Base UI 的键盘导航、Escape、焦点管理和定位，Portal 点击不得冒泡触发行选择或打开。
 - 输入框保留搜索清空、原位编辑和 Enter/Escape 语义，输入法组合期间不得提前提交。
-- 菜单和基础控件支持 reduced-motion；复杂标签 Select、Empty、通知与确认弹层暂留 AntD。
+- 菜单和基础控件支持 reduced-motion；通知、确认、选择与浮层已全部收敛到 `components/ui` 出口，不再存在 AntD 残留。
 - 依赖版本和根锁文件必须由 pnpm 一起生成，完成全量 lint/build 和浏览器交互验收后才能标记迁移完成。
 
 ### 添加服务端中间件
@@ -177,7 +177,7 @@ payload 都执行运行时校验，遗留的跨 socket 私密转发事件已移�
 | 前端框架 | React | 19.x |
 | 构建 | Vite | 5.x |
 | 状态管理 | Jotai + TanStack Query | - |
-| UI 库 | Base UI + Ant Design（迁移期） | 见 client/package.json |
+| UI 库 | Base UI + 项目自有 `components/ui` 源码层 | 见 client/package.json；不引入第三方组件库 |
 | 样式 | Tailwind CSS | 4.3.x |
 | 编辑器 | Tiptap (ProseMirror) | - |
 | 路由 | react-router-dom | 6.x |
@@ -199,7 +199,17 @@ payload 都执行运行时校验，遗留的跨 socket 私密转发事件已移�
 - 客户端固定 `tailwindcss` 与 `@tailwindcss/vite` 为 4.3.3，通过 Vite 插件处理 CSS，不升级 Vite 或其他 workspace。
 - `index.css` 使用 `@import`、显式 `@config` 和限定到客户端的源码扫描；`tailwind.config.js` 暂时保留原语义 Token、圆角和动画映射，避免一次改写所有页面。
 - 移除客户端旧 PostCSS 配置、Autoprefixer 和第三方 scrollbar 插件；滚动条工具类由 Tailwind 4.3 提供，现有原生 CSS 滚动条外观仍保留。
-- AntD 置于 `antd` 层，共享控件置于 `components` 层，utility 位于最后；编辑器独立 CSS 用 `@reference` 获得原有 `@apply` 上下文。
+- 共享控件置于 `components` 层，utility 位于最后；编辑器独立 CSS 用 `@reference` 获得原有 `@apply` 上下文。
 - `tailwind-compat.css` 临时保留旧细阴影、模糊、透明轮廓和裸圆角；不要继续扩充历史兼容类，新控件使用明确语义样式。
 - 浏览器最低目标变为 Safari 16.4、Chrome 111、Firefox 128；旧浏览器不在本次 v4 验收范围。
 - 不改 NoteLibrary 表格列宽、侧栏、业务事件、接口或数据模型。尚需实际浏览器确认与预览部署；构建成功不能代替视觉验收。
+
+### 统一 UI 源码层（2026-09-21）
+
+- 主客户端全量迁移到 `components/ui`，不再依赖 AntD 控件、静态消息、图标或 CSS-in-JS Provider。
+- 采用 shadcn/ui 的 Base UI 源码模式，手动接入 `client/components.json`（base-nova），保留现有主题与别名；没有运行 init 覆盖主题，也不将项目定制接口宣称为官方原样组件。
+- Button、Input、Checkbox、Select、Tabs、Popover、Dialog、Sheet、Tooltip、Toast 共用语义 Token、焦点与键盘规则；旧基础路径除 Divider、Image 外均为纯转导出，不保留重复实现（待收拢项见 [rebuild-plan 第 10 节](../ui/rebuild-plan.md)）。
+- `Modal` 桌面展示 Dialog，移动展示共享 Sheet；危险操作使用 AlertDialog。异步提交时阻止重复确认，失败保留内容，账号切换可以通过确认句柄销毁待执行操作。
+- `toast` 为唯一操作结果出口，最大显示 3 条，同标识通知原位更新；短暂失败不重复插入表单错误块。长期不可用状态仍留在页面提供重试，不改认证判断。
+- 业务表单采用受控输入；日期采用本地日期时间输入后转换现有时间戳契约。目录树、表格与会议日历保留业务归属，不为迁移仿制通用 AntD API。
+- 迁移范围、任务和验收记录见 [AntD 迁移计划](../ui/antd-removal-plan.md)。

@@ -1,5 +1,5 @@
 # 忽略所有 Node 依赖文件夹
-/node_modules
+node_modules
 
 # 忽略所有 Node 模块的 lock 文件 (可选，但推荐)
 package-lock.json
@@ -23,3 +23,11 @@ server/storage
 
 
 .tmp/
+
+# 构建产物兜底：各子项目另有专属 ignore，这里防止根目录或废弃目录下的产物被提交
+dist/
+.next/
+*.tsbuildinfo
+
+# Agent 工作区临时产物
+.superpowers/

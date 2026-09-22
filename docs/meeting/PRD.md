@@ -72,6 +72,9 @@
 - `client/src/views/meetings/` — 会议列表、创建会议
 - 页面采用统一的蓝灰主题：顶部展示页面标题、说明和创建会议主操作，下面依次展示近期会议与会议管理。
 - 使用组件：`component/MeetingList/`（Meetingmanage, RecentMeeting, CreateMeetingModal, MeetingSchedule, addMeeting）
+- 创建会议表单契约（`CreateMeetingModal`；`addMeeting` 仅作入口转发）：标题必填；开始时间使用本地 `datetime-local` 输入，`min` 取「当前时间 − 5 分钟」，提交前按同一宽限再校验一次，不得创建早于当前时间的会议；提交时把本地时间转成 `startTime` 毫秒时间戳；时长用受控下拉（30/45/60/120 分钟）；密码可选，不参与时间校验。
+- 5 分钟宽限的理由：弹窗打开时默认填入当前时刻，用户填写标题后默认值已略早于提交时刻；若选择器下限与提交校验都用严格的 `now`，会拦掉合法默认值。两处必须共用同一宽限值，避免口径不一致。
+- 旧 `DatePicker minDate={dayjs()}` 是这项约束的来源；换成原生输入后必须同时保留 `min` 与提交校验，不能只保留其一。
 
 ### 视频会议室 `/meeting/:roomId`
 - `client/src/views/meeting-room/index.tsx` — 主视频组件
@@ -178,7 +181,7 @@ TURN 用户名为 `到期秒数:用户ID`，密码为共享密钥计算的 HMAC-
 | RecentMeeting | `component/MeetingList/` | 最近会议卡片 |
 | CreateMeetingModal | `component/MeetingList/` | 会议页与首页共用的创建会议弹窗 |
 | MeetingSchedule | `component/MeetingList/` | 会议时间表 |
-| addMeeting | `component/MeetingList/` | 创建会议表单 |
+| addMeeting | `component/MeetingList/` | 创建会议入口，仅转发 `CreateMeetingModal` |
 
 ---
 
@@ -192,7 +195,7 @@ TURN 用户名为 `到期秒数:用户ID`，密码为共享密钥计算的 HMAC-
 ### 扩展评论功能
 1. 修改 `server/app/models/meetingComment.ts`（如需新字段）
 2. 在 `server/app/routes/meeting/` 添加 Schema 和类型化路由声明，并在 `server/app/controller/meeting/` 实现用例
-3. 更新 `client/src/views/meeting-room/CommentPanel.tsx`
+3. 更新 `client/src/views/meeting-room/components/CommentPanel.tsx`
 
 ---
 

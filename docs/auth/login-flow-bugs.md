@@ -2,6 +2,7 @@
 
 > 日期：2026-06-14  
 > 范围：客户端登录流程 + 服务端认证路由  
+> **历史记录**：本文描述的是修复当时（2026-06-14）的现象与改法，代码片段中的 `message.error` 等 API 已由 `components/ui/toast` 取代。当前口径以 `docs/auth/PRD.md` 与 `docs/ui/rebuild-plan.md` 为准，本文不构成实现要求。
 
 ---
 

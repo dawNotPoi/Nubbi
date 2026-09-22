@@ -14,7 +14,7 @@
 | -------- | ------------------------------------------------------ |
 | 主服务端 | Express 4.x + Mongoose 8.x + Zod 3.x + Better-Auth 1.x |
 | Assistant API | NestJS 11.x + Fastify 5.x + Mongoose 8.x + Zod 3.x |
-| 客户端   | React 19.x + Base UI + 项目自有 UI 源码层（shadcn 风格）+ Ant Design 5.x（迁移期）+ Tailwind 4.x + Vite 5.x |
+| 客户端   | React 19.x + Base UI + 项目自有 UI 源码层（shadcn 风格）+ Tailwind 4.x + Vite 5.x |
 | 状态管理 | TanStack Query（服务端状态）+ Jotai（UI 状态）         |
 
 引入新依赖前检查 `.agent/rules/core.md` 禁止项。
@@ -73,7 +73,7 @@
 
 ```text
 沟通方案
-→ 更新 PRD / 明确验收口径（需要时）
+→ 更新 PRD / 方案（唯一来源）（需要时）
 → 形成完整 patch 方案
 → 提交前 review
 → 编写 / 写入代码
@@ -82,6 +82,8 @@
 → （用户要求时）更新 changes
 → 完成
 ```
+
+方案文档（`docs/<module>/PRD.md`、模块 plan、`docs/ui/rebuild-plan.md`）是需求的唯一来源：先改方案、再改代码，两者同一 commit 保持一致；维护对话以方案为入口，详见 `.agent/rules/core.md` 的「方案优先」。
 
 直接写远端的工具将“写入代码”与“commit”合并，因此必须把 review 前移到写操作之前。
 步骤和 changes 格式详见 `.agent/skills/workflow.md`；规则约束见 `.agent/rules/core.md`。

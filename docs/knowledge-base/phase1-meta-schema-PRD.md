@@ -1,5 +1,7 @@
 # Phase 1：Meta Schema 标准化 PRD
 
+> 状态：部分实现。`shared/meta-field-defs.ts` 已存在；客户端动态面板、Type 标签与迁移脚本尚未实现，本文引用的对应新文件属于计划。
+
 ## 模块概述
 
 将 Note 的 `meta: Mixed` 从不规范自由态升级为结构化方案，让 agent 可靠读写元数据，客户端按 type 动态渲染编辑面板。
@@ -106,7 +108,7 @@ Body 新增 `type` 字段，允许切换笔记类型：
 
 **软校验**：切换 type 时，不删除旧 type 下的特有字段，只记录 warn 日志。例如从 `book` 切到 `article`，`isbn` 保留在 meta 中但不显示。
 
-### Zod 验证更新（`server/app/routes/note.ts`）
+### Zod 验证更新（`server/app/routes/note/**`）
 
 ```ts
 const createNoteSchema = z.object({
@@ -170,7 +172,7 @@ interface NoteMetaProps {
 - 切换 type 后，**不删除**旧字段，只**切换显示的编辑面板**
 - 旧 type 特有字段保留在 meta 中，切回去时仍然可见
 
-### `client/src/views/note/NoteCard.tsx`（小幅修改）
+### `client/src/features/note/components/NoteLibraryRow.tsx`（小幅修改）
 
 展示 Type 标签（小 badge），如 `📄 文章`、`🎬 视频`、`📖 书`
 
@@ -258,11 +260,11 @@ cd server && npx tsx ../scripts/migrate-note-meta.ts
 ## 实施顺序
 
 1. **Model**：`server/app/models/note.ts` — 新增 `type` 字段
-2. **Route**：`server/app/routes/note.ts` — Zod 验证更新 + 软校验
+2. **Route**：`server/app/routes/note/**` — Zod 验证更新 + 软校验
 3. **迁移**：`scripts/migrate-note-meta.ts` — 执行一次数据迁移
 4. **API 类型**：`client/src/api/note.ts` — 更新 TypeScript 类型
 5. **Meta 面板**：`client/src/views/note/NoteMeta.tsx` — 重构为动态面板
-6. **卡片**：`client/src/views/note/NoteCard.tsx` — 展示 type 标签
+6. **卡片**：`client/src/features/note/components/NoteLibraryRow.tsx` — 展示 type 标签
 
 ---
 
@@ -274,7 +276,7 @@ cd server && npx tsx ../scripts/migrate-note-meta.ts
 - [ ] `NoteMeta.tsx` 根据 type 显示对应编辑字段，切换 type 面板即时变化
 - [ ] 自定义字段可添加、编辑、删除，以 `_` 前缀区分
 - [ ] `ai_summary` 字段只读，不可编辑
-- [ ] NoteCard 展示正确的 type 标签
+- [ ] NoteLibraryRow 展示正确的 type 标签
 
 ---
 

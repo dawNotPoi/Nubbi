@@ -6,6 +6,7 @@
 
 > 规则约束（commit 格式、changes 更新时机、禁止项等）见 `.agent/rules/core.md`。
 > commit 格式和 changes 暂存由 hook 自动校验，agent 可跳过该部分记忆。
+> 方案文档（`docs/<module>/PRD.md`、模块 plan、`docs/ui/rebuild-plan.md`）是需求的唯一来源：先改方案、再改代码，两者同一 commit 保持一致。
 
 ## 第一步：沟通 & 更新 PRD
 

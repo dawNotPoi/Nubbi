@@ -25,7 +25,7 @@
 - UI 沿用 NUBBI Warm Neutral + Soft Semantic Accents + 固定 Mascot，不另建组件体系，不重做登录卡片视觉。
 - 不创建、恢复或修改 `*.test.*`、`*.spec.*`、`test/`、`tests/`。RED/GREEN 使用 stdin 临时诊断和隔离 HTTP/浏览器验证，不写测试文件。
 - 不加载真实 `.env` 启动新版服务，不连接或修改现有远程数据库；真实 OAuth、SMTP、数据库迁移、索引 apply 与生产部署均需另行授权。
-- 当前分支 `refactor/auth-permissions`，在当前本地目录工作；不 commit、stage、push，不改用户的 `website/`。
+- 当前分支 `refactor/auth-permissions`，在当前本地目录工作；不 commit、stage、push。
 - 新增/修改注释使用中文；公开导出函数、类型和组件具有中文 TSDoc，函数写明 `@param` / `@returns`；无 `any`。
 
 ---
@@ -53,7 +53,7 @@
 - [x] 实现 coordinator：10 秒超时；同代次 single-flight；login 同步锁；响应 commit 前比较 generation；已有已认证用户临时刷新失败时保留 user 但进入 unavailable 并阻止受保护写操作。
 - [x] Better Auth client 不用无代次的全局响应回调写 token；每次 provider 调用在发起处捕获 generation，并通过 `commitProviderHeaders(generation, response)` 接收 `set-auth-token/set-auth-jwt`。
 - [x] 邮箱登录成功后进入 redirecting，并通过同一 coordinator 做一次受控 get-session 确认；OAuth 发起只设置 redirecting，不发布 authenticated。注册/验证后自动登录复用同一路径。
-- [x] 退出先提升 generation、暂停受保护操作并通知生命周期监听者；远端成功才发布 anonymous。失败/超时发布 unavailable 与“远端会话未确认退出”，允许重试，不能仅清内存宣称成功。
+- [x] 退出先提升 generation、清理缓存与连接并通知生命周期监听者；清空本地身份后立即发布 anonymous，远端失败发布 signOutFailed 并在登录页提供“重试退出”，退出意图写入当前标签页 sessionStorage，刷新后继续退出，远端确认前禁止新登录。（2026-09-21 按 `docs/auth/PRD.md` 修订：原实现为保留身份并进入 unavailable。）
 - [x] `auth-actions.ts` 承接注册、验证码、密码重置、账号注销与头像更新的 provider/API 包装；`utils/auth.ts` 只做兼容 re-export 和无状态 URL 工具。
 - [x] GREEN stdin 诊断至少覆盖：并发恢复只调用一次；login 重复提交一次；超时；失败不伪装登出；A→B 时 A 晚结果被拒绝；JWT 新鲜不恢复；JWT 过期同代次 single-flight；无效响应不发布 authenticated。
 - [x] client `tsc -b`，自查无 token 持久化、无第二份 recovered user、无测试文件、无提交。
@@ -98,7 +98,7 @@
 - Modify: `client/src/AppProvider.tsx`
 - Modify: `client/src/api/request.ts`
 - Modify: `client/src/utils/auth.ts`
-- Modify: `client/src/styles/auth.css` or `client/src/views/login/auth-shell.css` only if the existing semantic classes cannot express the new states
+- Modify: `client/src/views/login/auth-shell.css` only if the existing semantic classes cannot express the new states
 
 **Interfaces:**
 - `useAuth()` 只订阅 `useAuthSessionSnapshot()`，不调用 Better Auth `useSession`，不持有 recovered user，不自行恢复。

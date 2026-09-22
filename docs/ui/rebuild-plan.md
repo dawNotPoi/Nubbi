@@ -1,7 +1,7 @@
 # Nubbi UI 重构计划
 
 > 状态：已确认方向，待分阶段实施
-> 当前实施分支：`preview`
+> 当前实施分支：`refactor/ui-unification-local`
 > 原则：先冻结品牌与设计系统，再改基础组件，最后逐页重构；每个阶段单独 review、commit、CI、Preview 验收。
 
 ## 1. 目标
@@ -89,7 +89,7 @@ Shared controller / contracts
 Desktop Presenter / Mobile Presenter
 ```
 
-Ant Design 继续作为迁移期兼容层，但新基础组件不新增 AntD 依赖。
+2026-09-21 用户要求完成剩余迁移并移除 Ant Design。保留已有源码组件与主题，手动接入 shadcn/ui Base UI 配置，不重新初始化；迁移与验收见 [全量迁移计划](./antd-removal-plan.md)。
 
 ## 5. 分阶段实施
 
@@ -178,7 +178,7 @@ Ant Design 继续作为迁移期兼容层，但新基础组件不新增 AntD 依
 
 验收：
 
-- 同级操作在不同页面不再因 AntD / 自有 Button 混用而出现高度差。
+- 同级操作在不同页面不再因控件来源不同而出现高度差。
 - Desktop toolbar 28–32px；Mobile touch target ≥ 44px。
 
 建议 commit：
@@ -387,7 +387,7 @@ Mobile：
 - Trash
 - Meeting Lobby
 - Account / token / avatar dialogs
-- 其他仍使用旧 Card / AntD 基础视觉的辅助页面
+- 其他仍使用旧视觉的辅助页面
 
 规则：
 
@@ -499,3 +499,17 @@ Phase 0 Brand
 - Mascot 的动态状态 / AI 陪伴反馈
 
 未来加入时应复用当前品牌角色和 Design Token，不重新建立一套视觉体系。
+
+## 10. 已知遗留与待办（本轮不修）
+
+下列项已在 2026-09-21 AntD 全量迁移的静态 review 中确认，属于有意延后而不是漏项。动手改到相关组件时，先回来更新本节，再改代码。
+
+| # | 遗留 | 现状与影响 | 处理建议 | 归属文档 |
+|---|---|---|---|---|
+| 1 | 浮层层级坐标不连续 | Sheet 用 `z-[70]/[71]`，桌面 Dialog 1000/1001、confirm 1100、Select/Popover 1200、Tooltip 1300、Toast 1400。当前组合覆盖正确；若将来在桌面 Dialog 之上再开 Sheet 会被压住 | 把 Sheet 抬到同一坐标段，或抽出集中定义的层级常量 | 本节 + `antd-removal-plan.md` 共享接口 |
+| 2 | 移动端触控目标不满 44px | `sheet.tsx` 关闭键 40px、`toast.tsx` 关闭键 32px；其余 Button/Input/Select/Tabs/SheetRow 已是 `max-md:min-h-11` | 补齐到 `size-11`，不改视觉尺寸时用 hit box 扩展 | 本节 §6 Static Review |
+| 3 | `toast as message` 过渡命名 | 10 个文件仍以 `message` 别名调用 toast，其中 4 处使用 `message.add({...})` 形状 | 迁移收尾时统一改名为 `toast` | `antd-removal-plan.md` 共享接口 |
+| 4 | Popover `onClickOutside` 语义过宽 | Escape、触发按钮收起、点击外部都会触发 `onClickOutside`，调用端无法区分 | 确有需要时再拆分关闭原因 | `antd-removal-plan.md` 共享接口 |
+| 5 | OAuth 弹窗超时强关窗口 | 3 分钟超时会 `close()` 弹窗，用户正在 GitHub 输入凭据时会被打断（有 toast 说明） | 评估改为只提示超时、不关窗 | `docs/auth/PRD.md` |
+| 6 | Tabs 函数式 className 被丢弃 | `tabs.tsx` 仅在 `className` 为字符串时透传，函数形式静默失效 | 需要时支持函数形式 | `antd-removal-plan.md` 共享接口 |
+| 7 | Divider / Image 未收拢 | `component/UI/Divider`（94 行）与 `component/UI/Image`（17 行）仍是真实实现，与 `components/ui/separator` 概念重叠，共 5 处调用 | 收拢到 `components/ui`，旧路径降为转导出 | `.agent/skills/style.md`、`docs/infrastructure/PRD.md` |

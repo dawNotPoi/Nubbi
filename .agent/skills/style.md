@@ -119,8 +119,8 @@ feature / page components
 - `client/src/components/ui/` 是新的无业务基础控件唯一目录。
 - 组件组织采用 shadcn 风格的项目自有源码模式；不要声称当前已经完成 canonical shadcn CLI 迁移，也不要重新 `shadcn init` 覆盖现有主题。
 - Base UI 负责低层交互原语；feature 页面不得绕过共享层再包装一套 Button / Input / Menu / Sheet。
-- Ant Design 处于迁移期兼容层：现有复杂 Select、通知、确认和未迁移业务可继续使用，但新基础控件不要新增 AntD 依赖。
-- `component/UI/` 是旧兼容区，不新增与 `components/ui` 重复的基础控件。
+- Ant Design 已从依赖和源码中移除：新控件不得重新引入 AntD、`@ant-design/*` 或第二套组件库，也不得仿制 AntD API。
+- `component/UI/*` 只是指向 `components/ui` 的纯转导出 shim，不得在其中新增实现；新调用端直接引用 `components/ui`。`component/UI/Divider`、`component/UI/Image` 仍未收拢，见 `docs/ui/rebuild-plan.md` 第 10 节。
 
 ## 基础视觉组件 Contract
 
@@ -128,7 +128,7 @@ feature / page components
 
 - 同一操作层级必须具有相同高度、内边距与文字垂直中心。
 - Primary CTA 使用 solid primary；Secondary 使用 outline / ghost。
-- 禁止因为页面不同而直接用 AntD Button 和 Nubbi Button 做同级 CTA。
+- 禁止因为页面不同而在同级 CTA 混用不同来源的 Button（旧 shim、业务局部实现或第三方控件）。
 - Loading 必须保留原宽度并避免重复触发。
 
 ### Card / Panel

@@ -109,12 +109,12 @@
 - Session/access token 与 JWT 仅保存在协调器私有内存。每次 Provider 调用捕获发起代次，`set-auth-token` / `set-auth-jwt` 只有在响应代次仍匹配时才能提交；JWT 只是请求凭证，不构成第二份登录状态。
 - `bootstrap`、刷新与 JWT 续期在同一代次共享一个在途请求，认证读取使用 10 秒超时；新鲜 JWT 不额外读取会话，过期 JWT 通过同一恢复入口刷新。
 - 邮箱登录同步取得操作锁，成功后仍通过协调器做一次受控会话确认；OAuth 发起只发布 `redirecting`。只有用户与可用 Session/access token 同时存在时才发布 `authenticated`。
-- 身份变化先提升 generation 并使旧响应失效。退出开始即暂停受保护操作；远端确认成功后才发布 `anonymous`，失败或超时发布 `unavailable` 和“远端会话未确认退出”，并保留用户用于明确展示和重试。
+- 身份变化先提升 generation 并使旧响应失效。退出开始即清空本地身份、发布 `anonymous` 并回到登录页；远端确认前禁止新的登录，失败通过通知与重试入口处理，不恢复旧身份。退出意图保存在当前标签页，刷新后继续退出。
 - 邮箱登录、OAuth、退出和账号注销共用 Cookie mutation 串行门槛；请求超时会先中止底层 fetch、等待其落定并受控确认 Cookie 会话，确认完成前不允许下一次身份 mutation。OAuth 仅接受 `http:` / `https:` 跳转地址，且只在原 generation 仍有效时导航一次。
 - 业务请求收到响应时先核对捕获的 userId/generation；旧账号的晚到 401 抛出 stale-generation 错误，不刷新或失效当前账号。账号注销在途不提供受保护凭证，明确 4xx 与 transport-indeterminate 分别处理。
 - 路由、登录、`useAuth` 与业务请求已正式接入协调器；`client/src/utils/auth.ts` 只保留实际调用的统一导出和派生 `useSession`，不持有第二份身份。零调用兼容包装与无作用 token setter 已删除。
 - 私有查询按账号生成 key；身份切换先取消旧请求，再清空缓存、上传显示状态并断开 Socket/Peer/media。上传持久记录绑定 owner，跨标签只广播无敏感数据的身份变化通知。
-- 普通后台会话刷新暂时失败时，仍新鲜且未被服务端拒绝的 JWT 保留身份；首次恢复、已拒绝凭证与退出确认失败仍显示不可用及重试。
+- 普通后台会话刷新暂时失败时，仍新鲜且未被服务端拒绝的 JWT 保留身份；首次恢复与已拒绝凭证显示不可用及重试；退出确认失败仍停留登录页并提供重试。
 - 服务启动只检查认证索引与 API Key 迁移状态；缺失时停止并提示维护命令，不自动迁移真实数据库。
 
 Better Auth 的账号关联配置只声明在 `account.accountLinking`；认证日志同时按
@@ -129,9 +129,11 @@ Better Auth 的账号关联配置只声明在 `account.accountLinking`；认证�
 ## 客户端页面
 
 ### 登录页 `/login`
+- GitHub 桌面登录使用独立窗口；移动端或弹窗被拦截时沿用整页跳转，Google 保持不变。轻量 `/oauth-callback.html` 只通知流程结果，不传用户或 token；使用随机标记隔离的同源 BroadcastChannel，不依赖跨站跳转后 opener 的存续，原页面校验 origin 与标记，再通过唯一协调器确认会话。取消恢复按钮，失败与超时使用 toast；保留服务端 state/PKCE 和账号关联校验。
 - `client/src/views/login/` — 邮箱登录、注册表单、OAuth 按钮
+- OAuth 取消授权按静默返回处理：协调器只返回 `OAUTH_CANCELLED`，不发布可见错误，登录页按该错误码抑制 toast；取消不改变当前登录状态，失败与超时仍提示。禁止把取消改成「未完成」类错误提示，也不要保留两套文案。
 - 登录卡片提供同级的 Google / GitHub 图标加文字按钮，复用现有 `useAuth` 和 Better Auth OAuth 流程，不新增认证 SDK。
-- 发起第三方登录时显示对应渠道的等待状态，阻止重复点击和同时提交邮箱登录；失败后在卡片内提示并恢复重试。
+- 发起第三方登录时显示对应渠道的等待状态，阻止重复点击和同时提交邮箱登录；失败后用单次浮动提示（toast）说明并恢复重试，不在卡片内追加错误块。
 - 成功回跳沿用校验后的 `returnTo`；用户取消或 OAuth 回调失败沿用现有错误回跳处理，不改变账号关联策略。
 - 客户端不保存 OAuth 密钥。服务端配置 `AUTH_GOOGLE_ID`、`AUTH_GOOGLE_SECRET`、`BETTER_AUTH_URL` 和 `CLIENT_URL` 后重启。
 - 本地授权回调为 `http://localhost:4000/api/auth/callback/google`；线上登记实际认证服务的 HTTPS 地址加 `/api/auth/callback/google`，必须与 Google 控制台完全一致。
@@ -170,8 +172,8 @@ Better Auth 的账号关联配置只声明在 `account.accountLinking`；认证�
 
 | 组件 | 路径 | 用途 |
 |------|------|------|
-| AuthCodeForm | `component/auth/AuthCodeForm.tsx` | 验证码输入表单 |
-| AccountDeletionModal | `component/AccountDeletionModal.tsx` | 账号注销确认弹窗 |
+| 验证码表单 | 内联在 `client/src/views/login/index.tsx`、`client/src/views/reset-password/index.tsx` | 邮箱验证码与找回密码验证码输入（无独立组件文件） |
+| AccountDeletionModal | `client/src/component/AccountDeletionModal.tsx` | 账号注销确认弹窗 |
 
 ---
 

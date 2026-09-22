@@ -27,7 +27,6 @@
 ### 关键上下文（给下一个 agent）
 
 - 分支已从 `refactor/ui-unification-local` 创建；保留已提交的登录卡片和圆角统一成果。
-- `website/` 是用户原有未跟踪目录，不属于此次修改。
 - 核心代码：`client/src/utils/auth.ts`、`client/src/hooks/useAuth.ts`、`client/src/Route.tsx`、`client/src/AppProvider.tsx`、`server/app/middleware/authentication.ts`、`server/app/middleware/session.ts`。
 - 当前 Better Auth 1.2.12 的全局成功回调覆盖问题已做隔离验证；现有 HTTP 日志显示重复会话查询。完整诊断依据与限制见设计文档。
 - 当前服务端已拒绝 MCP Token 访问普通 Note 路由；旧 MCP PRD 的“可只读”描述落后于实现。

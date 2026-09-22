@@ -227,7 +227,7 @@ expiresAt:  Date, default null             — 自动清理时间，null=手动�
 - **恢复**：`PUT /note/restore` → `deletedAt = null, expiresAt = null` + 后代同步
 - **永久删除**：`DELETE /note/purge` → `deleteMany` 物理删除 + 父节点重算
 
-### 3.4 Query — `server/app/controller/note/query.ts`
+### 3.4 Query — `server/app/controller/note/list-query.ts`（现状已拆分为 `list-query.ts` / `hierarchy-query.ts` / `search-query.ts` / `query-config.ts`）
 
 - 所有查询默认加 `{ deletedAt: null }` 过滤
 - `getNotes` / `getRecentNotes`：用 `hasChildren: false` 判断叶子节点
@@ -305,18 +305,18 @@ export interface NoteWithContent extends Note {
 
 | 文件 | 变更 |
 |------|------|
-| `SideBar/NoteMenu/NoteTree.tsx` | `hasChildren` 替代 `children.length` 判断展开箭头 |
-| `SideBar/NoteMenu/index.tsx` | Note 类型更新 |
+| `client/src/component/SideBar/NoteMenu/NoteTree.tsx` | `hasChildren` 替代 `children.length` 判断展开箭头 |
+| `client/src/component/SideBar/NoteMenu/index.tsx` | Note 类型更新 |
 | `features/note/hooks/useNoteEditorDraft.ts` | 适配新 Note 类型，首次编辑自动切 inbox→active |
 | `features/note/hooks/useCreateNoteDraft.ts` | 新建笔记使用新默认值 |
 | `features/note/model/hierarchy.ts` | 删除 `getNoteChildren`，重写 `collectBlockedMoveTargetIds` |
 | `views/note/index.tsx` | published 开关、新字段展示 |
-| `views/note/NoteCard.tsx` | status badge、tags、published 标记 |
+| `features/note/components/NoteLibraryRow.tsx` | status badge、tags、published 标记 |
 | `views/note/NoteBreadcrumb.tsx` | 适配新接口 |
 | `NoteLibrary.tsx` + 子组件 | 列定义更新、status/published 过滤 |
 | `features/note/model/library.ts` | 适配新类型 |
 | `features/note/components/NoteTargetPickerRow.tsx` | `hasChildren` 替代 `getNoteChildren` |
-| `store/atom/noteAtom.ts` | 所有 mutation atom 适配新字段 |
+| `store/atom/note/noteAtom.ts` | 所有 mutation atom 适配新字段 |
 
 ### 4.4 新建文件 `shared/meta-field-defs.ts`
 
@@ -388,8 +388,8 @@ export interface NoteWithContent extends Note {
 | `server/app/controller/note/create.ts` | 3 | 适配新 Schema + hasChildren |
 | `server/app/controller/note/update.ts` | 3 | 适配 + moveNote + transaction |
 | `server/app/controller/note/delete.ts` | 3 | 软删除 + 恢复 + 物理删除 + $graphLookup |
-| `server/app/controller/note/query.ts` | 3 | 适配新字段 + findNotesByFilter + getTrashNotes |
-| `server/app/routes/note.ts` | 3 | Zod 更新 + 4 个新路由 |
+| `server/app/controller/note/list-query.ts` | 3 | 适配新字段 + findNotesByFilter + getTrashNotes |
+| `server/app/routes/note/` | 3 | Zod 更新 + 4 个新路由 |
 | `client/src/api/note.ts` | 4 | 类型 + 函数重写 |
 | `client/src/features/note/model/cache.ts` | 4 | children → hasChildren + parentId |
 | `client/src/features/note/model/types.ts` | 4 | 类型适配 |
@@ -399,5 +399,5 @@ export interface NoteWithContent extends Note {
 | `client/src/features/note/components/` | 4 | 表格列 + 过滤 + hasChildren |
 | `client/src/component/SideBar/NoteMenu/` | 4 | hasChildren 适配 |
 | `client/src/views/note/` | 4 | 新字段展示 |
-| `client/src/store/atom/noteAtom.ts` | 4 | 类型适配 |
+| `client/src/store/atom/note/noteAtom.ts` | 4 | 类型适配 |
 | `shared/meta-field-defs.ts` | 4 | 新建：标准 meta key 类型定义 |

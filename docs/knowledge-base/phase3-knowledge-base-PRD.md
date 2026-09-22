@@ -1,5 +1,7 @@
 # Phase 3：知识库 RAG PRD
 
+> 状态：未实现（计划）。本文引用的 `server/app/services/embedding/**`、`server/app/services/kb/**`、`server/app/models/noteEmbedding.ts`、`server/app/routes/kb.ts`、`mcp/src/tools/ask-kb.ts` 均为待创建文件。
+
 ## 模块概述
 
 基于 note 内容构建向量知识库，使 agent 能够通过语义搜索检索相关笔记片段，由 LLM 生成带来源引用的回答。核心目标是让 agent 能"读自己的笔记回答问题"，同时严格避免幻觉。

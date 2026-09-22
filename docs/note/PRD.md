@@ -344,7 +344,7 @@ z.object({
 | 文件 | 变更 |
 |------|------|
 | `client/src/views/note/index.tsx` | 适配新 Note 接口；published 开关位置 |
-| `client/src/views/note/NoteCard.tsx` | 显示 status badge、tags、published 标记 |
+| `client/src/features/note/components/NoteLibraryRow.tsx` | 列表行显示 status badge、tags、published 标记 |
 | `client/src/views/note/NoteBreadcrumb.tsx` | 适配新接口 |
 | `client/src/views/NoteLibrary.tsx` | 新增 status/published 过滤；适配新 Note 类型 |
 | `client/src/features/note/components/NoteLibraryTable.tsx` | 列定义更新 |
@@ -361,8 +361,8 @@ z.object({
 ### 状态管理
 | 文件 | 变更 |
 |------|------|
-| `client/src/store/atom/noteAtom.ts` | Jotai 保留展开节点等 UI 状态；`allNotesAtom` 仅服务笔记库和按需目标选择器 |
-| `client/src/store/atom/noteMutationAtom.ts` | 创建、移动、删除只乐观更新来源和目标树列表，成功后刷新活跃树分支 |
+| `client/src/store/atom/note/noteAtom.ts` | Jotai 保留展开节点等 UI 状态；`allNotesAtom` 仅服务笔记库和按需目标选择器 |
+| `client/src/store/atom/note/noteMutationAtom.ts` | 创建、移动、删除只乐观更新来源和目标树列表，成功后刷新活跃树分支 |
 | `client/src/features/note/model/cache.ts` | 详情缓存与指定父节点的树列表按职责更新；最近、全部列表和祖先路径通过失效刷新 |
 | `client/src/features/note/model/keys.ts` | 根节点和直属子节点使用统一 tree Query Key 前缀；Note Query Key 不包含用户 ID |
 | `client/src/features/note/model/hierarchy.ts` | 仅处理标题、排序和已加载节点的移动目标校验，不保存完整树副本 |
@@ -382,13 +382,13 @@ Meta 面板支持三类字段，按不同策略渲染：
 
 | 字段 | 控件 | 说明 |
 |------|------|------|
-| `title` | Input | 笔记标题，已有独立组件 |
-| `author` | Input | 作者 |
-| `date` | DatePicker | 内容原始日期 |
-| `status` | Select (inbox/reading/done/archived) | 下拉选择 |
-| `published` | Switch | 发布开关 |
-| `tags` | Select (multiple, creatable) | 自由标签，自动补全 |
-| `cover` | Upload + Preview | 封面图片 |
+| `title` | 文本输入 | 笔记标题，已有独立组件 |
+| `author` | 文本输入 | 作者 |
+| `date` | 日期时间输入 | 内容原始日期 |
+| `status` | 下拉选择（inbox/reading/done/archived） | 状态选择 |
+| `published` | 开关 | 发布开关 |
+| `tags` | 多选标签（可新建） | 自由标签，自动补全 |
+| `cover` | 上传 + 预览 | 封面图片 |
 
 **2. 标准 Meta 字段（按 key 渲染）**
 
@@ -458,7 +458,7 @@ const STANDARD_META_SCHEMA: MetaFieldDef[] = [
 用户确认现有笔记内容已经是 Markdown 格式。只需要处理 Schema 字段变更：
 
 ```ts
-// scripts/migrate-note-v2.ts —— 一次性执行
+// 一次性迁移脚本（未纳入仓库，执行后即删除）
 
 // 1. 为所有笔记设置默认值
 await Note.updateMany({}, {
@@ -508,7 +508,7 @@ await Note.updateMany({}, { $set: { date: null } });
 
 ### 第 1 步：Model + 迁移（服务器端基础）
 1. `server/app/models/note.ts` — Schema 重写
-2. `scripts/migrate-note-v2.ts` — 数据迁移
+2. 一次性迁移脚本（未纳入仓库）— 数据迁移
 3. 执行迁移 → 验证数据完整性
 
 ### 第 2 步：Controller + Route（服务器端 API）
@@ -527,12 +527,12 @@ await Note.updateMany({}, { $set: { date: null } });
 
 ### 第 5 步：Meta 面板
 12. `client/src/views/note/NoteMeta.tsx` — 重写
-13. `client/src/views/note/NoteCard.tsx` — 适配
+13. `client/src/features/note/components/NoteLibraryRow.tsx` — 适配
 14. `client/src/views/note/index.tsx` — 适配
 
 ### 第 6 步：侧边栏
 15. `NoteTree.tsx` — hasChildren 适配
-16. `NoteMenu/index.tsx` — 适配
+16. `client/src/component/SideBar/NoteMenu/index.tsx` — 适配
 
 ### 第 7 步：笔记库
 17. `NoteLibrary.tsx` + 子组件 — status/published 过滤

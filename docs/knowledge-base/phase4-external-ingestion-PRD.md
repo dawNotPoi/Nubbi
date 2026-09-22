@@ -1,5 +1,7 @@
 # Phase 4：外部内容接入 PRD
 
+> 状态：未实现（计划）。本文引用的 `server/app/services/ingestion/**`、`mcp/src/tools/ingest-url.ts` 均为待创建文件。
+
 ## 模块概述
 
 agent 通过 MCP tool 传入外部 URL，系统自动识别内容类型、抓取正文/字幕、调用 LLM 生成结构化摘要，在指定文件夹下创建 note 并触发 embedding。
