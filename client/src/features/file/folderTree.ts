@@ -1,7 +1,5 @@
 import type { FileListItem, FolderRecord } from "@/api/file";
-import type { DataNode } from "antd/es/tree";
-
-export type FolderTreeNode = DataNode & {
+export type FolderTreeNode = {
   key: string;
   title: string;
   children?: FolderTreeNode[];

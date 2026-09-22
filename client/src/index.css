@@ -1,5 +1,5 @@
-/* 固定层叠顺序，避免未分层的 AntD 样式压过项目控件。 */
-@layer theme, base, antd, components, utilities;
+/* 固定主题、基础控件和工具类的覆盖顺序。 */
+@layer theme, base, components, utilities;
 @import "tailwindcss" source(".");
 @import "./styles/tailwind-compat.css";
 @import "./styles/primitives.css";
@@ -119,30 +119,5 @@
     --novel-highlight-orange: #5c3a1a;
     --novel-highlight-pink: #5c1a3a;
     --novel-highlight-gray: #3a3a3a;
-  }
-}
-
-@media (max-width: 767px) {
-  .ant-modal {
-    max-width: calc(100vw - 24px) !important;
-    top: 12px;
-    margin-bottom: 12px;
-    padding-bottom: 0;
-  }
-
-  .ant-modal-content {
-    max-height: calc(100dvh - 24px);
-    overflow: auto;
-    border-radius: var(--radius-panel) !important;
-  }
-
-  .ant-dropdown-menu-item,
-  .ant-select-item {
-    min-height: 44px;
-  }
-
-  .ant-select,
-  .ant-select-selector {
-    min-height: 40px;
   }
 }

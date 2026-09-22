@@ -9,17 +9,18 @@ import {
   verifyEmailWithCode,
 } from "@/utils/auth";
 import { routes } from "@/utils/routes";
-import { message } from "antd";
+import { toast as message } from "@/components/ui/toast";
 import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
-import { ArrowRight, Loader2, X } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 import { AuthCardHeader } from "./AuthCardHeader";
 import { SocialLoginButtons, type SocialLoginProvider } from "./SocialLoginButtons";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Button } from "@/component/UI/button";
-import { Input } from "@/component/UI/input";
-import { PasswordInput } from "@/component/UI/password-input";
-import { Label } from "@/component/UI/label";
-import { Separator } from "@/component/UI/separator";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { getAuthErrorText } from "./auth-error";
 
 type AuthView = "login" | "register" | "verifyEmail" | "forgotPassword";
 type VerificationIntent = "login" | "registration" | null;
@@ -44,18 +45,41 @@ export const LoginPage = (): ReactElement => {
   const navigate = useNavigate();
   const location = useLocation();
   const {
-    error: authError,
     login,
     loginWithGitHub,
     loginWithGoogle,
     loading,
     operation,
     register,
+    logout,
+    error: authError,
   } = useAuth();
 
+  useEffect(() => {
+    if (operation !== "signOutFailed") return;
+    message.add({
+      id: "auth-sign-out-failed",
+      type: "error",
+      title: authError || "退出未完成，请重试。",
+      timeout: 0,
+      actionProps: { children: "重试退出", onClick: () => { void logout(); } },
+    });
+    return () => message.dismiss("auth-sign-out-failed");
+  }, [operation, authError, logout]);
+
   const [view, setView] = useState<AuthView>("login");
-  const [socialLoginError, setSocialLoginError] = useState<string | null>(null);
-  const [dismissedAuthError, setDismissedAuthError] = useState<string | null>(null);
+  const formRef = useRef<HTMLDivElement>(null);
+  const previousView = useRef<AuthView>(view);
+  const loginEmailRef = useRef<HTMLInputElement>(null);
+  const loginPasswordRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // 初次打开不唤起手机键盘；用户切换步骤后把焦点移到新表单。
+    if (previousView.current === view) return;
+    previousView.current = view;
+    formRef.current?.querySelector<HTMLInputElement>("input")?.focus();
+  }, [view]);
+  const handledCallbackError = useRef<string | null>(null);
   const [pendingProvider, setPendingProvider] = useState<SocialLoginProvider | null>(null);
   const socialLoginInFlight = useRef(false);
   const loginBusy = loading || pendingProvider !== null;
@@ -65,9 +89,6 @@ export const LoginPage = (): ReactElement => {
       : pendingProvider === null && operation === "redirecting"
         ? "entering"
         : "idle";
-  const displayedAuthError =
-    socialLoginError ??
-    (authError && authError !== dismissedAuthError ? authError : null);
 
   /* login */
   const [loginEmail, setLoginEmail] = useState("");
@@ -114,9 +135,10 @@ export const LoginPage = (): ReactElement => {
   const callbackError = useMemo(() => getAuthCallbackErrorMessage(location.search), [location.search]);
 
   useEffect(() => {
-    if (!callbackError) return;
-    setSocialLoginError(callbackError);
+    if (!callbackError || handledCallbackError.current === callbackError) return;
+    handledCallbackError.current = callbackError;
     const params = new URLSearchParams(location.search);
+    message.error(getAuthErrorText({ code: params.get("error")?.toUpperCase(), message: callbackError }, "第三方登录失败，请重新尝试或使用其他登录方式。"));
     ["error", "error_description", "error_message", "message"].forEach(k => params.delete(k));
     navigate({ pathname: location.pathname, search: params.toString() ? `?${params.toString()}` : "" }, { replace: true, state: location.state });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -178,19 +200,24 @@ export const LoginPage = (): ReactElement => {
    */
   const handleLogin = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
+    if (operation === "signOutFailed") {
+      await logout();
+      return;
+    }
     if (loading || socialLoginInFlight.current) return;
     const email = loginEmail.trim();
     if (!emailPattern.test(email)) {
       message.error("请输入有效的邮箱地址");
+      loginEmailRef.current?.focus();
       return;
     }
     if (!loginPassword) {
       message.error("请输入密码");
+      loginPasswordRef.current?.focus();
       return;
     }
 
     setLoginEmail(email);
-    setDismissedAuthError(null);
     const result = await login(email, loginPassword);
     if (!result.success) {
       if (result.error?.code === "EMAIL_NOT_VERIFIED") {
@@ -204,7 +231,7 @@ export const LoginPage = (): ReactElement => {
         setView("verifyEmail");
         return;
       }
-      message.error(result.error?.message || "登录失败"); return;
+      message.error(getAuthErrorText(result.error, "登录失败，请稍后重试")); return;
     }
     message.success("登录成功，正在进入。");
   };
@@ -284,9 +311,7 @@ export const LoginPage = (): ReactElement => {
 
       setView("login");
       message.warning(
-        loginResult.error?.message
-          ? `邮箱验证成功，但自动登录失败：${loginResult.error.message}`
-          : "邮箱验证成功，请重新登录。",
+        `邮箱验证成功，${getAuthErrorText(loginResult.error, "请重新登录。")}`,
       );
       return;
     }
@@ -365,7 +390,10 @@ export const LoginPage = (): ReactElement => {
 
   const goView = (v: AuthView) => {
     if (v === "register") resetRegisterFields();
-    if (v === "forgotPassword") resetForgotFields();
+    if (v === "forgotPassword") {
+      resetForgotFields();
+      setResetEmail(loginEmail.trim());
+    }
     if (v !== "verifyEmail") {
       setVerificationIntent(null);
       setVerificationCodeSent(false);
@@ -388,17 +416,16 @@ export const LoginPage = (): ReactElement => {
     if (loading || socialLoginInFlight.current) return;
     socialLoginInFlight.current = true;
     setPendingProvider(provider);
-    setSocialLoginError(null);
-    setDismissedAuthError(null);
     const providerName = provider === "google" ? "Google" : "GitHub";
     try {
       const startLogin = provider === "google" ? loginWithGoogle : loginWithGitHub;
       const result = await startLogin(callbackURL);
-      if (!result.success) {
-        setSocialLoginError(result.error?.message || `${providerName} 登录暂不可用，请稍后重试或使用其他方式。`);
+      // 取消授权是静默返回：不提示错误，也不改变当前登录状态。
+      if (!result.success && result.error?.code !== "OAUTH_CANCELLED") {
+        message.error(getAuthErrorText(result.error, `${providerName} 登录暂不可用，请稍后重试或使用其他方式。`));
       }
     } catch {
-      setSocialLoginError(`${providerName} 登录暂不可用，请稍后重试或使用其他方式。`);
+      message.error(`${providerName} 登录暂不可用，请稍后重试或使用其他方式。`);
     } finally {
       socialLoginInFlight.current = false;
       setPendingProvider(null);
@@ -406,18 +433,12 @@ export const LoginPage = (): ReactElement => {
   };
 
   return (
-    <div className="auth-form">
+    <div className="auth-form" ref={formRef} onKeyDown={event => {
+      // 中文候选确认不应同时触发表单提交。
+      if (event.key === "Enter" && (event.nativeEvent.isComposing || event.keyCode === 229)) event.preventDefault();
+    }}>
         <AuthCardHeader title={header.title} description={header.desc} />
         <div className="auth-card-body">
-          {displayedAuthError ? (
-            <div role="alert" className="auth-login-error">
-              <div className="min-w-0 flex-1">
-                <p className="font-medium">登录未完成</p>
-                <p className="mt-1 break-words">{displayedAuthError}</p>
-              </div>
-              <Button variant="ghost" size="icon" type="button" aria-label="关闭错误提示" className="shrink-0 text-destructive-foreground" onClick={() => { setSocialLoginError(null); setDismissedAuthError(authError); }}><X aria-hidden="true" /></Button>
-            </div>
-          ) : null}
           {/* ═══ verifyEmail ═══ */}
           {view === "verifyEmail" ? (
             <form onSubmit={handleVerifyEmail} className="flex flex-col gap-4">
@@ -430,7 +451,7 @@ export const LoginPage = (): ReactElement => {
                 <Input
                   id="verify-code"
                   name="code"
-                  className="text-center text-xl tracking-[8px] px-4"
+                  className="h-11 text-center text-xl tracking-[8px] px-4"
                   maxLength={6}
                   inputMode="numeric"
                   autoComplete="one-time-code"
@@ -440,7 +461,7 @@ export const LoginPage = (): ReactElement => {
                   placeholder="请输入 6 位数字"
                 />
               </div>
-              <Button variant="primary" className="w-full" size="lg" type="submit" disabled={verifyingEmail}>
+              <Button variant="primary" className="h-11 w-full" size="lg" type="submit" disabled={verifyingEmail}>
                 {verifyingEmail && <Loader2 className="animate-spin" />}
                 {verifyingEmail
                   ? verificationIntent === "login" ? "验证并登录中..." : "验证中..."
@@ -461,16 +482,16 @@ export const LoginPage = (): ReactElement => {
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="reset-email">账号邮箱</Label>
                 <Input id="reset-email" name="email" type="email" autoComplete="email" value={resetEmail} placeholder="请输入注册邮箱"
-                  className={resetEmailError ? "!border-[var(--danger-text)]" : ""} aria-invalid={!!resetEmailError}
+                  className={`h-11 pl-3 ${resetEmailError ? "!border-[var(--danger-text)]" : ""}`} aria-invalid={!!resetEmailError}
                   onChange={e => { setResetEmail(e.target.value); if (resetEmailError) setResetEmailError(""); }} />
                 {resetEmailError ? <p className="text-xs text-[var(--danger-text)]" role="alert">{resetEmailError}</p> : null}
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="reset-code">验证码</Label>
                 <div className="flex gap-2.5">
-                  <Input id="reset-code" name="code" className="flex-1 min-w-0" maxLength={6} inputMode="numeric" autoComplete="one-time-code" value={resetCode} placeholder="6 位数字"
+                  <Input id="reset-code" name="code" className="h-11 pl-3 flex-1 min-w-0" maxLength={6} inputMode="numeric" autoComplete="one-time-code" value={resetCode} placeholder="6 位数字"
                     onChange={e => setResetCode(e.target.value.replace(/\D/g, "").slice(0, 6))} />
-                  <Button className="shrink-0 w-[110px] self-center" variant="outline" size="sm" type="button"
+                  <Button className="h-11 shrink-0 w-[110px] self-center" variant="outline" size="sm" type="button"
                     onClick={handleSendResetCode}
                     disabled={loading || resetCodeCooldown > 0 || requestingResetCode}>
                     {requestingResetCode ? "发送中" : resetCodeCooldown > 0 ? `${resetCodeCooldown}s` : "获取验证码"}
@@ -479,11 +500,11 @@ export const LoginPage = (): ReactElement => {
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="reset-password">新密码</Label>
-                <PasswordInput id="reset-password" name="new-password" autoComplete="new-password" value={resetPassword} placeholder="至少 8 位" onChange={e => setResetPassword(e.target.value)} />
+                <PasswordInput className="h-11" id="reset-password" name="new-password" autoComplete="new-password" value={resetPassword} placeholder="至少 8 位" onChange={e => setResetPassword(e.target.value)} />
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="reset-confirm-password">确认新密码</Label>
-                <PasswordInput id="reset-confirm-password" name="confirm-password" autoComplete="new-password" value={resetConfirmPassword} placeholder="请再次输入新密码" onChange={e => setResetConfirmPassword(e.target.value)} />
+                <PasswordInput className="h-11" id="reset-confirm-password" name="confirm-password" autoComplete="new-password" value={resetConfirmPassword} placeholder="请再次输入新密码" onChange={e => setResetConfirmPassword(e.target.value)} />
               </div>
               {resetCodeSent ? (
                 <div className="rounded-control bg-[var(--status-active-bg)] p-3.5 text-[13px] leading-relaxed text-[var(--status-active-text)]">
@@ -494,7 +515,7 @@ export const LoginPage = (): ReactElement => {
                   💡 先输入邮箱获取验证码，收到邮件后在此处完成密码重置。
                 </div>
               )}
-              <Button variant="primary" className="w-full" size="lg" type="submit" disabled={submittingReset}>
+              <Button variant="primary" className="h-11 w-full" size="lg" type="submit" disabled={submittingReset}>
                 {submittingReset ? "重置中..." : "重置密码"}
               </Button>
               <Button variant="link" className="w-full" type="button" onClick={() => goView("login")}>返回登录</Button>
@@ -510,21 +531,21 @@ export const LoginPage = (): ReactElement => {
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="reg-username">用户名</Label>
-                  <Input id="reg-username" name="username" autoComplete="username" value={regUsername} placeholder="3-20 位字母、数字或下划线" onChange={e => setRegUsername(e.target.value)} />
+                  <Input className="h-11 pl-3" id="reg-username" name="username" autoComplete="username" value={regUsername} placeholder="3-20 位字母、数字或下划线" onChange={e => setRegUsername(e.target.value)} />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="reg-email">邮箱</Label>
                   <Input id="reg-email" name="email" type="email" autoComplete="email" value={regEmail} placeholder="请输入邮箱"
-                    className={registerEmailError ? "!border-[var(--danger-text)]" : ""} aria-invalid={!!registerEmailError}
+                    className={`h-11 pl-3 ${registerEmailError ? "!border-[var(--danger-text)]" : ""}`} aria-invalid={!!registerEmailError}
                     onChange={e => { setRegEmail(e.target.value); if (registerEmailError) setRegisterEmailError(""); }} />
                   {registerEmailError ? <p className="text-xs text-[var(--danger-text)]" role="alert">{registerEmailError}</p> : null}
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="reg-code">验证码</Label>
                   <div className="flex gap-2.5">
-                    <Input id="reg-code" name="code" className="flex-1 min-w-0" maxLength={6} inputMode="numeric" autoComplete="one-time-code" value={regCode} placeholder="6 位数字"
+                    <Input id="reg-code" name="code" className="h-11 pl-3 flex-1 min-w-0" maxLength={6} inputMode="numeric" autoComplete="one-time-code" value={regCode} placeholder="6 位数字"
                       onChange={e => setRegCode(e.target.value.replace(/\D/g, "").slice(0, 6))} />
-                    <Button className="shrink-0 w-[110px] self-center" variant="outline" size="sm" type="button"
+                    <Button className="h-11 shrink-0 w-[110px] self-center" variant="outline" size="sm" type="button"
                       onClick={handleSendRegisterCode}
                       disabled={loading || registerCodeCooldown > 0 || sendingRegisterCode}>
                       {sendingRegisterCode ? "发送中" : registerCodeCooldown > 0 ? `${registerCodeCooldown}s` : "获取验证码"}
@@ -533,13 +554,13 @@ export const LoginPage = (): ReactElement => {
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="reg-password">密码</Label>
-                  <PasswordInput id="reg-password" name="new-password" autoComplete="new-password" value={regPassword} placeholder="至少 8 位" onChange={e => setRegPassword(e.target.value)} />
+                  <PasswordInput className="h-11" id="reg-password" name="new-password" autoComplete="new-password" value={regPassword} placeholder="至少 8 位" onChange={e => setRegPassword(e.target.value)} />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="reg-confirm-password">确认密码</Label>
-                  <PasswordInput id="reg-confirm-password" name="confirm-password" autoComplete="new-password" value={regConfirmPassword} placeholder="请再次输入密码" onChange={e => setRegConfirmPassword(e.target.value)} />
+                  <PasswordInput className="h-11" id="reg-confirm-password" name="confirm-password" autoComplete="new-password" value={regConfirmPassword} placeholder="请再次输入密码" onChange={e => setRegConfirmPassword(e.target.value)} />
                 </div>
-                <Button variant="primary" size="lg" type="submit" disabled={loading || registering || sendingRegisterCode} aria-busy={registering || loading}>
+                <Button className="h-11" variant="primary" size="lg" type="submit" disabled={loading || registering || sendingRegisterCode} aria-busy={registering || loading}>
                   {(registering || loading) && <Loader2 className="animate-spin motion-reduce:animate-none" />}
                   {registering || loading ? "注册并登录中…" : "注册"}
                 </Button>
@@ -547,7 +568,7 @@ export const LoginPage = (): ReactElement => {
             </form>
           ) : (
             /* ═══ login ═══ */
-            <form onSubmit={handleLogin} className="auth-login-form">
+            <form onSubmit={handleLogin} className="auth-login-form" noValidate aria-busy={loginBusy}>
               <SocialLoginButtons
                 disabled={loading}
                 pendingProvider={pendingProvider}
@@ -561,22 +582,22 @@ export const LoginPage = (): ReactElement => {
               <div className="auth-login-fields">
                 <div className="auth-login-field">
                   <Label htmlFor="login-email">邮箱</Label>
-                  <Input id="login-email" name="email" type="email" value={loginEmail} placeholder="你的邮箱地址" autoComplete="email" required onChange={e => setLoginEmail(e.target.value)} />
+                  <Input ref={loginEmailRef} className="h-11 pl-3" id="login-email" name="email" type="email" inputMode="email" autoCapitalize="none" spellCheck={false} disabled={loginBusy} value={loginEmail} placeholder="你的邮箱地址" autoComplete="email" required onChange={e => setLoginEmail(e.target.value)} />
                 </div>
                 <div className="auth-login-field">
                   <div className="auth-password-label">
                     <Label htmlFor="login-password">密码</Label>
                     <Button variant="link" className="auth-forgot-link" type="button" disabled={loginBusy} onClick={() => goView("forgotPassword")}>忘记密码？</Button>
                   </div>
-                  <PasswordInput id="login-password" name="password" value={loginPassword} placeholder="请输入密码" autoComplete="current-password" required onChange={e => setLoginPassword(e.target.value)} />
+                  <PasswordInput ref={loginPasswordRef} className="h-11" id="login-password" name="password" disabled={loginBusy} enterKeyHint="go" value={loginPassword} placeholder="请输入密码" autoComplete="current-password" required onChange={e => setLoginPassword(e.target.value)} />
                 </div>
-                <Button variant="primary" className="auth-login-submit" size="lg" type="submit" disabled={loginBusy} aria-busy={emailLoginPhase !== "idle"}>
+                <Button variant="primary" className="auth-login-submit h-11" size="lg" type="submit" disabled={loginBusy && operation !== "signOutFailed"} aria-busy={emailLoginPhase !== "idle"}>
                   {emailLoginPhase !== "idle" ? <Loader2 aria-hidden="true" className="animate-spin motion-reduce:animate-none" /> : null}
                   {emailLoginPhase === "signingIn"
                     ? "正在登录…"
                     : emailLoginPhase === "entering"
                       ? "正在进入…"
-                      : "登录并继续"}
+                      : operation === "signOutFailed" ? "重试退出" : operation === "signingOut" ? "正在退出…" : "登录并继续"}
                   {emailLoginPhase === "idle" && <ArrowRight aria-hidden="true" />}
                 </Button>
               </div>

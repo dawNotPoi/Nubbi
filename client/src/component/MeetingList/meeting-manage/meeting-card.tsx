@@ -1,24 +1,26 @@
 import type { MeetingType } from "@/api/meeting";
-import { Button, Popconfirm, Skeleton, Tag } from "antd";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { confirmDialog } from "@/components/ui/confirm-dialog";
 import clsx from "clsx";
 import dayjs from "dayjs";
 import { Clock3, MessageSquareText, Trash2 } from "lucide-react";
-import type { ReactElement } from "react";
+import { useEffect, useRef, type ReactElement } from "react";
 import type { MeetingActions } from "./types";
 import { MeetingInvitationButton } from "@/features/meeting/meeting-invitation";
 
 const statusMap = {
   unreviewd: {
     label: "待审批",
-    className: "border-amber-200 bg-amber-50 text-amber-700",
+    className: "bg-[var(--status-inbox-bg)] text-[var(--status-inbox-text)]",
   },
   approved: {
     label: "已通过",
-    className: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    className: "bg-[var(--status-active-bg)] text-[var(--status-active-text)]",
   },
   rejected: {
     label: "已拒绝",
-    className: "border-rose-200 bg-rose-50 text-rose-700",
+    className: "bg-[var(--danger-bg)] text-[var(--danger-text)]",
   },
 } as const;
 
@@ -27,36 +29,42 @@ type MeetingCardProps = MeetingActions & {
   currentUserId?: string;
 };
 
+/** @param meeting 会议时间信息。@returns 本地时区的起止时间。 */
 const getMeetingTimeRange = (meeting: MeetingType): string => {
   const start = dayjs(meeting.startTime || meeting.createdAt);
   const end = start.add(meeting.duration, "minute");
   return `${start.format("MM-DD HH:mm")} - ${end.format("MM-DD HH:mm")}`;
 };
 
+/** @param props 会议状态。@returns 以语义色呈现的状态标记。 */
 const MeetingStatusTag = ({ meeting }: { meeting: MeetingType }): ReactElement => {
   if (meeting.endedAt) {
     return (
-      <Tag className="m-0 rounded-full border-blue-200 bg-blue-50 px-2.5 py-0.5 text-[12px] text-blue-700">
+      <span className="rounded-full bg-bg-selected px-2.5 py-0.5 text-[12px] text-text-muted">
         已结束
-      </Tag>
+      </span>
     );
   }
 
   const key = meeting.status || "approved";
   const config = statusMap[key];
   return (
-    <Tag className={clsx("m-0 rounded-full border px-2.5 py-0.5 text-[12px]", config.className)}>
+    <span className={clsx("rounded-full px-2.5 py-0.5 text-[12px]", config.className)}>
       {config.label}
-    </Tag>
+    </span>
   );
 };
 
+/** @returns 会议卡片加载占位。 */
 export const MeetingCardSkeleton = (): ReactElement => (
   <div className="rounded-panel border border-border-row bg-surface p-4 md:p-5">
-    <Skeleton active paragraph={{ rows: 3 }} title={{ width: "48%" }} />
+    <Skeleton className="mb-4 h-5 w-1/2" />
+    <Skeleton className="mb-2 h-4 w-full" />
+    <Skeleton className="h-4 w-3/4" />
   </div>
 );
 
+/** @param props 会议信息、当前账号及会议操作。@returns 保留主持人权限和删除确认的会议卡片。 */
 export const MeetingCard = ({
   meeting,
   currentUserId,
@@ -66,6 +74,8 @@ export const MeetingCard = ({
   onDelete,
 }: MeetingCardProps): ReactElement => {
   const isHost = Boolean(currentUserId && meeting.hostId === currentUserId);
+  const confirmationRef = useRef<ReturnType<typeof confirmDialog> | null>(null);
+  useEffect(() => () => confirmationRef.current?.destroy(), [currentUserId]);
 
   return (
     <article className="rounded-panel border border-border-row bg-surface p-4 transition-colors hover:bg-bg-hover md:p-5">
@@ -91,13 +101,13 @@ export const MeetingCard = ({
           </div>
         </div>
 
-        <div className="grid w-full grid-cols-2 gap-2 [&_.ant-btn]:min-h-10 [&_.ant-btn]:rounded-control md:flex md:w-auto md:flex-wrap md:items-center md:[&_.ant-btn]:min-h-8">
+        <div className="grid w-full grid-cols-2 gap-2 [&_button]:min-h-11 md:flex md:w-auto md:flex-wrap md:items-center md:[&_button]:min-h-8">
           {isHost && meeting.status === "unreviewd" ? (
             <>
-              <Button type="primary" onClick={() => void onVet(meeting._id, "approved")}>
+              <Button variant="primary" onClick={() => void onVet(meeting._id, "approved")}>
                 同意
               </Button>
-              <Button onClick={() => void onVet(meeting._id, "rejected")}>拒绝</Button>
+              <Button variant="outline" onClick={() => void onVet(meeting._id, "rejected")}>拒绝</Button>
             </>
           ) : null}
 
@@ -105,23 +115,25 @@ export const MeetingCard = ({
             <MeetingInvitationButton id={meeting._id} title={meeting.title} startTime={meeting.startTime} />
           ) : null}
           {!meeting.endedAt ? (
-            <Button type="primary" onClick={() => onJoin(meeting._id)}>加入会议</Button>
+            <Button variant="primary" onClick={() => onJoin(meeting._id)}>加入会议</Button>
           ) : null}
 
           {isHost && meeting.endedAt ? (
-            <Button onClick={() => void onViewComments(meeting)}>查看评论</Button>
+            <Button variant="outline" onClick={() => void onViewComments(meeting)}>查看评论</Button>
           ) : null}
 
           {isHost ? (
-            <Popconfirm
-              title="删除会议"
-              description="删除后会议和评论记录都会被移除，确认继续吗？"
-              okText="确认"
-              cancelText="取消"
-              onConfirm={() => void onDelete(meeting._id)}
-            >
-              <Button danger icon={<Trash2 size={14} />}>删除</Button>
-            </Popconfirm>
+            <Button variant="destructive" icon={<Trash2 />} onClick={() => {
+              confirmationRef.current?.destroy();
+              confirmationRef.current = confirmDialog({
+              title: "删除会议",
+              content: "删除后会议和评论记录都会被移除，确认继续吗？",
+              okText: "确认删除",
+              cancelText: "取消",
+              danger: true,
+              onOk: () => onDelete(meeting._id),
+              });
+            }}>删除</Button>
           ) : null}
         </div>
       </div>

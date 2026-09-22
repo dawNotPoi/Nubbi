@@ -4,7 +4,7 @@ import { Mathematics } from "@tiptap/extension-mathematics";
 import { Placeholder } from "@tiptap/extensions";
 import { Markdown } from "@tiptap/markdown";
 import StarterKit from "@tiptap/starter-kit";
-import { message } from "antd";
+import { toast } from "@/components/ui/toast";
 import { CodeBlock } from "./code-block";
 import image from "./image";
 import { ListIndentExtension } from "./list-indent";
@@ -27,7 +27,7 @@ export function createExtensions() {
     }),
     CodeBlock.configure({
       onCopy: () => {
-        message.success("复制成功");
+        toast.success("复制成功");
       },
     }),
     TableKit.configure({

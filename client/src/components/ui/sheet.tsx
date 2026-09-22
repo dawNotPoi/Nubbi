@@ -34,8 +34,8 @@ const SheetContent = React.forwardRef<
 >(function SheetContent({ className, children, showClose = false, ...props }, ref) {
   return (
     <Drawer.Portal>
-      <Drawer.Backdrop className="nubbi-sheet-backdrop absolute inset-0 z-[70] bg-black/30" />
-      <Drawer.Viewport className="fixed inset-0 z-[71] flex items-end justify-center">
+      <Drawer.Backdrop className="nubbi-sheet-backdrop absolute inset-0 z-[70] bg-black/30" onClick={(event) => event.stopPropagation()} />
+      <Drawer.Viewport className="fixed inset-0 z-[71] flex items-end justify-center" onClick={(event) => event.stopPropagation()}>
         <Drawer.Popup
           {...props}
           ref={ref}

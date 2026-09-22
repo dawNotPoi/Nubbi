@@ -12,8 +12,8 @@ import {
   LogOut,
   Trash2,
 } from "lucide-react";
-import { useState } from "react";
-import { Modal } from "antd";
+import { useEffect, useRef, useState } from "react";
+import { confirmDialog } from "@/components/ui/confirm-dialog";
 import AccountDeletionModal from "../AccountDeletionModal";
 import ApiTokenModal from "../ApiTokenModal";
 import ChangeAvatarModal from "../ChangeAvatarModal";
@@ -32,6 +32,8 @@ const SideBarHeader: React.FC = () => {
   const [deletionModalOpen, setDeletionModalOpen] = useState(false);
   const [avatarModalOpen, setAvatarModalOpen] = useState(false);
   const [apiTokenModalOpen, setApiTokenModalOpen] = useState(false);
+  const confirmation = useRef<ReturnType<typeof confirmDialog> | null>(null);
+  useEffect(() => () => confirmation.current?.destroy(), [user?.id]);
 
   const handleCollapse = () => {
     if (isMobile) {
@@ -42,12 +44,13 @@ const SideBarHeader: React.FC = () => {
   };
 
   const handleRequestAccountDeletion = () => {
-    Modal.confirm({
+    confirmation.current?.destroy();
+    confirmation.current = confirmDialog({
       title: "确认注销账号？",
       content: "注销会删除账号、登录会话以及个人数据。继续后需要邮箱验证码验证。",
       okText: "继续验证",
       cancelText: "取消",
-      okButtonProps: { danger: true },
+      danger: true,
       onOk: () => setDeletionModalOpen(true),
     });
   };
@@ -57,7 +60,7 @@ const SideBarHeader: React.FC = () => {
       <div className="relative flex min-h-11 items-center justify-between gap-2 md:min-h-0">
         <Popover
           trigger={
-            <div className="flex min-h-11 min-w-0 cursor-pointer items-center gap-2 rounded-control px-1.5 py-1 transition-[background-color,transform] active:scale-[0.99] active:bg-bg-selected hover:bg-bg-hover md:min-h-0 md:rounded-compact">
+            <button type="button" aria-label="账户菜单" className="flex min-h-11 min-w-0 cursor-pointer items-center gap-2 rounded-control px-1.5 py-1 transition-[background-color,transform] active:scale-[0.99] active:bg-bg-selected hover:bg-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring md:min-h-0 md:rounded-compact">
               <Image
                 className="size-8 rounded-full md:size-7"
                 src={user?.image || ""}
@@ -65,7 +68,7 @@ const SideBarHeader: React.FC = () => {
                 alt={user?.name}
               />
               <span className="truncate text-[15px] font-medium text-text-primary md:text-sm">{user?.name}</span>
-            </div>
+            </button>
           }
         >
           <div className="w-[184px] space-y-1 p-1.5 md:w-[152px] md:p-1">

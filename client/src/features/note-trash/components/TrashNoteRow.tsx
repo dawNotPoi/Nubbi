@@ -1,7 +1,9 @@
 import type { TrashNoteRow as TrashNoteRowModel } from "@/features/note-trash/model/trash";
 import { formatDeletedTime } from "@/features/note-trash/model/trash";
 import { normalizeNoteTitle } from "@/features/note/model/hierarchy";
-import { Button, Checkbox, Tooltip } from "antd";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip } from "@/components/ui/tooltip";
 import { Bot, CornerDownRight, FileText, RotateCcw, Trash2, UserRound } from "lucide-react";
 
 type TrashNoteRowProps = {
@@ -41,7 +43,7 @@ export function TrashNoteRow({
           aria-label={`选择 ${normalizeNoteTitle(note.title)}`}
           checked={selected}
           disabled={busy}
-          onChange={(event) => onToggle(event.target.checked)}
+          onCheckedChange={onToggle}
         />
       </div>
 
@@ -85,16 +87,17 @@ export function TrashNoteRow({
       </span>
 
       <div className="grid grid-cols-2 items-center justify-end gap-0.5 md:flex md:gap-1">
-        <Tooltip title={parentInTrash ? "请先恢复父级页面" : "恢复到原位置"}>
+        <Tooltip content={parentInTrash ? "请先恢复父级页面" : "恢复到原位置"}>
           <span className="grid place-items-center">
             <Button
               aria-label="恢复"
               className="h-10 w-10 rounded-control p-0 md:h-auto md:w-auto md:rounded-compact md:px-2"
               disabled={busy || parentInTrash}
-              icon={<RotateCcw className="size-[17px] md:size-4" />}
               onClick={onRestore}
-              size="small"
+              size="sm"
+              variant="ghost"
             >
+              <RotateCcw className="size-[17px] md:size-4" />
               <span className="hidden lg:inline">恢复</span>
             </Button>
           </span>
@@ -102,14 +105,13 @@ export function TrashNoteRow({
         <Button
           aria-label="永久删除"
           className="h-10 w-10 rounded-control p-0 md:h-auto md:w-auto md:rounded-compact md:px-2"
-          danger
           disabled={busy}
-          icon={<Trash2 className="size-[17px] md:size-4" />}
           onClick={onPurge}
-          size="small"
+          size="sm"
           title="永久删除"
-          type="text"
+          variant="destructive"
         >
+          <Trash2 className="size-[17px] md:size-4" />
           <span className="hidden xl:inline">永久删除</span>
         </Button>
       </div>

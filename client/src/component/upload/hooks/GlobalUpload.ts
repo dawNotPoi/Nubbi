@@ -11,7 +11,7 @@ import {
   uploadTasksAtom,
 } from "@/store/atom/FileAtom";
 import { Uploader, UploadStatus } from "@/utils/file";
-import { message } from "antd";
+import { toast } from "@/components/ui/toast";
 import { useSetAtom, useStore } from "jotai";
 import { v4 as uuidv4 } from "uuid";
 
@@ -65,11 +65,11 @@ export const useGlobalUpload = () => {
   ) => {
     const scope = requireAccountScope();
     if (!file || file.size === 0) {
-      void message.warning("文件为空，无法上传");
+      toast.warning("文件为空，无法上传");
       return;
     }
     if (file.size > MAX_FILE_BYTES) {
-      void message.warning("单个文件不能超过 10GB");
+      toast.warning("单个文件不能超过 10GB");
       return;
     }
 
@@ -90,7 +90,7 @@ export const useGlobalUpload = () => {
       );
     });
     if (hasDuplicate) {
-      void message.info("该文件已在上传队列中");
+      toast.info("该文件已在上传队列中");
       return;
     }
 
@@ -146,7 +146,7 @@ export const useGlobalUpload = () => {
         void queryClient.invalidateQueries({
           queryKey: fileStatsQueryKey(scope.ownerId),
         });
-        void message.success(`${file.name} 上传完成`);
+        toast.success(`${file.name} 上传完成`);
       },
     });
     store.set(uploadTaskAtomFamily(taskId), (previous) =>
@@ -185,7 +185,7 @@ export const useGlobalUpload = () => {
       createUploadTask(file, folderId, folderName),
     );
     if (files.length > available) {
-      void message.warning(`最多保留 ${MAX_ACTIVE_TASKS} 个未完成上传任务`);
+      toast.warning(`最多保留 ${MAX_ACTIVE_TASKS} 个未完成上传任务`);
     }
   };
 

@@ -1,7 +1,7 @@
 import type { MeetingComment } from "@/api/meeting";
 import Image from "@/component/UI/Image";
-import { Modal } from "@/component/UI/Dialog";
-import { Skeleton } from "antd";
+import { Modal } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import dayjs from "dayjs";
 import type { ReactElement } from "react";
 
@@ -34,16 +34,17 @@ export const MeetingCommentsModal = ({
     onCancel={onClose}
     showClose
     title={`${title} - 评论记录`}
-    className="md:!mt-[10vh] md:!w-[min(90vw,480px)]"
+    className="md:max-w-[480px]"
   >
     <div className="max-h-[420px] overflow-auto">
       {loading ? (
         <div className="space-y-4 py-2">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={`comment-skeleton-${i}`} className="flex gap-3">
-              <Skeleton.Avatar active size={32} shape="circle" />
+              <Skeleton className="size-8 shrink-0 rounded-full" />
               <div className="flex-1">
-                <Skeleton active paragraph={{ rows: 1 }} title={{ width: "30%" }} />
+                <Skeleton className="mb-2 h-4 w-1/3" />
+                <Skeleton className="h-4 w-full" />
               </div>
             </div>
           ))}

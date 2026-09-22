@@ -3,7 +3,10 @@
   fetchFilePreviewStreamUrl,
 } from "@/api/file";
 import type { FileListItem as FileTableRow } from "@/api/file";
-import { Button, Modal, Spin, Tabs } from "antd";
+import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/dialog";
+import { Spinner } from "@/components/ui/spinner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import JSZip from "jszip";
 import {
   ChevronLeft,
@@ -36,13 +39,6 @@ type PreviewState =
   | { mode: "unsupported"; message: string; fallbackText?: string };
 
 const OFFICE_PREVIEW_SIZE_LIMIT = 20 * 1024 * 1024;
-
-const modalBodyStyle = {
-  minHeight: "min(520px, 60dvh)",
-  maxHeight: "70vh",
-  overflow: "auto" as const,
-  paddingTop: 8,
-};
 
 const isStreamPreviewCategory = (
   category: PreviewCategory,
@@ -419,7 +415,7 @@ const FilePreviewModal = ({
       case "loading":
         return (
           <div className="flex h-[min(520px,60dvh)] items-center justify-center">
-            <Spin size="large" />
+            <Spinner className="size-7" />
           </div>
         );
       case "image":
@@ -482,18 +478,21 @@ const FilePreviewModal = ({
       case "sheet":
         return (
           <div className="rounded-panel border border-[#ebecef] bg-white px-4 py-3">
-            <Tabs
-              items={previewState.sheets.map((sheet) => ({
-                key: sheet.key,
-                label: sheet.label,
-                children: (
+            <Tabs defaultValue={previewState.sheets[0]?.key}>
+              <TabsList>
+                {previewState.sheets.map((sheet) => (
+                  <TabsTrigger key={sheet.key} value={sheet.key}>{sheet.label}</TabsTrigger>
+                ))}
+              </TabsList>
+              {previewState.sheets.map((sheet) => (
+                <TabsContent key={sheet.key} value={sheet.key}>
                   <div
                     className="overflow-auto rounded-control border border-[#f1f2f4] bg-white p-3 [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-[#ebecef] [&_td]:px-3 [&_td]:py-2 [&_th]:border [&_th]:border-[#d9dce1] [&_th]:bg-[#f7f7f8] [&_th]:px-3 [&_th]:py-2"
                     dangerouslySetInnerHTML={{ __html: sheet.html }}
                   />
-                ),
-              }))}
-            />
+                </TabsContent>
+              ))}
+            </Tabs>
           </div>
         );
       case "slide":
@@ -583,12 +582,11 @@ const FilePreviewModal = ({
       open={open}
       onCancel={onClose}
       width={960}
-      destroyOnClose
       footer={
         record ? (
           <div className="flex items-center justify-end gap-3">
-            <Button onClick={onClose}>关闭</Button>
-            <Button onClick={() => onDownload?.(record)}>
+            <Button variant="outline" onClick={onClose}>关闭</Button>
+            <Button variant="primary" onClick={() => onDownload?.(record)}>
               下载文件
             </Button>
           </div>
@@ -605,7 +603,7 @@ const FilePreviewModal = ({
           ) : null}
         </div>
       }
-      styles={{ body: modalBodyStyle }}
+      className="max-h-[calc(100dvh-24px)] overflow-y-auto"
     >
       <div className="relative">
         {hasPrev ? (

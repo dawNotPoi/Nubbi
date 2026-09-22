@@ -1,5 +1,5 @@
 import type { FileListItem } from "@/api/file";
-import type { MenuProps } from "antd";
+import type { ReactNode } from "react";
 import { Download, Move, Share2, Trash2 } from "lucide-react";
 
 /** 行级操作回调，行尾菜单与右键菜单共用 */
@@ -11,16 +11,26 @@ export interface FileRowActionHandlers {
   onShare: (item: FileListItem) => void;
 }
 
+export type FileRowMenuItem =
+  | { type: "divider"; key: string }
+  | {
+      key: string;
+      icon: ReactNode;
+      label: string;
+      destructive?: boolean;
+      onClick: () => void;
+    };
+
 /**
  * 构建文件行的操作菜单项，行尾下拉与右键菜单渲染同一份配置。
  * @param item 文件或文件夹条目。
  * @param handlers 操作回调集合。
- * @returns Ant Design 菜单项配置。
+ * @returns 共享菜单可渲染的业务操作配置。
  */
 export const buildFileRowMenuItems = (
   item: FileListItem,
   handlers: FileRowActionHandlers,
-): MenuProps["items"] => {
+): FileRowMenuItem[] => {
   const run = (callback: (target: FileListItem) => void) => () => callback(item);
   return [
     ...(item.kind === "file"
@@ -45,10 +55,10 @@ export const buildFileRowMenuItems = (
       label: "移动",
       onClick: run(handlers.onMove),
     },
-    { type: "divider" },
+    { type: "divider", key: "divider" },
     {
       key: "delete",
-      danger: true,
+      destructive: true,
       icon: <Trash2 className="size-4" />,
       label: "删除",
       onClick: run(handlers.onDelete),

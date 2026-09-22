@@ -14,7 +14,6 @@ import {
   recentNoteAtom,
 } from "@/store/atom/note/noteAtom";
 import { useSession } from "@/utils/auth";
-import { message } from "antd";
 import { useAtom, useAtomValue } from "jotai";
 import { useMemo, useState } from "react";
 import { useMarkdownNoteImport } from "./useMarkdownNoteImport";
@@ -45,7 +44,6 @@ export const useNoteLibraryController = () => {
   const [expandedLibraryNodeIds, setExpandedLibraryNodeIds] = useAtom(
     libraryExpandedNodesAtom,
   );
-  const [messageApi, contextHolder] = message.useMessage();
 
   const { rows: libraryRows, viewMode } = useMemo(
     () =>
@@ -96,7 +94,6 @@ export const useNoteLibraryController = () => {
   const actions = useNoteLibraryActions({
     allNotes,
     blockedMoveTargetIds,
-    messageApi,
     moveCandidates,
     owner,
     refetch,
@@ -105,7 +102,6 @@ export const useNoteLibraryController = () => {
     setSelectedIds,
   });
   const markdownImport = useMarkdownNoteImport({
-    messageApi,
     owner,
     refetch,
   });
@@ -163,7 +159,7 @@ export const useNoteLibraryController = () => {
     availableTags,
     blockedMoveTargetIds,
     clearSelection,
-    contextHolder,
+    contextHolder: null,
     emptyDescription,
     filterText,
     libraryRows,

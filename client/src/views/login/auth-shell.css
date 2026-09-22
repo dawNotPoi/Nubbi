@@ -1,37 +1,27 @@
 .auth-shell {
   --text-muted: var(--auth-text-secondary);
-  height: 100dvh;
-  min-height: 0;
-  overflow: hidden;
-  overscroll-behavior: none;
+  min-height: 100dvh;
 }
 
 .auth-shell-layout {
-  height: 100%;
-  min-height: 0;
+  min-height: 100dvh;
   padding-top: max(16px, env(safe-area-inset-top));
   padding-bottom: max(16px, env(safe-area-inset-bottom));
 }
 
 .auth-shell-main {
-  height: 100%;
-  min-height: 0;
   align-items: center;
 }
 
 .auth-shell-card {
   position: relative;
-  max-height: 100%;
   padding: 32px 32px 22px;
   border: 1px solid var(--border-row);
   border-radius: var(--radius-panel);
   background: var(--surface-subtle);
   box-shadow: var(--shadow-popover);
-  /* 短屏与键盘挤压时滚动纸面，不隐藏提示或缩小主要触控目标。 */
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scroll-padding-block: 24px;
+  /* 短屏由整页滚动，避免卡片与页面争抢触摸和键盘滚动。 */
+  overflow-wrap: anywhere;
 }
 
 .auth-brand-story {
@@ -120,18 +110,6 @@
   line-height: 20px;
 }
 
-.auth-login-error {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px;
-  border-radius: var(--radius-control);
-  background: var(--danger-bg);
-  color: var(--danger-text);
-  font-size: 13px;
-  line-height: 1.6;
-}
-
 .auth-login-fields {
   display: flex;
   flex-direction: column;
@@ -206,14 +184,6 @@
 .auth-form .relative > input + button {
   right: 0;
   width: 44px;
-}
-
-.auth-form .ant-input-affix-wrapper {
-  height: 48px;
-}
-
-.auth-form .ant-input-affix-wrapper > input {
-  height: auto;
 }
 
 .auth-card-footer {
@@ -309,13 +279,8 @@
     transition: none;
   }
 
-  .auth-form .animate-spin,
-  .auth-form .anticon-spin,
-  .auth-form .anticon-spin::before {
+  .auth-form .animate-spin {
     animation: none;
   }
 
-  .auth-form .ant-btn-loading-icon {
-    transition: none;
-  }
 }

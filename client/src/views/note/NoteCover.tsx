@@ -1,8 +1,11 @@
 import type { NoteWithContent } from "@/api/note";
 import ImgToGitupload from "@/component/upload/ImgToGitupload";
-import { Button, Form, Input, Modal, Tabs } from "antd";
+import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import clsx from "clsx";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { NOTE_COVER_OPTIONS } from "./noteDefaults";
 
 type NoteCoverData = Pick<NoteWithContent, "cover">;
@@ -19,10 +22,6 @@ type NoteCoverProps = {
   onUpdate: (newData: NoteCoverUpdate) => void;
 };
 
-type CoverLinkFormValues = {
-  link?: string;
-};
-
 export default function NoteCover({
   data,
   editorOpen,
@@ -31,6 +30,7 @@ export default function NoteCover({
   onUpdate,
 }: NoteCoverProps) {
   const [cover, setCover] = useState(data.cover);
+  const [coverLink, setCoverLink] = useState("");
 
   useEffect(() => {
     setCover(data.cover);
@@ -52,13 +52,43 @@ export default function NoteCover({
     onEditorOpenChange(true);
   }, [onEditorOpenChange]);
 
-  const tabs = useMemo(() => {
-    return [
-      {
-        key: "1",
-        label: "Default",
-        children: (
-          <>
+  /** 提交外链封面并保留原弹窗状态。 */
+  const submitCoverLink = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const nextLink = coverLink.trim();
+    if (nextLink) updateCover(nextLink);
+  };
+
+  const coverModal = (
+    <Modal
+      showClose={false}
+      footer={null}
+      maskClosable
+      onCancel={handleCancel}
+      open={editorOpen}
+      width={720}
+      title="编辑封面"
+    >
+      <div className="relative">
+        {cover ? (
+          <button
+            className="absolute right-0 -top-12 rounded-compact px-2 py-1 text-sm text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700"
+            onClick={() => {
+              updateCover("");
+              onEditorOpenChange(false);
+            }}
+            type="button"
+          >
+            移除
+          </button>
+        ) : null}
+        <Tabs defaultValue="default">
+          <TabsList>
+            <TabsTrigger value="default">默认</TabsTrigger>
+            <TabsTrigger value="link">链接</TabsTrigger>
+            <TabsTrigger value="upload">上传</TabsTrigger>
+          </TabsList>
+          <TabsContent value="default">
             <div className="grid h-[240px] grid-cols-2 content-start gap-2 overflow-y-auto sm:h-[200px] sm:grid-cols-4">
               {NOTE_COVER_OPTIONS.map((item, index) => {
                 return (
@@ -83,47 +113,21 @@ export default function NoteCover({
                 );
               })}
             </div>
-          </>
-        ),
-      },
-      {
-        key: "2",
-        label: "Link",
-        children: (
-          <>
-            <div style={{}}>
-              <Form
-                onFinish={(values: CoverLinkFormValues) => {
-                  if (values.link) {
-                    updateCover(values.link);
-                  }
-                }}
-              >
-                <Form.Item name="link">
-                  <Input placeholder="input link" />
-                </Form.Item>
-                <Form.Item>
-                  <div style={{ textAlign: "center" }}>
-                    <Button
-                      style={{ width: "50%" }}
-                      size="large"
-                      type="primary"
-                      htmlType="submit"
-                    >
-                      Submit
-                    </Button>
-                  </div>
-                </Form.Item>
-              </Form>
-            </div>
-          </>
-        ),
-      },
-      {
-        key: "3",
-        label: "Upload",
-        children: (
-          <>
+          </TabsContent>
+          <TabsContent value="link">
+            <form className="space-y-4" onSubmit={submitCoverLink}>
+              <Input
+                aria-label="封面图片链接"
+                onChange={(event) => setCoverLink(event.target.value)}
+                placeholder="输入图片链接"
+                value={coverLink}
+              />
+              <div className="text-center">
+                <Button className="w-1/2 max-md:min-h-11" variant="primary" type="submit">应用</Button>
+              </div>
+            </form>
+          </TabsContent>
+          <TabsContent value="upload">
             <ImgToGitupload
               onFinish={(url: string) => {
                 updateCover(url);
@@ -132,35 +136,8 @@ export default function NoteCover({
                 setCover(preUrl);
               }}
             />
-          </>
-        ),
-      },
-    ];
-  }, [updateCover]);
-
-  const coverModal = (
-    <Modal
-      closable={false}
-      footer={null}
-      maskClosable
-      onCancel={handleCancel}
-      open={editorOpen}
-      width={720}
-    >
-      <div className="relative pt-7">
-        {cover ? (
-          <button
-            className="absolute right-0 top-0 rounded-compact px-2 py-1 text-sm text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700"
-            onClick={() => {
-              updateCover("");
-              onEditorOpenChange(false);
-            }}
-            type="button"
-          >
-            移除
-          </button>
-        ) : null}
-        <Tabs defaultActiveKey="1" items={tabs} />
+          </TabsContent>
+        </Tabs>
       </div>
     </Modal>
   );

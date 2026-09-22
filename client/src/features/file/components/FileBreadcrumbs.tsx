@@ -3,7 +3,12 @@ import {
   collectDroppedFiles,
   hasDraggedFiles,
 } from "@/features/file/dropFiles";
-import { Dropdown } from "antd";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ChevronRight, MoreHorizontal } from "lucide-react";
 import { useState, type DragEvent } from "react";
 
@@ -110,17 +115,8 @@ export function FileBreadcrumbs({
       {hidden.length > 0 ? (
         <div className="flex shrink-0 items-center">
           <ChevronRight aria-hidden className="size-4 text-text-subtle" />
-          <Dropdown
-            menu={{
-              items: hidden.map((item) => ({
-                key: keyOf(item),
-                label: item.name,
-                onClick: () => onNavigate(item, items.indexOf(item)),
-              })),
-            }}
-            placement="bottomLeft"
-            trigger={["click"]}
-          >
+          <DropdownMenu modal={false}>
+            <DropdownMenuTrigger render={
             <button
               aria-label="展开隐藏路径"
               className="grid h-7 w-6 place-items-center rounded-compact hover:bg-bg-hover hover:text-text-primary"
@@ -128,7 +124,18 @@ export function FileBreadcrumbs({
             >
               <MoreHorizontal className="size-4" />
             </button>
-          </Dropdown>
+            } />
+            <DropdownMenuContent align="start" aria-label="隐藏路径">
+              {hidden.map((item) => (
+                <DropdownMenuItem
+                  key={keyOf(item)}
+                  onClick={() => onNavigate(item, items.indexOf(item))}
+                >
+                  {item.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       ) : null}
       {tail.map((item) => (

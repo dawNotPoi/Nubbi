@@ -4,7 +4,8 @@ import {
   collectDisabledFolderIds,
   type FolderTreeNode,
 } from "@/features/file/folderTree";
-import { Empty, Modal, Spin, Tree } from "antd";
+import { Modal } from "@/components/ui/dialog";
+import { Spinner } from "@/components/ui/spinner";
 import { Check } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -14,6 +15,38 @@ interface FileMoveDialogProps {
   targets: FileListItem[];
   onClose: () => void;
   onConfirm: (targetFolderId: string | null) => Promise<boolean>;
+}
+
+/**
+ * 递归渲染文件夹目标，禁用源文件夹及其后代，避免产生循环层级。
+ * @param props 节点、当前选择和选择回调。
+ * @returns 可键盘操作的文件夹目标列表。
+ */
+function FolderTargets({ nodes, selected, onSelect }: {
+  nodes: FolderTreeNode[];
+  selected: string | null | undefined;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <ul className="m-0 list-none p-0">
+      {nodes.map((node) => (
+        <li key={String(node.key)}>
+          <button
+            className={`flex min-h-9 w-full items-center justify-between rounded-control px-3 text-left text-sm hover:bg-bg-hover disabled:cursor-not-allowed disabled:opacity-45${selected === String(node.key) ? " bg-bg-selected" : ""}`}
+            disabled={node.targetDisabled}
+            onClick={() => onSelect(String(node.key))}
+            type="button"
+          >
+            <span className="truncate">{String(node.title)}</span>
+            {selected === String(node.key) ? <Check className="size-4 shrink-0" /> : null}
+          </button>
+          {node.children?.length ? (
+            <div className="pl-4"><FolderTargets nodes={node.children} selected={selected} onSelect={onSelect} /></div>
+          ) : null}
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 export function FileMoveDialog({
@@ -63,17 +96,16 @@ export function FileMoveDialog({
     setMoving(true);
     const success = await onConfirm(selectedTarget);
     setMoving(false);
-    if (success) onClose();
+    if (!success) throw new Error("移动失败");
   };
 
   return (
     <Modal
-      cancelButtonProps={{ disabled: moving }}
       cancelText="取消"
       okButtonProps={{ disabled: selectedTarget === undefined }}
       okText="确认移动"
       onCancel={onClose}
-      onOk={() => void confirm()}
+      onOk={confirm}
       open={open}
       confirmLoading={moving}
       title={targets.length > 1 ? `移动 ${targets.length} 个项目` : "移动到"}
@@ -91,33 +123,14 @@ export function FileMoveDialog({
         {selectedTarget === null ? <Check className="size-4" /> : null}
       </button>
       {loading ? (
-        <div className="grid min-h-48 place-items-center"><Spin size="small" /></div>
+        <div className="grid min-h-48 place-items-center"><Spinner /></div>
       ) : error ? (
         <div className="grid min-h-48 place-items-center text-sm text-text-muted">{error}</div>
       ) : tree.length === 0 ? (
-        <Empty className="py-10" description="暂无其他文件夹" />
+        <div className="py-10 text-center text-sm text-text-muted">暂无其他文件夹</div>
       ) : (
         <div className="max-h-[360px] overflow-y-auto border-t border-border-row pt-1 scrollbar-thin scrollbar-thumb-border">
-          <Tree
-            blockNode
-            onSelect={(keys, info) => {
-              const node = info.node as FolderTreeNode;
-              if (!node.targetDisabled) setSelectedTarget(String(keys[0] ?? node.key));
-            }}
-            selectedKeys={typeof selectedTarget === "string" ? [selectedTarget] : []}
-            showIcon={false}
-            titleRender={(rawNode) => {
-              const node = rawNode as FolderTreeNode;
-              const selected = selectedTarget === String(node.key);
-              return (
-                <span className="flex h-8 w-full items-center justify-between rounded-compact px-2 text-sm">
-                  <span className="truncate">{String(node.title)}</span>
-                  {selected ? <Check className="size-4" /> : null}
-                </span>
-              );
-            }}
-            treeData={tree}
-          />
+          <FolderTargets nodes={tree} selected={selectedTarget} onSelect={setSelectedTarget} />
         </div>
       )}
     </Modal>

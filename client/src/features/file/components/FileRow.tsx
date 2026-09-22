@@ -17,7 +17,13 @@ import {
   Folder,
   Music,
 } from "lucide-react";
-import { Dropdown } from "antd";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import {
   useEffect,
   useRef,
@@ -206,13 +212,11 @@ export function FileRow(props: FileRowProps): ReactElement {
   const stopForControls = (event: MouseEvent<HTMLLIElement>) =>
     Boolean((event.target as HTMLElement).closest("button,input,label,a"));
 
+  const menuItems = buildFileRowMenuItems(props.item, actions);
+
   return (
-    <Dropdown
-      menu={{
-        items: buildFileRowMenuItems(props.item, actions),
-      }}
-      trigger={["contextMenu"]}
-    >
+    <ContextMenu>
+      <ContextMenuTrigger render={
       <li
         className={`file-list-grid file-row${props.selected ? " is-selected" : ""}${
           props.dragging ? " is-dragging" : ""
@@ -246,7 +250,7 @@ export function FileRow(props: FileRowProps): ReactElement {
         onFocus={() => props.onRowFocus(props.index)}
         ref={props.rowRef}
         tabIndex={-1}
-      >
+      />}>
         <label className="file-check-cell file-row-check">
           <span className="sr-only">选择 {props.item.name}</span>
           <input
@@ -319,7 +323,19 @@ export function FileRow(props: FileRowProps): ReactElement {
         </span>
         <span className="file-meta tabular-nums">{getFileTypeAndSize(props.item)}</span>
         <FileRowActions item={props.item} {...actions} />
-      </li>
-    </Dropdown>
+      </ContextMenuTrigger>
+      <ContextMenuContent aria-label={`${props.item.name} 操作菜单`}>
+        {menuItems.map((item) =>
+          "type" in item ? (
+            <ContextMenuSeparator key={item.key} />
+          ) : (
+            <ContextMenuItem destructive={item.destructive} key={item.key} onClick={item.onClick}>
+              {item.icon}
+              <span>{item.label}</span>
+            </ContextMenuItem>
+          ),
+        )}
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }

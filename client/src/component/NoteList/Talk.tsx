@@ -1,4 +1,5 @@
-import { Button, Card } from "antd";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardTitle } from "@/components/ui/card";
 
 export default function Talk() {
   const List = [
@@ -15,7 +16,10 @@ export default function Talk() {
       </header>
       <ul>
         {List.map((item) => (
-          <Card title={item.title}>{item.content}</Card>
+          <Card key={item.id}>
+            <CardTitle>{item.title}</CardTitle>
+            <CardContent>{item.content}</CardContent>
+          </Card>
         ))}
       </ul>
     </div>

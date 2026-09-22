@@ -1,4 +1,4 @@
-import { message } from "antd";
+import { toast as message } from "@/components/ui/toast";
 import { useCallback, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { LocalMedia } from "./use-local-media";

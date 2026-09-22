@@ -3,7 +3,7 @@ import { AuthBrandPanel } from "./AuthBrandPanel";
 import "./auth-shell.css";
 
 /**
- * 为认证流程提供工作台背景与可滚动的便签卡片，保持认证提交语义不变。
+ * 为认证流程提供工作台背景与便签卡片，短屏通过整页滚动保留操作。
  * @param props 登录、注册、验证或重置密码等既有认证内容。
  * @returns 桌面分栏、移动端单卡片的认证布局。
  */

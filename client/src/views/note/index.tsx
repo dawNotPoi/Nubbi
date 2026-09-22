@@ -11,7 +11,7 @@ import { routes } from "@/utils/routes";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { requireOwnerId } from "@/features/auth/model/account-scope";
-import { Switch } from "antd";
+import { Switch } from "@/components/ui/switch";
 import {
   AlertCircle,
   ArrowLeft,
@@ -330,8 +330,7 @@ export default function Note() {
                 <span>Published</span>
                 <Switch
                   checked={data.published}
-                  size="small"
-                  onChange={(published) => updateProperties({ published })}
+                  onCheckedChange={(published) => updateProperties({ published })}
                 />
               </label>
               <SaveIndicator status={saveStatus} />

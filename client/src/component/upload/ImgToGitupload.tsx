@@ -1,5 +1,6 @@
 import { imgToGitCloud } from "@/api/file";
-import { Button, message } from "antd";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/toast";
 import type { DragEventHandler, ReactElement } from "react";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
@@ -49,7 +50,7 @@ const ImgToGitupload = ({
   const handleUpload = async (file: File): Promise<void> => {
     const validationError = getValidationError(file);
     if (validationError) {
-      message.warning(validationError);
+      toast.warning(validationError);
       return;
     }
 
@@ -58,7 +59,7 @@ const ImgToGitupload = ({
       const url = await imgToGitCloud(file);
       onFinish?.(url);
     } catch (error) {
-      message.error(error instanceof Error ? error.message : "图片上传失败");
+      toast.error(error instanceof Error ? error.message : "图片上传失败");
     }
   };
 

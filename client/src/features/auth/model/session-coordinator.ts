@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { browserAuthProvider } from "./auth-client";
 import { createBrowserIdentityBroadcast } from "./auth-lifecycle";
+import { openOAuthPopup, type OAuthPopup } from "./oauth-popup";
 import type {
   AuthActionResult,
   AuthCoordinatorClock,
@@ -24,6 +25,8 @@ export interface AuthSessionCoordinatorDependencies {
   broadcast?: AuthIdentityBroadcast;
   timeoutMs?: number;
   navigate?: (url: string) => void;
+  openOAuthPopup?: () => OAuthPopup | null;
+  initialSignOutPending?: boolean;
 }
 
 /** 身份生命周期变化事件。 */
@@ -329,6 +332,7 @@ export const createAuthSessionCoordinator = (
   let mutationTail: Promise<void> = Promise.resolve();
   let navigationGeneration: number | null = null;
   let deletionPending = false;
+  let signOutPending = deps.initialSignOutPending ?? false;
   let identityMutationPending = 0;
   let unauthorizedSettlementFlight: {
     userId: string;
@@ -398,6 +402,7 @@ export const createAuthSessionCoordinator = (
     deletionConfirmation = false,
     allowRetain = true,
   ): Promise<AuthSessionSnapshot> => {
+    if (signOutPending) return Promise.resolve(snapshot);
     if (
       (identityMutationPending > 0 && !allowIdentityMutation) ||
       (deletionPending && !deletionConfirmation)
@@ -516,11 +521,19 @@ export const createAuthSessionCoordinator = (
       return await withAbortTimeout(operation, timeoutMs, clock);
     } catch (error) {
       const message = getErrorMessage(error, "认证操作结果无法确认，请重试。");
-      const confirmedSnapshot = await recoverGeneration(
-        snapshot.generation,
-        true,
-        deletionPending,
-      );
+      // 退出结果不确定时只核实远端，不把仍存活的旧会话重新发布到 UI。
+      const confirmedSnapshot = signOutPending
+        ? await withTimeout(deps.provider.getSession(snapshot.generation), timeoutMs, clock)
+          .then((result): AuthSessionSnapshot => ({
+            ...snapshot,
+            status: result.user ? "authenticated" : "anonymous",
+          }))
+          .catch(() => ({ ...snapshot, status: "unavailable" as const }))
+        : await recoverGeneration(
+          snapshot.generation,
+          true,
+          deletionPending,
+        );
       throw new AuthMutationIndeterminateError(message, confirmedSnapshot);
     } finally {
       identityMutationPending = Math.max(0, identityMutationPending - 1);
@@ -551,7 +564,9 @@ export const createAuthSessionCoordinator = (
       lifecycleListeners.add(listener);
       return () => lifecycleListeners.delete(listener);
     },
-    bootstrap: () => recoverGeneration(snapshot.generation),
+    bootstrap: () => signOutPending
+      ? coordinator.signOut().then(() => snapshot)
+      : recoverGeneration(snapshot.generation),
     refresh: (options) =>
       recoverGeneration(
         snapshot.generation,
@@ -617,6 +632,9 @@ export const createAuthSessionCoordinator = (
       return promise;
     },
     signInWithEmail(email, password) {
+      if (signOutPending) return Promise.resolve({
+        success: false, error: { message: "请先完成退出，再重新登录。" },
+      });
       if (loginFlight) return loginFlight;
       loginFlight = coordinator.runCookieMutation(async (signal): Promise<AuthActionResult> => {
         const generation = coordinator.invalidateIdentity("email-sign-in");
@@ -656,14 +674,22 @@ export const createAuthSessionCoordinator = (
       return loginFlight;
     },
     async startOAuth(provider, callbackURL, errorCallbackURL) {
+      if (snapshot.operation !== "idle" || identityMutationPending > 0) {
+        return { success: false, error: { message: "请等待当前认证操作完成。" } };
+      }
+      let popup: OAuthPopup | null | undefined = null;
+      let unsubscribe: (() => void) | undefined;
+      let oauthGeneration: number | null = null;
       try {
-        return await coordinator.runCookieMutation(async (signal) => {
+        popup = provider === "github" ? deps.openOAuthPopup?.() : null;
+        const started = await coordinator.runCookieMutation(async (signal) => {
           const generation = coordinator.invalidateIdentity(`oauth-${provider}`);
+          oauthGeneration = generation;
           publish({ operation: "redirecting", error: null });
           const result: AuthProviderSignInResult = await deps.provider.signInSocial(
             provider,
-            callbackURL,
-            errorCallbackURL,
+            popup?.callbackURL ?? callbackURL,
+            popup?.callbackURL ?? errorCallbackURL,
             generation,
             signal,
           );
@@ -687,39 +713,73 @@ export const createAuthSessionCoordinator = (
           }
           if (navigationGeneration !== generation) {
             navigationGeneration = generation;
-            (deps.navigate ?? ((url: string) => window.location.assign(url)))(redirectUrl);
+            (popup?.navigate ?? deps.navigate ?? ((url: string) => window.location.assign(url)))(redirectUrl);
           }
           return { success: true, data: result.data };
         });
+        if (!started.success || !popup) return started;
+        const activePopup = popup;
+        unsubscribe = coordinator.subscribe(() => {
+          if (oauthGeneration !== snapshot.generation) activePopup.dispose();
+        });
+        // 等待用户授权不占用十秒 Cookie 请求锁；完成后再确认一次服务端会话。
+        const outcome = await popup.result;
+        if (oauthGeneration !== snapshot.generation) {
+          return { success: false, error: { message: "登录状态已变化，请重试。" } };
+        }
+        if (outcome !== "completed") {
+          publish({ status: "anonymous", operation: "idle", error: null, initialized: true });
+          // 取消是用户主动行为：静默返回，不发布可见错误，登录页按 OAUTH_CANCELLED 抑制提示；超时与失败仍提示。
+          if (outcome === "cancelled") {
+            return { success: false, error: { code: "OAUTH_CANCELLED", message: "用户取消了 GitHub 授权。" } };
+          }
+          return { success: false, error: {
+            code: "OAUTH_FAILED",
+            message: outcome === "timeout" ? "GitHub 登录等待超时，请重试。" : "GitHub 授权未完成，请重试。",
+          } };
+        }
+        const confirmed = await recoverGeneration(oauthGeneration);
+        if (confirmed.generation !== oauthGeneration || confirmed.status !== "authenticated") {
+          return { success: false, error: { message: confirmed.error ?? "暂时无法确认登录状态，请重试。" } };
+        }
+        deps.broadcast?.publish("identity-changed");
+        return { success: true };
       } catch (error) {
         const message = getErrorMessage(error, `${provider} 登录发起失败，请稍后重试。`);
-        if (!(error instanceof AuthMutationIndeterminateError)) {
+        if (!(error instanceof AuthMutationIndeterminateError) &&
+          (oauthGeneration === null || oauthGeneration === snapshot.generation)) {
           publish({ operation: "idle", status: "unavailable", error: message, initialized: true });
         }
         return { success: false, error: { message } };
+      } finally {
+        unsubscribe?.();
+        popup?.dispose();
       }
     },
     async signOut() {
-      const retainedUser = snapshot.user;
+      if (snapshot.operation === "signingOut") {
+        return { success: false, error: { message: "正在退出，请稍候。" } };
+      }
+      signOutPending = true;
+      const generation = coordinator.invalidateIdentity("sign-out");
+      publish({ status: "anonymous", operation: "signingOut", user: null, error: null, initialized: true });
       try {
         return await coordinator.runCookieMutation(async (signal) => {
-          const generation = coordinator.invalidateIdentity("sign-out");
-          publish({ operation: "signingOut", user: retainedUser, error: null });
           const response = await deps.provider.signOut(generation, signal);
           if (generation !== snapshot.generation) {
             return { success: false, error: { message: "退出期间登录状态已变化，请重试。" } };
           }
-          coordinator.commitProviderHeaders(generation, response);
           if (!response.ok) {
             publish({
-              status: "unavailable",
-              user: retainedUser,
-              operation: "idle",
+              status: "anonymous",
+              user: null,
+              operation: "signOutFailed",
               error: SIGN_OUT_UNCONFIRMED_MESSAGE,
               initialized: true,
             });
             return { success: false, error: { message: SIGN_OUT_UNCONFIRMED_MESSAGE } };
           }
+          signOutPending = false;
           publish({
             status: "anonymous",
             user: null,
@@ -735,12 +795,15 @@ export const createAuthSessionCoordinator = (
           error instanceof AuthMutationIndeterminateError &&
           error.confirmedSnapshot.status === "anonymous"
         ) {
+          signOutPending = false;
+          publish({ status: "anonymous", user: null, operation: "idle", error: null, initialized: true });
+          deps.broadcast?.publish("signed-out");
           return { success: true };
         }
         publish({
-          status: "unavailable",
-          user: retainedUser,
-          operation: "idle",
+          status: "anonymous",
+          user: null,
+          operation: "signOutFailed",
           error: SIGN_OUT_UNCONFIRMED_MESSAGE,
           initialized: true,
         });
@@ -815,6 +878,7 @@ export const createAuthSessionCoordinator = (
   };
 
   deps.broadcast?.subscribe((reason) => {
+    if (signOutPending) return;
     coordinator.invalidateIdentity(`broadcast:${reason}`);
     void coordinator.refresh();
   });
@@ -824,6 +888,16 @@ export const createAuthSessionCoordinator = (
 
 /** 浏览器进程内唯一匿名身份广播器。 */
 const browserIdentityBroadcast = createBrowserIdentityBroadcast();
+const SIGN_OUT_PENDING_KEY = "nubbi.auth.sign-out-pending";
+
+/** @returns 刷新页面后是否仍需完成用户已发起的退出操作。 */
+const readSignOutPending = (): boolean => {
+  try {
+    return window.sessionStorage.getItem(SIGN_OUT_PENDING_KEY) === "1";
+  } catch {
+    return false;
+  }
+};
 
 /**
  * 在 OAuth 离站前留下不含用户或凭证的一次性标记，回调确认后再通知其他标签页。
@@ -844,11 +918,22 @@ export const authSessionCoordinator = createAuthSessionCoordinator({
   provider: browserAuthProvider,
   broadcast: browserIdentityBroadcast,
   navigate: navigateForBrowserOAuth,
+  openOAuthPopup,
+  initialSignOutPending: readSignOutPending(),
 });
 
 authSessionCoordinator.subscribe(() => {
   if (typeof window === "undefined") return;
   const snapshot = authSessionCoordinator.getSnapshot();
+  try {
+    if (snapshot.operation === "signingOut" || snapshot.operation === "signOutFailed") {
+      window.sessionStorage.setItem(SIGN_OUT_PENDING_KEY, "1");
+    } else if (snapshot.status === "anonymous" && snapshot.operation === "idle") {
+      window.sessionStorage.removeItem(SIGN_OUT_PENDING_KEY);
+    }
+  } catch {
+    // 存储不可用时仍正常完成当前页面内的退出。
+  }
   if (!snapshot.initialized || snapshot.status === "checking") return;
   try {
     if (window.sessionStorage.getItem(OAUTH_IDENTITY_PENDING_KEY) !== "1") {

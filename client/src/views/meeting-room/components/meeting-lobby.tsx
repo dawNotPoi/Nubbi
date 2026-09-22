@@ -1,4 +1,6 @@
-import { Alert, Button, Progress, Select } from "antd";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
 import { useEffect, useRef, type ReactElement } from "react";
 import { useAudioLevel } from "../hooks/use-audio-level";
 import type { LocalMedia } from "../hooks/use-local-media";
@@ -33,7 +35,7 @@ export function MeetingLobby({ title, media, onJoin, onCancel }: MeetingLobbyPro
 
   return (
     <main className="flex min-h-[100dvh] items-center justify-center bg-canvas px-3 py-[max(16px,env(safe-area-inset-top))] sm:p-6">
-      <section className="w-full max-w-3xl space-y-5 rounded-panel border border-border-row bg-surface p-4 shadow-[0_8px_30px_rgba(55,53,47,0.06)] sm:p-7">
+      <section className="w-full max-w-3xl space-y-5 rounded-panel border border-border-row bg-surface p-4 shadow-sm sm:p-7">
         <header>
           <h1 className="text-[20px] font-semibold leading-7 tracking-[-0.015em] text-text-primary sm:text-[22px]">
             准备加入 · {title || "会议"}
@@ -61,9 +63,8 @@ export function MeetingLobby({ title, media, onJoin, onCancel }: MeetingLobbyPro
         <div className="grid gap-4 sm:grid-cols-2">
           {(["audio", "video"] as const).map((kind) => (
             <div key={kind} className="min-w-0 space-y-2">
-              <Button
-                block
-                className="min-h-11 rounded-control sm:min-h-9"
+              <Button variant="outline"
+                className="w-full min-h-11 rounded-control sm:min-h-9"
                 loading={media.busy[kind]}
                 onClick={() => void media.toggle(kind, !media[kind].open)}
               >
@@ -81,16 +82,16 @@ export function MeetingLobby({ title, media, onJoin, onCancel }: MeetingLobbyPro
                     value: device.deviceId,
                     label: device.label || `设备 ${index + 1}`,
                   }))}
-                onChange={(id: string) => void media.select(kind, id)}
+                onValueChange={(id: string) => void media.select(kind, id)}
               />
               {kind === "audio" ? (
                 <div>
                   <span className="text-xs text-text-muted">麦克风音量</span>
-                  <Progress percent={level} showInfo={false} />
+                  <progress aria-label="麦克风音量" className="block h-2 w-full overflow-hidden rounded-full accent-[var(--primary)]" max={100} value={level} />
                 </div>
               ) : null}
               {media.errors[kind] ? (
-                <Alert type="warning" showIcon message={media.errors[kind]} />
+                <Alert tone="warning" title={media.errors[kind]} />
               ) : null}
             </div>
           ))}
@@ -103,10 +104,10 @@ export function MeetingLobby({ title, media, onJoin, onCancel }: MeetingLobbyPro
         ) : null}
 
         <footer className="grid grid-cols-1 gap-2 pt-1 sm:flex sm:flex-wrap sm:justify-end">
-          <Button className="min-h-11 rounded-control sm:min-h-9" onClick={onCancel}>
+          <Button variant="outline" className="min-h-11 rounded-control sm:min-h-9" onClick={onCancel}>
             返回会议列表
           </Button>
-          <Button
+          <Button variant="outline"
             className="min-h-11 rounded-control sm:min-h-9"
             onClick={() => {
               void media.toggle("audio", false);
@@ -118,7 +119,7 @@ export function MeetingLobby({ title, media, onJoin, onCancel }: MeetingLobbyPro
           </Button>
           <Button
             className="min-h-11 rounded-control sm:min-h-9"
-            type="primary"
+            variant="primary"
             disabled={pending}
             onClick={onJoin}
           >

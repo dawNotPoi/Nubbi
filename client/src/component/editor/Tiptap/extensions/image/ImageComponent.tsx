@@ -1,8 +1,8 @@
 import Popover from "@/component/UI/Popover";
-import { LoadingOutlined } from "@ant-design/icons";
+import { Spinner } from "@/components/ui/spinner";
 import { NodeViewWrapper } from "@tiptap/react";
 import type { NodeViewProps } from "@tiptap/react";
-import { message } from "antd";
+import { toast } from "@/components/ui/toast";
 import { PictureInPicture } from "lucide-react";
 import type { KeyboardEvent } from "react";
 import { useId, useState } from "react";
@@ -40,13 +40,13 @@ const ImageNodeView = ({
     if (!file) return;
 
     if (!uploadHandler) {
-      message.error("未配置图片上传方法");
+      toast.error("未配置图片上传方法");
       return;
     }
 
     const validationError = getImageFileValidationError(file, maxFileSize);
     if (validationError) {
-      message.warning(validationError);
+      toast.warning(validationError);
       return;
     }
 
@@ -68,7 +68,7 @@ const ImageNodeView = ({
   const embedImageUrl = (value: string) => {
     const nextSrc = value.trim();
     if (!isValidImageUrl(nextSrc)) {
-      message.warning("请输入有效的图片链接");
+      toast.warning("请输入有效的图片链接");
       return;
     }
 
@@ -91,9 +91,9 @@ const ImageNodeView = ({
 
     try {
       await navigator.clipboard.writeText(src);
-      message.success("图片链接已复制");
+      toast.success("图片链接已复制");
     } catch {
-      message.error("复制失败");
+      toast.error("复制失败");
     }
   };
 
@@ -164,7 +164,7 @@ const ImageNodeView = ({
       />
       {status === "uploading" && (
         <div className="absolute  bg-black/30 right-0 bottom-0 size-8 flex items-center justify-center">
-          <LoadingOutlined />
+          <Spinner className="size-4 text-white" />
         </div>
       )}
     </div>

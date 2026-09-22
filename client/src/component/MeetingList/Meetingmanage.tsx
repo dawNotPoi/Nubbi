@@ -1,4 +1,4 @@
-import { Modal } from "@/component/UI/Dialog";
+import { Modal } from "@/components/ui/dialog";
 import { useMeetingManage } from "./meeting-manage/use-meeting-manage";
 import { MeetingManageContent } from "./meeting-manage/meeting-manage-content";
 import { MeetingCommentsModal } from "./meeting-manage/meeting-comments-modal";
@@ -45,10 +45,11 @@ const Meetingmanage = ({
       ) : (
         <>
           <Modal
+            title="会议管理"
             open={open}
             onCancel={() => setOpen(false)}
             showClose
-            className="md:!mt-[5vh] md:!w-[920px]"
+            className="md:max-w-[920px]"
           >
             <div className="pt-2">{content}</div>
           </Modal>

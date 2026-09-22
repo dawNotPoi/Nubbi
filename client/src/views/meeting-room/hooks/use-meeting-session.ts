@@ -1,5 +1,5 @@
 import useP2PConnection from "@/hooks/useP2PConnection";
-import { message } from "antd";
+import { toast as message } from "@/components/ui/toast";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getJoinErrorMessage } from "../helpers/meeting-room";

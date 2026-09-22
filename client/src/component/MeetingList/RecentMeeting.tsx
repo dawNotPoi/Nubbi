@@ -1,5 +1,5 @@
 import { MeetingAtom } from "@/store/atom/meetingAtom";
-import { Button } from "antd";
+import { Button } from "@/components/ui/button";
 import clsx from "clsx";
 import dayjs from "dayjs";
 import { useAtomValue } from "jotai";
@@ -42,7 +42,7 @@ const RecentMeetingEmpty = ({ onCreate }: RecentMeetingEmptyProps): ReactElement
         className="mt-4 h-10 rounded-control md:mt-5 md:h-auto"
         icon={<Plus size={16} />}
         onClick={onCreate}
-        type="primary"
+        variant="primary"
       >
         创建会议
       </Button>
@@ -88,7 +88,7 @@ const RecentMeetings = ({
           近期会议
         </h2>
         {showCreateAction ? (
-          <Button
+          <Button variant="primary"
             className="h-9 rounded-control"
             icon={<Plus size={15} />}
             onClick={() => setCreateOpen(true)}
@@ -119,9 +119,9 @@ const RecentMeetings = ({
                     .format("HH:mm")}
                 </p>
               </div>
-              <div className="grid grid-cols-2 gap-2 [&_.ant-btn]:min-h-10 [&_.ant-btn]:rounded-control md:flex md:flex-wrap md:[&_.ant-btn]:min-h-8">
+              <div className="grid grid-cols-2 gap-2 [&_button]:min-h-11 md:flex md:flex-wrap md:[&_button]:min-h-8">
                 <MeetingInvitationButton id={meeting._id} title={meeting.title} startTime={meeting.startTime} />
-                <Button onClick={() => navigate(`/meeting/${meeting._id}`)}>进入会议</Button>
+                <Button variant="primary" onClick={() => navigate(`/meeting/${meeting._id}`)}>进入会议</Button>
               </div>
             </article>
           ))}

@@ -1,6 +1,7 @@
 import { uploadTaskAtomFamily } from "@/store/atom/FileAtom";
 import { UploadStatus } from "@/utils/file";
-import { Button, Progress } from "antd";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { useAtomValue } from "jotai";
 
 const formatBytes = (value: number, suffix = "") => {
@@ -71,9 +72,8 @@ export default function UploadItem({
         </span>
       </header>
       <Progress
-        percent={task.progress}
-        size="small"
-        status={task.status === UploadStatus.fail ? "exception" : undefined}
+        value={task.progress}
+        error={task.status === UploadStatus.fail}
       />
       {task.error && <p className="text-xs text-red-600">{task.error}</p>}
       {task.status === UploadStatus.needsFile && (
@@ -91,27 +91,27 @@ export default function UploadItem({
         </span>
         <div className="flex shrink-0 gap-1">
           {canPause && (
-            <Button size="small" type="text" onClick={() => task.instance?.pause()}>
+            <Button size="xs" variant="ghost" onClick={() => task.instance?.pause()}>
               暂停
             </Button>
           )}
           {canResume && (
-            <Button size="small" type="text" onClick={() => task.instance?.resume()}>
+            <Button size="xs" variant="ghost" onClick={() => task.instance?.resume()}>
               继续
             </Button>
           )}
           {canRetry && (
-            <Button size="small" type="text" onClick={() => task.instance?.retry()}>
+            <Button size="xs" variant="ghost" onClick={() => task.instance?.retry()}>
               重试
             </Button>
           )}
           {canCancel && (
-            <Button danger size="small" type="text" onClick={() => onCancel(id)}>
+            <Button size="xs" variant="destructive" onClick={() => onCancel(id)}>
               取消
             </Button>
           )}
           {canRemove && (
-            <Button size="small" type="text" onClick={() => onRemove(id)}>
+            <Button size="xs" variant="ghost" onClick={() => onRemove(id)}>
               移除
             </Button>
           )}

@@ -52,13 +52,13 @@ export function SocialLoginButtons({
       <Button
         variant="outline"
         className="min-h-12 w-full rounded-control"
-        aria-label={pendingProvider === "github" ? "正在前往 GitHub" : "使用 GitHub 登录"}
+        aria-label={pendingProvider === "github" ? "正在等待 GitHub 登录" : "使用 GitHub 登录"}
         disabled={disabled || pendingProvider !== null}
         loading={pendingProvider === "github"}
         icon={<Github aria-hidden="true" />}
         onClick={() => void onLogin("github")}
       >
-        {pendingProvider === "github" ? "连接中…" : "GitHub"}
+        {pendingProvider === "github" ? "等待登录…" : "GitHub"}
       </Button>
     </div>
   );

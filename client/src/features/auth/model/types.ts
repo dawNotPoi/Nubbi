@@ -12,6 +12,7 @@ export type AuthOperation =
   | "redirecting"
   | "refreshing"
   | "signingOut"
+  | "signOutFailed"
   | "deleting";
 
 /** Better Auth 返回且会被客户端使用的用户字段。 */

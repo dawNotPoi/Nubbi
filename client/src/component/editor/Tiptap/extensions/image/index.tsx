@@ -2,7 +2,7 @@ import Image from "@tiptap/extension-image";
 import { Plugin, PluginKey, TextSelection } from "@tiptap/pm/state";
 import { ReactNodeViewRenderer } from "@tiptap/react";
 import type { Command } from "@tiptap/react";
-import { message } from "antd";
+import { toast } from "@/components/ui/toast";
 import ImageComponent from "./ImageComponent";
 import type { DImageOptions, ImageNodeAttrs } from "./types";
 import {
@@ -158,7 +158,7 @@ const DImage = Image.extend<DImageOptions>({
               );
 
               if (error) {
-                message.warning(error);
+                toast.warning(error);
                 return;
               }
 
@@ -180,7 +180,7 @@ const DImage = Image.extend<DImageOptions>({
               );
 
               if (error) {
-                message.warning(error);
+                toast.warning(error);
                 return false;
               }
 

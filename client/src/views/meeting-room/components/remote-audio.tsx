@@ -1,4 +1,4 @@
-import { Button } from "antd";
+import { Button } from "@/components/ui/button";
 import { useCallback, useEffect, useRef, useState, type ReactElement } from "react";
 import type { StageParticipant } from "../types";
 
@@ -36,7 +36,7 @@ export function RemoteAudio({ participants }: RemoteAudioProps): ReactElement {
     const ownedPlayers = players.current;
     return () => { ownedPlayers.forEach((player) => { player.pause(); player.srcObject = null; }); ownedPlayers.clear(); };
   }, []);
-  return blocked ? <div role="status" className="flex flex-wrap items-center gap-2 bg-amber-50 px-4 py-2 text-sm text-amber-700">
-    浏览器暂未允许播放会议声音。<Button size="small" onClick={playAll}>开启会议声音</Button>
+  return blocked ? <div role="status" className="flex flex-wrap items-center gap-2 bg-[var(--status-inbox-bg)] px-4 py-2 text-sm text-[var(--status-inbox-text)]">
+    浏览器暂未允许播放会议声音。<Button variant="outline" className="min-h-11 md:min-h-8" onClick={playAll}>开启会议声音</Button>
   </div> : <></>;
 }

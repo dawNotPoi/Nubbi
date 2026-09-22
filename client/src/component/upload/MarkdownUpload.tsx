@@ -1,4 +1,4 @@
-import { message } from "antd";
+import { toast } from "@/components/ui/toast";
 import { DragEventHandler, FC, PropsWithChildren } from "react";
 import { unlockMd } from "../../utils/md";
 // 解析md文档
@@ -10,7 +10,6 @@ const MarkdownUpload: FC<props & PropsWithChildren> = ({
   children,
   onFinish,
 }) => {
-  const [messageApi, contextHolder] = message.useMessage();
   const handleDrop: DragEventHandler<HTMLDivElement> = (event) => {
     event.preventDefault();
     const files = event.dataTransfer.files;
@@ -19,7 +18,7 @@ const MarkdownUpload: FC<props & PropsWithChildren> = ({
   };
   const handleFile = (file: File) => {
     if (!file.name.match(/\.(md|markdown)$/i)) {
-      messageApi.warning("上传文件格式错误,请删除markdown文件");
+      toast.warning("上传文件格式错误，请选择 Markdown 文件");
       return;
     }
     const reader = new FileReader();
@@ -52,7 +51,6 @@ const MarkdownUpload: FC<props & PropsWithChildren> = ({
       onDrop={handleDrop}
       onClick={getFile}
     >
-      {contextHolder}
       {children && children}
       {!children && (
         <button>

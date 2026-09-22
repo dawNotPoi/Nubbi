@@ -9,7 +9,7 @@ import {
   SheetSeparator,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Modal } from "antd";
+import { confirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Camera,
   KeyRound,
@@ -18,7 +18,7 @@ import {
   Trash2,
   UserRoundX,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import AccountDeletionModal from "./AccountDeletionModal";
 import ApiTokenModal from "./ApiTokenModal";
@@ -38,6 +38,8 @@ export default function MobileMoreSheet({ open, onOpenChange }: MobileMoreSheetP
   const [avatarModalOpen, setAvatarModalOpen] = useState(false);
   const [apiTokenModalOpen, setApiTokenModalOpen] = useState(false);
   const [deletionModalOpen, setDeletionModalOpen] = useState(false);
+  const confirmation = useRef<ReturnType<typeof confirmDialog> | null>(null);
+  useEffect(() => () => confirmation.current?.destroy(), [user?.id]);
 
   const go = (path: string) => {
     onOpenChange(false);
@@ -55,12 +57,13 @@ export default function MobileMoreSheet({ open, onOpenChange }: MobileMoreSheetP
 
   const requestAccountDeletion = () => {
     onOpenChange(false);
-    Modal.confirm({
+    confirmation.current?.destroy();
+    confirmation.current = confirmDialog({
       title: "确认注销账号？",
       content: "注销会删除账号、登录会话以及个人数据。继续后需要邮箱验证码验证。",
       okText: "继续验证",
       cancelText: "取消",
-      okButtonProps: { danger: true },
+      danger: true,
       onOk: () => setDeletionModalOpen(true),
     });
   };

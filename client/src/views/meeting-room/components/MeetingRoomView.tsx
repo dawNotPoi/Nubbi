@@ -12,7 +12,8 @@ import CommentPanel from "./CommentPanel";
 import MainVideoStage from "./MainVideoStage";
 import ParticipantSidebar from "./ParticipantSidebar";
 import VideoControls from "./VideoControls";
-import { Alert, Button } from "antd";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { MeetingInvitationButton } from "@/features/meeting/meeting-invitation";
 import { RemoteAudio } from "./remote-audio";
 import type { MeetingConnectionStatus } from "../hooks/use-meeting-session";
@@ -108,8 +109,8 @@ export default function MeetingRoomView({
         <MeetingInvitationButton id={roomId} title={meetingTitle} startTime={meetingStartTime} />
       </header>
       <ConnectionDiagnostics statuses={peerStatuses} users={roomUsers} localPeerId={localPeerId} onRetry={onRetryPeer} online={connectionStatus === "joined"} iceWarning={iceWarning} />
-      {connectionStatus === "failed" && <Alert type="warning" message={connectionError} action={<Button onClick={onRetryConnection}>重新连接</Button>} />}
-      {Object.entries(mediaErrors).filter(([, error]) => error).map(([kind, error]) => <Alert key={kind} type="warning" showIcon message={error} />)}
+      {connectionStatus === "failed" && <Alert tone="warning" title={connectionError} action={<Button variant="outline" onClick={onRetryConnection}>重新连接</Button>} />}
+      {Object.entries(mediaErrors).filter(([, error]) => error).map(([kind, error]) => <Alert key={kind} tone="warning" title={error} />)}
       <RemoteAudio participants={participants} />
       <main className="relative flex min-h-0 min-w-0 flex-1 gap-0 overflow-hidden">
         <MainVideoStage
@@ -138,7 +139,7 @@ export default function MeetingRoomView({
       </main>
       <div role="status" aria-live="polite" className="shrink-0 text-xs text-text-muted">
         {!chat.sending && chat.feedback?.status === "sent" && <span className="sr-only">{chat.feedback.message}</span>}
-        {(chat.sending || (chat.feedback && chat.feedback.status !== "sent")) && <div className="flex max-h-24 flex-wrap items-center gap-2 overflow-auto border-t border-border-row bg-white px-3 py-2">
+        {(chat.sending || (chat.feedback && chat.feedback.status !== "sent")) && <div className="flex max-h-24 flex-wrap items-center gap-2 overflow-auto border-t border-border-row bg-surface px-3 py-2">
           <span>{chat.sending ? "正在发送消息，你可以继续编辑下一条。" : chat.feedback?.message}</span>
           {chat.needsResendConfirmation && !chat.sending && <>
             {!isCommentOpen && <button type="button" onClick={onToggleComment} className="min-h-9 rounded-compact border border-border-button px-2 text-accent-text">查看聊天记录</button>}

@@ -16,7 +16,8 @@ import {
   restoreNoteAtom,
   trashNoteAtom,
 } from "@/store/atom/note/noteTrashAtom";
-import { Modal, message } from "antd";
+import { confirmDialog } from "@/components/ui/confirm-dialog";
+import { toast } from "@/components/ui/toast";
 import { useAtomValue } from "jotai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -26,13 +27,12 @@ export function useNoteTrashController() {
   const trashQuery = useAtomValue(trashNoteAtom);
   const restoreMutation = useAtomValue(restoreNoteAtom);
   const purgeMutation = useAtomValue(purgeNoteAtom);
-  const [messageApi, contextHolder] = message.useMessage();
   const [filterText, setFilterText] = useState("");
   const [sourceFilter, setSourceFilter] = useState<TrashSourceFilter>("all");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [operation, setOperation] = useState<TrashOperation | null>(null);
   const purgeConfirmDestroyRef = useRef<
-    ReturnType<typeof Modal.confirm>["destroy"] | null
+    ReturnType<typeof confirmDialog>["destroy"] | null
   >(null);
   const notes = useMemo(() => trashQuery.data ?? [], [trashQuery.data]);
 
@@ -98,7 +98,7 @@ export function useNoteTrashController() {
     if (!isAccountScopeCurrent(scope)) return;
     const deduplicated = getTrashActionNotes(notes, targets.map((note) => note._id));
     if (nextOperation === "restore" && !canRestoreTrashNotes(deduplicated, notes)) {
-      messageApi.warning("请先选择并恢复仍在回收站中的父级页面");
+      toast.warning("请先选择并恢复仍在回收站中的父级页面");
       return;
     }
 
@@ -117,11 +117,11 @@ export function useNoteTrashController() {
       }
     }
     if (successCount > 0) {
-      messageApi.success(nextOperation === "restore"
+      toast.success(nextOperation === "restore"
         ? `已恢复 ${successCount} 个顶层项目`
         : `已永久删除 ${successCount} 个顶层项目`);
     }
-    if (failedCount > 0) messageApi.error(`${failedCount} 个项目处理失败，请重试`);
+    if (failedCount > 0) toast.error(`${failedCount} 个项目处理失败，请重试`);
     setSelectedIds([]);
     await trashQuery.refetch();
     if (!isAccountScopeCurrent(scope)) return;
@@ -136,12 +136,12 @@ export function useNoteTrashController() {
       ? `「${normalizeNoteTitle(deduplicated[0].title)}」及其子页面`
       : `${deduplicated.length} 个顶层项目及其子页面`;
     destroyPurgeConfirm();
-    const confirm = Modal.confirm({
+    const confirm = confirmDialog({
       title: "永久删除后无法恢复",
       content: `将彻底删除${targetDescription}。此操作不可撤销。`,
       okText: "永久删除",
       cancelText: "取消",
-      okButtonProps: { danger: true },
+      danger: true,
       onOk: () => runOperation(deduplicated, "purge", scope),
     });
     purgeConfirmDestroyRef.current = confirm.destroy;
@@ -149,7 +149,7 @@ export function useNoteTrashController() {
 
   return {
     actionNotes, allVisibleSelected, busy, clearSelection: () => setSelectedIds([]),
-    confirmPurge, contextHolder, filterText, isError: trashQuery.isError,
+    confirmPurge, contextHolder: null, filterText, isError: trashQuery.isError,
     isFetching: trashQuery.isFetching, isLoading: trashQuery.isLoading,
     notes, operation, partiallyVisibleSelected, refetch: trashQuery.refetch,
     restoreBlocked, restoreNotes, rows, selectedIds, selectedNotes,

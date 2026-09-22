@@ -1,5 +1,6 @@
 import type { TrashNoteRow as TrashNoteRowModel } from "@/features/note-trash/model/trash";
-import { Button, Checkbox, Empty } from "antd";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Clock3, FileText, RotateCcw, ShieldAlert } from "lucide-react";
 import { TrashNoteRow } from "./TrashNoteRow";
 
@@ -64,7 +65,7 @@ export function TrashNoteList({
             checked={allVisibleSelected}
             disabled={busy || rows.length === 0}
             indeterminate={partiallyVisibleSelected}
-            onChange={(event) => onToggleAll(event.target.checked)}
+            onCheckedChange={onToggleAll}
           />
         </div>
         <div className="flex items-center gap-2"><FileText className="size-4" />页面</div>
@@ -77,12 +78,14 @@ export function TrashNoteList({
         <TrashSkeleton />
       ) : isError ? (
         <div className="flex flex-col items-center gap-3 py-16">
-          <Empty description="回收站加载失败" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+          <FileText className="size-8 text-text-subtle" aria-hidden="true" />
+          <p className="text-sm text-text-muted">回收站加载失败</p>
           <Button className="h-10 rounded-control" onClick={onRetry}>重试</Button>
         </div>
       ) : rows.length === 0 ? (
         <div className="flex flex-col items-center gap-3 py-16">
-          <Empty description={emptyDescription} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+          <FileText className="size-8 text-text-subtle" aria-hidden="true" />
+          <p className="text-sm text-text-muted">{emptyDescription}</p>
         </div>
       ) : (
         <ul className="m-0 list-none p-0">

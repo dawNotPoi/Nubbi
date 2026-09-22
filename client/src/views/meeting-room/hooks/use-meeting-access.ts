@@ -4,7 +4,7 @@ import {
   type MeetingType,
 } from "@/api/meeting";
 import { useAuth } from "@/hooks/useAuth";
-import { message } from "antd";
+import { toast as message } from "@/components/ui/toast";
 import { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {

@@ -1,5 +1,5 @@
 import type { MeetingType } from "@/api/meeting";
-import { Button, Empty } from "antd";
+import { Button } from "@/components/ui/button";
 import { CalendarDays, RefreshCw } from "lucide-react";
 import type { ReactElement } from "react";
 import { MeetingCard, MeetingCardSkeleton } from "./meeting-card";
@@ -32,7 +32,8 @@ export const MeetingManageContent = ({
         <CalendarDays className="size-[18px] shrink-0 text-[var(--entity-meeting)] md:size-[19px]" />
         <span>会议管理</span>
       </div>
-      <Button
+      <Button variant="outline"
+        aria-label="刷新会议"
         className="h-9 rounded-control"
         icon={<RefreshCw size={14} />}
         onClick={() => void onRefresh()}
@@ -64,7 +65,7 @@ export const MeetingManageContent = ({
       </div>
     ) : meetings.length === 0 ? (
       <div className="flex min-h-[180px] items-center justify-center rounded-panel border border-border-row bg-bg-panel py-10 md:min-h-[240px] md:py-14">
-        <Empty description="暂无会议记录" />
+        <p className="text-sm text-text-muted">暂无会议记录</p>
       </div>
     ) : (
       <div className="space-y-2.5 md:space-y-3">

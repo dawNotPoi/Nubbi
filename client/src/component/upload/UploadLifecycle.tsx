@@ -7,7 +7,7 @@ import {
   uploadTasksAtom,
 } from "@/store/atom/FileAtom";
 import { UploadStatus } from "@/utils/file";
-import { message } from "antd";
+import { toast } from "@/components/ui/toast";
 import { useAtomValue, useStore } from "jotai";
 import { useEffect } from "react";
 import {
@@ -92,9 +92,8 @@ export default function UploadLifecycle() {
       const version = ++restoreVersion;
       const legacyNames = consumeLegacyUploadNames();
       if (legacyNames.length > 0) {
-        void message.warning(
+        toast.warning(
           `发现 ${legacyNames.length} 个旧版中断任务，请重新选择原文件续传`,
-          8,
         );
       }
 
@@ -140,7 +139,7 @@ export default function UploadLifecycle() {
         isAccountScopeCurrent(scope) &&
         restoredCount > 0
       ) {
-        void message.info("存在未完成上传，请在文件页重新选择原文件续传", 8);
+        toast.info("存在未完成上传，请在文件页重新选择原文件续传");
       }
     };
 

@@ -1,4 +1,4 @@
-import { Button } from "antd";
+import { Button } from "@/components/ui/button";
 import { RotateCcw, Trash2, X } from "lucide-react";
 
 type TrashBatchBarProps = {
@@ -34,8 +34,8 @@ export function TrashBatchBar({
             disabled={busy}
             icon={<X className="size-4" />}
             onClick={onClear}
-            size="small"
-            type="text"
+            size="sm"
+            variant="ghost"
           >
             取消
           </Button>
@@ -46,18 +46,17 @@ export function TrashBatchBar({
             disabled={busy || restoreBlocked}
             icon={<RotateCcw className="size-4" />}
             onClick={onRestore}
-            size="small"
+            size="sm"
           >
             恢复
           </Button>
           <Button
             className="h-11 rounded-control md:h-auto"
-            danger
             disabled={busy}
             icon={<Trash2 className="size-4" />}
             onClick={onPurge}
-            size="small"
-            type="text"
+            size="sm"
+            variant="destructive"
           >
             永久删除
           </Button>

@@ -6,7 +6,7 @@ import {
   uploadTasksAtom,
 } from "@/store/atom/FileAtom";
 import { UploadStatus } from "@/utils/file";
-import { message } from "antd";
+import { toast } from "@/components/ui/toast";
 import { useStore } from "jotai";
 import { useCallback } from "react";
 import {
@@ -57,10 +57,10 @@ export const useUploadTaskActions = () => {
         void queryClient.invalidateQueries({
           queryKey: fileStatsQueryKey(scope.ownerId),
         });
-        void message.success("上传任务已取消");
+        toast.success("上传任务已取消");
       } catch (error) {
         if (!isAccountScopeCurrent(scope)) return;
-        void message.error(
+        toast.error(
           error instanceof Error ? error.message : "上传任务取消失败",
         );
       }

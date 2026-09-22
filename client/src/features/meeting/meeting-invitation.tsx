@@ -1,5 +1,7 @@
-import { Modal } from "@/component/UI/Dialog";
-import { Button, Input, message } from "antd";
+import { Modal } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { toast as message } from "@/components/ui/toast";
 import { useState, type ReactElement } from "react";
 import { buildMeetingInvitation, type MeetingInvitation } from "./invitation";
 
@@ -16,11 +18,11 @@ export function MeetingInvitationButton(props: MeetingInvitation & { initiallyOp
     finally { setCopying(false); }
   };
   return <>
-    {!props.hideTrigger && <Button onClick={() => setOpen(true)}>邀请参会</Button>}
+    {!props.hideTrigger && <Button variant="outline" onClick={() => setOpen(true)}>邀请参会</Button>}
     <Modal open={open} onCancel={() => setOpen(false)} title="邀请参会" showClose className="md:w-[480px]">
       <div className="space-y-3 py-4">
-        <Input.TextArea aria-label="会议邀请内容" readOnly value={invitation} autoSize={{ minRows: 5, maxRows: 9 }} onFocus={(event) => event.target.select()} />
-        <Button type="primary" loading={copying} onClick={() => void copy()}>复制邀请</Button>
+        <Textarea aria-label="会议邀请内容" readOnly value={invitation} rows={6} onFocus={(event) => event.target.select()} />
+        <Button variant="primary" loading={copying} onClick={() => void copy()}>复制邀请</Button>
       </div>
     </Modal>
   </>;

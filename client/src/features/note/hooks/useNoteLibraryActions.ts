@@ -12,7 +12,8 @@ import {
   updateNotePropertiesAtom,
 } from "@/store/atom/note/noteMutationAtom";
 import { routes } from "@/utils/routes";
-import { Modal, message } from "antd";
+import { confirmDialog } from "@/components/ui/confirm-dialog";
+import { toast, type NotificationApi } from "@/components/ui/toast";
 import { useAtomValue } from "jotai";
 import {
   useCallback,
@@ -23,12 +24,10 @@ import {
 } from "react";
 import { useNavigate } from "react-router-dom";
 
-type MessageApi = ReturnType<typeof message.useMessage>[0];
-
 type UseNoteLibraryActionsOptions = {
   allNotes: Note[];
   blockedMoveTargetIds: Set<string>;
-  messageApi: MessageApi;
+  messageApi?: NotificationApi;
   moveCandidates: Note[];
   owner: string;
   refetch: () => Promise<unknown>;
@@ -55,7 +54,7 @@ export const useNoteLibraryActions = ({
   const navigate = useNavigate();
   const moveScopeRef = useRef<AccountScope | null>(null);
   const deleteConfirmDestroyRef = useRef<
-    ReturnType<typeof Modal.confirm>["destroy"] | null
+    ReturnType<typeof confirmDialog>["destroy"] | null
   >(null);
 
   /**
@@ -107,13 +106,13 @@ export const useNoteLibraryActions = ({
     const actionNotes = getTopLevelSelectedNotes(notes, allNotes);
 
     destroyDeleteConfirm();
-    const confirm = Modal.confirm({
+    const confirm = confirmDialog({
       cancelText: "取消",
       content:
         notes.length === 1
           ? "该笔记及其子笔记将移至回收站，可在回收站中恢复或彻底删除。"
           : `选中的 ${notes.length} 个笔记及其子笔记将移至回收站，可在回收站中恢复或彻底删除。`,
-      okButtonProps: { danger: true },
+      danger: true,
       okText: "删除",
       title: notes.length === 1 ? "删除 note" : `删除 ${notes.length} 个 note`,
       onOk: async () => {
@@ -129,11 +128,12 @@ export const useNoteLibraryActions = ({
           setSelectedIds((current) =>
             current.filter((id) => !notes.some((note) => note._id === id)),
           );
-          messageApi.success("删除成功");
+          (messageApi ?? toast).success("删除成功");
           await refetch();
-        } catch {
+        } catch (error) {
           if (!isAccountScopeCurrent(scope)) return;
-          messageApi.error("删除失败，请稍后重试");
+          (messageApi ?? toast).error("删除失败，请稍后重试");
+          throw error;
         }
       },
     });
@@ -163,7 +163,7 @@ export const useNoteLibraryActions = ({
       });
     } catch (error) {
       if (!isAccountScopeCurrent(scope)) return;
-      messageApi.error(
+      (messageApi ?? toast).error(
         error instanceof Error ? error.message : "重命名失败，请稍后重试",
       );
     }
@@ -173,7 +173,7 @@ export const useNoteLibraryActions = ({
     const scope = moveScopeRef.current;
     if (!scope || !isAccountScopeCurrent(scope)) return;
     if (blockedMoveTargetIds.has(target._id)) {
-      messageApi.warning("不能移动到所选 note 或其子级");
+      (messageApi ?? toast).warning("不能移动到所选 note 或其子级");
       return;
     }
 
@@ -190,11 +190,11 @@ export const useNoteLibraryActions = ({
         current.filter((id) => !blockedMoveTargetIds.has(id)),
       );
       closeMoveModal();
-      messageApi.success("移动成功");
+      (messageApi ?? toast).success("移动成功");
       await refetch();
     } catch (error) {
       if (!isAccountScopeCurrent(scope)) return;
-      messageApi.error(
+      (messageApi ?? toast).error(
         error instanceof Error
           ? error.message
           : "移动失败，请确认目标位置后重试",

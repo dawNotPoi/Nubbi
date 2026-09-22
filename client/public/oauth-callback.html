@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <title>登录确认 · NUBBI</title>
+  </head>
+  <body>
+    <p role="status">正在返回登录页面…</p>
+    <a href="/login">返回 NUBBI</a>
+    <script>
+      // 仅传流程通知；服务端 Cookie 会话由原页面自行确认。
+      const params = new URLSearchParams(window.location.search);
+      const attempt = params.get("attempt");
+      const failed = params.has("error");
+      window.history.replaceState(null, "", window.location.pathname);
+      if (attempt) {
+        const channel = new BroadcastChannel(`nubbi:oauth:${attempt}`);
+        channel.postMessage({
+          type: "nubbi:oauth-complete",
+          attempt,
+          failed,
+        });
+        channel.close();
+      } else {
+        document.querySelector('[role="status"]').textContent =
+          "请返回原页面继续；如果原页面已关闭，可点击下方链接。";
+      }
+    </script>
+  </body>
+</html>

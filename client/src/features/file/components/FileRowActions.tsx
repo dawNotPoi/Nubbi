@@ -1,5 +1,11 @@
 import type { FileListItem } from "@/api/file";
-import { Dropdown } from "antd";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Separator } from "@/components/ui/separator";
 import { MoreHorizontal } from "lucide-react";
 import type { MouseEvent, ReactElement } from "react";
 import {
@@ -22,7 +28,9 @@ export function FileRowActions(
       >
         {props.item.kind === "folder" ? "打开" : "预览"}
       </button>
-      <Dropdown menu={{ items }} placement="bottomRight" trigger={["click"]}>
+      <DropdownMenu modal={false}>
+        <DropdownMenuTrigger
+          render={
         <button
           aria-label={`${props.item.name} 更多操作`}
           className="file-more-button"
@@ -31,7 +39,25 @@ export function FileRowActions(
         >
           <MoreHorizontal className="size-4" />
         </button>
-      </Dropdown>
+          }
+        />
+        <DropdownMenuContent aria-label={`${props.item.name} 操作`}>
+          {items.map((item) =>
+            "type" in item ? (
+              <Separator className="my-1" key={item.key} />
+            ) : (
+              <DropdownMenuItem
+                destructive={item.destructive}
+                key={item.key}
+                onClick={item.onClick}
+              >
+                {item.icon}
+                {item.label}
+              </DropdownMenuItem>
+            ),
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }

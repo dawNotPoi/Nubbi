@@ -1,5 +1,5 @@
 import { NodeViewContent, NodeViewProps, NodeViewWrapper } from "@tiptap/react";
-import { Select } from "antd";
+import { Select } from "@/components/ui/select";
 import { ChevronRight, Copy } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 import MermaidPreview from "./components/MermaidPreview";
@@ -115,19 +115,13 @@ const CodeBlockComponent: React.FC<NodeViewProps> = ({
         <div className="codeToolbar flex h-[32px] items-center gap-1 overflow-hidden rounded-control p-0.5">
           {isEditable ? (
             <Select
-              variant="borderless"
               className="codeToolbarSelect h-[28px] overflow-hidden rounded-compact text-[13px]"
               value={selectedLanguage}
-              onChange={(value) => {
+              onValueChange={(value) => {
                 handleLanguageChange(value);
               }}
-            >
-              {CODE_BLOCK_LANGUAGES.map((lang) => (
-                <Select.Option key={lang.value} value={lang.value}>
-                  {lang.label}
-                </Select.Option>
-              ))}
-            </Select>
+              options={[...CODE_BLOCK_LANGUAGES]}
+            />
           ) : (
             <span className="px-2 text-xs uppercase tracking-wide text-neutral-400">
               {selectedLanguage}

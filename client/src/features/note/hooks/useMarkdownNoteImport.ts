@@ -8,20 +8,16 @@ import {
   parseMarkdownImport,
 } from "@/features/note/model/markdownImport";
 import { createNoteAtom } from "@/store/atom/note/noteMutationAtom";
-import { message } from "antd";
+import { toast } from "@/components/ui/toast";
 import { useAtomValue } from "jotai";
 import { useState } from "react";
 
-type MessageApi = ReturnType<typeof message.useMessage>[0];
-
 type UseMarkdownNoteImportOptions = {
-  messageApi: MessageApi;
   owner: string;
   refetch: () => Promise<unknown>;
 };
 
 export const useMarkdownNoteImport = ({
-  messageApi,
   owner,
   refetch,
 }: UseMarkdownNoteImportOptions) => {
@@ -36,11 +32,11 @@ export const useMarkdownNoteImport = ({
     const ignoredCount = files.length - markdownFiles.length;
 
     if (markdownFiles.length === 0) {
-      messageApi.warning("请选择 .md 或 .markdown 文件");
+      toast.warning("请选择 .md 或 .markdown 文件");
       return;
     }
     if (ignoredCount > 0) {
-      messageApi.warning(`已忽略 ${ignoredCount} 个非 Markdown 文件`);
+      toast.warning(`已忽略 ${ignoredCount} 个非 Markdown 文件`);
     }
 
     setImportingMarkdown(true);
@@ -69,12 +65,12 @@ export const useMarkdownNoteImport = ({
       const failedCount = settledResults.length - importedCount;
 
       if (importedCount > 0) {
-        messageApi.success(`已导入 ${importedCount} 篇 Markdown`);
+        toast.success(`已导入 ${importedCount} 篇 Markdown`);
         await refetch();
         if (!isAccountScopeCurrent(scope)) return;
       }
       if (failedCount > 0) {
-        messageApi.error(`${failedCount} 篇导入失败，请稍后重试`);
+        toast.error(`${failedCount} 篇导入失败，请稍后重试`);
       }
     } finally {
       if (isAccountScopeCurrent(scope)) setImportingMarkdown(false);

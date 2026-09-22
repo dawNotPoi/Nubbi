@@ -16,7 +16,7 @@ import {
   isAccountScopeCurrent,
   requireAccountScope,
 } from "@/features/auth/model/account-scope";
-import { App } from "antd";
+import { toast as message } from "@/components/ui/toast";
 import { useAtomValue } from "jotai";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -46,7 +46,6 @@ type MeetingManageState = {
  * @returns 会议列表、统计、CRUD 操作及评论弹窗状态。
  */
 export const useMeetingManage = (active: boolean): MeetingManageState => {
-  const { message } = App.useApp();
   const navigate = useNavigate();
   const { user } = useAuth();
   const {
@@ -87,10 +86,14 @@ export const useMeetingManage = (active: boolean): MeetingManageState => {
         message.error("操作失败，请稍后重试");
       }
     },
-    [message],
+    [],
   );
 
-  /** 删除指定会议，同时刷新 allMeeting 和 meeting 缓存 */
+  /**
+   * 删除会议并刷新缓存，失败继续抛出以保留共享确认框。
+   * @param id 待删除的会议 ID。
+   * @returns 删除及缓存刷新完成的 Promise。
+   */
   const remove = useCallback(
     async (id: string): Promise<void> => {
       const scope = requireAccountScope();
@@ -107,13 +110,14 @@ export const useMeetingManage = (active: boolean): MeetingManageState => {
           message.success("会议已删除");
           return;
         }
-        message.error(response.message);
-      } catch {
+        throw new Error(response.message || "会议删除失败，请稍后重试");
+      } catch (error) {
         if (!isAccountScopeCurrent(scope)) return;
-        message.error("会议删除失败，请稍后重试");
+        message.error(error instanceof Error ? error.message : "会议删除失败，请稍后重试");
+        throw error;
       }
     },
-    [message],
+    [],
   );
 
   /** 跳转到会议房间页面 */
@@ -152,7 +156,7 @@ export const useMeetingManage = (active: boolean): MeetingManageState => {
         if (isAccountScopeCurrent(scope)) setCommentLoading(false);
       }
     },
-    [message],
+    [],
   );
 
   /** 关闭评论弹窗并清空缓存 */

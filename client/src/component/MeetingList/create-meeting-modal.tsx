@@ -1,11 +1,15 @@
-import { Modal } from "@/component/UI/Dialog";
+import { Modal } from "@/components/ui/dialog";
 import {
   isAccountScopeCurrent,
   requireAccountScope,
 } from "@/features/auth/model/account-scope";
 import { useAuth } from "@/hooks/useAuth";
 import { createMeetingAtom } from "@/store/atom/meetingAtom";
-import { Button, DatePicker, Input, message, Select } from "antd";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
+import { Select } from "@/components/ui/select";
+import { toast as message } from "@/components/ui/toast";
 import dayjs from "dayjs";
 import { useAtomValue } from "jotai";
 import { useEffect, useRef, useState, type ReactElement } from "react";
@@ -19,10 +23,13 @@ type CreateMeetingModalProps = {
 
 type MeetingFormData = {
   title: string;
-  startTime: number;
+  startTime: string;
   duration: number;
   password: string;
 };
+
+// 打开弹窗时默认填入当前时刻，用户可能停留片刻再提交，因此给过去时间留出少量宽限。
+const START_TIME_GRACE_MINUTES = 5;
 
 /**
  * 渲染可复用的创建会议弹窗，并在打开时重置默认表单值。
@@ -42,7 +49,7 @@ export const CreateMeetingModal = ({
   const submittingRef = useRef(false);
   const [formData, setFormData] = useState<MeetingFormData>({
     title: defaultTitle,
-    startTime: dayjs().valueOf(),
+    startTime: dayjs().format("YYYY-MM-DDTHH:mm"),
     duration: 30,
     password: "",
   });
@@ -53,7 +60,7 @@ export const CreateMeetingModal = ({
 
     setFormData({
       title: defaultTitle,
-      startTime: dayjs().valueOf(),
+      startTime: dayjs().format("YYYY-MM-DDTHH:mm"),
       duration: 30,
       password: "",
     });
@@ -66,10 +73,14 @@ export const CreateMeetingModal = ({
   const handleCreate = async (): Promise<void> => {
     if (submittingRef.current) return;
     if (!formData.title.trim()) { message.warning("请输入会议标题"); return; }
+    const startTime = dayjs(formData.startTime);
+    if (!formData.startTime || !startTime.isValid()) { message.warning("请选择有效的开始时间"); return; }
+    // 保留旧 DatePicker 的 minDate 约束：本地时间输入没有选择器限制，提交前再校验一次。
+    if (startTime.isBefore(dayjs().subtract(START_TIME_GRACE_MINUTES, "minute"))) { message.warning("开始时间不能早于当前时间"); return; }
     const scope = requireAccountScope();
     submittingRef.current = true; setCreating(true);
     try {
-      const response = await createMeetingMutation.mutateAsync({ ...formData, title: formData.title.trim() });
+      const response = await createMeetingMutation.mutateAsync({ ...formData, startTime: startTime.valueOf(), title: formData.title.trim() });
       if (!isAccountScopeCurrent(scope)) return;
       if (response.code !== 1) { message.error(response.message || "创建会议失败"); return; }
       setCreatedMeeting(response.data); message.success("创建会议成功，可以邀请参会了"); onClose();
@@ -84,9 +95,14 @@ export const CreateMeetingModal = ({
     }
   };
 
+  // 本地日期时间输入没有日期面板，用 min 挡掉过去时间；宽限与提交校验保持一致。
+  const minStartTime = dayjs()
+    .subtract(START_TIME_GRACE_MINUTES, "minute")
+    .format("YYYY-MM-DDTHH:mm");
+
   return (
     <><Modal
-      className="md:!mt-[50vh] md:!w-[440px] md:!-translate-y-1/2 md:!rounded-panel"
+      className="md:max-w-[440px]"
       onCancel={() => { if (!creating) onClose(); }}
       maskClosable={!creating}
       open={open}
@@ -109,18 +125,19 @@ export const CreateMeetingModal = ({
 
         <label className="grid gap-2 text-sm text-text-muted" htmlFor="meeting-start-time">
           开始时间
-          <DatePicker
+          <Input
             className="w-full"
+            type="datetime-local"
+            min={minStartTime}
+            required
             id="meeting-start-time"
-            onChange={(value) => {
-              if (!value) return;
+            onChange={(event) => {
               setFormData((current) => ({
                 ...current,
-                startTime: value.valueOf(),
+                startTime: event.target.value,
               }));
             }}
-            showTime
-            value={dayjs(formData.startTime)}
+            value={formData.startTime}
           />
         </label>
 
@@ -128,22 +145,23 @@ export const CreateMeetingModal = ({
           会议时长
           <Select
             id="meeting-duration"
-            onChange={(duration) =>
-              setFormData((value) => ({ ...value, duration }))
+            onValueChange={(duration) =>
+              setFormData((value) => ({ ...value, duration: Number(duration) }))
             }
             options={[
-              { label: "30 分钟", value: 30 },
-              { label: "45 分钟", value: 45 },
-              { label: "1 小时", value: 60 },
-              { label: "2 小时", value: 120 },
+              { label: "30 分钟", value: "30" },
+              { label: "45 分钟", value: "45" },
+              { label: "1 小时", value: "60" },
+              { label: "2 小时", value: "120" },
             ]}
-            value={formData.duration}
+            value={String(formData.duration)}
+            disabled={creating}
           />
         </label>
 
         <label className="grid gap-2 text-sm text-text-muted" htmlFor="meeting-password">
           入会密码（可选）
-          <Input.Password
+          <PasswordInput
             id="meeting-password"
             onChange={(event) =>
               setFormData((value) => ({
@@ -156,7 +174,7 @@ export const CreateMeetingModal = ({
           />
         </label>
         </fieldset>
-        <div className="flex justify-end gap-2"><Button disabled={creating} onClick={onClose}>取消</Button><Button type="primary" htmlType="submit" loading={creating}>创建会议</Button></div>
+        <div className="flex justify-end gap-2"><Button variant="outline" disabled={creating} onClick={onClose}>取消</Button><Button variant="primary" type="submit" loading={creating}>创建会议</Button></div>
       </form>
     </Modal>
     {createdMeeting && <MeetingInvitationButton key={createdMeeting._id} initiallyOpen hideTrigger id={createdMeeting._id} title={createdMeeting.title} startTime={createdMeeting.startTime} />}

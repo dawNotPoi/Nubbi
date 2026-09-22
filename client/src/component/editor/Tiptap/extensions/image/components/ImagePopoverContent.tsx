@@ -1,4 +1,5 @@
-import { Button, Input } from "antd";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import clsx from "clsx";
 import { Copy, Trash2, Upload } from "lucide-react";
 import { useState } from "react";
@@ -106,7 +107,7 @@ const ImagePopoverContent = ({
             <div className="flex justify-center">
               <Button
                 onClick={() => onEmbedUrl(link)}
-                type="primary"
+                variant="primary"
                 className="mx-auto w-full max-w-[300px]"
               >
                 {status === "done" ? "更新链接" : "嵌入图片"}
@@ -134,7 +135,7 @@ const ImagePopoverContent = ({
                     title: draftTitle.trim() || null,
                   })
                 }
-                type="primary"
+                variant="primary"
                 className="mx-auto w-full max-w-[300px]"
               >
                 保存描述
@@ -154,7 +155,7 @@ const ImagePopoverContent = ({
             </Button>
             <Button
               className="flex flex-1 items-center justify-center gap-2"
-              danger
+              variant="destructive"
               onClick={onDelete}
             >
               <Trash2 size={16} />

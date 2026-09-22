@@ -1,11 +1,10 @@
-import { StyleProvider } from "@ant-design/cssinjs";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { ConfigProvider } from "antd";
 import { Provider, createStore } from "jotai";
 import { queryClientAtom } from "jotai-tanstack-query";
 import { useHydrateAtoms } from "jotai/utils";
-import { useEffect, useMemo, type PropsWithChildren, type ReactElement } from "react";
-import { ModalProvider } from "./component/UI/Dialog";
+import { useEffect, type PropsWithChildren, type ReactElement } from "react";
+import { ConfirmDialogHost } from "@/components/ui/confirm-dialog";
+import { Toaster } from "@/components/ui/toast";
 import UploadLifecycle from "./component/upload/UploadLifecycle";
 import {
   authSessionCoordinator,
@@ -16,7 +15,6 @@ import {
   expandedNodesAtom,
   libraryExpandedNodesAtom,
 } from "./store/atom/note/noteAtom";
-import { getNubbiAntdTheme } from "./styles/antd-theme";
 import { queryClient } from "./utils/queryClient";
 
 let authBootstrapStarted = false;
@@ -90,28 +88,24 @@ const AuthBootstrap = ({ children }: PropsWithChildren): ReactElement => {
 };
 
 /**
- * 固定样式层叠与共享状态顺序，AntD 仅作为未迁移控件的兼容层。
+ * 固定查询、会话与共享反馈出口，不注入第二套 UI 主题。
  * @param props 业务应用子树。
  * @returns 带主题、查询、会话和弹层上下文的应用。
  */
 const AppProvider = ({ children }: PropsWithChildren): ReactElement => {
-  const theme = useMemo(getNubbiAntdTheme, []);
-
   return (
-    <StyleProvider layer>
-      <ConfigProvider theme={theme}>
         <QueryClientProvider client={queryClient}>
           <Provider store={appStore}>
             <HydrateQueryClient>
               <AuthBootstrap>
                 <UploadLifecycle />
-                <ModalProvider>{children}</ModalProvider>
+                {children}
+                <ConfirmDialogHost />
+                <Toaster />
               </AuthBootstrap>
             </HydrateQueryClient>
           </Provider>
         </QueryClientProvider>
-      </ConfigProvider>
-    </StyleProvider>
   );
 };
 

@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
  * 按钮尺寸同时拥有 hit box 与 icon visual size，业务调用端不再修正内部 SVG 几何。
  */
 const buttonVariants = cva(
-  "nubbi-button inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control text-sm font-medium leading-none [&_svg]:pointer-events-none [&_svg]:shrink-0",
+  "nubbi-button inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control text-sm font-medium leading-none max-md:min-h-11 [&_svg]:pointer-events-none [&_svg]:shrink-0",
   {
     variants: {
       variant: {
@@ -27,9 +27,9 @@ const buttonVariants = cva(
         sm: "h-[30px] rounded-compact px-3 [&_svg]:size-4",
         toolbar: "h-8 rounded-compact px-2 [&_svg]:size-4",
         lg: "h-9 rounded-control px-4 [&_svg]:size-4",
-        icon: "size-8 [&_svg]:size-4",
-        "icon-sm": "size-[30px] rounded-compact [&_svg]:size-4",
-        "icon-xs": "size-7 rounded-compact [&_svg]:size-[14px]",
+        icon: "size-8 max-md:min-w-11 [&_svg]:size-4",
+        "icon-sm": "size-[30px] rounded-compact max-md:min-w-11 [&_svg]:size-4",
+        "icon-xs": "size-7 rounded-compact max-md:min-w-11 [&_svg]:size-[14px]",
       },
     },
     defaultVariants: { variant: "default", size: "default" },

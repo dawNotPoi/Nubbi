@@ -27,9 +27,8 @@ import {
   toRouteCrumbs,
 } from "@/views/file-manage/routePath";
 import { useQuery } from "@tanstack/react-query";
-import { Modal, message } from "antd";
 import { useAtomValue } from "jotai";
-import { createElement, Fragment, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useFileAccessActions } from "./useFileAccessActions";
 import { useFileManagerActions } from "./useFileManagerActions";
@@ -64,8 +63,6 @@ export function useFileManagerController() {
   const [previewItem, setPreviewItem] = useState<FileListItem | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [draggingItems, setDraggingItems] = useState<FileListItem[] | null>(null);
-  const [messageApi, messageHolder] = message.useMessage();
-  const [modalApi, modalHolder] = Modal.useModal();
   const activeUploads = useAtomValue(activeUploadCountAtom);
   const { createUploadTasks } = useGlobalUpload();
   const sort = resolveSort(sortMode);
@@ -160,8 +157,6 @@ export function useFileManagerController() {
   };
   const actions = useFileManagerActions({
     items,
-    messageApi,
-    modalApi,
     moveTargets,
     offset,
     ownerId,
@@ -174,7 +169,7 @@ export function useFileManagerController() {
     setSelectedIds,
     resetForCreate: resetQuery,
   });
-  const access = useFileAccessActions({ messageApi, setPreviewItem });
+  const access = useFileAccessActions({ setPreviewItem });
 
   const openItem = (item: FileListItem) => {
     if (item.kind === "file") return access.preview(item);
@@ -276,7 +271,7 @@ export function useFileManagerController() {
     breadcrumbs,
     category,
     clearSelection,
-    contextHolders: createElement(Fragment, null, messageHolder, modalHolder),
+    contextHolders: null,
     currentFolderName,
     data,
     draggingItems,

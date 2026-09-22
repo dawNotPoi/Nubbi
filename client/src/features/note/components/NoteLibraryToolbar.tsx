@@ -1,9 +1,14 @@
 import type { NoteStatus } from "@/api/note";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { NoteLibrarySortMode } from "@/features/note/model/library";
-import { Select } from "antd";
-import { ArrowDownAZ, ArrowUpAZ, ArrowUpDown, Clock, Search, X } from "lucide-react";
+import { ArrowDownAZ, ArrowUpAZ, ArrowUpDown, Check, Clock, Search, Tags, X } from "lucide-react";
 import { useRef, type ReactElement } from "react";
 import { NoteLibraryOptionMenu, type NoteLibraryOption } from "./NoteLibraryOptionMenu";
 
@@ -149,19 +154,38 @@ export function NoteLibraryToolbar({
           }
         />
         {availableTags.length > 0 ? (
-          <Select
-            allowClear
-            aria-label="标签筛选"
-            className="mobile-note-tag-select min-w-[120px] max-w-[160px]"
-            maxTagCount={2}
-            mode="multiple"
-            onChange={onTagsFilterChange}
-            options={availableTags.map(({ tag, count }) => ({ label: `${tag} (${count})`, value: tag }))}
-            placeholder="标签筛选"
-            size="small"
-            value={tagsFilter}
-            variant="borderless"
-          />
+          <DropdownMenu modal={false}>
+            <DropdownMenuTrigger render={
+              <Button
+                aria-label="标签筛选"
+                className="h-10 shrink-0 rounded-control px-3 font-normal md:h-8 md:rounded-compact md:px-2"
+                size="toolbar"
+                variant="ghost"
+              />
+            }>
+              <Tags aria-hidden="true" className="size-4" />
+              <span>{tagsFilter.length > 0 ? `标签 ${tagsFilter.length}` : "标签"}</span>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" aria-label="标签筛选">
+              {availableTags.map(({ tag, count }) => {
+                const selected = tagsFilter.includes(tag);
+                return (
+                  <DropdownMenuItem
+                    key={tag}
+                    closeOnClick={false}
+                    onClick={() => onTagsFilterChange(
+                      selected ? tagsFilter.filter((item) => item !== tag) : [...tagsFilter, tag],
+                    )}
+                  >
+                    <span className="inline-flex size-4 items-center justify-center">
+                      {selected ? <Check aria-hidden="true" className="size-3.5" /> : null}
+                    </span>
+                    <span>{tag} ({count})</span>
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
         ) : null}
         <Button
           variant="ghost"

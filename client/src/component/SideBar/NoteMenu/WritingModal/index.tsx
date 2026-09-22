@@ -1,5 +1,5 @@
 import { type Note } from "@/api/note";
-import { Modal } from "@/component/UI/Dialog";
+import { Modal } from "@/components/ui/dialog";
 import Popover from "@/component/UI/Popover";
 import TiptapEditor from "@/component/editor/Tiptap";
 import { NoteTargetPickerPanel } from "@/features/note/components/NoteTargetPicker";
@@ -113,13 +113,10 @@ export const WrittingModal = ({ parent, onTrigger, trigger }: WritingModalProps)
         className={clsx(
           "h-[90dvh] w-full !max-h-[90dvh] !overflow-hidden",
           "rounded-t-sheet border border-border-toolbar bg-white shadow-soft",
-          "md:!mt-[5dvh] md:h-[88dvh] md:!max-h-[860px]",
-          "md:!w-[min(94vw,1120px)] md:!rounded-panel",
+          "md:h-[88dvh] md:!max-h-[860px]",
+          "md:!w-[min(94vw,1120px)] md:max-w-[1120px] md:!rounded-panel",
         )}
         onCancel={closeModal}
-        onOpenChange={(nextOpen) => {
-          if (!nextOpen && open) closeModal();
-        }}
         open={open}
         showClose
         title={

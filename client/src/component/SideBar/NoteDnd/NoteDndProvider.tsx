@@ -23,7 +23,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { useQueryClient } from "@tanstack/react-query";
-import { message } from "antd";
+import { toast as message } from "@/components/ui/toast";
 import { useAtomValue, useSetAtom } from "jotai";
 import { type PropsWithChildren, useState } from "react";
 import { NoteDragPreview } from "./DropZones";
