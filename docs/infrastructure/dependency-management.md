@@ -2,11 +2,12 @@
 
 ## 现状架构
 
-本仓库是 **pnpm workspace monorepo**，由 `pnpm-workspace.yaml` 收录三个子项目：
+本仓库是 **pnpm workspace monorepo**，由 `pnpm-workspace.yaml` 收录四个子项目：
 
 - `client/`（nubbi-client，React + Vite）
 - `server/`（nubbi-server，Express + tsx）
 - `mcp/`（nubbi-mcp-server，MCP TypeScript SDK）
+- `nubbi-blog/`（公开博客与阅读站点，Next.js App Router）
 
 锁文件只有根目录一份 `pnpm-lock.yaml`；根 `package.json`（nubbi）不含业务依赖，只承担开发期编排：workspace 聚合安装、`pnpm --filter` 脚本、husky / commitlint。
 
@@ -25,6 +26,16 @@ pnpm install   # 在仓库根目录执行，一次装完 client + server 所有�
 | `pnpm build:client` | 构建前端 |
 | `pnpm build:mcp` | 构建 MCP Server |
 | `pnpm lint:client` / `pnpm typecheck:server` | 代码检查 |
+
+### 工作区级 `@types/react`（不要删、不要拆成两个版本）
+
+根 `package.json` 的 `devDependencies` 固定了 `@types/react@19.2.17`，`nubbi-blog` 也固定同一版本。这不是多余依赖：
+
+- Next.js 的 `dist/client/link.d.ts` 用 `import React from 'react'`，该文件位于 `node_modules/.pnpm/next@…/` 下，向上查找 `node_modules/@types/react` 时命不中 pnpm 的虚拟 store，只能靠仓库根目录的 `node_modules/@types/react`。
+- 找不到时 `React` 退化成 `any`，`Link` 的 props 全部失去类型（`skipLibCheck` 会隐藏库内错误，只留下业务侧的 `TS7006 Parameter implicitly has an 'any' type`），`pnpm --filter nubbi-blog typecheck` 与 `next build` 都会失败。
+- 若两处 `@types/react` 版本不一致（曾出现 19.2.17 / 19.2.18），React 类型会出现两份实例，报 `Two different types with this name exist`。
+
+改动 React 类型版本时，必须同时更新根目录与 `nubbi-blog` 的固定版本并重跑 `pnpm --filter nubbi-blog typecheck` + `build`。
 
 ### 构建脚本白名单
 

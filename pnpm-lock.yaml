@@ -22,6 +22,9 @@ importers:
       '@commitlint/prompt':
         specifier: ^21.1.0
         version: 21.1.0(@types/node@26.4.1)(typescript@6.0.3)
+      '@types/react':
+        specifier: 19.2.17
+        version: 19.2.17
       commitizen:
         specifier: ^4.3.2
         version: 4.3.2(@types/node@26.4.1)(typescript@6.0.3)
@@ -284,7 +287,7 @@ importers:
         version: 2.5.0
       lucide-react:
         specifier: 1.41.0
-        version: 1.41.0(@types/react@19.2.18)(react@19.2.8)
+        version: 1.41.0(@types/react@19.2.17)(react@19.2.8)
       next:
         specifier: 16.3.4
         version: 16.3.4(@types/node@26.4.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(sass@1.101.0)
@@ -296,7 +299,7 @@ importers:
         version: 19.2.8(react@19.2.8)
       react-markdown:
         specifier: 10.1.0
-        version: 10.1.0(@types/react@19.2.18)(react@19.2.8)
+        version: 10.1.0(@types/react@19.2.17)(react@19.2.8)
       rehype-highlight:
         specifier: 7.0.2
         version: 7.0.2
@@ -317,11 +320,11 @@ importers:
         specifier: 26.4.1
         version: 26.4.1
       '@types/react':
-        specifier: 19.2.18
-        version: 19.2.18
+        specifier: 19.2.17
+        version: 19.2.17
       '@types/react-dom':
         specifier: 19.2.7
-        version: 19.2.7(@types/react@19.2.18)
+        version: 19.2.7(@types/react@19.2.17)
       eslint:
         specifier: 9.39.5
         version: 9.39.5(jiti@2.7.0)
@@ -2577,9 +2580,6 @@ packages:
 
   '@types/react@19.2.17':
     resolution: {integrity: sha512-MXfmqaVPEVgkBT/aY0aGCkRWWtByiYQXo3xdQ8r5RzuFrPiRn8Gar2tQdXSUQ2GKV3bkXckek89V8wQBY2Q/Aw==}
-
-  '@types/react@19.2.18':
-    resolution: {integrity: sha512-AnzbBERsrLKtk2XSfTbYRLjQPdy116Sty4q+T+Bp3IC4l6jNBvreVPAHmpq9qhXQM7CXZPjLVmGMw9sy+hxQ3w==}
 
   '@types/send@1.2.1':
     resolution: {integrity: sha512-arsCikDvlU99zl1g69TcAB3mzZPpxgw0UQnaHeC1Nwb015xp8bknZv5rIfri9xTOcMuaVgvabfIRA7PSZVuZIQ==}
@@ -8623,15 +8623,11 @@ snapshots:
     dependencies:
       '@types/react': 19.2.17
 
-  '@types/react-dom@19.2.7(@types/react@19.2.18)':
+  '@types/react-dom@19.2.7(@types/react@19.2.17)':
     dependencies:
-      '@types/react': 19.2.18
+      '@types/react': 19.2.17
 
   '@types/react@19.2.17':
-    dependencies:
-      csstype: 3.2.3
-
-  '@types/react@19.2.18':
     dependencies:
       csstype: 3.2.3
 
@@ -11354,9 +11350,9 @@ snapshots:
       '@types/react': 19.2.17
       react: 19.2.7
 
-  lucide-react@1.41.0(@types/react@19.2.18)(react@19.2.8):
+  lucide-react@1.41.0(@types/react@19.2.17)(react@19.2.8):
     dependencies:
-      '@types/react': 19.2.18
+      '@types/react': 19.2.17
       react: 19.2.8
 
   magic-string@0.30.21:
@@ -12352,11 +12348,11 @@ snapshots:
       react: 19.2.7
       react-dom: 19.2.7(react@19.2.7)
 
-  react-markdown@10.1.0(@types/react@19.2.18)(react@19.2.8):
+  react-markdown@10.1.0(@types/react@19.2.17)(react@19.2.8):
     dependencies:
       '@types/hast': 3.0.4
       '@types/mdast': 4.0.4
-      '@types/react': 19.2.18
+      '@types/react': 19.2.17
       devlop: 1.1.0
       hast-util-to-jsx-runtime: 2.3.6
       html-url-attributes: 3.0.1
