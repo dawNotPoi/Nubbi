@@ -12,10 +12,11 @@
 
 | 层级     | 技术                                                   |
 | -------- | ------------------------------------------------------ |
-| 主服务端 | Express 4.x + Mongoose 8.x + Zod 3.x + Better-Auth 1.x |
-| Assistant API | NestJS 11.x + Fastify 5.x + Mongoose 8.x + Zod 3.x |
+| 主服务端 | Express 5.x + Mongoose 8.x + Zod 4（业务统一走 `zod/v3` API）+ Better-Auth 1.x |
 | 客户端   | React 19.x + Base UI + 项目自有 UI 源码层（shadcn 风格）+ Tailwind 4.x + Vite 5.x |
 | 状态管理 | TanStack Query（服务端状态）+ Jotai（UI 状态）         |
+
+Assistant API（NestJS + Fastify）已过 `chore: 移除 assistant 并独立为单独仓库` 迁出；本仓库不再包含其代码与依赖，不要把它的技术栈当作本仓库约束。
 
 引入新依赖前检查 `.agent/rules/core.md` 禁止项。
 

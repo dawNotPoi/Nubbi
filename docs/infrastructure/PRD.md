@@ -168,10 +168,10 @@ payload 都执行运行时校验，遗留的跨 socket 私密转发事件已移�
 | 层级 | 技术 | 版本约束 |
 |------|------|---------|
 | 运行时 | Node.js | - |
-| 后端框架 | Express | 4.x |
+| 后端框架 | Express | 5.x |
 | 数据库 | MongoDB + Mongoose | 8.x |
 | 认证 | Better-Auth | 1.x |
-| 验证 | Zod | 3.x |
+| 验证 | Zod | 4.x（业务统一走 `zod/v3` API） |
 | 实时通信 | Socket.io | 4.x |
 | WebRTC | simple-peer | - |
 | 前端框架 | React | 19.x |

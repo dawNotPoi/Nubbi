@@ -76,6 +76,8 @@
 - 根目录提供 dev:blog、dev:blog:full、dev:all、build:blog、start:blog、lint:blog、typecheck:blog。
 - `dev:blog` 仅启动博客，`dev:blog:full` 同时启动主服务与博客；`dev:all` 增加原 Client。
 - Nubbi Blog 默认开发／生产端口 3002，避免与其他服务冲突。
+- 依赖全部采用**精确锁版本**（不用 `^`）。2026-09-22 已升到最新稳定版：Next 16.3.6、React/React-DOM 19.3.0、lucide-react 1.47.0、zod 4.6.5、eslint-config-next 16.3.6、Tailwind 4.3.3。
+- 两项暂时无法升级，需要上游先放开 peer：`typescript` 锁 6.0.3（`typescript-eslint` peer 上限 `<6.1.0`）与 `eslint` 锁 9.39.5（`eslint-config-next` 依赖的 eslint-plugin-react/import/jsx-a11y 只支持 ≤9）；细节见 `docs/infrastructure/dependency-management.md`。升级任一依赖后必须重跑 `typecheck` + `lint` + `build`。
 
 ## 验证
 

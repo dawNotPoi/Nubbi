@@ -29,13 +29,24 @@ pnpm install   # 在仓库根目录执行，一次装完 client + server 所有�
 
 ### 工作区级 `@types/react`（不要删、不要拆成两个版本）
 
-根 `package.json` 的 `devDependencies` 固定了 `@types/react@19.2.17`，`nubbi-blog` 也固定同一版本。这不是多余依赖：
+根 `package.json` 的 `devDependencies` 固定了 `@types/react@19.3.0`，`nubbi-blog` 也固定同一版本。这不是多余依赖：
 
 - Next.js 的 `dist/client/link.d.ts` 用 `import React from 'react'`，该文件位于 `node_modules/.pnpm/next@…/` 下，向上查找 `node_modules/@types/react` 时命不中 pnpm 的虚拟 store，只能靠仓库根目录的 `node_modules/@types/react`。
 - 找不到时 `React` 退化成 `any`，`Link` 的 props 全部失去类型（`skipLibCheck` 会隐藏库内错误，只留下业务侧的 `TS7006 Parameter implicitly has an 'any' type`），`pnpm --filter nubbi-blog typecheck` 与 `next build` 都会失败。
 - 若两处 `@types/react` 版本不一致（曾出现 19.2.17 / 19.2.18），React 类型会出现两份实例，报 `Two different types with this name exist`。
 
-改动 React 类型版本时，必须同时更新根目录与 `nubbi-blog` 的固定版本并重跑 `pnpm --filter nubbi-blog typecheck` + `build`。
+改动 React 类型版本时，必须同时更新根目录与 `nubbi-blog` 的固定版本并重跑 `pnpm --filter nubbi-blog typecheck` + `build`。`client` 走自己的 `@types/react`（19.2.x），因为它不消费 Next 的类型，但两者不要混用到同一份 JSX 上。
+
+### nubbi-blog 依赖升级边界（2026-09-22）
+
+blog 依赖全部为**精确锁版本**，升级需要显式改版本号。当前除下列两项外都已是最新稳定版：
+
+| 包 | 当前 | npm latest | 被谁卡住 |
+| --- | --- | --- | --- |
+| `typescript` | 6.0.3 | 7.0.2 | `typescript-eslint` 最新稳定 8.70.1 的 peer 是 `typescript >=4.8.4 <6.1.0`；装 TS 7 后 `eslint` 直接崩（`Cannot read properties of undefined (reading 'Cjs')`）。TS 7.0.2 本身能让 `next typegen && tsc --noEmit` 与 `next build` 通过 |
+| `eslint` | 9.39.5 | 10.11.0 | `eslint-config-next 16.3.6` 依赖链里的 `eslint-plugin-react 7.37.5`、`eslint-plugin-import 2.32.0`、`eslint-plugin-jsx-a11y 6.10.2` peer 只写到 `eslint ≤9`，在 ESLint 10 下 `detectReactVersion` 运行时崩 |
+
+升级这两项前先确认上游 peer 范围已放开（`npm view typescript-eslint peerDependencies`、`npm view eslint-plugin-react peerDependencies`），再重跑 `typecheck` + `lint` + `build`。
 
 ### 构建脚本白名单
 

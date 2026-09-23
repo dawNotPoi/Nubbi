@@ -24,7 +24,8 @@
 - [ ] commit message 格式和 changes 暂存由 hook 自动校验，无需手动检查
 
 ### 技术栈约束
-- [ ] 主服务端：Express 4.x + Mongoose 8.x + Zod 3.x + Better-Auth 1.x
-- [ ] Assistant API：NestJS 11.x + Fastify 5.x + Mongoose 8.x + Zod 3.x
+- [ ] 主服务端：Express 5.x + Mongoose 8.x + Zod 4（业务统一走 `zod/v3` API）+ Better-Auth 1.x
 - [ ] 客户端：React 19.x + Base UI + `components/ui` 项目自有源码层 + Tailwind 4.x + Vite 5.x；不得重新引入 Ant Design 或第二套组件库
+- [ ] 博客：Next.js 16.x + React 19.x + Tailwind 4.x（`nubbi-blog/`）
 - [ ] 未引入重量级框架替代品（见 `.agent/rules/core.md` 禁止项）
+- [ ] 未把 Assistant API（NestJS + Fastify）当作本仓库约定；它已迁出为独立仓库
