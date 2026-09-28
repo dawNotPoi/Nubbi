@@ -1,3 +1,5 @@
+import { buildPaginationResult, type PaginationInput, type PaginationResult } from "@/common/pagination";
+import { buildPageSlices } from "./listFilters";
 import { httpError } from "@/common/http-error";
 import { File } from "@/models/file/file";
 import { Folder } from "@/models/file/folder";
@@ -8,7 +10,7 @@ import { withFileFolderStructureLock } from "./structureLock";
 type LegacyFolderDocument = InstanceType<typeof Folder>;
 type LegacyFileDocument = InstanceType<typeof File>;
 
-export type LegacyFileListResult = {
+export type LegacyFileListResult = PaginationResult<LegacyFolderDocument | LegacyFileDocument> & {
   folders: LegacyFolderDocument[];
   files: LegacyFileDocument[];
 };
@@ -23,22 +25,26 @@ const assertOwnedParent = async (
   if (!exists) throw httpError(404, "父文件夹不存在或无权访问");
 };
 
-/** 旧版文件列表查询（兼容旧客户端） */
+/** @param ownerId 账号。@param parentId 目录。@param pagination 分页参数。@returns 文件夹优先的混合页，保留当页分类。 */
 export const listFilesLegacy = async (
-  ownerId: string | undefined,
-  parentId: unknown,
+  ownerId: string,
+  parentId: string | null,
+  pagination: PaginationInput,
 ): Promise<LegacyFileListResult> => {
-  const currentParentId = !parentId || parentId === "root" ? null : parentId;
-  await assertOwnedParent(ownerId, currentParentId);
-  const [folders, files] = await Promise.all([
-    Folder.find({ ownerId, parentId: currentParentId }).sort({ name: 1 }),
-    File.find({
-      ownerId,
-      folderId: currentParentId,
-      status: "active",
-    }).sort({ createdAt: -1 }),
+  await assertOwnedParent(ownerId, parentId);
+  const folderFilter = { ownerId, parentId };
+  const fileFilter = { ownerId, folderId: parentId, status: "active" };
+  const [folderCount, fileCount] = await Promise.all([
+    Folder.countDocuments(folderFilter), File.countDocuments(fileFilter),
   ]);
-  return { folders, files };
+  const slices = buildPageSlices(folderCount, pagination.offset, pagination.limit);
+  const [folders, files] = await Promise.all([
+    slices.folderLimit > 0 ? Folder.find(folderFilter).sort({ name: 1, _id: 1 })
+      .skip(slices.folderSkip).limit(slices.folderLimit) : [],
+    slices.fileLimit > 0 ? File.find(fileFilter).sort({ createdAt: -1, _id: -1 })
+      .skip(slices.fileSkip).limit(slices.fileLimit) : [],
+  ]);
+  return { ...buildPaginationResult<LegacyFolderDocument | LegacyFileDocument>([...folders, ...files], folderCount + fileCount, pagination), folders, files };
 };
 
 /** 旧版创建文件夹 */
@@ -54,13 +60,18 @@ export const createFolderLegacy = async (
   return ownerId ? withFileFolderStructureLock(ownerId, create) : create();
 };
 
-/** 旧版查询全部文件夹 */
-export const getFoldersLegacy = (
-  ownerId: string | undefined,
-): ReturnType<typeof Folder.find> =>
-  Folder.find({ ownerId })
-    .select("_id name parentId createdAt updatedAt")
-    .sort({ name: 1 });
+/** @param ownerId 账号。@param pagination 分页参数。@returns 文件夹目录分页。 */
+export const getFoldersLegacy = async (
+  ownerId: string,
+  pagination: PaginationInput,
+): Promise<PaginationResult<LegacyFolderDocument>> => {
+  const [items, total] = await Promise.all([
+    Folder.find({ ownerId }).select("_id name parentId createdAt updatedAt")
+      .sort({ name: 1, _id: 1 }).skip(pagination.offset).limit(pagination.limit),
+    Folder.countDocuments({ ownerId }),
+  ]);
+  return buildPaginationResult(items, total, pagination);
+};
 
 /** 旧版重命名文件/文件夹 */
 export const renameItemLegacy = async (

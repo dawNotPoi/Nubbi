@@ -1,3 +1,4 @@
+import { paginationQuerySchema } from "@/common/pagination";
 import { getMcpContext } from "@/controller/mcp/context";
 import {
   getMcpNote,
@@ -44,7 +45,8 @@ mcpReadRoutes.get("/context", {
 /** 查询当前账号的标签目录，供 Agent 创建笔记前优先复用 */
 mcpReadRoutes.get("/tags", {
   action: "read",
-  handler: ({ actor }) => listTags(actor.id),
+  query: paginationQuerySchema,
+  handler: ({ actor, query }) => listTags(actor.id, query),
 });
 
 /** 查询笔记列表（分页） */

@@ -18,7 +18,8 @@ const noteFilters = {
   tag: z.string().trim().min(1).max(100).optional().describe("Exact tag filter"),
 };
 
-export const ListTagsInputSchema = z.object({}).strict();
+/** 标签目录与笔记列表使用相同的分页限制。 */
+export const ListTagsInputSchema = z.object({ limit: LimitSchema, offset: OffsetSchema }).strict();
 
 export const ListNotesInputSchema = z
   .object({

@@ -1,3 +1,4 @@
+import { paginationQuerySchema } from "@/common/pagination";
 import { z } from "zod/v3";
 
 export const meetingIdSchema = z
@@ -53,3 +54,6 @@ export const vetMeetingSchema = z
   .strict();
 
 export type CreateMeetingBody = z.infer<typeof createMeetingBodySchema>;
+
+/** 主持人读取评论的分页查询。 */
+export const meetingCommentsQuerySchema = paginationQuerySchema.extend({ id: meetingIdSchema }).strict();

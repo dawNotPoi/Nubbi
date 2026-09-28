@@ -1,30 +1,35 @@
+import { buildPaginationResult, type PaginationInput, type PaginationResult } from "@/common/pagination";
 import note from "@/models/note";
 import tag from "@/models/tag";
 
 const normalizeTagName = (name: unknown) =>
   typeof name === "string" ? name.trim() : "";
 
-const readLegacyNoteTags = async (userId: string): Promise<string[]> => {
-  const notes = await note.find({ userId, deletedAt: null }, "tags").lean();
-  const uniqueNames = new Set<string>();
-
-  notes.forEach((noteItem) => {
-    (noteItem.tags || []).forEach((name: string) => {
-      const cleanName = normalizeTagName(name);
-      if (cleanName) uniqueNames.add(cleanName);
-    });
-  });
-
-  return Array.from(uniqueNames).sort((left, right) =>
-    left.localeCompare(right),
-  );
-};
-
-export const listTags = async (userId: string): Promise<string[]> => {
-  const tags = await tag.find({ userId }).sort({ name: 1 }).lean();
-  return tags.length > 0
-    ? tags.map((item) => item.name)
-    : readLegacyNoteTags(userId);
+/** @param userId 账号。@param pagination 分页参数。@returns 标签目录分页，旧数据在数据库聚合去重。 */
+export const listTags = async (
+  userId: string,
+  pagination: PaginationInput,
+): Promise<PaginationResult<string>> => {
+  const total = await tag.countDocuments({ userId });
+  if (total > 0) {
+    const tags = await tag.find({ userId }).sort({ name: 1, _id: 1 })
+      .skip(pagination.offset).limit(pagination.limit).select("name").lean();
+    return buildPaginationResult(tags.map((item) => item.name), total, pagination);
+  }
+  const [result] = await note.aggregate<{ items: { name: string }[]; totals: { count: number }[] }>([
+    { $match: { userId, deletedAt: null } },
+    { $unwind: "$tags" },
+    { $match: { tags: { $type: "string" } } },
+    { $project: { name: { $trim: { input: "$tags" } } } },
+    { $match: { name: { $ne: "" } } },
+    { $group: { _id: "$name" } },
+    { $sort: { _id: 1 } },
+    { $facet: {
+      items: [{ $skip: pagination.offset }, { $limit: pagination.limit }, { $project: { _id: 0, name: "$_id" } }],
+      totals: [{ $count: "count" }],
+    } },
+  ]);
+  return buildPaginationResult(result?.items.map((item) => item.name) ?? [], result?.totals[0]?.count ?? 0, pagination);
 };
 
 export const createTag = async (

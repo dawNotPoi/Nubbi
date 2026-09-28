@@ -1,3 +1,4 @@
+import type { PaginationInput } from "@/common/pagination";
 import { httpError } from "@/common/http-error";
 import {
   buildPaginationResult,
@@ -98,17 +99,21 @@ export async function getBlogPost(id: string): Promise<BlogPost> {
 
 /**
  * 标签只统计可公开的文章，不暴露草稿使用的标签。
- * @returns 按文章数排序的前 100 个公开标签。
+ * @param pagination 分页参数。
+ * @returns 按文章数与标签名稳定排序的标签分页。
  */
-export async function listBlogTags(): Promise<BlogTag[]> {
-  return Note.aggregate<BlogTag>([
+export async function listBlogTags(pagination: PaginationInput): Promise<PaginationResult<BlogTag>> {
+  const [result] = await Note.aggregate<{ items: BlogTag[]; totals: { count: number }[] }>([
     { $match: publicFilter() },
     { $project: { tags: { $setUnion: ["$tags", []] } } },
     { $unwind: "$tags" },
     { $match: { tags: { $type: "string", $ne: "" } } },
     { $group: { _id: "$tags", count: { $sum: 1 } } },
     { $sort: { count: -1, _id: 1 } },
-    { $limit: 100 },
-    { $project: { _id: 0, name: "$_id", count: 1 } },
+    { $facet: {
+      items: [{ $skip: pagination.offset }, { $limit: pagination.limit }, { $project: { _id: 0, name: "$_id", count: 1 } }],
+      totals: [{ $count: "count" }],
+    } },
   ]).option({ maxTimeMS: queryTimeout });
+  return buildPaginationResult(result?.items ?? [], result?.totals[0]?.count ?? 0, pagination);
 }

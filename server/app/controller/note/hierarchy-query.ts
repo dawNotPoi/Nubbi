@@ -2,11 +2,8 @@ import note from "@/models/note";
 import {
   ACTIVE_NOTE_FILTER,
   DEFAULT_NOTE_TITLE,
-  NOTE_LIST_PROJECTION,
-  NOTE_QUERY_LIMIT,
 } from "./query-config";
 import type {
-  NoteListDocument,
   NotePathItem,
 } from "./query-types";
 
@@ -50,18 +47,6 @@ export const getNoteAncestors = async (
   }
 
   return ancestors;
-};
-
-/** 查询指定父节点的直属子笔记 */
-export const getDirectChildren = async (
-  parentId: string,
-  userId: string,
-): Promise<NoteListDocument[]> => {
-  return await note
-    .find({ parentId, userId, ...ACTIVE_NOTE_FILTER })
-    .sort({ createdAt: -1 })
-    .limit(NOTE_QUERY_LIMIT)
-    .select(NOTE_LIST_PROJECTION);
 };
 
 /** 校验移动目标合法性：不能移动到自身或其后代，目标父节点必须存在 */

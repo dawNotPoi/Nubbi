@@ -1,5 +1,9 @@
 # 笔记模块 PRD（重构版）
 
+## 2026-09-28 列表分页
+
+本轮列表参数、返回结构与调用方迁移以[分页方案](../infrastructure/list-pagination-plan.md)为准，覆盖下文冲突的历史数组返回约定；权限与 UI 样式不变。
+
 ## 2026-09-05：Nubbi Blog 公开阅读接入
 
 已发布 Note 通过新增 `/blog/posts`、`/blog/posts/:id`、`/blog/tags` 提供公开阅读。

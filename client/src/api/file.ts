@@ -1,3 +1,5 @@
+import { collectPages } from "./collect-pages";
+import type { ApiResponse } from "./request";
 import request, { Get } from "./request";
 import type { PaginatedResult } from "./pagination";
 import { accountQueryKey } from "@/features/auth/model/account-scope";
@@ -131,8 +133,9 @@ export const fetchFileStats = async () => {
 export const createFloder = (name?: string, parentId?: string) =>
   request<FolderRecord>("/file/createfolder", { parentId, name });
 
-export const getAllFolders = () =>
-  request<FolderRecord[]>("/file/folders", undefined, "get");
+/** @returns 逐页读取的完整文件夹目录，避免移动选择器漏掉后续目录。 */
+export const getAllFolders = (): Promise<ApiResponse<FolderRecord[]>> =>
+  collectPages((pagination) => Get<PaginatedResult<FolderRecord>>("/file/folders", pagination));
 
 export const deleteFile = (
   _id: string,

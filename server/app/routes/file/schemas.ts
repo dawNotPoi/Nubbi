@@ -58,7 +58,7 @@ export const moveBatchSchema = z.object({
   targetFolderId: rootFolderSchema,
 });
 
-export const legacyListSchema = z.object({
+export const legacyListSchema = paginationQuerySchema.extend({
   parentId: rootFolderSchema.default(null),
 });
 

@@ -30,13 +30,13 @@ export const registerReadTools = (server: McpServer, api: NubbiApi): void => {
       outputSchema: ToolOutputSchema,
       annotations: READ_ANNOTATIONS,
     },
-    async (): Promise<CallToolResult> =>
+    async (input): Promise<CallToolResult> =>
       runTool(
         api,
         "Listing tags",
         "GET",
         "/mcp-api/tags",
-        { retryRead: true },
+        { query: { limit: input.limit, offset: input.offset }, retryRead: true },
         summarizeTags,
       ),
   );

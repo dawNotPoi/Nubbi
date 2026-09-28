@@ -1,3 +1,4 @@
+import { paginationQuerySchema } from "@/common/pagination";
 import { createTag, deleteTag, listTags } from "@/controller/tag";
 import {
   requireAuthenticatedUser,
@@ -21,8 +22,9 @@ const tagRoutes = createJsonRouteRegistrar<TagAction, AuthenticatedUser>(
 
 tagRoutes.get("/list", {
   action: "read",
+  query: paginationQuerySchema,
   message: "query success",
-  handler: ({ actor }) => listTags(actor.id),
+  handler: ({ actor, query }) => listTags(actor.id, query),
 });
 
 tagRoutes.post("/create", {

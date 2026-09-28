@@ -50,7 +50,7 @@ export const getLegacyMeetingPage = async (
   const [items, total] = await Promise.all([
     meeting
       .find(filter)
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: -1, _id: -1 })
       .skip(offset)
       .limit(pageSize),
     meeting.countDocuments(filter),

@@ -1,3 +1,4 @@
+import { collectPages } from "./collect-pages";
 import request, { Get, type ApiResponse } from "./request";
 import type { PaginatedResult, PaginationParams } from "./pagination";
 export interface MeetingType {
@@ -36,8 +37,9 @@ export interface MeetingAccessResult {
   expiresInSeconds?: number;
 }
 
+/** @returns 逐页读取的会议列表，保留现有页面集合行为。 */
 export async function getMeeting(): Promise<ApiResponse<MeetingType[]>> {
-  return Get<MeetingType[]>(`meeting/findMyMeeting`);
+  return collectPages((pagination) => Get<PaginatedResult<MeetingType>>("meeting/findMyMeeting", pagination));
 }
 
 /** @param data 会议表单。@returns 服务端返回的公开会议，供创建成功后邀请使用。 */
@@ -55,8 +57,9 @@ export async function deleteMeeting(
   return request(`meeting/delete?_id=${_id}`, {}, "delete");
 }
 
+/** @returns 逐页读取的会议列表，保留现有页面集合行为。 */
 export async function getAllMeeting(): Promise<ApiResponse<MeetingType[]>> {
-  return Get<MeetingType[]>("meeting/findAllMeeting");
+  return collectPages((pagination) => Get<PaginatedResult<MeetingType>>("meeting/findAllMeeting", pagination));
 }
 
 export async function getMeetingList(
@@ -72,8 +75,9 @@ export async function vetMeeting(
   return request("meeting/vetMeeting", { id, status });
 }
 
+/** @returns 逐页读取的会议列表，保留现有页面集合行为。 */
 export async function getAdminMeeting(): Promise<ApiResponse<MeetingType[]>> {
-  return Get<MeetingType[]>(`meeting/findAllMeeting`, { hostId: "dawn" });
+  return getAllMeeting();
 }
 
 export async function getMeetingById(
@@ -82,10 +86,11 @@ export async function getMeetingById(
   return Get<MeetingType | null>("meeting/findById", { id });
 }
 
+/** @param id 主持的会议 ID。@returns 完整评论集合。 */
 export async function getMeetingComments(
   id: string,
 ): Promise<ApiResponse<MeetingComment[]>> {
-  return Get<MeetingComment[]>("meeting/comments", { id });
+  return collectPages((pagination) => Get<PaginatedResult<MeetingComment>>("meeting/comments", { id, ...pagination }));
 }
 
 export async function validateMeetingAccess(

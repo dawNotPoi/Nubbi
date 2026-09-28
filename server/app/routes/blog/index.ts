@@ -1,3 +1,4 @@
+import { paginationQuerySchema } from "@/common/pagination";
 import {
   getBlogPost,
   listBlogPosts,
@@ -22,7 +23,8 @@ routes.get("/posts", {
 });
 routes.get("/tags", {
   action: "read",
-  handler: () => listBlogTags(),
+  query: paginationQuerySchema,
+  handler: ({ query }) => listBlogTags(query),
 });
 routes.get("/posts/:id", {
   action: "read",

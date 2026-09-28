@@ -1,5 +1,9 @@
 # Phase 2：Note MCP + Scoped Token PRD
 
+## 2026-09-28 标签分页
+
+`nubbi_list_tags` 与 `/mcp-api/tags` 增加 limit/offset，返回统一分页与下一页提示；详见[分页方案](../infrastructure/list-pagination-plan.md)。
+
 ## 目标
 
 为 Nubbi 提供独立的 MCP Server，使 Agent 能读取、创建、编辑、移动、归档和回收笔记，同时复用现有 Better Auth API Key，并在服务端强制最小权限。
@@ -33,6 +37,7 @@ Remote MCP Host --HTTPS/Bearer---->
 ```
 
 - `mcp/` 是独立 TypeScript workspace，不直接连接 MongoDB。
+- Schema 口径与服务端**有意不同**：MCP 使用 `zod/v4` API。MCP SDK 1.29 的 v3 分支无法从 `.superRefine()` 包装后的 schema 提取对象形状，切到 `zod/v3` 会让 `nubbi_edit_note_content` 与 `nubbi_update_note_properties` 在 `tools/list` 中丢失全部参数。
 - MCP 所有 Note 操作经主服务 `/mcp-api/*`，复用 Note Controller/Model 业务规则。
 - 普通 `/note/*` 拒绝 MCP Token 的读写请求；MCP 必须走受约束的 `/mcp-api/*`，不能通过旧路由绕过 Agent 子树与字段策略。
 

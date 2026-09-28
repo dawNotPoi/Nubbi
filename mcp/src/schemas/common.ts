@@ -1,3 +1,6 @@
+// 这里固定使用 zod/v4：MCP SDK 1.29 的 v3 分支无法从 .superRefine() 包装后的 schema
+// 提取对象形状，会让 nubbi_edit_note_content / nubbi_update_note_properties 在 tools/list
+// 中丢失全部参数；服务端使用 zod/v3，两边口径不同属于有意为之。
 import * as z from "zod/v4";
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from "../constants.js";
 

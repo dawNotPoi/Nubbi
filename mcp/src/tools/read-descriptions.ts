@@ -1,5 +1,5 @@
 export const READ_TOOL_DESCRIPTIONS = {
-  tags: `List all existing tags in the authenticated user's Nubbi tag catalog.
+  tags: `List one page of existing tags in the authenticated user's Nubbi tag catalog. Use limit and offset; follow nextOffset while hasMore is true.
 
 Call this before proposing a tagged note or tag-property update. Reuse an existing tag exactly, including spelling and letter case, when it already represents the intended concept. Propose a new tag only when no existing tag fits. This tool is read-only.
 

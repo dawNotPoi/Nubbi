@@ -1,3 +1,4 @@
+import { paginationQuerySchema } from "@/common/pagination";
 import {
   createLegacyFolder,
   getLegacyFileList,
@@ -84,7 +85,7 @@ fileRoutes.post("/delete-batch", {
 fileRoutes.post("/list", {
   action: "read",
   body: legacyListSchema,
-  handler: ({ actor, body }) => getLegacyFileList(actor.id, body.parentId),
+  handler: ({ actor, body }) => getLegacyFileList(actor.id, body.parentId, body),
 });
 
 fileRoutes.post("/createfolder", {
@@ -96,7 +97,8 @@ fileRoutes.post("/createfolder", {
 
 fileRoutes.get("/folders", {
   action: "read",
-  handler: ({ actor }) => getLegacyFolders(actor.id),
+  query: paginationQuerySchema,
+  handler: ({ actor, query }) => getLegacyFolders(actor.id, query),
 });
 
 fileRoutes.post("/rename", {

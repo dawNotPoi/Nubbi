@@ -4,10 +4,11 @@ import { recordUserTags } from "../tag";
 import { assertOwnedNote } from "./access";
 import { createNote, type CreateNoteInput } from "./create";
 import {
-  getDirectChildren,
   validateNoteMoveTarget,
 } from "./hierarchy-query";
-import type { NoteListDocument } from "./query-types";
+import type { NotePaginationResult } from "./query-types";
+import type { NoteListQuery } from "@/routes/note/schemas";
+import { queryNotePage } from "./list-query";
 import {
   updateNoteMeta,
   type NotePropertiesInput,
@@ -67,11 +68,12 @@ export const updateUserNoteProperties = async ({
   return updatedNote;
 };
 
-/** 校验父笔记归属后，查询它的直属子笔记。 */
+/** @param userId 账号。@param parentId 父笔记。@param input 分页筛选。@returns 归属校验后的子笔记分页。 */
 export const getUserNoteChildren = async (
   userId: string,
   parentId: string,
-): Promise<NoteListDocument[]> => {
+  input: NoteListQuery,
+): Promise<NotePaginationResult> => {
   await assertOwnedNote(userId, parentId);
-  return getDirectChildren(parentId, userId);
+  return queryNotePage(userId, input, { parentId });
 };

@@ -24,7 +24,13 @@ pnpm --filter nubbi-mcp-server build
 pnpm --filter nubbi-mcp-server test
 ```
 
-需要 Node.js 20 或更高版本。该包将 `@modelcontextprotocol/sdk` 固定为 `1.29.0`，并使用 Zod 4 严格 Schema。
+需要 Node.js 20 或更高版本。该包将 `@modelcontextprotocol/sdk` 固定为 `1.29.0`，并使用 Zod 4 的 `zod/v4` API 编写严格 Schema；该 API 口径与服务端 `zod/v3` 不同，原因见下方「Schema 版本口径」。
+
+## Schema 版本口径
+
+MCP 侧统一使用 `zod/v4`，**不要**改成与服务端一致的 `zod/v3`。`@modelcontextprotocol/sdk` 1.29 在 `zod/v3` 分支下用 `.shape` 提取对象形状，而 `nubbi_edit_note_content`、`nubbi_update_note_properties` 的 Schema 末尾是 `.superRefine()`，其返回值没有 `.shape`，会导致这两个工具在 `tools/list` 中 `properties` 为空、模型看不到任何参数。
+
+判断依据：`src/schemas/*.ts` 只导入 `zod/v4`；如需验证，切换后对比 `tools/list` 中各工具的 `inputSchema.properties` 数量。
 
 ## 本地 stdio
 
@@ -33,7 +39,7 @@ pnpm --filter nubbi-mcp-server test
 ```bash
 NUBBI_API_URL=http://localhost:4000 \
 NUBBI_API_KEY=nb_replace_me \
-node mcp/dist/stdio.js
+node mcp/dist/transport/stdio.js
 ```
 
 MCP Host 配置示例：
@@ -43,7 +49,7 @@ MCP Host 配置示例：
   "mcpServers": {
     "nubbi": {
       "command": "node",
-      "args": ["/absolute/path/to/Nubbi/mcp/dist/stdio.js"],
+      "args": ["/absolute/path/to/Nubbi/mcp/dist/transport/stdio.js"],
       "env": {
         "NUBBI_API_URL": "http://localhost:4000",
         "NUBBI_API_KEY": "nb_replace_me"
@@ -64,7 +70,7 @@ MCP_HOST=0.0.0.0 \
 MCP_PORT=3100 \
 MCP_ALLOWED_HOSTS= \
 MCP_ALLOWED_ORIGINS=https://app.example.com \
-node mcp/dist/http.js
+node mcp/dist/transport/http.js
 ```
 
 - MCP 端点：`POST /mcp`

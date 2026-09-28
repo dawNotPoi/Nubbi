@@ -1,3 +1,4 @@
+import { collectPages } from "./collect-pages";
 import { ObjectId } from "bson";
 import type { PaginatedResult, PaginationParams } from "./pagination";
 import request, { Get } from "./request";
@@ -128,17 +129,17 @@ export async function createNote(data: NoteWithContent) {
   return assertSuccess(response, "Failed to create note");
 }
 
-export const getRootNotes = async () => {
-  return Get<Note[]>("note/roots");
-};
+/** @returns 逐页读取的完整笔记集合。 */
+export const getRootNotes = async (): Promise<ApiResponse<Note[]>> =>
+  collectPages((pagination) => Get<PaginatedResult<Note>>("note/roots", pagination));
 
-export const getAllNotes = async () => {
-  return Get<Note[]>("note/all");
-};
+/** @returns 逐页读取的完整笔记集合。 */
+export const getAllNotes = async (): Promise<ApiResponse<Note[]>> =>
+  collectPages((pagination) => Get<PaginatedResult<Note>>("note/all", pagination));
 
-export const getRecentNotes = async () => {
-  return Get<Note[]>("note/recent");
-};
+/** @returns 逐页读取的完整笔记集合。 */
+export const getRecentNotes = async (): Promise<ApiResponse<Note[]>> =>
+  collectPages((pagination) => Get<PaginatedResult<Note>>("note/recent", pagination));
 
 export const getTrashNotes = async (pagination: PaginationParams = {}) => {
   const response = await Get<PaginatedResult<Note>>(
@@ -148,9 +149,9 @@ export const getTrashNotes = async (pagination: PaginationParams = {}) => {
   return assertSuccess(response, "Failed to load trash notes");
 };
 
-export const getDirectChildren = async (parentId: string) => {
-  return Get<Note[]>("note/children", { parentId });
-};
+/** @param parentId 父笔记。@returns 全部直属子笔记。 */
+export const getDirectChildren = async (parentId: string): Promise<ApiResponse<Note[]>> =>
+  collectPages((pagination) => Get<PaginatedResult<Note>>("note/children", { parentId, ...pagination }));
 
 export async function updateNoteContent(
   noteId: string,
@@ -218,6 +219,11 @@ export async function getNoteAncestors(noteId: string) {
   return Get<NotePathItem[]>("note/ancestors", { noteId });
 }
 
-export async function searchNotes(title: string) {
-  return request<SearchNote[]>("note/search", { title });
+/** @param title 搜索标题。@returns 全部匹配项，保留现有搜索交互。 */
+export async function searchNotes(title: string): Promise<ApiResponse<SearchNote[]>> {
+  return collectPages((pagination) => request<PaginatedResult<SearchNote>>("note/search", { title, ...pagination }));
 }
+
+/** @param pagination 分页参数。@returns 单页账号笔记，供按需加载的调用方使用。 */
+export const getNotePage = (pagination: PaginationParams = {}): Promise<ApiResponse<PaginatedResult<Note>>> =>
+  Get<PaginatedResult<Note>>("note/all", pagination);

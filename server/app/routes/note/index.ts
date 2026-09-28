@@ -31,6 +31,7 @@ import {
   noteIdBodySchema,
   noteIdQuerySchema,
   noteParentQuerySchema,
+  noteListQuerySchema,
   publishNoteBodySchema,
   searchNotesBodySchema,
   updateNoteContentBodySchema,
@@ -96,14 +97,16 @@ noteRoutes.put("/restore", {
 
 noteRoutes.get("/all", {
   action: "read",
+  query: noteListQuerySchema,
   message: "query success",
-  handler: ({ actor }) => getAllNotes(actor.id),
+  handler: ({ actor, query }) => getAllNotes(actor.id, query),
 });
 
 noteRoutes.get("/roots", {
   action: "read",
+  query: noteListQuerySchema,
   message: "query success",
-  handler: ({ actor }) => getRootNotes(actor.id),
+  handler: ({ actor, query }) => getRootNotes(actor.id, query),
 });
 
 noteRoutes.get("/children", {
@@ -111,7 +114,7 @@ noteRoutes.get("/children", {
   query: noteParentQuerySchema,
   message: "query success",
   handler: ({ actor, query }) =>
-    getUserNoteChildren(actor.id, query.parentId),
+    getUserNoteChildren(actor.id, query.parentId, query),
 });
 
 noteRoutes.get("/ancestors", {
@@ -130,8 +133,9 @@ noteRoutes.get("/detail", {
 
 noteRoutes.get("/recent", {
   action: "read",
+  query: noteListQuerySchema,
   message: "query success",
-  handler: ({ actor }) => getRecentNotes(actor.id),
+  handler: ({ actor, query }) => getRecentNotes(actor.id, query),
 });
 
 noteRoutes.get("/trash", {
@@ -143,15 +147,16 @@ noteRoutes.get("/trash", {
 
 noteRoutes.get("/getNote", {
   action: "read",
+  query: noteListQuerySchema,
   message: "query success",
-  handler: ({ actor }) => getNotes(actor.id),
+  handler: ({ actor, query }) => getNotes(actor.id, query),
 });
 
 noteRoutes.post("/search", {
   action: "read",
   body: searchNotesBodySchema,
   message: "query success",
-  handler: ({ actor, body }) => searchNotes(actor.id, body.title),
+  handler: ({ actor, body }) => searchNotes(actor.id, body.title, body),
 });
 
 noteRoutes.delete("/delete", {

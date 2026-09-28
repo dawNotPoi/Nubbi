@@ -1,9 +1,9 @@
+import { buildPaginationResult, type PaginationInput, type PaginationResult } from "@/common/pagination";
 import note, { type NoteEntity } from "@/models/note";
 import {
   ACTIVE_NOTE_FILTER,
   DEFAULT_NOTE_TITLE,
   NOTE_LIST_PROJECTION,
-  NOTE_QUERY_LIMIT,
 } from "./query-config";
 import type { NoteSearchItem } from "./query-types";
 
@@ -17,23 +17,25 @@ type ParentInfo = {
 const escapeRegExp = (value: string): string =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-/** 按标题模糊搜索笔记，附带祖先路径标签 */
+/** @param userId 账号。@param title 标题查询。@param pagination 分页参数。@returns 带祖先标签的当前页。 */
 export const searchNotes = async (
   userId: string,
   title: string,
-): Promise<NoteSearchItem[]> => {
+  pagination: PaginationInput,
+): Promise<PaginationResult<NoteSearchItem>> => {
   const normalizedTitle = title.trim();
-  if (!normalizedTitle) return [];
+  if (!normalizedTitle) return buildPaginationResult([], 0, pagination);
 
-  const result = await note
-    .find({
+  const filter = {
       userId,
       title: { $regex: escapeRegExp(normalizedTitle), $options: "i" },
       ...ACTIVE_NOTE_FILTER,
-    })
-    .limit(NOTE_QUERY_LIMIT)
-    .select(NOTE_LIST_PROJECTION)
-    .lean();
+  };
+  const [result, total] = await Promise.all([
+    note.find(filter).sort({ createdAt: -1, _id: -1 })
+      .skip(pagination.offset).limit(pagination.limit).select(NOTE_LIST_PROJECTION).lean(),
+    note.countDocuments(filter),
+  ]);
   const noteCache = new Map<string, ParentInfo>();
 
   const getParentInfo = async (noteId: string): Promise<ParentInfo> => {
@@ -75,10 +77,11 @@ export const searchNotes = async (
     return [titles[0], "...", titles[titles.length - 1]].join("/");
   };
 
-  return Promise.all(
+  const items = await Promise.all(
     result.map(async (item) => ({
       ...item,
       pathLabel: await buildPathLabel(item.parentId),
     })),
   );
+  return buildPaginationResult(items, total, pagination);
 };

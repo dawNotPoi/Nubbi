@@ -19,10 +19,8 @@ export const summarizePage = (noun: string, data: unknown): string => {
   return `Found ${count} ${noun} at offset ${offset} (${total} total).${continuation}`;
 };
 
-export const summarizeTags = (data: unknown): string => {
-  const count = Array.isArray(data) ? data.length : 0;
-  return `Found ${count} existing ${count === 1 ? "tag" : "tags"}.`;
-};
+/** @param data 标签分页响应。@returns 当前页数量及下一页提示。 */
+export const summarizeTags = (data: unknown): string => summarizePage("tags", data);
 
 export const summarizeNote = (data: unknown): string => {
   const offset = readNumber(data, "contentOffset") ?? 0;

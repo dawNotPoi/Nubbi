@@ -1,4 +1,19 @@
 import { z } from "zod/v3";
+import { paginationQuerySchema } from "@/common/pagination";
+
+const booleanQuerySchema = z.enum(["true", "false"]).transform((value) => value === "true");
+
+/** 账号笔记通用筛选；显式解析布尔值，避免把字符串 false 当作 true。 */
+export const noteListQuerySchema = paginationQuerySchema.extend({
+  published: booleanQuerySchema.optional(),
+  hasPassword: booleanQuerySchema.optional(),
+  q: z.string().trim().max(100).default(""),
+  tag: z.string().trim().max(50).default(""),
+  order: z.enum(["newest", "oldest", "updated"]).optional(),
+});
+
+/** 已校验的笔记列表筛选。 */
+export type NoteListQuery = z.infer<typeof noteListQuerySchema>;
 
 export const noteObjectIdSchema = z
   .string()
@@ -70,11 +85,11 @@ export const noteIdQuerySchema = z.object({
   noteId: noteObjectIdSchema,
 });
 
-export const noteParentQuerySchema = z.object({
+export const noteParentQuerySchema = noteListQuerySchema.extend({
   parentId: noteObjectIdSchema,
 });
 
-export const searchNotesBodySchema = z.object({
+export const searchNotesBodySchema = paginationQuerySchema.extend({
   title: z.string().trim().min(1).max(100),
 });
 

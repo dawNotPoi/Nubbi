@@ -26,6 +26,7 @@ import {
   deleteMeetingQuerySchema,
   legacyMeetingPageSchema,
   meetingIdQuerySchema,
+  meetingCommentsQuerySchema,
   validateMeetingAccessBodySchema,
   vetMeetingSchema,
 } from "@/routes/meeting/schemas";
@@ -57,7 +58,8 @@ meetingRoutes.post("/create", {
 /** 查询当前用户主持的会议 */
 meetingRoutes.get("/findMyMeeting", {
   action: "read",
-  handler: ({ actor }) => findMyMeetings(actor),
+  query: paginationQuerySchema,
+  handler: ({ actor, query }) => findMyMeetings(actor, query),
 });
 
 /** 分页查询全部会议 */
@@ -84,7 +86,8 @@ meetingRoutes.post("/vetMeeting", {
 /** 公开：查询全部会议 */
 publicMeetingRoutes.get("/findAllMeeting", {
   action: "read",
-  handler: () => findAllMeetings(),
+  query: paginationQuerySchema,
+  handler: ({ query }) => findAllMeetings(query),
 });
 
 /** 删除自己主持的会议 */
@@ -104,9 +107,9 @@ publicMeetingRoutes.get("/findById", {
 /** 查询会议的评论列表 */
 meetingRoutes.get("/comments", {
   action: "read",
-  query: meetingIdQuerySchema,
+  query: meetingCommentsQuerySchema,
   handler: ({ actor, query }) =>
-    findHostedMeetingComments(actor, query.id),
+    findHostedMeetingComments(actor, query.id, query),
 });
 
 /** 校验会议访问权限（密码 / 白名单） */
