@@ -13,9 +13,9 @@ export default function ErrorPage(): ReactElement {
   const { recovering, retry } = usePageRecovery();
   return (
     <section className="page-message" role="alert">
-      <span className="eyebrow">稍等片刻</span>
+      <span className="eyebrow">暂时无法阅读</span>
       <h1>文章暂时没能加载</h1>
-      <p>连接遇到了一点问题，请稍后再试。</p>
+      <p>请重新加载，或先回首页看看。</p>
       <div className="message-actions">
         <button className="button" onClick={retry} disabled={recovering}>
           <RefreshCw size={16} aria-hidden="true" />

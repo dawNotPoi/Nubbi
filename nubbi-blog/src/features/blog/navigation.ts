@@ -1,6 +1,6 @@
 /** 单页阅读列表保持适中长度，避免一次加载大量正文。 */
 export const PAGE_SIZE = 10;
-/** 与后端最大 offset 保持一致。 */
+/** 限制站点可导航页码，避免无意义的极深分页请求。 */
 export const MAX_PAGE = 10_001;
 /** 已标准化的列表查询状态，完全由 URL 驱动。 */
 export type BlogFilters = { q: string; tag: string; page: number; order: "newest" | "oldest" | "updated" };

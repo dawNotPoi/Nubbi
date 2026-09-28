@@ -1,4 +1,5 @@
 import type { ReactElement, ReactNode, ComponentPropsWithoutRef } from "react";
+import { AnchorLink } from "@/components/anchor-link";
 import type { ExtraProps } from "react-markdown";
 import { site } from "@/config/site";
 import { classifyLink } from "../links/model";
@@ -57,7 +58,7 @@ export function MarkdownParagraph({
 }
 
 /**
- * 行内网页链接启用预览，锚点和邮件链接保持原生行为。
+ * 行内网页链接启用预览，锚点保留路由历史，邮件链接保持原生行为。
  * @param props 地址与链接文字。
  * @returns 安全链接或不可导航的原文。
  */
@@ -69,7 +70,9 @@ export function MarkdownAnchor({
 }: ExtraProps & ComponentPropsWithoutRef<"a">): ReactElement {
   const target = classifyLink(href || "", site.url);
   if (!target) return <span>{children}</span>;
-  if (target.kind === "anchor" || target.kind === "contact")
+  if (target.kind === "anchor")
+    return <AnchorLink {...attributes} href={target.href}>{children}</AnchorLink>;
+  if (target.kind === "contact")
     return (
       <a {...attributes} href={target.href}>
         {children}

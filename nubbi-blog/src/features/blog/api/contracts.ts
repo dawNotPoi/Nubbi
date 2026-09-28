@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-/** 公开接口的白名单字段；模型内部字段不会进入渲染层。 */
+/** 博客适配后的展示白名单；账号笔记的内部字段不会进入渲染层。 */
 export const postSummarySchema = z.object({
   id: z.string().regex(/^[a-f\d]{24}$/i),
   title: z.string(),
@@ -15,7 +15,7 @@ export const postSummarySchema = z.object({
 /** 文章详情额外携带当前 Note Markdown 正文。 */
 export const postSchema = postSummarySchema.extend({ content: z.string() });
 
-/** 与 Nubbi 标准分页响应一致的运行时校验。 */
+/** 博客在现有笔记列表返回范围内生成的分页结构。 */
 export const postPageSchema = z.object({
   items: z.array(postSummarySchema),
   total: z.number().int().nonnegative(),
@@ -26,16 +26,9 @@ export const postPageSchema = z.object({
   nextOffset: z.number().int().nonnegative().nullable(),
 });
 
-/** 标签聚合响应，不使用私有 /tag 接口。 */
-export const tagsSchema = z.array(
-  z.object({ name: z.string(), count: z.number().int().positive() }),
-);
-
 /** 列表展示模型。 */
 export type PostSummary = z.infer<typeof postSummarySchema>;
 /** 正文阅读模型。 */
 export type Post = z.infer<typeof postSchema>;
 /** 标准文章分页。 */
 export type PostPage = z.infer<typeof postPageSchema>;
-/** 标签及可阅读文章数。 */
-export type BlogTag = z.infer<typeof tagsSchema>[number];

@@ -1,0 +1,62 @@
+/* 显式根名称由布局声明；普通导航仅捕获正文。 */
+:root { view-transition-name: none !important; }
+::view-transition { pointer-events: none; }
+
+::view-transition-group(.page-change),
+::view-transition-group(.page-back) { animation: none; }
+::view-transition-old(.page-change),
+::view-transition-new(.page-change),
+::view-transition-old(.page-back),
+::view-transition-new(.page-back) { mix-blend-mode: normal; }
+::view-transition-old(.page-change),
+::view-transition-old(.page-back) { animation: page-leave var(--motion-fast) ease-out both; }
+::view-transition-new(.page-change) { animation: page-arrive var(--motion-page) var(--motion-ease) both; }
+::view-transition-new(.page-back) { animation: page-return var(--motion-page) var(--motion-ease) both; }
+
+@keyframes page-leave { to { opacity: 0; } }
+@keyframes page-arrive {
+  from { opacity: 0; transform: translateY(var(--motion-distance)); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes page-return {
+  from { opacity: 0; transform: translateY(calc(-1 * var(--motion-distance))); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* React 负责生命周期；活动类型在捕获前生效，完成或跳过后自动撤销。 */
+:root:active-view-transition-type(theme-change) { view-transition-name: site-theme !important; }
+:root:active-view-transition-type(theme-change) * { view-transition-name: none !important; }
+:root:active-view-transition-type(theme-change) *,
+:root:active-view-transition-type(theme-change) *::before,
+:root:active-view-transition-type(theme-change) *::after { transition: none !important; }
+
+/* 只动画裁剪区域，不覆盖浏览器根据根快照计算的宽高、位置和缩放。 */
+::view-transition-group(site-theme) { animation: none; }
+::view-transition-image-pair(site-theme) { isolation: isolate; }
+::view-transition-old(site-theme),
+::view-transition-new(site-theme) { animation: none; mix-blend-mode: normal; }
+:root[data-theme="light"]::view-transition-new(site-theme) {
+  z-index: 2;
+  animation: theme-reveal var(--motion-theme) var(--motion-ease) both;
+}
+:root[data-theme="light"]::view-transition-old(site-theme) { z-index: 1; }
+/* 收拢旧亮色快照，暗色留在下层；不能反播新暗色的展开。 */
+:root[data-theme="dark"]::view-transition-old(site-theme) {
+  z-index: 2;
+  animation: theme-retract var(--motion-theme) var(--motion-ease) both;
+}
+:root[data-theme="dark"]::view-transition-new(site-theme) { z-index: 1; }
+@keyframes theme-reveal {
+  from { clip-path: circle(0 at var(--theme-origin-x) var(--theme-origin-y)); }
+  to { clip-path: circle(var(--theme-radius) at var(--theme-origin-x) var(--theme-origin-y)); }
+}
+@keyframes theme-retract {
+  from { clip-path: circle(var(--theme-radius) at var(--theme-origin-x) var(--theme-origin-y)); }
+  to { clip-path: circle(0 at var(--theme-origin-x) var(--theme-origin-y)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) { animation: none !important; }
+}

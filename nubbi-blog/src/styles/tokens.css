@@ -1,18 +1,35 @@
 :root {
-  --font-body: "Instrument Sans", MiSans, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-  --font-serif: Georgia, "Noto Serif CJK SC", "Source Han Serif SC", "Songti SC", STSong, SimSun, serif;
+  --font-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  --font-brand: Georgia, "Times New Roman", serif;
   --font-mono: "Cascadia Code", "SF Mono", Consolas, monospace;
   --font-reading: var(--font-body);
-  --text-caption: .75rem;
-  --text-small: .8125rem;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --text-caption: .8125rem;
+  --text-small: .875rem;
   --text-ui: .875rem;
   --text-body: 1rem;
-  --text-reading: 1rem;
+  --text-reading: 1.0625rem;
+  --text-code: .875rem;
+  --diagram-font-size: 14px;
+  --text-table: .9375rem;
   --text-title-sm: 1.25rem;
   --text-title: 1.5rem;
-  --text-heading: 2rem;
-  --text-display: 2.25rem;
-  --reading-leading: 1.7;
+  --text-heading: 1.75rem;
+  --text-display: 2.5rem;
+  --text-article-title: clamp(2rem, 3.1vw, 2.75rem);
+  --text-hero: clamp(2.5rem, 4.2vw, 3.5rem);
+  --text-hero-role: clamp(2.125rem, 3.6vw, 3.125rem);
+  --text-message-title: clamp(1.875rem, 4vw, 2.5rem);
+  --text-prose-title: 2rem;
+  --leading-heading: 1.4;
+  --leading-ui: 1.6;
+  --leading-body: 1.9;
+  --reading-leading: 1.85;
+  --leading-prose-heading: 1.45;
+  --leading-code: 1.75;
+  --reading-paragraph-gap: 1.25em;
   --space-xs: 8px;
   --space-sm: 16px;
   --space-md: 24px;
@@ -21,21 +38,24 @@
   --space-section: 64px;
   --radius: 8px;
   --control-size: 44px;
-  --width: 896px;
-  --feed-width: 588px;
-  --reading-width: 920px;
+  --width: 1024px;
+  --feed-width: 1024px;
+  --reading-width: 740px;
   --motion-fast: 160ms;
+  --motion-page: 240ms;
+  --motion-theme: 420ms;
+  --motion-distance: 8px;
+  --motion-ease: cubic-bezier(.22, 1, .36, 1);
   --shadow-popover: 0 8px 32px var(--shadow-color);
   --shadow-subtle: 0 1px 4px var(--shadow-color);
   --shadow-row: 0 2px 12px var(--shadow-color), 0 0 0 1px var(--border-faint);
 }
-:root[data-font="serif"] { --font-reading: var(--font-serif); }
-:root[data-size="large"] { --text-reading: 1.25rem; }
 @theme inline { --font-sans: var(--font-body); }
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; scroll-padding-top: 32px; scrollbar-gutter: stable; }
-body { margin: 0; background: var(--bg-page); color: var(--text-primary); font-family: var(--font-body); -webkit-font-smoothing: antialiased; }
+body { margin: 0; background: var(--bg-page); color: var(--text-primary); font-family: var(--font-body); font-size: var(--text-body); font-weight: var(--weight-regular); line-height: var(--leading-ui); -webkit-font-smoothing: antialiased; }
+code, kbd, samp, pre { font-family: var(--font-mono); }
 a { color: inherit; text-decoration: none; }
 button, input, select { font: inherit; }
 button, a, input, select { -webkit-tap-highlight-color: transparent; }

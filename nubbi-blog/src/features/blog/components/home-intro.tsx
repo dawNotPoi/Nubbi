@@ -1,22 +1,23 @@
-import { ArrowDown, ArrowUpRight } from "lucide-react";
-import Link from "next/link";
+import Image from "next/image";
+import { AnchorLink } from "@/components/anchor-link";
 import type { ReactElement } from "react";
-import { site } from "@/config/site";
+import { BLOG_COPY } from "../copy";
 
 /**
- * 首页以居中介绍建立站点身份，下方自然衔接最近文稿。
- * @returns 标识、简介与阅读入口。
+ * 恢复 Dawn 左侧轮换问候和右侧原始圆形头像。
+ * @returns 独立博客首页介绍。
  */
 export function HomeIntro(): ReactElement {
   return (
     <section className="home-intro" aria-label="博客介绍">
-      <div className="identity-monogram" aria-hidden="true">N<span>.</span></div>
-      <h1>Hi, I&apos;m <span>Nubbi</span><span className="intro-wave" aria-hidden="true">👋</span></h1>
-      <p className="home-intro-title">在文字里，<em>记录</em>生活与灵感。</p>
-      <p className="home-intro-description">{site.description}</p>
-      <div className="intro-actions"><a href="#articles" className="text-link">最近文章 <ArrowDown size={15} /></a>
-        <Link href="/blog" className="text-link">全部文稿 <ArrowUpRight size={15} /></Link>
+      <div className="home-intro-copy">
+        <p className="home-overline">HELLO, WELCOME TO MY BLOG</p>
+        <h1 className="home-greeting">Hi, I&apos;m <em>Dawn.</em></h1>
+        <p className="home-typewriter">A Web &lt;Developer/&gt;</p>
+        <p className="home-intro-note">{BLOG_COPY.homeIntroduction}<br />{BLOG_COPY.homeDescription}</p>
+        <AnchorLink className="home-scroll-link" href="#recent-posts">读读近来的文字 ↓</AnchorLink>
       </div>
+      <div className="home-avatar" aria-hidden="true"><Image src="/dawn-avatar.jpg" alt="" width={200} height={200} priority /></div>
     </section>
   );
 }

@@ -1,21 +1,21 @@
 import Image from "next/image";
 import Link from "next/link";
+import { AnchorLink } from "@/components/anchor-link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { ArrowLeft, Clock3 } from "lucide-react";
+import { ArrowLeft, ArrowUp, Clock3 } from "lucide-react";
 import type { ReactElement } from "react";
-import { site } from "@/config/site";
 import { getPost } from "@/features/blog/api/posts";
 import { ArticleOutline } from "@/features/blog/components/article-outline";
-import { CopyButton } from "@/features/blog/components/copy-button";
 import { Markdown } from "@/features/blog/components/markdown";
+import { CopyButton } from "@/features/blog/components/copy-button";
+import { site } from "@/config/site";
 import {
   formatDate,
   readingMinutes,
   safeImageUrl,
 } from "@/features/blog/format";
 import {
-  blogHref,
   parseReturnTo,
   type SearchValues,
 } from "@/features/blog/navigation";
@@ -57,7 +57,7 @@ export async function generateMetadata({
 }
 
 /**
- * 文章正文保持服务端渲染，只有目录和复制按钮需要客户端交互。
+ * 正文与文章信息保持服务端渲染，阅读交互消费真实公开文章。
  * @param props App Router 动态文章 ID。
  * @returns 完整阅读页面，不存在时进入统一 404。
  */
@@ -70,35 +70,25 @@ export default async function ArticlePage({
   const cover = safeImageUrl(post.cover);
   const returnTo = parseReturnTo((await searchParams).from);
   return (
-    <div className="reading-layout">
-      <article className="reading-article">
-        <Link className="back-link" href={returnTo}>
+    <article className="reading-layout" aria-labelledby="article-title">
+      <header className="article-header">
+        <Link className="back-link" href={returnTo} transitionTypes={["nav-back"]}>
           <ArrowLeft size={16} aria-hidden="true" />
-          全部文章
+          返回文集
         </Link>
-        <header className="article-header">
-          <h1>{post.title}</h1>
-          <div className="post-meta">
+        <span className="eyebrow article-overline">THOUGHTS & STORIES</span>
+        <h1 id="article-title">{post.title}</h1>
+        {post.excerpt && <p className="article-summary">{post.excerpt}</p>}
+        <div className="article-byline">
+          <div className="post-meta article-meta">
+            {post.tags.length > 0 && <div className="post-tags">{post.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>}
             <time dateTime={post.date}>{formatDate(post.date)}</time>
-            {post.author && (
-              <>
-                <span aria-hidden="true">·</span>
-                <span>{post.author}</span>
-              </>
-            )}
-          <div className="post-tags">
-            {post.tags.map((tag) => (
-              <Link key={tag} href={blogHref({ tag })}>
-                {tag}
-              </Link>
-            ))}
+            <span className="reading-duration"><Clock3 size={14} aria-hidden="true" />约 {readingMinutes(post.content)} 分钟</span>
           </div>
-            <span className="reading-time">
-              <Clock3 size={14} aria-hidden="true" />约{" "}
-              {readingMinutes(post.content)} 分钟
-            </span>
-          </div>
-        </header>
+          <CopyButton text={new URL(`/blog/${post.id}`, site.url).href} label="复制链接" />
+        </div>
+      </header>
+      <div className="reading-article">
         {cover && (
           <Image
             className="article-cover"
@@ -109,25 +99,18 @@ export default async function ArticlePage({
             unoptimized
           />
         )}
-        <Markdown content={post.content} />
+        <Markdown content={post.content} title={post.title} />
         <footer className="article-footer">
+          <p>感谢你读到这里。</p>
           <div>
-            <p>感谢阅读</p>
-            <span>更新于 {formatDate(post.updatedAt)}</span>
+            <Link className="text-link" href={returnTo} transitionTypes={["nav-back"]}><ArrowLeft size={16} aria-hidden="true" />返回文集</Link>
+            <AnchorLink className="text-link" href="#top">回到顶部<ArrowUp size={16} aria-hidden="true" /></AnchorLink>
           </div>
-          <CopyButton
-            text={new URL(`/blog/${post.id}`, site.url).href}
-            label="分享文章"
-          />
         </footer>
-        <Link className="back-link" href={returnTo}>
-          <ArrowLeft size={16} aria-hidden="true" />
-          继续发现更多文章
-        </Link>
-      </article>
+      </div>
       <aside className="outline-column">
         <ArticleOutline key={post.id} />
       </aside>
-    </div>
+    </article>
   );
 }

@@ -1,133 +1,89 @@
-/* 余白式奶白纸面与玫瑰暖色统一在此维护；组件只能引用语义变量。 */
+/* Shiro 初版双主题的唯一颜色来源；页面与组件只消费语义变量。 */
 :root {
-  color-scheme: light;
-  --bg-page: #fefefb;
-  --bg-floating: #fffffff0;
-  --bg-panel: #ffffff80;
-  --border-faint: #24231f08;
-  --border-strong: #c5c3b8;
-  --accent-border: #b56f8226;
-  --dialog-overlay: #24231f38;
-  --sparkle-color: #d5b77170;
-  --bg-surface: #ffffff;
-  --bg-muted: #f7f7f3;
-  --text-primary: #24231f;
-  --text-secondary: #686760;
-  --text-tertiary: #77756e;
-  --border-default: #eeede7;
-  --accent: #a65f73;
-  --accent-hover: #8d465a;
-  --accent-soft: #f8edf0;
-  --accent-brand: #bd7e8d;
-  --on-accent: #ffffff;
-  --focus-ring: #a65f73;
-  --shadow-color: #24231f0b;
-  --overlay-bg: #201c19eb;
-  --overlay-text: #faf5ef;
-  --tag-bg: #f8f8f5;
-  --tag-text: #925369;
-  --post-hover: #ffffffc9;
-  --notice-info: #24659a;
-  --notice-info-bg: #edf5fc;
-  --notice-warning: #805b13;
-  --notice-warning-bg: #fbf4e6;
-  --notice-danger: #9f4038;
-  --notice-danger-bg: #fdf0ef;
-  --code-bg: #292724;
-  --code-text: #eee7de;
-  --code-muted: #bfb5a8;
-  --code-border: #4c463f;
-  --code-keyword: #d8b5e5;
-  --code-string: #e6bc8c;
-  --code-title: #a7cbe0;
-  --selection-bg: var(--accent-soft);
-  --selection-text: var(--text-primary);
+  color-scheme: light dark;
+
+  /* 阅读表面与文字 */
+  --bg-page: light-dark(#ffffff, #1c1c1e);
+  --bg-surface: light-dark(#ffffff, #252527);
+  --bg-muted: light-dark(#f4f4f5, #2b2b2e);
+  --text-primary: light-dark(#222326, #f5f5f6);
+  --text-article: light-dark(#3f3f46, #d4d4d8);
+  --text-secondary: light-dark(#62626b, #b7b7bf);
+  --text-tertiary: light-dark(#71717a, #a2a1a8);
+
+  /* 导航、链接与交互 */
+  --accent: light-dark(#237f8d, #f596aa);
+  --accent-hover: light-dark(#1b6672, #f8b4c3);
+  --accent-soft: light-dark(#edf5f6, #352a30);
+  --accent-brand: light-dark(#33a6b8, #f596aa);
+  --on-accent: light-dark(#ffffff, #1c1c1e);
+  --focus-ring: var(--accent);
+  --border-default: light-dark(#e8e8eb, #3b3b40);
+  --border-faint: light-dark(#e8e8eb80, #3b3b4080);
+  --shadow-color: light-dark(#22232614, #00000040);
+  --tag-bg: var(--accent-soft);
+  --tag-text: var(--accent);
+  --post-hover: light-dark(#edf1f2, #2b2b2e);
+  --selection-bg: light-dark(#c7e9ee, #f596aa);
+  --selection-text: light-dark(#222326, #1c1c1e);
+
+  /* 浮层与内容状态 */
+  --overlay-bg: light-dark(#1c1c1eeb, #111113ee);
+  --overlay-text: #f5f5f6;
+  --notice-info: light-dark(#256b85, #9ccfdf);
+  --notice-info-bg: light-dark(#edf5f8, #243139);
+  --notice-warning: light-dark(#805b20, #e2c28b);
+  --notice-warning-bg: light-dark(#faf6ed, #343026);
+  --notice-danger: light-dark(#a43f55, #f0a3b3);
+  --notice-danger-bg: light-dark(#fbedf0, #38272e);
+
+  /* 代码区与语法高亮 */
+  --code-bg: light-dark(#f6f7f8, #202023);
+  --code-toolbar-bg: light-dark(#edeef0, #2b2b2f);
+  --code-text: light-dark(#303039, #dedee3);
+  --code-muted: light-dark(#686872, #a6a6b1);
+  --code-border: var(--border-default);
+  --code-keyword: light-dark(#a33b62, #f596aa);
+  --code-string: light-dark(#326c58, #a8ceb7);
+  --code-title: light-dark(#237f8d, #9bcbd8);
+
+  /* 示意图与正文共用阅读配色，不另设图表色板。 */
+  --diagram-bg: var(--bg-surface);
+  --diagram-node-bg: var(--accent-soft);
+  --diagram-group-bg: var(--bg-muted);
+  --diagram-text: var(--text-primary);
+  --diagram-line: var(--accent);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-    --bg-page: #1c1c1a;
-    --bg-floating: #232320ed;
-    --bg-panel: #23232080;
-    --border-faint: #eeeee70a;
-    --border-strong: #626257;
-    --accent-border: #dfa3b330;
-    --dialog-overlay: #08080670;
-    --sparkle-color: #b9a37338;
-    --bg-surface: #232320;
-    --bg-muted: #292925;
-    --text-primary: #eeeee7;
-    --text-secondary: #b9b9af;
-    --text-tertiary: #a4a49a;
-    --border-default: #373730;
-    --accent: #dfa3b3;
-    --accent-hover: #edbbc8;
-    --accent-soft: #36282e;
-    --on-accent: #271c20;
-    --focus-ring: #dfa3b3;
-    --shadow-color: #120e0a33;
-    --tag-bg: #30272b;
-    --tag-text: #e2abb9;
-    --post-hover: #ffffff08;
-    --notice-info: #9eceff;
-    --notice-info-bg: #283b4b;
-    --notice-warning: #ebc577;
-    --notice-warning-bg: #453e2c;
-    --notice-danger: #ecb0a6;
-    --notice-danger-bg: #493432;
-  }
-}
+/* 系统主题为默认值；显式选择时只覆盖浏览器的颜色模式。 */
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
 
-:root[data-theme="dark"] {
-  color-scheme: dark;
-  --bg-page: #1c1c1a;
-  --bg-floating: #232320ed;
-  --bg-panel: #23232080;
-  --border-faint: #eeeee70a;
-  --border-strong: #626257;
-  --accent-border: #dfa3b330;
-  --dialog-overlay: #08080670;
-  --sparkle-color: #b9a37338;
-  --bg-surface: #232320;
-  --bg-muted: #292925;
-  --text-primary: #eeeee7;
-  --text-secondary: #b9b9af;
-  --text-tertiary: #a4a49a;
-  --border-default: #373730;
-  --accent: #dfa3b3;
-  --accent-hover: #edbbc8;
-  --accent-soft: #36282e;
-  --on-accent: #271c20;
-  --focus-ring: #dfa3b3;
-  --shadow-color: #120e0a33;
-  --tag-bg: #30272b;
-  --tag-text: #e2abb9;
-  --post-hover: #ffffff08;
-  --notice-info: #9eceff;
-  --notice-info-bg: #283b4b;
-  --notice-warning: #ebc577;
-  --notice-warning-bg: #453e2c;
-  --notice-danger: #ecb0a6;
-  --notice-danger-bg: #493432;
-}
-
-/* 关闭默认色板，仅向 Tailwind 暴露语义颜色，与普通 CSS 共用同一来源。 */
+/* 关闭默认色板，Tailwind 与普通 CSS 共用同一组语义颜色。 */
 @theme inline {
   --color-*: initial;
   --color-page: var(--bg-page);
   --color-surface: var(--bg-surface);
   --color-surface-muted: var(--bg-muted);
   --color-primary: var(--text-primary);
+  --color-reading: var(--text-article);
   --color-secondary: var(--text-secondary);
   --color-tertiary: var(--text-tertiary);
   --color-divider: var(--border-default);
+  --color-divider-faint: var(--border-faint);
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-soft: var(--accent-soft);
   --color-on-accent: var(--on-accent);
   --color-focus: var(--focus-ring);
+  --color-tag: var(--tag-text);
+  --color-tag-bg: var(--tag-bg);
+  --color-post-hover: var(--post-hover);
+  --color-notice-info: var(--notice-info);
+  --color-notice-warning: var(--notice-warning);
+  --color-notice-danger: var(--notice-danger);
   --color-code-bg: var(--code-bg);
+  --color-code-toolbar: var(--code-toolbar-bg);
   --color-code-text: var(--code-text);
   --color-code-muted: var(--code-muted);
   --color-code-border: var(--code-border);

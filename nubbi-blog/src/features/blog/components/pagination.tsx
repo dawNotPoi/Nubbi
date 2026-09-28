@@ -16,11 +16,11 @@ export function Pagination({
   total: number;
 }): ReactElement | null {
   const pages = Math.min(MAX_PAGE, Math.ceil(total / PAGE_SIZE));
-  if (pages <= 1 && filters.page === 1) return null;
+  if (total === 0 || (pages <= 1 && filters.page === 1)) return null;
   return (
     <nav className="pagination" aria-label="文章分页">
       {filters.page > 1 ? (
-        <Link href={blogHref({ ...filters, page: filters.page - 1 })}>
+        <Link href={blogHref({ ...filters, page: filters.page - 1 })} transitionTypes={["nav-back"]}>
           <ArrowLeft size={16} aria-hidden="true" />
           上一页
         </Link>

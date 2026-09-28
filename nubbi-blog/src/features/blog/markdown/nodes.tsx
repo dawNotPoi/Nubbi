@@ -7,6 +7,7 @@ import {
   type ComponentPropsWithoutRef,
 } from "react";
 import type { ExtraProps } from "react-markdown";
+import { AnchorLink } from "@/components/anchor-link";
 
 /**
  * 读取节点纯文本，供复制、可访问名称和链接识别共同使用。
@@ -42,9 +43,9 @@ export function heading(
     return createElement(
       `h${level}`,
       { ...attributes, id },
-      <a className="heading-anchor" href={`#${id}`}>
+      <AnchorLink className="heading-anchor" href={`#${id}`}>
         {children}
-      </a>,
+      </AnchorLink>,
     );
   };
 }

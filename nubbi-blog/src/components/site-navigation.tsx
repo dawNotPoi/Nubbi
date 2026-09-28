@@ -2,22 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileText, Hash, House } from "lucide-react";
 import type { ReactElement } from "react";
-import { SearchLauncher } from "@/features/blog/components/search-launcher";
 
 /**
- * 桌面悬浮导航和手机底部导航共用真实博客入口。
- * @returns 显示当前位置并支持全站搜索的主导航。
+ * 只提供首页与文集入口，文章详情归属于文集。
+ * @returns 显示当前位置的主导航。
  */
 export function SiteNavigation(): ReactElement {
   const pathname = usePathname();
   return (
     <nav className="header-nav" aria-label="主导航">
-      <Link href="/" aria-current={pathname === "/" ? "page" : undefined}><House size={15} /><span>首页</span></Link>
-      <Link href="/blog" aria-current={pathname.startsWith("/blog") ? "page" : undefined}><FileText size={15} /><span>文稿</span></Link>
-      <Link href="/blog#topics"><Hash size={15} /><span>主题</span></Link>
-      <SearchLauncher className="nav-search" />
+      <Link href="/" transitionTypes={["nav-back"]} aria-current={pathname === "/" ? "page" : undefined}>首页</Link>
+      <Link href="/blog" transitionTypes={[pathname.startsWith("/blog/") ? "nav-back" : "nav-forward"]} aria-current={pathname === "/blog" || pathname.startsWith("/blog/") ? "page" : undefined}>文集</Link>
     </nav>
   );
 }

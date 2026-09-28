@@ -1,0 +1,17 @@
+.diagram-block { margin-block: 32px; border: 1px solid var(--border-default); border-radius: var(--radius); background: var(--diagram-bg); overflow: hidden; }
+.diagram-toolbar { display: flex; justify-content: space-between; align-items: center; padding: 6px 16px; border-bottom: 1px solid var(--border-default); color: var(--text-secondary); font-size: var(--text-caption); }
+.diagram-canvas { overflow-x: auto; padding: 24px; }
+.diagram-canvas svg { display: block; margin-inline: auto; max-width: none; color: var(--diagram-text); }
+.diagram-canvas svg :is(text, tspan, .label, .nodeLabel, .edgeLabel, .cluster-label) { fill: var(--diagram-text) !important; color: var(--diagram-text) !important; font-family: var(--font-body) !important; }
+.diagram-canvas svg :is(rect, circle, ellipse, polygon, path) { fill: var(--diagram-node-bg) !important; stroke: var(--diagram-line) !important; }
+.diagram-canvas svg :is(.flowchart-link, .relationshipLine, .messageLine0, .messageLine1, .actor-line) { fill: none !important; }
+.diagram-canvas svg :is(line, polyline) { stroke: var(--diagram-line) !important; }
+.diagram-canvas svg .cluster rect { fill: var(--diagram-group-bg) !important; stroke: var(--border-default) !important; }
+.diagram-canvas svg :is(marker path, .arrowheadPath) { fill: var(--diagram-line) !important; stroke: var(--diagram-line) !important; }
+.diagram-canvas svg :is(.edgeLabel rect, .labelBkg) { fill: var(--diagram-bg) !important; background: var(--diagram-bg) !important; stroke: none !important; }
+.diagram-status { min-height: 120px; display: grid; place-content: center; padding: 24px; color: var(--text-secondary); font-size: var(--text-ui); }
+.diagram-source { border-top: 1px solid var(--border-default); color: var(--text-secondary); font-size: var(--text-ui); }
+.diagram-source summary { min-height: var(--control-size); padding: 10px 16px; cursor: pointer; }
+.diagram-source summary:hover { color: var(--accent); }
+.diagram-source pre { margin: 0; padding: 16px 24px; overflow-x: auto; background: var(--code-bg); color: var(--code-text); font-size: var(--text-code); line-height: var(--leading-code); tab-size: 2; }
+.diagram-source code { white-space: pre; }

@@ -27,7 +27,7 @@ export async function generateMetadata({
       ? `搜索：${filters.q}`
       : filters.tag
         ? `主题：${filters.tag}`
-        : "文章",
+        : "文集",
     alternates: {
       canonical:
         blogHref({ ...filters, order: "newest" }),

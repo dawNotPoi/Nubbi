@@ -1,0 +1,16 @@
+.skeleton { height: 12px; width: 100%; border-radius: 4px; background: var(--bg-muted); animation: breathe 1.5s ease-in-out infinite alternate; }
+.skeleton-short { width: 35%; }
+.skeleton-medium { width: 70%; }
+.skeleton-date { width: 88px; flex-shrink: 0; }
+.skeleton-tag { width: 56px; height: 28px; }
+.skeleton-paragraph { display: grid; gap: 20px; padding-block: 12px; }
+.skeleton-post { display: grid; gap: 16px; margin-bottom: 16px; padding: 24px 20px; }
+.skeleton-post-title { width: 55%; height: 30px; }
+.skeleton-timeline-row { display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 48px; }
+.timeline-skeleton { min-height: 216px; padding-left: 32px; }
+.skeleton-back { width: 72px; margin-block: 10px; }
+.skeleton-overline { width: 176px; margin-top: 44px; }
+.skeleton-article-title { width: 80%; height: 52px; margin-block: 22px 24px; }
+.reading-skeleton .article-byline { padding-block: 24px 12px; }
+.reading-skeleton .reading-article > .skeleton-paragraph { margin-bottom: 32px; }
+@keyframes breathe { from { opacity: .4; } to { opacity: .9; } }

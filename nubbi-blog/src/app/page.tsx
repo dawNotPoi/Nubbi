@@ -7,7 +7,7 @@ import {
   parseFilters,
   type SearchValues,
 } from "@/features/blog/navigation";
-import Loading from "./loading";
+import { HomeLoading } from "@/features/blog/components/page-loading";
 
 /** 首页公开文章始终按当前发布状态读取。 */
 export const dynamic = "force-dynamic";
@@ -27,7 +27,7 @@ export default async function Home({
   const filters = parseFilters(await searchParams);
   if (filters.q || filters.tag || filters.page > 1 || filters.order !== "newest") redirect(blogHref(filters));
   return (
-    <Suspense key={JSON.stringify(filters)} fallback={<Loading />}>
+    <Suspense key={JSON.stringify(filters)} fallback={<HomeLoading />}>
       <PostList filters={filters} showIntro />
     </Suspense>
   );

@@ -12,6 +12,7 @@ import { safeImageUrl } from "../format";
 import { heading, nodeText } from "../markdown/nodes";
 import { CopyButton } from "./copy-button";
 import { ArticleImage } from "./article-image";
+import { ArticleDiagram } from "./article-diagram";
 import { MarkdownAnchor, MarkdownParagraph } from "./markdown-links";
 
 const notices = {
@@ -45,6 +46,7 @@ export const markdownComponents: Components = {
       code?.type === "element" ? String(code.properties.className || "") : "";
     const language = classes.match(/language-([\w+-]+)/)?.[1] || "text";
     const text = nodeText(children).replace(/\n$/, "");
+    if (language === "mermaid" || language === "mmd") return <ArticleDiagram key={text} source={text} />;
     return (
       <div className="code-block">
         <div className="code-toolbar">

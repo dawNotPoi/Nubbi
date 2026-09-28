@@ -1,21 +1,27 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { ReactElement } from "react";
 import { site } from "@/config/site";
-import { ThemeSelect } from "./theme-select";
 import { SiteNavigation } from "./site-navigation";
+import { ThemeToggle } from "./theme-toggle";
 
 /**
- * 页头只保留标识、居中导航和外观入口，给文章留出完整视觉空间。
- * @returns 全站固定页头。
+ * 使用 Dawn 原始头像，集中提供两个页面导航与亮暗切换。
+ * @returns 全站顶栏。
  */
 export function SiteHeader(): ReactElement {
   return (
     <header className="site-header">
-      <Link className="brand" href="/" aria-label={`${site.name} 首页`} title={site.name}>
-        <span aria-hidden="true">N<span className="brand-dot">.</span></span>
-      </Link>
-      <SiteNavigation />
-      <div className="header-actions"><ThemeSelect /></div>
+      <div className="site-header-inner">
+        <Link className="brand" href="/" transitionTypes={["nav-back"]} aria-label={`${site.name} 首页`} title={site.name}>
+          <Image src="/dawn-avatar.jpg" alt="" width={40} height={40} loading="eager" />
+          <span>{site.name}.</span>
+        </Link>
+        <div className="header-actions">
+          <SiteNavigation />
+          <ThemeToggle />
+        </div>
+      </div>
     </header>
   );
 }

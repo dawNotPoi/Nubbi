@@ -3,7 +3,7 @@
 - 包名 `nubbi-blog`，从 dawNotPoi/dawn 迁入，来源记录见 `docs/upstream.md`。
 - 先读根 AGENTS.md 与 `docs/blog/PRD.md`；只负责公开博客阅读，写作发布属于 Nubbi Client。
 - 默认 Server Components，params/searchParams 为 Promise；交互逻辑放 feature hooks。
-- API 契约、请求和数据适配放 `src/features/blog/api/`，只通过主服务公开 `/blog` 接口获取内容。
+- API 契约、请求和数据适配放 `src/features/blog/api/`，由服务端用通用 API Token 调用现有 `/note/all` 与 `/note/detail`；按 PRD 检查发布、密码与删除状态后仅输出展示白名单。凭证及原始私有笔记不得进入客户端。
 - 链接元数据由 Next `/api/link-preview` 提供，外站网络校验与解析集中在 `features/blog/links/server/`；必须保留固定公网 IP、超时、响应大小、重定向与并发限制。
 - 不导入其他 workspace 内部源码，不在组件读写 Storage/Cookie，不将私有环境变量暴露到浏览器。
 - 颜色唯一来源为 `src/styles/theme.css`，由 `src/app/globals.css` 统一引入；组件和其余 CSS 仅使用语义变量或对应 Tailwind 类，不硬编码颜色、不使用默认色板或任意颜色类。
