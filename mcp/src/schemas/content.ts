@@ -5,6 +5,7 @@ const titleSchema = z.string().trim().min(1).max(500);
 const tagSchema = z.string().trim().min(1).max(100);
 const metadataSchema = z.record(z.string().trim().min(1).max(100), JsonValueSchema);
 
+/** `nubbi_create_note` 的输入契约。 */
 export const CreateNoteInputSchema = z
   .object({
     title: titleSchema.optional().describe("Note title; defaults to the Nubbi server value"),
@@ -17,6 +18,7 @@ export const CreateNoteInputSchema = z
   })
   .strict();
 
+/** `nubbi_edit_note_content` 的输入契约，约束四种编辑模式各自允许的字段组合。 */
 export const EditContentInputSchema = z
   .object({
     note_id: NoteIdSchema,
@@ -58,6 +60,7 @@ export const EditContentInputSchema = z
     }
   });
 
+/** `nubbi_update_note_properties` 的输入契约，至少要求一项属性变更。 */
 export const UpdatePropertiesInputSchema = z
   .object({
     note_id: NoteIdSchema,
@@ -89,33 +92,3 @@ export const UpdatePropertiesInputSchema = z
       context.addIssue({ code: "custom", message: "A tag cannot be added and removed together" });
     }
   });
-
-export const MoveNoteInputSchema = z
-  .object({
-    note_id: NoteIdSchema,
-    expected_updated_at: IsoDateSchema,
-    parent_id: NoteIdSchema.nullable().describe("New parent ID, or null to move to root"),
-  })
-  .strict();
-
-export const ArchiveNoteInputSchema = z
-  .object({
-    note_id: NoteIdSchema,
-    expected_updated_at: IsoDateSchema,
-    archived: z.boolean().describe("True to archive; false to return the note to active status"),
-  })
-  .strict();
-
-export const TrashNoteInputSchema = z
-  .object({
-    note_id: NoteIdSchema,
-    expected_updated_at: IsoDateSchema.optional(),
-  })
-  .strict();
-
-export const RestoreNoteInputSchema = z
-  .object({
-    note_id: NoteIdSchema,
-    deleted_at: IsoDateSchema.optional().describe("Deletion timestamp read from nubbi_list_trash"),
-  })
-  .strict();
