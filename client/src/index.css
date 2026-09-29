@@ -45,6 +45,11 @@
     touch-action: manipulation;
   }
 
+  /* 统一真实交互控件的鼠标指针；局部特殊控件仍可显式覆盖。 */
+  :where(button, select, [role="button"], [role="menuitem"], [role="option"], [role="tab"]) {
+    cursor: pointer;
+  }
+
   ::selection {
     color: var(--text-primary);
     background: var(--brand-soft);
@@ -119,5 +124,12 @@
     --novel-highlight-orange: #5c3a1a;
     --novel-highlight-pink: #5c1a3a;
     --novel-highlight-gray: #3a3a3a;
+  }
+}
+
+@layer utilities {
+  /* 禁用态覆盖业务里已有的 cursor-pointer，显式 disabled:cursor-default 仍可优先。 */
+  :where(button, select, [role="button"], [role="menuitem"], [role="option"], [role="tab"]):is(:disabled, [aria-disabled="true"], [data-disabled]) {
+    cursor: not-allowed;
   }
 }

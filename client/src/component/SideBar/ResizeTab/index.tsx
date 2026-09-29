@@ -7,10 +7,16 @@ import {
   sideBarOpenedAtom,
 } from "../../../store/atom/common";
 
+/**
+ * 管理桌面侧栏宽度和收起后的悬浮唤回，并在账号菜单打开时保持悬浮层可用。
+ * @param props 侧栏内容、样式和菜单打开状态。
+ * @returns 响应式侧栏容器。
+ */
 export default function ResizeTab({
   children,
   className,
-}: PropsWithChildren<{ className?: string }>) {
+  holdOpen = false,
+}: PropsWithChildren<{ className?: string; holdOpen?: boolean }>) {
   const [sidebarWidth, setSidebarWidth] = useState(280);
   const [isResizing, setIsResizing] = useState(false);
   const [desktopHovered, setDesktopHovered] = useState(false);
@@ -60,10 +66,12 @@ export default function ResizeTab({
   const desktopCollapsed = !isMobile && !sideBarOpened;
   const opened = isMobile
     ? mobileSideBarOpened
-    : sideBarOpened || desktopHovered;
+    : sideBarOpened || desktopHovered || holdOpen;
 
   useEffect(() => {
-    if (isMobile || sideBarOpened) setDesktopHovered(false);
+    if (!isMobile && !sideBarOpened) return;
+    const frame = window.requestAnimationFrame(() => setDesktopHovered(false));
+    return () => window.cancelAnimationFrame(frame);
   }, [isMobile, sideBarOpened]);
 
   useEffect(() => {
@@ -126,7 +134,7 @@ export default function ResizeTab({
           onMouseLeave={() => setDesktopHovered(false)}
           className={clsx(
             "fixed bottom-3 left-0 top-3 z-40 box-border pl-2 transition-[opacity,transform,translate] duration-150 ease-out",
-            desktopHovered
+            desktopHovered || holdOpen
               ? "translate-x-0 opacity-100"
               : "pointer-events-none -translate-x-2 opacity-0",
           )}

@@ -114,7 +114,7 @@
 - 业务请求收到响应时先核对捕获的 userId/generation；旧账号的晚到 401 抛出 stale-generation 错误，不刷新或失效当前账号。账号注销在途不提供受保护凭证，明确 4xx 与 transport-indeterminate 分别处理。
 - 路由、登录、`useAuth` 与业务请求已正式接入协调器；`client/src/utils/auth.ts` 只保留实际调用的统一导出和派生 `useSession`，不持有第二份身份。零调用兼容包装与无作用 token setter 已删除。
 - 私有查询按账号生成 key；身份切换先取消旧请求，再清空缓存、上传显示状态并断开 Socket/Peer/media。上传持久记录绑定 owner，跨标签只广播无敏感数据的身份变化通知。
-- 普通后台会话刷新暂时失败时，仍新鲜且未被服务端拒绝的 JWT 保留身份；首次恢复与已拒绝凭证显示不可用及重试；退出确认失败仍停留登录页并提供重试。
+- 普通后台会话刷新暂时失败时，仍新鲜且未被服务端拒绝的 JWT 保留身份；首次恢复与已拒绝凭证无法确认时暂停受保护内容，转到保留 `returnTo` 的正常登录页，并在登录卡片内提供轻量的重新确认入口；退出确认失败仍停留登录页并提供重试。
 - 服务启动只检查认证索引与 API Key 迁移状态；缺失时停止并提示维护命令，不自动迁移真实数据库。
 
 Better Auth 的账号关联配置只声明在 `account.accountLinking`；认证日志同时按
@@ -132,7 +132,7 @@ Better Auth 的账号关联配置只声明在 `account.accountLinking`；认证�
 - GitHub 桌面登录使用独立窗口；移动端或弹窗被拦截时沿用整页跳转，Google 保持不变。轻量 `/oauth-callback.html` 只通知流程结果，不传用户或 token；使用随机标记隔离的同源 BroadcastChannel，不依赖跨站跳转后 opener 的存续，原页面校验 origin 与标记，再通过唯一协调器确认会话。取消恢复按钮，失败与超时使用 toast；保留服务端 state/PKCE 和账号关联校验。
 - `client/src/views/login/` — 邮箱登录、注册表单、OAuth 按钮
 - OAuth 取消授权按静默返回处理：协调器只返回 `OAUTH_CANCELLED`，不发布可见错误，登录页按该错误码抑制 toast；取消不改变当前登录状态，失败与超时仍提示。禁止把取消改成「未完成」类错误提示，也不要保留两套文案。
-- 登录卡片提供同级的 Google / GitHub 图标加文字按钮，复用现有 `useAuth` 和 Better Auth OAuth 流程，不新增认证 SDK。
+- 登录卡片提供同级的 Google / GitHub 图标加文字按钮，复用现有 `useAuth` 和 Better Auth OAuth 流程，不新增认证 SDK。第三方品牌标识由登录组件内的固定 SVG 呈现，不依赖 Lucide 的品牌图标导出。
 - 发起第三方登录时显示对应渠道的等待状态，阻止重复点击和同时提交邮箱登录；失败后用单次浮动提示（toast）说明并恢复重试，不在卡片内追加错误块。
 - 成功回跳沿用校验后的 `returnTo`；用户取消或 OAuth 回调失败沿用现有错误回跳处理，不改变账号关联策略。
 - 客户端不保存 OAuth 密钥。服务端配置 `AUTH_GOOGLE_ID`、`AUTH_GOOGLE_SECRET`、`BETTER_AUTH_URL` 和 `CLIENT_URL` 后重启。
@@ -143,6 +143,7 @@ Better Auth 的账号关联配置只声明在 `account.accountLinking`；认证�
 - 短屏通过卡片滚动保留说明和操作；主要按钮至少 44px，输入框 48px，减少动态效果偏好下关闭过渡。
 - OAuth 错误提示位于欢迎区下方、登录入口之前，短屏回跳后无需滚动到卡片底部即可理解失败原因并重试；密码找回保留 44px 热区，不以加高标签行换取点击范围。
 - 小字号说明和占位文字使用 `theme.css` 的 `--auth-text-secondary`，仅在 AuthShell 内映射次级文字色；其在暖白纸面与白色输入框上的对比度均超过 4.5:1，不修改其他业务页的 Token 映射。
+- 会话首次确认只显示与应用底色一致的细进度提示，不使用品牌插画或独立加载卡片。确认失败不展示独立状态页，也不把未确认会话当成已登出：登录卡片顶部以简短中文提示连接问题，保留登录入口和原始页面地址，并提供“重新确认”按钮；用户重新确认成功后回到原页面。
 
 ### 密码重置 `/reset-password`
 - `client/src/views/reset-password/` — 邮件验证码重置密码
@@ -162,9 +163,8 @@ Better Auth 的账号关联配置只声明在 `account.accountLinking`；认证�
 
 | 组件 | 路径 | 行为 |
 |------|------|------|
-| `ProtectedRoute` | `client/src/Route.tsx` | 未登录 → 重定向到 `/login` |
-| `PublicOnlyRoute` | `client/src/Route.tsx` | 已登录 → 重定向到 `returnTo` 或 `/home` |
-| `AuthStatusScreen` | `client/src/features/auth/components/AuthStatusScreen.tsx` | 使用认证页外壳显示身份确认或不可用重试，不预渲染首页骨架 |
+| `ProtectedRoute` | `client/src/Route.tsx` | 未登录或会话不可确认 → 保留 `returnTo` 并重定向到 `/login`；确认期间只显示细进度提示，不挂载业务树 |
+| `PublicOnlyRoute` | `client/src/Route.tsx` | 已登录 → 重定向到 `returnTo` 或 `/home`；会话不可确认时显示正常登录表单 |
 
 ---
 

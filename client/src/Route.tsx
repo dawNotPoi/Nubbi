@@ -1,7 +1,6 @@
 import SideBar from "@/component/SideBar";
 import MobileErrorBoundary from "@/component/MobileErrorBoundary";
 import MobileNavigation from "@/component/MobileNavigation";
-import { AuthStatusScreen } from "@/features/auth/components/AuthStatusScreen";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { resolveAuthReturnTo } from "@/utils/auth";
@@ -74,51 +73,24 @@ const UserLayout = () => {
   return isMobile ? <MobileUserLayout /> : <DesktopUserLayout />;
 };
 
-/**
- * 使用认证外壳展示会话确认状态，不提前挂载业务布局。
- * @param props 状态、错误和重试动作。
- * @returns 复用固定品牌资产的身份状态页。
- */
-const AuthRouteStatus = ({
-  state,
-  error,
-  retrying,
-  onRetry,
-}: {
-  state: "checking" | "unavailable";
-  error?: string | null;
-  retrying?: boolean;
-  onRetry?: () => Promise<unknown>;
-}) => (
-  <AuthShell>
-    <AuthStatusScreen
-      error={error}
-      onRetry={onRetry}
-      retrying={retrying}
-      state={state}
-    />
-  </AuthShell>
+/** @returns 会话确认期间与应用底色融合的轻量进度提示。 */
+const AuthRoutePending = (): ReactElement => (
+  <div className="min-h-[100dvh] bg-surface" role="status" aria-label="正在确认登录状态">
+    <div aria-hidden="true" className="h-0.5 w-full overflow-hidden bg-border-row">
+      <div className="h-full w-1/3 animate-pulse bg-[var(--brand)] motion-reduce:animate-none" />
+    </div>
+  </div>
 );
 
 /**
  * 在会话明确认证前隔离受保护页面，避免渲染旧账号业务树。
  * @param props 受保护路由的子节点。
- * @returns 身份状态页、登录跳转或受保护内容。
+ * @returns 轻量确认提示、登录跳转或受保护内容。
  */
 const ProtectedRoute = ({ children }: PropsWithChildren): ReactNode => {
-  const { error, operation, retrySession, status } = useAuth();
+  const { status } = useAuth();
   const location = useLocation();
-  if (status === "checking") return <AuthRouteStatus state="checking" />;
-  if (status === "unavailable") {
-    return (
-      <AuthRouteStatus
-        error={error}
-        onRetry={retrySession}
-        retrying={operation === "refreshing"}
-        state="unavailable"
-      />
-    );
-  }
+  if (status === "checking") return <AuthRoutePending />;
   if (status === "authenticated") return children;
   const returnTo = encodeURIComponent(
     `${location.pathname}${location.search}${location.hash}`,
@@ -135,10 +107,10 @@ const ProtectedRoute = ({ children }: PropsWithChildren): ReactNode => {
 /**
  * 在公共认证页面中等待会话确认，并在认证完成后执行安全站内跳转。
  * @param props 公共认证路由的子节点。
- * @returns 身份状态页、认证页面或目标页跳转。
+ * @returns 轻量确认提示、认证页面或目标页跳转。
  */
 const PublicOnlyRoute = ({ children }: PropsWithChildren): ReactNode => {
-  const { error, initialized, operation, retrySession, status } = useAuth();
+  const { initialized, operation, status } = useAuth();
   const location = useLocation();
 
   if (status === "checking") {
@@ -146,19 +118,9 @@ const PublicOnlyRoute = ({ children }: PropsWithChildren): ReactNode => {
       initialized &&
       (operation === "signingIn" || operation === "redirecting");
     if (authenticationInProgress) return children;
-    return <AuthRouteStatus state="checking" />;
+    return <AuthRoutePending />;
   }
-  if (status === "unavailable") {
-    return (
-      <AuthRouteStatus
-        error={error}
-        onRetry={retrySession}
-        retrying={operation === "refreshing"}
-        state="unavailable"
-      />
-    );
-  }
-  if (status === "anonymous") return children;
+  if (status === "anonymous" || status === "unavailable") return children;
   const queryReturnTo = new URLSearchParams(location.search).get("returnTo");
   const stateFrom = (
     location.state as

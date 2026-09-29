@@ -30,26 +30,31 @@ const weekDayLabels = [
 
 const getWeekDayLabel = (weekDay: number): string => weekDayLabels[weekDay] || "";
 
+/**
+ * 会议为空时只保留一个创建入口，避免空状态比真实笔记更醒目。
+ * @param props 打开创建会议弹窗的回调。
+ * @returns 紧凑的会议空状态。
+ */
 const RecentMeetingEmpty = ({ onCreate }: RecentMeetingEmptyProps): ReactElement => (
-  <div className="flex min-h-[168px] items-center justify-center rounded-panel border border-border-row bg-bg-panel px-5 py-8 text-center md:min-h-[280px] md:px-6 md:py-12">
-    <div className="flex flex-col items-center">
-      <span className="grid size-12 place-items-center rounded-control bg-[var(--entity-meeting-soft)] text-[var(--entity-meeting)]">
-        <CalendarOff className="size-7 md:size-8" strokeWidth={1.6} />
-      </span>
-      <p className="mt-3 text-[14px] font-medium text-text-primary md:mt-4 md:text-base">未来一周没有会议</p>
-      <p className="mt-1 text-[13px] text-text-muted md:text-sm">创建会议，开始记录与协作。</p>
-      <Button
-        className="mt-4 h-10 rounded-control md:mt-5 md:h-auto"
-        icon={<Plus size={16} />}
-        onClick={onCreate}
-        variant="primary"
-      >
-        创建会议
-      </Button>
+  <div className="flex min-h-28 flex-wrap items-center gap-3 rounded-panel border border-border-row bg-bg-panel px-4 py-4 md:px-5">
+    <span className="grid size-9 shrink-0 place-items-center rounded-control bg-[var(--entity-meeting-soft)] text-[var(--entity-meeting)]">
+      <CalendarOff className="size-[18px]" strokeWidth={1.8} />
+    </span>
+    <div className="min-w-0 flex-1">
+      <p className="text-sm font-medium text-text-primary">未来一周没有会议</p>
+      <p className="mt-1 text-xs text-text-muted">需要协作时，可以创建一场会议。</p>
     </div>
+    <Button icon={<Plus />} onClick={onCreate} variant="outline">
+      创建会议
+    </Button>
   </div>
 );
 
+/**
+ * 展示未来一周的会议，并按有无会议选择唯一的创建入口。
+ * @param props 外层样式和是否展示创建操作。
+ * @returns 近期会议列表或紧凑空状态。
+ */
 const RecentMeetings = ({
   className,
   showCreateAction = true,
@@ -87,7 +92,7 @@ const RecentMeetings = ({
           <CalendarDays className="size-[18px] text-[var(--entity-meeting)] md:size-[19px]" />
           近期会议
         </h2>
-        {showCreateAction ? (
+        {showCreateAction && upcomingWeekMeetings.length > 0 ? (
           <Button variant="primary"
             className="h-9 rounded-control"
             icon={<Plus size={15} />}

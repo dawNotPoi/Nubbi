@@ -173,6 +173,7 @@ Desktop Presenter / Mobile Presenter
 
 - 主按钮恢复正常高度和垂直中心，避免截图中曾出现的“扁按钮”。
 - 统一 icon visual box / hit box。
+- 鼠标悬停在可点击的原生按钮、按钮语义控件和菜单项上时统一显示手型；禁用项显示不可点击指针。规则集中在基础控件样式，保留个别不可操作展示项的显式覆盖，不在业务页面逐个补 `cursor-pointer`。
 - EmptyState 提供 `compact` 与 `page` 两种密度。
 - Card 不依赖统一假封面；支持真实 cover 与无 cover 两种 presenter。
 
@@ -180,6 +181,7 @@ Desktop Presenter / Mobile Presenter
 
 - 同级操作在不同页面不再因控件来源不同而出现高度差。
 - Desktop toolbar 28–32px；Mobile touch target ≥ 44px。
+- Button、菜单、下拉选项及业务页面的原生按钮均有一致的指针反馈；禁用项不会误示可点击。
 
 建议 commit：
 

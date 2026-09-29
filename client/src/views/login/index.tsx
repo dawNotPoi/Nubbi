@@ -53,6 +53,8 @@ export const LoginPage = (): ReactElement => {
     register,
     logout,
     error: authError,
+    retrySession,
+    status,
   } = useAuth();
 
   useEffect(() => {
@@ -437,6 +439,23 @@ export const LoginPage = (): ReactElement => {
       // 中文候选确认不应同时触发表单提交。
       if (event.key === "Enter" && (event.nativeEvent.isComposing || event.keyCode === 229)) event.preventDefault();
     }}>
+        {status === "unavailable" ? (
+          <div
+            className="mb-5 flex min-h-14 items-center gap-2 rounded-control border border-border-row bg-bg-hover px-3 py-2 text-text-primary"
+            role="alert"
+          >
+            <p className="min-w-0 flex-1 text-[13px] leading-5">连接暂时中断，原页面已保留。</p>
+            <Button
+              className="h-10 min-w-24 shrink-0"
+              size="sm"
+              variant="outline"
+              loading={operation === "refreshing"}
+              onClick={() => void retrySession()}
+            >
+              重新确认
+            </Button>
+          </div>
+        ) : null}
         <AuthCardHeader title={header.title} description={header.desc} />
         <div className="auth-card-body">
           {/* ═══ verifyEmail ═══ */}
