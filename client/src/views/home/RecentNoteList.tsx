@@ -34,8 +34,8 @@ export default function RecentNoteList({ className }: { className?: string }): R
       {isPending || data.length > 0 ? (
         <ul className="grid grid-cols-1 gap-5 @[440px]:grid-cols-2 @[780px]:grid-cols-3" aria-busy={isPending}>
           {isPending
-            ? Array.from({ length: 6 }, (_, index) => <RecentNoteCardSkeleton key={index} />)
-            : data.slice(0, 6).map((note) => <RecentNoteCard key={note._id} note={note} authorName={user?.name || "我"} authorImage={user?.image || ""} />)}
+            ? Array.from({ length: 5 }, (_, index) => <RecentNoteCardSkeleton key={index} featured={index === 0} />)
+            : data.slice(0, 5).map((note, index) => <RecentNoteCard featured={index === 0} key={note._id} note={note} authorName={user?.name || "我"} authorImage={user?.image || ""} />)}
         </ul>
       ) : !isError ? (
         <div className="rounded-panel border border-dashed border-border-button bg-bg-panel px-6 py-10">

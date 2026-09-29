@@ -73,7 +73,7 @@ const SideBarHeader: React.FC<SideBarHeaderProps> = ({ menuOpen, onMenuOpenChang
             </button>
             <button type="button" className={menuItemClass} onClick={() => { onMenuOpenChange(false); setApiTokenModalOpen(true); }}>
               <KeyRound size={16} />
-              <span>鉴权管理</span>
+              <span>密钥管理</span>
             </button>
             <button type="button" className={menuItemClass} onClick={() => { onMenuOpenChange(false); void logout(); }}>
               <LogOut size={16} />

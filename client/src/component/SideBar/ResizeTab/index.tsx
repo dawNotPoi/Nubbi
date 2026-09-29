@@ -117,7 +117,9 @@ export default function ResizeTab({
       ref={sidebarRef}
       aria-hidden={!opened}
       inert={!opened}
-      onFocusCapture={() => setFocusWithin(true)}
+      onFocusCapture={(event) => {
+        setFocusWithin(event.target.matches(":focus-visible"));
+      }}
       onBlurCapture={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) setFocusWithin(false);
       }}
@@ -160,7 +162,7 @@ export default function ResizeTab({
           aria-hidden="true"
           className="fixed inset-y-0 left-0 z-30 w-2"
           onMouseEnter={() => scheduleHover(true)}
-          onMouseLeave={cancelHover}
+          onMouseLeave={() => scheduleHover(false)}
         />
       ) : null}
       {desktopCollapsed ? (

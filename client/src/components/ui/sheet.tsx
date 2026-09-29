@@ -30,8 +30,10 @@ const SheetContent = React.forwardRef<
   React.ComponentRef<typeof Drawer.Popup>,
   React.ComponentPropsWithoutRef<typeof Drawer.Popup> & {
     showClose?: boolean;
+    /** 固定在滚动正文之外的标题区域。 */
+    header?: React.ReactNode;
   }
->(function SheetContent({ className, children, showClose = false, ...props }, ref) {
+>(function SheetContent({ className, children, header, showClose = false, ...props }, ref) {
   return (
     <Drawer.Portal>
       <Drawer.Backdrop className="nubbi-sheet-backdrop absolute inset-0 z-[70] bg-black/30" onClick={(event) => event.stopPropagation()} />
@@ -56,6 +58,7 @@ const SheetContent = React.forwardRef<
               <X aria-hidden="true" className="size-5" />
             </Drawer.Close>
           ) : null}
+          {header ? <div className="shrink-0 px-4 pb-2 pr-14 pt-3">{header}</div> : null}
           <Drawer.Content className="min-h-0 overflow-y-auto overscroll-contain px-4 pb-[max(16px,calc(env(safe-area-inset-bottom)+var(--drawer-keyboard-inset,0px)))] pt-3">
             {children}
           </Drawer.Content>

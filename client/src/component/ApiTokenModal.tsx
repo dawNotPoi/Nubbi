@@ -45,11 +45,13 @@ export default function ApiTokenModal({ open, onClose }: ApiTokenModalProps): Re
       onCancel={onClose}
       open={open}
       confirmLoading={manager.creating || manager.deletingId !== null}
-      title="鉴权管理"
-      width={880}
+      title="密钥管理"
+      fixedHeader
+      className="home-workspace md:p-6"
+      width={760}
     >
-      <div className="space-y-4">
-        <p className="mb-0 text-sm text-text-muted">
+      <div className="space-y-6">
+        <p className="mb-0 max-w-[60ch] text-sm leading-6 text-text-muted">
           Token 等同于账号凭证。MCP Agent Token 使用固定的笔记权限，通用 API
           Token 保留完整能力；请按接入用途分别创建并妥善保管。
         </p>
@@ -91,6 +93,8 @@ export default function ApiTokenModal({ open, onClose }: ApiTokenModalProps): Re
         ) : null}
 
         <TokenList
+          error={manager.listError}
+          onRetry={() => void manager.loadTokens()}
           deletingId={manager.deletingId}
           loading={manager.listLoading}
           onDelete={confirmDelete}

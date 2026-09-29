@@ -114,7 +114,7 @@ export default function MobileMoreSheet({ open, onOpenChange }: MobileMoreSheetP
             </SheetRow>
             <SheetRow onClick={() => { onOpenChange(false); setApiTokenModalOpen(true); }}>
               <KeyRound />
-              <span>鉴权管理</span>
+              <span>密钥管理</span>
             </SheetRow>
             <SheetRow onClick={handleLogout}>
               <LogOut />

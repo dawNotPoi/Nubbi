@@ -108,7 +108,7 @@ const RecentMeetings = ({
         ) : upcomingWeekMeetings.length > 0 ? (
           <div className="grid grid-cols-1 gap-5 @[440px]:grid-cols-2 @[780px]:grid-cols-3">
             {upcomingWeekMeetings.map((meeting) => (
-              <article key={meeting._id} className="flex min-h-[190px] min-w-0 flex-col overflow-hidden rounded-panel border border-border-row bg-surface shadow-soft">
+              <article key={meeting._id} className="flex min-h-[190px] min-w-0 flex-col overflow-hidden rounded-panel border border-border-row bg-surface">
                 <div className="flex items-center gap-2 bg-[var(--entity-meeting-soft)] px-5 py-3 text-xs text-[var(--entity-meeting)]">
                   <CalendarDays className="size-4 shrink-0" aria-hidden="true" />
                   {dayjs(meeting.startTime).format("M月D日")} · {getWeekDayLabel(dayjs(meeting.startTime).day())}
@@ -127,7 +127,7 @@ const RecentMeetings = ({
             ))}
           </div>
         ) : (
-          <div className="flex min-h-36 items-center gap-4 rounded-panel border border-border-row bg-surface px-6 py-5 shadow-soft">
+          <div className="flex min-h-36 items-center gap-4 rounded-panel border border-border-row bg-surface px-6 py-5">
             <span className="grid size-11 shrink-0 place-items-center rounded-panel bg-[var(--entity-meeting-soft)] text-[var(--entity-meeting)]"><CalendarOff className="size-5" aria-hidden="true" /></span>
             <div>
               <p className="text-sm font-medium">未来一周暂无会议</p>

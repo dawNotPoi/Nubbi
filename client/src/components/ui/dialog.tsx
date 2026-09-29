@@ -29,6 +29,8 @@ export interface ModalProps {
   className?: string;
   overlayClassName?: string;
   showClose?: boolean;
+  /** 固定标题与关闭入口，仅正文滚动。 */
+  fixedHeader?: boolean;
   maskClosable?: boolean;
   onCancel?: () => void;
   onOk?: () => void | Promise<void>;
@@ -45,7 +47,7 @@ export interface ModalProps {
  * @param props 受控状态、标题、内容及明确的确认动作。
  * @returns 主题化、窄屏可滚动的弹窗。
  */
-export function Modal({ open, defaultOpen = false, onOpenChange, trigger, title, children, footer, className, overlayClassName, showClose = true, maskClosable = true, onCancel, onOk, okText, cancelText, confirmLoading = false, okButtonProps, width, zIndexBase = 1000 }: ModalProps): ReactElement {
+export function Modal({ open, defaultOpen = false, onOpenChange, trigger, title, children, footer, className, overlayClassName, showClose = true, fixedHeader = false, maskClosable = true, onCancel, onOk, okText, cancelText, confirmLoading = false, okButtonProps, width, zIndexBase = 1000 }: ModalProps): ReactElement {
   const isMobile = useIsMobile();
   const [internalOpen, setInternalOpen] = useState(defaultOpen);
   const [pending, setPending] = useState(false);
@@ -76,8 +78,8 @@ export function Modal({ open, defaultOpen = false, onOpenChange, trigger, title,
   </div> : null;
   if (isMobile) return <Sheet open={visible} onOpenChange={(next, details) => { if (busy && !next) { details.cancel(); return; } changeOpen(next); }} disablePointerDismissal={!maskClosable}>
     {trigger && <SheetTrigger render={trigger} />}
-    <SheetContent showClose={showClose && !busy} className={className} onClick={(event) => event.stopPropagation()}>
-      <SheetTitle className={cn("mb-4 pr-10", !title && "sr-only")}>{title || "对话框"}</SheetTitle>
+    <SheetContent header={fixedHeader ? <SheetTitle className={cn(!title && "sr-only")}>{title || "对话框"}</SheetTitle> : undefined} showClose={showClose && !busy} className={className} onClick={(event) => event.stopPropagation()}>
+      {!fixedHeader && <SheetTitle className={cn("mb-4 pr-10", !title && "sr-only")}>{title || "对话框"}</SheetTitle>}
       {children}
       {actions}
     </SheetContent>
@@ -87,11 +89,11 @@ export function Modal({ open, defaultOpen = false, onOpenChange, trigger, title,
     <BaseDialog.Portal>
       <BaseDialog.Backdrop className={cn("fixed inset-0 bg-black/35", overlayClassName)} style={{ zIndex: zIndexBase }} onClick={(event) => event.stopPropagation()} />
       <BaseDialog.Viewport className="fixed inset-0 flex items-center justify-center overflow-y-auto p-3 md:p-6" style={{ zIndex: zIndexBase + 1 }} onClick={(event) => event.stopPropagation()}>
-        <BaseDialog.Popup className={cn("nubbi-dialog relative max-h-[calc(100dvh-24px)] w-full max-w-lg overflow-y-auto rounded-panel border border-border-row bg-surface p-5 text-text-primary shadow-[var(--shadow-popover)] outline-none", className)} style={width ? { width, maxWidth: "calc(100vw - 24px)" } as CSSProperties : undefined} onClick={(event) => event.stopPropagation()}>
-          <BaseDialog.Title className={cn("mb-4 pr-10 text-base font-medium", !title && "sr-only")}>{title || "对话框"}</BaseDialog.Title>
+        <BaseDialog.Popup className={cn("nubbi-dialog relative max-h-[calc(100dvh-24px)] w-full max-w-lg overflow-y-auto rounded-panel border border-border-row bg-surface p-5 text-text-primary shadow-[var(--shadow-popover)] outline-none", fixedHeader && "flex flex-col overflow-hidden md:max-h-[calc(100dvh-48px)]", className)} style={width ? { width, maxWidth: "calc(100vw - 24px)" } as CSSProperties : undefined} onClick={(event) => event.stopPropagation()}>
+          <BaseDialog.Title className={cn("mb-4 shrink-0 pr-10 text-base font-medium", !title && "sr-only")}>{title || "对话框"}</BaseDialog.Title>
           {showClose && <BaseDialog.Close render={<Button variant="ghost" size="icon" className="absolute right-2 top-2 size-11 md:size-8" disabled={busy} aria-label="关闭对话框" />}><X aria-hidden="true" /></BaseDialog.Close>}
-          {children}
-          {actions}
+          {fixedHeader ? <div className="min-h-0 overflow-y-auto overscroll-contain">{children}</div> : children}
+          {fixedHeader ? <div className="shrink-0">{actions}</div> : actions}
         </BaseDialog.Popup>
       </BaseDialog.Viewport>
     </BaseDialog.Portal>

@@ -24,6 +24,7 @@ export const EXPIRY_OPTIONS = [
 export function useApiTokenManager(open: boolean) {
   const [tokens, setTokens] = useState<ApiTokenItem[]>([]);
   const [listLoading, setListLoading] = useState(false);
+  const [listError, setListError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [tokenName, setTokenName] = useState("");
@@ -40,14 +41,15 @@ export function useApiTokenManager(open: boolean) {
       const result = await authClient.apiKey.list();
       if (!isAccountScopeCurrent(scope)) return;
       if (result.error) {
-        messageApi.error(result.error.message || "获取 Token 列表失败");
+        setListError("无法加载密钥，请稍后重试。");
         return;
       }
       setTokens(normalizeApiTokens(result.data));
+      setListError(null);
     } catch {
-      if (isAccountScopeCurrent(scope)) messageApi.error("获取 Token 列表失败");
+      if (isAccountScopeCurrent(scope)) setListError("无法加载密钥，请稍后重试。");
     } finally {
-      setListLoading(false);
+      if (isAccountScopeCurrent(scope)) setListLoading(false);
     }
   }, []);
 
@@ -140,7 +142,7 @@ export function useApiTokenManager(open: boolean) {
 
   return {
     copyCreatedKey, createToken, createdKey, creating,
-    deleteToken, deletingId, expiresIn, listLoading, purpose, setExpiresIn,
+    deleteToken, deletingId, expiresIn, listLoading, listError, loadTokens, purpose, setExpiresIn,
     setPurpose, setTokenName, tokenName, tokens,
   };
 }
