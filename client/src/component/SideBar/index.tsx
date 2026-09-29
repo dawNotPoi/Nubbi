@@ -6,6 +6,7 @@ import clsx from "clsx";
 import { useAtomValue, useSetAtom } from "jotai";
 import {
   ChevronsLeft,
+  Pin,
   FolderTree,
   House,
   Presentation,
@@ -28,6 +29,7 @@ const SideBar: React.FC = () => {
   const activeUploads = useAtomValue(activeUploadCountAtom);
   const setMobileSideBarOpened = useSetAtom(mobileSideBarOpenedAtom);
   const setSideBarOpened = useSetAtom(sideBarOpenedAtom);
+  const sideBarOpened = useAtomValue(sideBarOpenedAtom);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const isMobile = useIsMobile();
   const location = useLocation();
@@ -48,7 +50,7 @@ const SideBar: React.FC = () => {
   /** 顶部的折叠控件只改变侧栏可见状态，不影响账号菜单业务。 */
   const handleCollapse = (): void => {
     if (isMobile) setMobileSideBarOpened(false);
-    else setSideBarOpened(false);
+    else setSideBarOpened((opened) => !opened);
   };
 
   return (
@@ -61,8 +63,8 @@ const SideBar: React.FC = () => {
       <div className="flex h-full flex-col">
         <div className="mb-3 flex min-h-10 items-center justify-between gap-2 px-1.5">
           <NubbiBrand size="sm" />
-          <IconButton aria-label="关闭侧边栏" onClick={handleCollapse}>
-            <ChevronsLeft size={20} />
+          <IconButton aria-label={sideBarOpened ? "收起侧边栏" : "固定侧边栏"} title={sideBarOpened ? "收起侧边栏" : "固定侧边栏"} onClick={handleCollapse}>
+            {sideBarOpened ? <ChevronsLeft size={20} /> : <Pin size={18} />}
           </IconButton>
         </div>
         <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-auto overscroll-contain pb-2">

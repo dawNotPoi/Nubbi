@@ -1,8 +1,7 @@
 import { atom } from "jotai";
-import { atomWithStorage } from "jotai/utils";
 
-/** 侧边栏展开状态，持久化到 localStorage */
-export const sideBarOpenedAtom = atomWithStorage("sidebar-opened", true);
+/** 每次进入应用默认展开；用户主动收起后才启用边缘悬停预览。 */
+export const sideBarOpenedAtom = atom(true);
 
 /** 迁移期保留：旧移动侧栏状态。新 Mobile Shell 不再渲染 Desktop Sidebar。 */
 export const mobileSideBarOpenedAtom = atom(false);

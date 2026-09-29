@@ -20,6 +20,8 @@ export default function ResizeTab({
   const [sidebarWidth, setSidebarWidth] = useState(280);
   const [isResizing, setIsResizing] = useState(false);
   const [desktopHovered, setDesktopHovered] = useState(false);
+  const [focusWithin, setFocusWithin] = useState(false);
+  const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMobile = useIsMobile();
   const sidebarRef = useRef<HTMLElement>(null);
   const startXRef = useRef(0);
@@ -31,13 +33,15 @@ export default function ResizeTab({
     setIsResizing(true);
     startXRef.current = e.clientX;
     startWidthRef.current = sidebarRef.current.getBoundingClientRect().width;
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
   };
 
   // 添加全局事件监听
   useEffect(() => {
     if (!isResizing) return;
+    const previousCursor = document.body.style.cursor;
+    const previousUserSelect = document.body.style.userSelect;
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
 
     const handleMouseMove = (event: MouseEvent) => {
       const diff = event.clientX - startXRef.current;
@@ -47,16 +51,18 @@ export default function ResizeTab({
     };
     const handleMouseUp = () => {
       setIsResizing(false);
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
     };
 
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
+    window.addEventListener("blur", handleMouseUp);
 
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("blur", handleMouseUp);
+      document.body.style.cursor = previousCursor;
+      document.body.style.userSelect = previousUserSelect;
     };
   }, [isResizing]);
 
@@ -66,11 +72,33 @@ export default function ResizeTab({
   const desktopCollapsed = !isMobile && !sideBarOpened;
   const opened = isMobile
     ? mobileSideBarOpened
-    : sideBarOpened || desktopHovered || holdOpen;
+    : sideBarOpened || desktopHovered || holdOpen || focusWithin;
+
+  /** 清理尚未生效的悬停切换，避免快速移动时先关后开。 */
+  const cancelHover = (): void => {
+    if (hoverTimer.current !== null) clearTimeout(hoverTimer.current);
+    hoverTimer.current = null;
+  };
+
+  /**
+   * 用短延迟区分经过边缘和明确预览，关闭同样留出移动到菜单的时间。
+   * @param visible 是否显示临时侧栏。
+   * @returns 无返回值。
+   */
+  const scheduleHover = (visible: boolean): void => {
+    cancelHover();
+    hoverTimer.current = setTimeout(() => setDesktopHovered(visible), visible ? 200 : 250);
+  };
+
+  useEffect(() => () => {
+    if (hoverTimer.current !== null) clearTimeout(hoverTimer.current);
+  }, []);
 
   useEffect(() => {
-    if (!isMobile && !sideBarOpened) return;
-    const frame = window.requestAnimationFrame(() => setDesktopHovered(false));
+    const frame = window.requestAnimationFrame(() => {
+      setDesktopHovered(false);
+      setFocusWithin(false);
+    });
     return () => window.cancelAnimationFrame(frame);
   }, [isMobile, sideBarOpened]);
 
@@ -88,6 +116,11 @@ export default function ResizeTab({
     <aside
       ref={sidebarRef}
       aria-hidden={!opened}
+      inert={!opened}
+      onFocusCapture={() => setFocusWithin(true)}
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setFocusWithin(false);
+      }}
       aria-label={isMobile ? "移动端侧边栏" : "侧边栏"}
       className={clsx(
         "h-full overflow-hidden bg-sidebar",
@@ -126,15 +159,17 @@ export default function ResizeTab({
         <div
           aria-hidden="true"
           className="fixed inset-y-0 left-0 z-30 w-2"
-          onMouseEnter={() => setDesktopHovered(true)}
+          onMouseEnter={() => scheduleHover(true)}
+          onMouseLeave={cancelHover}
         />
       ) : null}
       {desktopCollapsed ? (
         <div
-          onMouseLeave={() => setDesktopHovered(false)}
+          onMouseEnter={() => { cancelHover(); setDesktopHovered(true); }}
+          onMouseLeave={() => scheduleHover(false)}
           className={clsx(
             "fixed bottom-3 left-0 top-3 z-40 box-border pl-2 transition-[opacity,transform,translate] duration-150 ease-out",
-            desktopHovered || holdOpen
+            opened
               ? "translate-x-0 opacity-100"
               : "pointer-events-none -translate-x-2 opacity-0",
           )}
@@ -146,7 +181,7 @@ export default function ResizeTab({
         sideBar
       ) : (
         <div
-          className="relative h-full shrink-0 transition-[width] duration-200"
+          className={clsx("relative h-full shrink-0", !isResizing && "transition-[width] duration-200 motion-reduce:transition-none")}
           style={{ width: sideBarOpened ? sidebarWidth : 0 }}
         >
           {sideBar}

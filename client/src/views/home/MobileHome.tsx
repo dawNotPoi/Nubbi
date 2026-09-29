@@ -4,6 +4,7 @@ import {
   requireAccountScope,
 } from "@/features/auth/model/account-scope";
 import { Header } from "@/component/Header";
+import Image from "@/component/UI/Image";
 import { CreateMeetingModal } from "@/component/MeetingList/create-meeting-modal";
 import {
   Sheet,
@@ -29,6 +30,10 @@ import { useNavigate } from "react-router-dom";
 const headerActionClass =
   "grid size-11 shrink-0 place-items-center rounded-control text-[var(--brand)] transition-colors active:bg-bg-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring [&>svg]:size-5";
 
+/**
+ * 手机首页保留独立列表与 Sheet，作者头像与桌面书架保持一致。
+ * @returns 手机首页。
+ */
 export default function MobileHome() {
   const navigate = useNavigate();
   const { data: session } = useSession();
@@ -68,10 +73,10 @@ export default function MobileHome() {
   };
 
   return (
-    <div className="min-h-full bg-surface text-text-primary">
+    <div className="home-workspace min-h-full bg-surface text-text-primary">
       <Header className="border-b border-border-row bg-surface/98">
         <div className="flex h-full items-center gap-2">
-          <h1 className="min-w-0 flex-1 truncate text-[20px] font-semibold leading-7">Nubbi</h1>
+          <h1 className="min-w-0 flex-1 truncate text-[20px] font-semibold leading-7">NUBBI</h1>
           <button
             aria-label="新建"
             className={headerActionClass}
@@ -118,15 +123,13 @@ export default function MobileHome() {
                   onClick={() => navigate(routes.note(note._id))}
                   type="button"
                 >
-                  <span className="grid size-8 shrink-0 place-items-center rounded-control bg-[var(--entity-note-soft)] text-[var(--entity-note)]">
-                    <FileText className="size-[17px]" strokeWidth={1.9} />
-                  </span>
+                  <Image className="size-8 shrink-0 rounded-full object-cover" src={session?.user.image || ""} defaultLink="/default.jpg" alt="" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[15px] font-medium leading-5 text-text-primary">
                       {normalizeNoteTitle(note.title)}
                     </span>
                     <span className="mt-1 block truncate text-[12px] leading-4 text-text-muted">
-                      {formatNoteEditedTime(note)} · {note.status}
+                      {session?.user.name || "我"} · {formatNoteEditedTime(note)}
                     </span>
                   </span>
                   <ChevronRight className="size-[17px] shrink-0 text-text-subtle" />

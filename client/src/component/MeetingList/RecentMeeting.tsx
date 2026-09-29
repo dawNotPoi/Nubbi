@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import clsx from "clsx";
 import dayjs from "dayjs";
 import { useAtomValue } from "jotai";
-import { CalendarDays, CalendarOff, Plus } from "lucide-react";
+import { ArrowRight, CalendarDays, CalendarOff, Plus } from "lucide-react";
+import { routes } from "@/utils/routes";
 import { useMemo, useState, type ReactElement } from "react";
 import { useNavigate } from "react-router-dom";
 import { CreateMeetingModal } from "./create-meeting-modal";
@@ -12,6 +13,7 @@ import { MeetingInvitationButton } from "@/features/meeting/meeting-invitation";
 type RecentMeetingsProps = {
   className?: string;
   showCreateAction?: boolean;
+  cards?: boolean;
 };
 
 type RecentMeetingEmptyProps = {
@@ -58,8 +60,9 @@ const RecentMeetingEmpty = ({ onCreate }: RecentMeetingEmptyProps): ReactElement
 const RecentMeetings = ({
   className,
   showCreateAction = true,
+  cards = false,
 }: RecentMeetingsProps): ReactElement => {
-  const { data: meetings } = useAtomValue(MeetingAtom);
+  const { data: meetings, isPending, isError, isFetching, refetch } = useAtomValue(MeetingAtom);
   const navigate = useNavigate();
   const [createOpen, setCreateOpen] = useState(false);
   const upcomingWeekMeetings = useMemo(() => {
@@ -84,6 +87,57 @@ const RecentMeetings = ({
           dayjs(left.startTime).valueOf() - dayjs(right.startTime).valueOf(),
       );
   }, [meetings]);
+
+  if (cards) {
+    return (
+      <section aria-labelledby="recent-meetings-title" className={clsx("@container min-w-0", className)}>
+        <div className="mb-5 flex items-center justify-between gap-3">
+          <h2 id="recent-meetings-title" className="text-lg font-semibold">近期会议</h2>
+          <Button variant="ghost" className="text-[var(--workspace-primary)]" onClick={() => navigate(routes.meetings)}>查看全部 <ArrowRight /></Button>
+        </div>
+        {isPending ? (
+          <div role="status" className="flex min-h-36 items-center gap-3 rounded-panel border border-border-row bg-surface p-5 text-sm text-text-muted">
+            <span aria-hidden="true" className="size-10 animate-pulse rounded-control bg-[var(--entity-meeting-soft)] motion-reduce:animate-none" />
+            正在加载近期会议…
+          </div>
+        ) : isError ? (
+          <div role="status" className="flex min-h-36 flex-wrap items-center justify-between gap-3 rounded-panel border border-border-row bg-surface p-5 text-sm text-text-muted">
+            <span>暂时无法加载近期会议</span>
+            <Button variant="outline" loading={isFetching} onClick={() => void refetch()}>重新加载</Button>
+          </div>
+        ) : upcomingWeekMeetings.length > 0 ? (
+          <div className="grid grid-cols-1 gap-5 @[440px]:grid-cols-2 @[780px]:grid-cols-3">
+            {upcomingWeekMeetings.map((meeting) => (
+              <article key={meeting._id} className="flex min-h-[190px] min-w-0 flex-col overflow-hidden rounded-panel border border-border-row bg-surface shadow-soft">
+                <div className="flex items-center gap-2 bg-[var(--entity-meeting-soft)] px-5 py-3 text-xs text-[var(--entity-meeting)]">
+                  <CalendarDays className="size-4 shrink-0" aria-hidden="true" />
+                  {dayjs(meeting.startTime).format("M月D日")} · {getWeekDayLabel(dayjs(meeting.startTime).day())}
+                </div>
+                <div className="flex flex-1 flex-col p-5">
+                  <h3 className="line-clamp-2 break-words text-base font-medium leading-6 [overflow-wrap:anywhere]" title={meeting.title}>{meeting.title || "未命名会议"}</h3>
+                  <p className="mt-2 text-xs text-text-muted">
+                    {dayjs(meeting.startTime).format("HH:mm")} – {dayjs(meeting.startTime).add(meeting.duration, "minute").format("HH:mm")} · {meeting.duration} 分钟
+                  </p>
+                  <div className="mt-auto flex flex-wrap items-center gap-2 pt-5">
+                    <MeetingInvitationButton id={meeting._id} title={meeting.title} startTime={meeting.startTime} />
+                    <Button variant="outline" onClick={() => navigate(`/meeting/${meeting._id}`)}>进入会议 <ArrowRight /></Button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="flex min-h-36 items-center gap-4 rounded-panel border border-border-row bg-surface px-6 py-5 shadow-soft">
+            <span className="grid size-11 shrink-0 place-items-center rounded-panel bg-[var(--entity-meeting-soft)] text-[var(--entity-meeting)]"><CalendarOff className="size-5" aria-hidden="true" /></span>
+            <div>
+              <p className="text-sm font-medium">未来一周暂无会议</p>
+              <p className="mt-2 text-sm text-text-muted">需要协作时，点击上方「创建会议」安排一场讨论。</p>
+            </div>
+          </div>
+        )}
+      </section>
+    );
+  }
 
   return (
     <section className={clsx("min-w-0", className)}>

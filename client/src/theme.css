@@ -25,6 +25,15 @@
   /* 认证页的小字号说明需在暖白纸面上保持清楚；不改变现有业务页次级文字。 */
   --auth-text-secondary: #706d66;
 
+  /* 内容书架的局部强调色，避免首页方案影响其他业务页。 */
+  --workspace-primary: #168b91;
+  --workspace-primary-hover: #11777d;
+  --workspace-primary-active: #0c656b;
+  --workspace-focus: #96d5d6;
+  --workspace-paper: #f7f8f8;
+  --workspace-fold: #e9edee;
+  --workspace-upload: #b77726;
+
   --bg-hover: #f7f7f5;
   --bg-selected: #f1f1ef;
   --bg-icon-hover: #efeeeb;
@@ -85,6 +94,14 @@
   --danger-hover: #fee2e2;
   --danger-text: #b42332;
   --shadow-popover: 0 10px 30px rgba(55, 53, 47, 0.08), 0 2px 8px rgba(55, 53, 47, 0.05);
+}
+
+.home-workspace {
+  --primary: var(--workspace-primary);
+  --primary-hover: var(--workspace-primary-hover);
+  --primary-active: var(--workspace-primary-active);
+  --brand: var(--workspace-primary);
+  --focus-ring: var(--workspace-focus);
 }
 
 .file-list-grid {
